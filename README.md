@@ -15,3 +15,10 @@ To launch a prod server:
 ```bash
 fastapi run
 ```
+
+
+## roadmap:
+
+- [x] context scan endpoint
+- [ ] generate summary endpoint
+- [ ] critics endpoint
