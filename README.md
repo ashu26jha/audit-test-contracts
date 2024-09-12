@@ -17,8 +17,9 @@ fastapi run
 ```
 
 
-## roadmap:
+### roadmap:
 
+- [x] health check endpoint
 - [x] context scan endpoint
 - [ ] generate summary endpoint
 - [ ] critics endpoint
