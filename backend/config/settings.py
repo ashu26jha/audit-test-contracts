@@ -14,7 +14,9 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 TOKENS_ENCODING = "cl100k_base"
 
 # gpt-4o-2024-08-06 || gpt-4o-mini-2024-07-18 || claude-3-5-sonnet-20240620 || claude-3-opus-20240229
-LLM_MODEL = "gpt-4o-mini-2024-07-18"
+LLM_MODEL = "claude-3-5-sonnet-20240620"
 
 # Specify the temperature for the LLM - From 0.0 to 1.0
 TEMPERATURE = 0.3
+
+SUPPORTED_OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4o-mini-2024-07-18", "o1-preview", "o1-mini" ]
