@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
+from common.profiles import Profiles  # Import the Profiles enum
 
 
 class Finding(BaseModel):
@@ -16,6 +17,9 @@ class ContextScanRequest(BaseModel):
         None, description="An optional summary of the context"
     )
     contracts: str = Field(..., description="Flattened smart contracts content")
+    profile: Profiles = Field(
+        Profiles.NONE, description="Profile to use for the scan"
+    )  # Add profile field
 
 
 class ContextScanResponse(BaseModel):

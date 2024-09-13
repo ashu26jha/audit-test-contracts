@@ -59,14 +59,5 @@ app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
 app.include_router(health_check.router, prefix="/api/v1")
 
-
-@app.get("/")
-def read_root(username: str = Depends(authenticate)):
-    """
-    Root endpoint that returns a simple greeting.
-    """
-    return {"Hello": "World"}
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

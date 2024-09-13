@@ -1,7 +1,8 @@
 from api.v1.schemas.context_scan_schema import Finding
+from common.profiles import Profiles
 from config.settings import LLM_MODEL
 from common.logger import logger
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from common.send_prompt_to_LLM import send_prompt_to_llm_async
 import json
 from api.v1.prompts.context_scan_prompts import (
@@ -11,7 +12,7 @@ from api.v1.prompts.context_scan_prompts import (
 
 
 async def perform_context_scan(
-    summary: Optional[str], contracts: str
+    summary: Optional[str], contracts: str, profile: Profiles = Profiles.NONE
 ) -> Dict[str, Any]:
     """
     Performs a context scan using an LLM and returns structured findings in a dict.
@@ -35,23 +36,20 @@ async def perform_context_scan(
 
     try:
         # Send the prompt to the LLM asynchronously and log the raw response
-        prediction = await send_prompt_to_llm_async(prompt, LLM_MODEL)
-        logger.debug(f"Raw LLM prediction: {prediction}")
+        prediction = await send_prompt_to_llm_async(prompt, LLM_MODEL, profile)
 
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
             raise ValueError("LLM response was None or empty.")
 
-        # Clean markdown-like formatting (remove triple backticks)
+        # Clean the prediction for valid JSON
         prediction = (
             prediction.strip().replace("```json", "").replace("```", "").strip()
         )
 
-        # Handle cases where the response may be wrapped in extra quotes
         if prediction.startswith('"') and prediction.endswith('"'):
             prediction = prediction[1:-1].replace('\\"', '"')
 
-        # Attempt to parse the prediction as JSON
         findings_json = json.loads(prediction)
 
         # Ensure the parsed response is a list of findings

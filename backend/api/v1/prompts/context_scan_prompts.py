@@ -1,3 +1,20 @@
+system_prompt = """You are a highly skilled smart contract auditor. Your goal is to find the vulnerabilities in the following Solidity code. You will be given the flattened code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts. 
+
+The output should be a well-formed JSON and look like the following:
+
+```json
+[
+  {{
+    "Issue": "",  // Describe the underlying issue in short
+    "Severity": "",  // Mark the severity of the vulnerability: Info, Low, Medium, High, Critical
+    "Contracts": ["", ""],  // Names of the contracts where the vulnerability was found
+    "Description": "",  // Description of the vulnerability
+    "Recommendation": ""  // Recommendation to fix the vulnerability, write N/A if no recommendation
+  }}
+]
+```
+"""
+
 context_prompt_with_summary = """
     Analyze the following Solidity smart contracts using the provided summary for context. Look for any potential vulnerabilities and list the 8 most valid identified issues in the JSON format below.
     Most valid are the issues for which you are sure that they are not false positives. Then order them by decreasing severity.
