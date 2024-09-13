@@ -45,13 +45,20 @@ async def send_prompt_to_LLM_async(
         if model_type in SUPPORTED_OPENAI_MODELS:
             messages = build_messages_openai(input, system_prompt, message_pair)
             async with AsyncOpenAI() as client:
-                response = await client.chat.completions.create(
-                    model=model_type,
-                    messages=messages,
-                    temperature=TEMPERATURE,
-                    n=1,
-                    stop=None,
-                )
+                if model_type in ["o1-preview", "o1-mini" ]:
+                    message_pair.append(return_role_prompt('user', input))
+                    response = await client.chat.completions.create(
+                        model=model_type,
+                        messages=message_pair
+                    )
+                else:
+                    response = await client.chat.completions.create(
+                        model=model_type,
+                        messages=messages,
+                        temperature=TEMPERATURE,
+                        n=1,
+                        stop=None,
+                    )
             return response.choices[0].message.content.strip()
 
         elif model_type in ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229"]:
