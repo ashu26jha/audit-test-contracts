@@ -38,8 +38,8 @@ async def perform_context_scan(
 
     try:
         # Send the prompt to the LLM asynchronously and log the raw response
-        message_pair = load_profile(profile)
-        prediction = await send_prompt_to_LLM_async(LLM_MODEL, prompt, system_prompt, [])
+        message_pair = load_profile(profile.NFT)
+        prediction = await send_prompt_to_LLM_async(LLM_MODEL, prompt, system_prompt, message_pair)
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
             raise ValueError("LLM response was None or empty.")
