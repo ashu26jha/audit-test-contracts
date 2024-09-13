@@ -1,10 +1,11 @@
 import re
 from api.v1.schemas.context_scan_schema import Finding
-from common.profiles import Profiles
+from common.profiles import Profiles, load_profile
 from config.settings import LLM_MODEL
 from common.logger import logger
 from typing import Optional, Dict, Any
-from common.send_prompt_to_LLM import send_prompt_to_llm_async
+from common.send_prompt_to_LLM import send_prompt_to_LLM_async
+from api.v1.prompts.context_scan_prompts import system_prompt
 import json
 from api.v1.prompts.context_scan_prompts import (
     context_prompt_with_summary,
@@ -37,8 +38,8 @@ async def perform_context_scan(
 
     try:
         # Send the prompt to the LLM asynchronously and log the raw response
-        prediction = await send_prompt_to_llm_async(prompt, LLM_MODEL, profile)
-
+        message_pair = load_profile(profile)
+        prediction = await send_prompt_to_LLM_async(LLM_MODEL, prompt, system_prompt, [])
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
             raise ValueError("LLM response was None or empty.")

@@ -18,3 +18,5 @@ LLM_MODEL = "gpt-4o-mini-2024-07-18"
 
 # Specify the temperature for the LLM - From 0.0 to 1.0
 TEMPERATURE = 0.3
+
+SUPPORTED_OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4o-mini-2024-07-18", "o1-preview", "o1-mini" ]
