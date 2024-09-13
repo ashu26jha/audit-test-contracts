@@ -36,6 +36,7 @@ def build_messages_anthropic(input, message_pair):
         messages.append(message_pair)
     
     messages.append(return_role_prompt('user',input))
+    return messages
 
 async def send_prompt_to_LLM_async(
     model_type, input, system_prompt = "", message_pair = []
@@ -63,6 +64,7 @@ async def send_prompt_to_LLM_async(
 
         elif model_type in ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229"]:
             messages = build_messages_anthropic(input, message_pair)
+            print(messages)
             response = CLAUDE_CLIENT.messages.create(
                 model=model_type,
                 system=system_prompt,
@@ -80,7 +82,6 @@ async def send_prompt_to_LLM_async(
                 },
             )
             return content
-            
     except Exception as e:
         langfuse_context.update_current_trace(metadata={"error": str(e)})
         print(f"Error sending prompt to {model_type}: {e}")
