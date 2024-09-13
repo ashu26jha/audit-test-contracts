@@ -3,6 +3,7 @@ from config.settings import TEMPERATURE, SUPPORTED_OPENAI_MODELS
 from common.llm_clients import CLAUDE_CLIENT
 from openai import AsyncOpenAI
 from langfuse.decorators import langfuse_context
+import json
 
 def return_role_prompt(role, input):
     return {
@@ -30,13 +31,9 @@ def build_messages_openai(input, system_prompt, message_pair):
 
     return messages
 
-def build_messages_anthropic(input, message_pair):
-    messages = []
-    if message_pair:
-        messages.append(message_pair)
-    
-    messages.append(return_role_prompt('user',input))
-    return messages
+def build_messages_anthropic(input, message_pair):    
+    message_pair.append(return_role_prompt('user',input))
+    return message_pair
 
 async def send_prompt_to_LLM_async(
     model_type, input, system_prompt = "", message_pair = []
@@ -64,7 +61,6 @@ async def send_prompt_to_LLM_async(
 
         elif model_type in ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229"]:
             messages = build_messages_anthropic(input, message_pair)
-            print(messages)
             response = CLAUDE_CLIENT.messages.create(
                 model=model_type,
                 system=system_prompt,
