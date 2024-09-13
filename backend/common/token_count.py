@@ -5,7 +5,7 @@ import tiktoken
 
 # Add the root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from backend.config import settings
+from config import settings
 
 
 def count_tokens(text):

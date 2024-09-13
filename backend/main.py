@@ -2,7 +2,13 @@ from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.utils import get_openapi
-from api.v1.endpoints import generate_summary, context_scan, critics, health_check
+from api.v1.endpoints import (
+    audit_agent,
+    generate_summary,
+    context_scan,
+    critics,
+    health_check,
+)
 import os
 import uvicorn
 
@@ -54,10 +60,11 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+app.include_router(health_check.router, prefix="/api/v1")
+app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
-app.include_router(health_check.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
