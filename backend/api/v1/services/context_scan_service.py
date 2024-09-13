@@ -1,3 +1,4 @@
+import re
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
 from config.settings import LLM_MODEL
@@ -42,10 +43,13 @@ async def perform_context_scan(
         if not prediction or not prediction.strip():
             raise ValueError("LLM response was None or empty.")
 
-        # Clean the prediction for valid JSON
-        prediction = (
-            prediction.strip().replace("```json", "").replace("```", "").strip()
-        )
+        # Use regex to extract the content between the triple backticks ```json ... ```
+        json_match = re.search(r"```json(.*?)```", prediction, re.DOTALL)
+
+        if json_match:
+            prediction = json_match.group(1).strip()
+        else:
+            raise ValueError("No valid JSON content found in the LLM response.")
 
         if prediction.startswith('"') and prediction.endswith('"'):
             prediction = prediction[1:-1].replace('\\"', '"')

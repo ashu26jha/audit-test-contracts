@@ -42,13 +42,15 @@ async def send_prompt_to_llm_async(
 
         elif model_type in ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229"]:
             # Claude Models
-            response = await CLAUDE_CLIENT.messages.create(
+            response = CLAUDE_CLIENT.messages.create(
                 model=model_type,
-                system=system if profile != Profiles.NONE else None,
+                system=system if profile != Profiles.NONE else "",
                 messages=messages,
-                # max_tokens="None",
+                max_tokens=8192,
                 temperature=TEMPERATURE,
             )
+
+            content = response.content[0].text.strip()
 
             # Update usage context
             langfuse_context.update_current_observation(
@@ -58,7 +60,7 @@ async def send_prompt_to_llm_async(
                     "output": response.usage.output_tokens,
                 },
             )
-            return response.content[0].text.strip()
+            return content
 
         else:
             raise ValueError(f"Unsupported model type: {model_type}")
