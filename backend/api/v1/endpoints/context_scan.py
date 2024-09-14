@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
-from api.v1.services import context_scan_service
+from __future__ import annotations
+
 from api.v1.schemas import context_scan_schema
+from api.v1.services import context_scan_service
+from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
@@ -15,4 +17,4 @@ async def perform_context_scan(request: context_scan_schema.ContextScanRequest):
         )
         return context_scan_schema.ContextScanResponse(**result)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e

@@ -1,0 +1,35 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        args: [--line-length=100]
+        exclude: \.git|__pycache__|\.venv|env|venv|build|dist
+        files: ^backend/
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+        files: ^backend/
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        args: [--config=backend/setup.cfg]
+        files: ^backend/
+
+  # - repo: https://github.com/pylint-dev/pylint
+  #   rev: v3.2.7
+  #   hooks:
+  #     - id: pylint
+  #       name: pylint
+  #       entry: pylint
+  #       language: system
+  #       types: [python]
+  #       args: [--rcfile=backend/setup.cfg]
+  #       exclude: \.git|__pycache__|\.venv|env|venv|build|dist
+  #       files: ^backend/
+  #       pass_failing: true

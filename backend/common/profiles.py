@@ -1,7 +1,8 @@
-import os
-import json
-from enum import Enum
+from __future__ import annotations
 
+import json
+import os
+from enum import Enum
 
 # Define the path to the profiles directory
 PROFILES_DIR = os.path.join(os.path.dirname(__file__), "profiles_data")
@@ -42,9 +43,9 @@ def load_profile(profile_name: Profiles):
 
     # Load and return the content of the profile file as a list of dicts
     try:
-        with open(profile_path, "r") as f:
+        with open(profile_path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
-        raise ValueError(f"Profile file for {profile_name} not found.")
-    except json.JSONDecodeError:
-        raise ValueError(f"Profile file for {profile_name} is not a valid JSON file.")
+    except FileNotFoundError as exc:
+        raise ValueError(f"Profile file for {profile_name} not found.") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Profile file for {profile_name} is not a valid JSON file.") from exc

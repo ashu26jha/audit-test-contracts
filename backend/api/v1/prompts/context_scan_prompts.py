@@ -1,4 +1,6 @@
-system_prompt = """You are a highly skilled smart contract auditor. Your goal is to find the vulnerabilities in the following Solidity code. You will be given the flattened code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts. 
+from __future__ import annotations
+
+SYSTEM_PROMPT = """You are a highly skilled smart contract auditor. Your goal is to find the vulnerabilities in the following Solidity code. You will be given the flattened code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts.
 
 The output should be a well-formed JSON and look like the following:
 
@@ -14,17 +16,16 @@ The output should be a well-formed JSON and look like the following:
 ]
 ```
 """
-
-context_prompt_with_summary = """
+CONTEXT_PROMPT_WITH_SUMMARY = """
     Analyze the following Solidity smart contracts using the provided summary for context. Look for any potential vulnerabilities and list the 8 most valid identified issues in the JSON format below.
     Most valid are the issues for which you are sure that they are not false positives. Then order them by decreasing severity.
     For each issue, include a description, severity level, affected contract(s), and code snippets.
-    
+
     **Additional Considerations:**
-    - Make sure that there is no duplicate issue. 
+    - Make sure that there is no duplicate issue.
     - If you find less than 8 vulnerabilities, only report what you found.
     - Make sure every finding is valid and that you do not report false-positives.
-    
+
     Summary: {summary}
 
     Audit Format:
@@ -39,22 +40,22 @@ context_prompt_with_summary = """
     ]
     ```
 
-    ### Contracts to audit: 
-    ```solidity 
+    ### Contracts to audit:
+    ```solidity
     {flattened_contracts}
     ```
 """
 
-context_prompt_without_summary = """
+CONTEXT_PROMPT_WITHOUT_SUMMARY = """
     Analyze the following Solidity smart contracts and look for any potential vulnerabilities. Then list the 8 most valid identified issues in the JSON format below.
     Most valid are the issues for which you are sure that they are not false positives. Then order them by decreasing severity.
     For each issue, include a description, severity level, affected contract(s), and code snippets.
-    
+
     **Additional Considerations:**
-    - Make sure that there is no duplicate issue. 
+    - Make sure that there is no duplicate issue.
     - If you find less than 8 vulnerabilities, only report what you found.
     - Make sure every finding is valid and that you do not report false-positives.
-    
+
     Audit Format:
     ```json
     [
@@ -67,8 +68,8 @@ context_prompt_without_summary = """
     ]
     ```
 
-    ### Contracts to audit: 
-    ```solidity 
+    ### Contracts to audit:
+    ```solidity
     {flattened_contracts}
     ```
 """

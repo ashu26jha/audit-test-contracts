@@ -1,7 +1,10 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from __future__ import annotations
+
+from typing import List, Optional
+
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
+from pydantic import BaseModel, Field
 
 
 class AuditAgentRequest(BaseModel):
@@ -10,9 +13,5 @@ class AuditAgentRequest(BaseModel):
 
 
 class AuditAgentResponse(BaseModel):
-    summary: Optional[str] = Field(
-        None, description="Generated summary of the contracts"
-    )
-    scan_result: List[Finding] = Field(
-        ..., description="The result of the context scan"
-    )
+    summary: Optional[str] = Field(None, description="Generated summary of the contracts")
+    scan_result: List[Finding] = Field(..., description="The result of the context scan")

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,10 +16,24 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 # Tokens encoding: "cl100k_base" || "p50k_base"
 TOKENS_ENCODING = "cl100k_base"
 
-# gpt-4o-2024-08-06 || gpt-4o-mini-2024-07-18 || claude-3-5-sonnet-20240620 || claude-3-opus-20240229
-LLM_MODEL = "claude-3-5-sonnet-20240620"
-
 # Specify the temperature for the LLM - From 0.0 to 1.0
 TEMPERATURE = 0.3
 
-SUPPORTED_OPENAI_MODELS = ["gpt-4o", "gpt-4o-mini", "gpt-4o-mini-2024-07-18", "o1-preview", "o1-mini" ]
+# Dictionary of supported models
+SUPPORTED_MODELS = {
+    "openai": [
+        "gpt-4o-2024-08-06",  # 128k - 16k context
+        "gpt-4o-mini",  # 128k - 16k context
+        "o1-preview",  # 128k - 32k context
+        "o1-mini",  # 128k - 65k context
+    ],
+    "anthropic": [
+        "claude-3-5-sonnet-20240620",
+    ],
+}
+
+# List of models that do not support 'system' role
+MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]
+
+# Default LLM model
+LLM_MODEL = "gpt-4o-mini"

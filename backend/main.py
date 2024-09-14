@@ -1,16 +1,19 @@
-from fastapi import FastAPI, HTTPException, Depends, status, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.openapi.utils import get_openapi
+from __future__ import annotations
+
+import os
+
+import uvicorn
 from api.v1.endpoints import (
     audit_agent,
-    generate_summary,
     context_scan,
     critics,
+    generate_summary,
     health_check,
 )
-import os
-import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 app = FastAPI(
     title="Smart Contract Audit API",
@@ -33,10 +36,7 @@ security = HTTPBasic()
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = os.getenv("API_USERNAME", "")
     correct_password = os.getenv("API_PASSWORD", "")
-    if (
-        credentials.username != correct_username
-        or credentials.password != correct_password
-    ):
+    if credentials.username != correct_username or credentials.password != correct_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",

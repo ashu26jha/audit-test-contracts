@@ -1,16 +1,19 @@
-import re
-from api.v1.schemas.context_scan_schema import Finding
-from common.profiles import Profiles, load_profile
-from config.settings import LLM_MODEL
-from common.logger import logger
-from typing import Optional, Dict, Any
-from common.send_prompt_to_LLM import send_prompt_to_LLM_async
-from api.v1.prompts.context_scan_prompts import system_prompt
+from __future__ import annotations
+
 import json
+import re
+from typing import Any, Dict, Optional
+
 from api.v1.prompts.context_scan_prompts import (
-    context_prompt_with_summary,
-    context_prompt_without_summary,
+    CONTEXT_PROMPT_WITH_SUMMARY,
+    CONTEXT_PROMPT_WITHOUT_SUMMARY,
+    SYSTEM_PROMPT,
 )
+from api.v1.schemas.context_scan_schema import Finding
+from common.logger import logger
+from common.profiles import Profiles, load_profile
+from common.send_prompt_to_LLM import send_prompt_to_llm_async
+from config.settings import LLM_MODEL
 
 
 async def perform_context_scan(
@@ -27,19 +30,23 @@ async def perform_context_scan(
         A dictionary containing the summary, contracts, and an array of findings.
     """
 
+    # Determine if system prompt should be used
+    system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
+
     # Select the appropriate prompt based on the presence of a summary
     prompt = (
-        context_prompt_with_summary.format(
-            summary=summary, flattened_contracts=contracts
-        )
+        CONTEXT_PROMPT_WITH_SUMMARY.format(summary=summary, flattened_contracts=contracts)
         if summary
-        else context_prompt_without_summary.format(flattened_contracts=contracts)
+        else CONTEXT_PROMPT_WITHOUT_SUMMARY.format(flattened_contracts=contracts)
     )
 
     try:
         # Send the prompt to the LLM asynchronously and log the raw response
-        message_pair = load_profile(profile.NFT)
-        prediction = await send_prompt_to_LLM_async(LLM_MODEL, prompt, system_prompt, message_pair)
+        message_history = load_profile(profile)
+        print(message_history)
+        prediction = await send_prompt_to_llm_async(
+            LLM_MODEL, prompt, system_prompt, message_history
+        )
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
             raise ValueError("LLM response was None or empty.")
@@ -86,6 +93,17 @@ async def perform_context_scan(
             }
         ]
 
+    except (ConnectionError, TimeoutError) as e:
+        logger.error(f"Network-related error: {e}")
+        findings = [
+            {
+                "Issue": "Network Error",
+                "Severity": "Error",
+                "Contracts": [],
+                "Description": "A network error occurred while processing the response.",
+            }
+        ]
+
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         findings = [
@@ -93,7 +111,7 @@ async def perform_context_scan(
                 "Issue": "Unexpected Error",
                 "Severity": "Error",
                 "Contracts": [],
-                "Description": "An unexpected error occurred while processing the response.",
+                "Description": f"An unexpected error occurred: {e}",
             }
         ]
 

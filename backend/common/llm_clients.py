@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 import anthropic
 import openai
-
-from config.settings import OPENAI_API_KEY, ANTHROPIC_API_KEY
+from config.settings import ANTHROPIC_API_KEY, OPENAI_API_KEY
 
 # Check for required API keys
 if not OPENAI_API_KEY:

@@ -1,14 +1,10 @@
-import os
-import sys
+from __future__ import annotations
+
 import tiktoken
-
-
-# Add the root directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import settings
+from config.settings import TOKENS_ENCODING
 
 
 def count_tokens(text):
-    enc = tiktoken.get_encoding(settings.TOKENS_ENCODING)
+    enc = tiktoken.get_encoding(TOKENS_ENCODING)
     tokens = enc.encode(text)
     return len(tokens)

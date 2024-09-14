@@ -16,6 +16,20 @@ To launch a prod server:
 fastapi run
 ```
 
+To run linter:
+
+```bash
+cd backend
+```
+
+```bash
+pre-commit install
+```
+then: 
+```bash
+pre-commit run --all-files
+```
+
 
 ### roadmap:
 

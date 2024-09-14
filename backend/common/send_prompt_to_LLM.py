@@ -1,69 +1,50 @@
-from common.profiles import Profiles, load_profile
-from config.settings import TEMPERATURE, SUPPORTED_OPENAI_MODELS
+from __future__ import annotations
+
+import logging
+from typing import List, Optional
+
 from common.llm_clients import CLAUDE_CLIENT
-from openai import AsyncOpenAI
+from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
 from langfuse.decorators import langfuse_context
-import json
+from openai import AsyncOpenAI
 
-def return_role_prompt(role, input):
-    return {
-        "role": role,
-        "content": [
-            {
-                "type": "text",
-                "text": input
-            }
-        ]
-    }
 
-def build_messages_openai(input, system_prompt, message_pair):
-    messages = []
+async def send_prompt_to_llm_async(
+    model_type: str,
+    user_input: str,
+    system_prompt: Optional[str] = None,
+    message_history: Optional[List[dict]] = None,
+) -> Optional[str]:
+    """
+    Send a prompt to the specified LLM model asynchronously.
 
-    # Add system prompt if exists
-    if system_prompt:
-        messages.append(return_role_prompt('system', system_prompt))
-    
-    # If there exists a message pair for few-shot add to the message array
-    if message_pair:
-        messages.extend(message_pair)
+    Args:
+        model_type (str): The model type to use.
+        user_input (str): The user's input text.
+        system_prompt (Optional[str]): The system prompt or context.
+        message_history (Optional[List[dict]]): The conversation history.
 
-    messages.append(return_role_prompt('user',input))
+    Returns:
+        Optional[str]: The response from the LLM or None if an error occurs.
+    """
+    if message_history is None:
+        message_history = []
 
-    return messages
-
-def build_messages_anthropic(input, message_pair):    
-    message_pair.append(return_role_prompt('user',input))
-    return message_pair
-
-async def send_prompt_to_LLM_async(
-    model_type, input, system_prompt = "", message_pair = []
-):
     try:
+        messages = build_messages(model_type, user_input, system_prompt, message_history)
 
-        if model_type in SUPPORTED_OPENAI_MODELS:
-            messages = build_messages_openai(input, system_prompt, message_pair)
+        if model_type in SUPPORTED_MODELS["openai"]:
             async with AsyncOpenAI() as client:
-                if model_type in ["o1-preview", "o1-mini" ]:
-                    message_pair.append(return_role_prompt('user', input))
-                    response = await client.chat.completions.create(
-                        model=model_type,
-                        messages=message_pair
-                    )
-                else:
-                    response = await client.chat.completions.create(
-                        model=model_type,
-                        messages=messages,
-                        temperature=TEMPERATURE,
-                        n=1,
-                        stop=None,
-                    )
+                response = await client.chat.completions.create(
+                    model=model_type,
+                    messages=messages,
+                )
             return response.choices[0].message.content.strip()
 
-        elif model_type in ["claude-3-5-sonnet-20240620", "claude-3-opus-20240229"]:
-            messages = build_messages_anthropic(input, message_pair)
+        elif model_type in SUPPORTED_MODELS["anthropic"]:
             response = CLAUDE_CLIENT.messages.create(
                 model=model_type,
-                system=system_prompt,
+                system=system_prompt if system_prompt else "",
                 messages=messages,
                 max_tokens=8192,
                 temperature=TEMPERATURE,
@@ -78,7 +59,39 @@ async def send_prompt_to_LLM_async(
                 },
             )
             return content
+        else:
+            raise ValueError(f"Unsupported model type: {model_type}")
+
     except Exception as e:
         langfuse_context.update_current_trace(metadata={"error": str(e)})
-        print(f"Error sending prompt to {model_type}: {e}")
+        logging.error(f"Error sending prompt to {model_type}: {e}")
         return None
+
+
+def build_messages(
+    model_type: str,
+    user_input: str,
+    system_prompt: Optional[str],
+    message_history: List[dict],
+) -> List[dict]:
+
+    messages = []
+
+    # For OpenAI models, include the system prompt in the messages
+    if system_prompt and model_type in SUPPORTED_MODELS["openai"]:
+        messages.append({"role": "system", "content": system_prompt})
+
+    # For OpenAI models, handle system prompt
+    if system_prompt and model_type in SUPPORTED_MODELS["openai"]:
+        if model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
+            # Include system prompt as 'system' role message
+            messages.append({"role": "system", "content": system_prompt})
+
+    # Add message history if any
+    if message_history:
+        messages.extend(message_history)
+
+    # Add user input
+    messages.append({"role": "user", "content": user_input})
+
+    return messages
