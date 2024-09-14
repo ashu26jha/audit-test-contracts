@@ -35,5 +35,5 @@ pre-commit run --all-files
 
 - [x] health check endpoint
 - [x] context scan endpoint
-- [ ] generate summary endpoint
+- [x] generate summary endpoint
 - [ ] critics endpoint
