@@ -1,12 +1,10 @@
-from __future__ import annotations
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SummaryRequest(BaseModel):
-    text: str
+    contracts: str = Field(..., description="The contract text to summarize.")
 
 
 class SummaryResponse(BaseModel):
-    summary: str
-    category: str
+    summary: str = Field(..., description="The generated summary of the contract.")
+    type: str = Field(..., description="The category/type of the contract.")
