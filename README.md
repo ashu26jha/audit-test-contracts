@@ -30,10 +30,39 @@ then:
 pre-commit run --all-files
 ```
 
+To Run tests:
+
+```bash
+pytest backend/tests/ -v
+```
+
+with coverage:
+
+Add the following package:
+
+```bash
+pip install coverage pytest-cov
+```
+
+then run:
+
+```bash
+pytest backend/tests/ -v --cov=backend
+```
+
+or generate coverage report:
+
+```bash
+pytest backend/tests/ -v --cov=backend --cov-report=html
+``` 
 
 ### roadmap:
 
-- [x] health check endpoint
-- [x] context scan endpoint
-- [x] generate summary endpoint
-- [ ] critics endpoint
+- [x] health check endpoint/service
+- [x] context scan endpoint/service
+- [x] generate summary endpoint/service
+- [ ] critics endpoint/service
+- [ ] flatten contracts endpoint/service
+- [ ] scan restriction when not paid
+- [ ] add missing profiles
+- [ ] add test for all services

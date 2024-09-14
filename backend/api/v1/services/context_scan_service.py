@@ -2,12 +2,21 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, Optional
+from typing import Dict, List, Optional, Union
 
 from api.v1.prompts.context_scan_prompts import (
     CONTEXT_PROMPT_WITH_SUMMARY,
     CONTEXT_PROMPT_WITHOUT_SUMMARY,
     SYSTEM_PROMPT,
+)
+from api.v1.schemas.context_scan_exceptions import (
+    ContextScanException,
+    EmptyResponseError,
+    InvalidFormatError,
+    InvalidJSONError,
+    JSONParsingError,
+    NetworkError,
+    UnexpectedError,
 )
 from api.v1.schemas.context_scan_schema import Finding
 from common.logger import logger
@@ -18,16 +27,25 @@ from config.settings import LLM_MODEL
 
 async def perform_context_scan(
     summary: Optional[str], contracts: str, profile: Profiles = Profiles.NONE
-) -> Dict[str, Any]:
+) -> Dict[str, Union[Optional[str], str, List[Finding]]]:
     """
     Performs a context scan using an LLM and returns structured findings in a dict.
 
     Args:
         summary: An optional summary to provide context for the LLM prompt.
         contracts: A string containing the contract code to scan.
+        profile: The profile to use for the context scan.
 
     Returns:
         A dictionary containing the summary, contracts, and an array of findings.
+
+    Raises:
+        EmptyResponseError: If the LLM response is empty.
+        InvalidJSONError: If no valid JSON content is found in the LLM response.
+        InvalidFormatError: If the LLM response format is invalid.
+        JSONParsingError: If the JSON parsing fails.
+        NetworkError: If a network error occurs.
+        UnexpectedError: For any other unexpected errors.
     """
 
     # Determine if system prompt should be used
@@ -49,7 +67,7 @@ async def perform_context_scan(
         )
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
-            raise ValueError("LLM response was None or empty.")
+            raise EmptyResponseError("LLM response was None or empty.")
 
         # Use regex to extract the content between the triple backticks ```json ... ```
         json_match = re.search(r"```json(.*?)```", prediction, re.DOTALL)
@@ -57,7 +75,7 @@ async def perform_context_scan(
         if json_match:
             prediction = json_match.group(1).strip()
         else:
-            raise ValueError("No valid JSON content found in the LLM response.")
+            raise InvalidJSONError("No valid JSON content found in the LLM response.")
 
         if prediction.startswith('"') and prediction.endswith('"'):
             prediction = prediction[1:-1].replace('\\"', '"')
@@ -66,54 +84,25 @@ async def perform_context_scan(
 
         # Ensure the parsed response is a list of findings
         if not isinstance(findings_json, list):
-            raise ValueError("Expected the LLM response to be a list of findings.")
+            raise InvalidFormatError("Expected the LLM response to be a list of findings.")
 
         # Convert the JSON response into a list of Finding objects
         findings = [Finding(**finding) for finding in findings_json]
 
+    except ContextScanException:
+        raise
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode JSON: {e}")
-        findings = [
-            {
-                "Issue": "Parsing Error",
-                "Severity": "Error",
-                "Contracts": [],
-                "Description": "Failed to parse LLM response as valid JSON.",
-            }
-        ]
-
+        logger.error(f"JSON Parsing Error: {str(e)}")
+        raise JSONParsingError("Failed to parse LLM response as valid JSON.") from e
     except ValueError as e:
-        logger.error(f"Error in LLM response: {e}")
-        findings = [
-            {
-                "Issue": "Response Error",
-                "Severity": "Error",
-                "Contracts": [],
-                "Description": str(e),
-            }
-        ]
-
+        logger.error(f"Value Error: {str(e)}")
+        raise InvalidFormatError(str(e)) from e
     except (ConnectionError, TimeoutError) as e:
-        logger.error(f"Network-related error: {e}")
-        findings = [
-            {
-                "Issue": "Network Error",
-                "Severity": "Error",
-                "Contracts": [],
-                "Description": "A network error occurred while processing the response.",
-            }
-        ]
-
+        logger.error(f"Network Error: {str(e)}")
+        raise NetworkError("A network error occurred while processing the response.") from e
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        findings = [
-            {
-                "Issue": "Unexpected Error",
-                "Severity": "Error",
-                "Contracts": [],
-                "Description": f"An unexpected error occurred: {e}",
-            }
-        ]
+        logger.exception(f"Unexpected Error: {str(e)}")
+        raise UnexpectedError(f"An unexpected error occurred: {str(e)}") from e
 
     # Return the structured result
     return {"summary": summary, "contracts": contracts, "scan_result": findings}
