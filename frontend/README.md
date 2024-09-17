@@ -1,56 +1,40 @@
-# Material UI - Vite.js in TypeScript example
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-## How to use
+## Getting Started
 
-Download the example [or clone the repo](https://github.com/mui/material-ui):
-
-<!-- #default-branch-switch -->
+First, run the development server:
 
 ```bash
-curl https://codeload.github.com/mui/material-ui/tar.gz/next | tar -xz --strip=2 material-ui-next/examples/material-ui-vite-ts
-cd material-ui-vite-ts
-```
-
-Install it and run:
-
-```bash
-npm install
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-or:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-<!-- #default-branch-switch -->
+You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
 
-[![Edit on StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/mui/material-ui/tree/next/examples/material-ui-vite-ts)
+[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
 
-[![Edit on CodeSandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/github/mui/material-ui/tree/next/examples/material-ui-vite-ts)
+The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
 
-## The idea behind the example
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-This example uses [Vite.js](https://github.com/vitejs/vite).
-It includes `@mui/material` and its peer dependencies, including [Emotion](https://emotion.sh/docs/introduction), the default style engine in Material UI v5.
+## Learn More
 
-## What's next?
+To learn more about Next.js, take a look at the following resources:
 
-<!-- #default-branch-switch -->
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-You now have a working example project.
-You can head back to the documentation and continue by browsing the [templates](https://next.mui.com/material-ui/getting-started/templates/) section.
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-# Run the agent using docker
-This project contains a Streamlit application that uses several Python libraries including `pandas`, `openpyxl`, `bs4`, and `langchain`. The application also requires an OpenAI API key.
+## Deploy on Vercel
 
-## Requirements
-- Docker 26.1.3
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-## Build the Docker Image
-Run the following command to build the Docker image:
-```bash
-docker build -t promptplayground .
-```
-## Run the Docker Container
-Run the Docker container with the following command, passing the OPENAI_API_KEY environment variable:
-```bash
-docker run -p 8501:8501 -e BACKEND_URL=promt_playground_backend_url_here promptplayground
-```
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.

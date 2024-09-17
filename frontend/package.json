@@ -1,32 +1,29 @@
 {
-  "name": "material-ui-vite-ts",
+  "name": "my-app",
+  "version": "0.1.0",
   "private": true,
-  "version": "5.0.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "@emotion/react": "latest",
-    "@emotion/styled": "latest",
-    "@monaco-editor/react": "^4.6.0",
-    "@mui/icons-material": "next",
-    "@mui/material": "next",
-    "@replit/codemirror-lang-solidity": "^6.0.2",
-    "@types/diff": "^5.2.1",
-    "@ui-schema/kit-codemirror": "^0.1.0-alpha.1",
-    "diff": "^5.2.0",
-    "dotenv": "^16.4.5",
-    "react": "latest",
-    "react-dom": "latest"
+    "@nextui-org/react": "^2.4.7",
+    "axios": "^1.7.7",
+    "framer-motion": "^11.5.4",
+    "next": "14.2.11",
+    "react": "^18",
+    "react-dom": "^18"
   },
   "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@vitejs/plugin-react": "latest",
-    "typescript": "latest",
-    "vite": "latest"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.11",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }
