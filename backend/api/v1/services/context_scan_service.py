@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 import re
 from typing import List, Optional
@@ -13,7 +11,6 @@ from api.v1.schemas.context_scan_exceptions import (
     ContextScanException,
     EmptyResponseError,
     InvalidFormatError,
-    InvalidJSONError,
     JSONParsingError,
     NetworkError,
     UnexpectedError,
@@ -64,26 +61,49 @@ async def perform_context_scan(
         if not prediction or not prediction.strip():
             raise EmptyResponseError("LLM response was None or empty.")
 
-        # Use regex to extract JSON content from the response
-        json_match = re.search(r"```json\s*(.*?)```", prediction, re.DOTALL)
+        # Try to extract JSON content from the response
+        json_matches = re.findall(r"```json\s*(.*?)```", prediction, re.DOTALL)
 
-        if json_match:
-            prediction = json_match.group(1).strip()
+        if not json_matches:
+            logger.warning("No valid JSON content found in the LLM response.")
+            # Attempt to fix common JSON issues
+            cleaned_prediction = _clean_invalid_json(prediction)
+            try:
+                findings_json = json.loads(cleaned_prediction)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON Parsing Error after cleaning: {str(e)}")
+                raise JSONParsingError("Failed to parse LLM response as valid JSON.") from e
+            # Ensure the parsed response is a list of findings
+            if not isinstance(findings_json, list):
+                raise InvalidFormatError("Expected the LLM response to be a list of findings.")
+            findings = [Finding(**finding) for finding in findings_json]
         else:
-            raise InvalidJSONError("No valid JSON content found in the LLM response.")
+            # Attempt to parse each JSON block
+            findings = []
+            for json_str in json_matches:
+                try:
+                    # Clean the JSON string
+                    json_str = json_str.strip()
+                    if json_str.startswith('"') and json_str.endswith('"'):
+                        json_str = json_str[1:-1].replace('\\"', '"')
 
-        # Clean up JSON string if necessary
-        if prediction.startswith('"') and prediction.endswith('"'):
-            prediction = prediction[1:-1].replace('\\"', '"')
+                    findings_json = json.loads(json_str)
 
-        findings_json = json.loads(prediction)
+                    # Ensure it's a list
+                    if not isinstance(findings_json, list):
+                        raise InvalidFormatError(
+                            "Expected the LLM response to be a list of findings."
+                        )
 
-        # Ensure the parsed response is a list of findings
-        if not isinstance(findings_json, list):
-            raise InvalidFormatError("Expected the LLM response to be a list of findings.")
+                    # Convert to Finding objects
+                    findings.extend([Finding(**finding) for finding in findings_json])
 
-        # Convert the JSON response into a list of Finding objects
-        findings = [Finding(**finding) for finding in findings_json]
+                except json.JSONDecodeError as e:
+                    logger.error(f"JSON Parsing Error in one of the JSON blocks: {str(e)}")
+                    continue  # Skip invalid JSON blocks
+
+            if not findings:
+                raise JSONParsingError("Failed to parse any valid findings from LLM response.")
 
     except ContextScanException:
         raise
@@ -102,3 +122,40 @@ async def perform_context_scan(
 
     # Return the list of findings
     return findings
+
+
+def _clean_invalid_json(raw_json: str) -> str:
+    """
+    Attempts to clean and fix common issues in invalid JSON strings.
+
+    Args:
+        raw_json (str): The raw JSON string to clean.
+
+    Returns:
+        str: The cleaned JSON string.
+    """
+    import re
+
+    # Remove any leading/trailing text before/after JSON array
+    json_start = raw_json.find("[")
+    json_end = raw_json.rfind("]") + 1
+    if json_start != -1 and json_end != -1:
+        raw_json = raw_json[json_start:json_end]
+    else:
+        # If proper JSON array brackets are not found, return the original string
+        return raw_json
+
+    # Remove comments (e.g., // comment or /* comment */)
+    raw_json = re.sub(r"//.*", "", raw_json)
+    raw_json = re.sub(r"/\*[\s\S]*?\*/", "", raw_json)
+
+    # Remove extra commas before closing brackets
+    raw_json = re.sub(r",\s*(\]|\})", r"\1", raw_json)
+
+    # Replace single quotes with double quotes
+    raw_json = raw_json.replace("'", '"')
+
+    # Remove any control characters
+    raw_json = "".join(c for c in raw_json if ord(c) >= 32)
+
+    return raw_json

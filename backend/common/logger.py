@@ -4,8 +4,8 @@ import sys
 # Create a logger
 logger = logging.getLogger(__name__)
 
-# Set the logging level
-logger.setLevel(logging.INFO)
+# Set the logging level to DEBUG
+logger.setLevel(logging.DEBUG)
 
 # Create a formatter
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")

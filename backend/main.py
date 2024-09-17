@@ -9,6 +9,7 @@ from api.v1.endpoints import (
     critics,
     generate_summary,
     health_check,
+    scan_results,
 )
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -60,11 +61,13 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# Include routers
 app.include_router(health_check.router, prefix="/api/v1")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
+app.include_router(scan_results.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
