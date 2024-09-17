@@ -1,25 +1,27 @@
 SUMMARY_PROMPT = """
-You are given a flattened smart contract. Your task is to summarizes the protocol and identify its type. The summary should be complete and detailed, and give a high level overview of the protocol.
-The purpose of this summary is to provide a quick overview of the protocol, to be used for further analysis, and optionnaly to be adding to a documentation.
-Do not mention security issues, and only focus on the protocol itself: the main features, how it works, its architecture, and main entrypoints.
+You are given a flattened smart contract. Your task is to summarize the protocol and identify its type. The summary should be complete and detailed, giving a high-level overview of the protocol.
 
-## The response should be in the following JSON format:
+Do not mention security issues, and focus only on the protocol itself: its main features, how it works, its architecture, and main entry points.
+
+**Response Format:**
+
+Your response should be in the following JSON format, without any additional text or explanations:
 
 ```json
 {{
-    "summary": "Description of protocol"
-    "type": Type of protocol
+    "summary": "Description of protocol",
+    "type": "Type of protocol"
 }}
 ```
 
 ## The type of the protocol can only be on of the following:
 
-DAO
-DEFI
-IDENTITY
-NFT
-UTILITY
-DEFAULT
+- DEFI (Focused on financial products like lending, borrowing, trading, and derivatives.)
+- DAO (Designed for decentralized governance, voting systems, and managing DAOs.)
+- IDENTITY (Focused on decentralized identity management and access control mechanisms.)
+- NFT (Used for managing NFTs, digital collectibles, games and gaming assets, and tokenized art.)
+- UTILITY (Provide infrastructure like oracles, cross-chain bridges, and reusable libraries.)
+- DEFAULT (If the type is not clear, pick DEFAULT.)
 
 Pick the most appropriate type from the list above. If the type is not clear, pick DEFAULT.
 

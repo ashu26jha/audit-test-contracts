@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Dict
+from typing import Tuple
 
 from api.v1.prompts.generate_summary_prompts import SUMMARY_PROMPT
 from common import logger
@@ -8,21 +8,20 @@ from common.send_prompt_to_LLM import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_SUMMARY
 
 
-async def generate_summary(contracts: str) -> Dict[str, str]:
+async def generate_summary(contracts: str) -> Tuple[str, str]:
     """
     Generates a summary and type for the given contract text.
 
     Args:
-        contract: The contract text to summarize.
+        contracts: The contract text to summarize.
 
     Returns:
-        A dictionary containing 'summary' and 'type'.
+        A tuple containing (summary, contract_type).
 
     Raises:
         Exception: If an error occurs during processing.
     """
 
-    # Concatenate the prompt with the contract
     prompt = SUMMARY_PROMPT.format(contracts=contracts)
 
     try:
@@ -36,9 +35,9 @@ async def generate_summary(contracts: str) -> Dict[str, str]:
             # Parse the JSON content
             data = json.loads(json_content)
             summary = data.get("summary", "")
-            type = data.get("type", "")
+            contract_type = data.get("type", "")
 
-            return {"summary": summary, "type": type}
+            return summary, contract_type
         else:
             logger.error("Failed to extract JSON content from LLM response.")
             raise Exception("Failed to extract summary from LLM response.")

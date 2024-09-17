@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from fastapi.responses import RedirectResponse
-from starlette.requests import Request
 import config.settings as settings
-from api.v1.models.user import User
-from api.v1.services.github_service import GitHubService
-from api.v1.services.auth_service import create_access_token, get_current_user
-from api.v1.schemas.user_schema import UserResponse
 import httpx
+from api.v1.models.user import User
+from api.v1.schemas.user_schema import UserResponse
+from api.v1.services.auth_service import create_access_token, get_current_user
+from api.v1.services.github_service import GitHubService
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from starlette.requests import Request
 
 router = APIRouter()
 
@@ -23,7 +23,6 @@ github_service = GitHubService()
 async def github_login():
     return RedirectResponse(
         f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=user:email read:org"
-
     )
 
 
@@ -60,7 +59,7 @@ async def github_callback(code: str, request: Request):
             githubId=str(user_data["id"]),
             username=user_data["login"],
             email=user_data["email"],
-            accessToken=access_token
+            accessToken=access_token,
         )
         await user.create()
     else:

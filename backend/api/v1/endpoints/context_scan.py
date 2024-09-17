@@ -18,12 +18,12 @@ router = APIRouter()
 @router.post("/context-scan", response_model=context_scan_schema.ContextScanResponse)
 async def perform_context_scan(request: context_scan_schema.ContextScanRequest):
     try:
-        result = await context_scan_service.perform_context_scan(
+        findings = await context_scan_service.perform_context_scan(
             request.summary,
             request.contracts,
             request.profile,
         )
-        return context_scan_schema.ContextScanResponse(**result)
+        return context_scan_schema.ContextScanResponse(findings=findings)
     except EmptyResponseError as e:
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail=str(e))
     except (InvalidJSONError, InvalidFormatError, JSONParsingError) as e:

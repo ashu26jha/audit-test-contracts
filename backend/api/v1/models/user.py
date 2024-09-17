@@ -1,8 +1,8 @@
-from beanie import Document, Indexed
-from pydantic import EmailStr
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from bson import ObjectId
+
+from beanie import Document, Indexed
+from pydantic import ConfigDict, EmailStr, Field
 
 
 class User(Document):
@@ -10,23 +10,24 @@ class User(Document):
     email: Indexed(EmailStr, unique=True)
     githubId: Indexed(str, unique=True)
     accessToken: str
-    createdAt: datetime = datetime.utcnow()
-    updatedAt: datetime = datetime.utcnow()
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
         name = "users"
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "username": "johndoe",
                 "email": "johndoe@example.com",
                 "githubId": "12345678",
                 "accessToken": "github_access_token_here",
-                "createdAt": datetime.utcnow(),
-                "updatedAt": datetime.utcnow()
+                "createdAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc),
             }
         }
+    )
 
     @classmethod
     async def by_email(cls, email: str) -> Optional["User"]:

@@ -1,26 +1,25 @@
-from __future__ import annotations
-
 import os
+from contextlib import asynccontextmanager
 
+import config.settings as settings
 import uvicorn
+from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
     context_scan,
     critics,
     generate_summary,
-    health_check,
     github,
+    health_check,
+    scan_results,
 )
+from api.v1.models.user import User
+from beanie import init_beanie
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
-import config.settings as settings
-from beanie import init_beanie
-from contextlib import asynccontextmanager
-from api.v1.models.user import User
-from api.v1.auth import github_auth
 
 
 @asynccontextmanager
@@ -87,11 +86,13 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
+# Include routers
 app.include_router(health_check.router, prefix="/api/v1")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
+app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(github_auth.router, prefix="/api/v1/auth")
 
