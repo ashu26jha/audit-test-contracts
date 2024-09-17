@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 from api.v1.prompts.context_scan_prompts import (
     CONTEXT_PROMPT_WITH_SUMMARY,
@@ -27,9 +27,9 @@ from config.settings import LLM_MODEL
 
 async def perform_context_scan(
     summary: Optional[str], contracts: str, profile: Profiles = Profiles.NONE
-) -> Dict[str, Union[Optional[str], str, List[Finding]]]:
+) -> List[Finding]:
     """
-    Performs a context scan using an LLM and returns structured findings in a dict.
+    Performs a context scan using an LLM and returns structured findings as a list.
 
     Args:
         summary: An optional summary to provide context for the LLM prompt.
@@ -37,15 +37,10 @@ async def perform_context_scan(
         profile: The profile to use for the context scan.
 
     Returns:
-        A dictionary containing the summary, contracts, and an array of findings.
+        A list of Finding objects representing the scan results.
 
     Raises:
-        EmptyResponseError: If the LLM response is empty.
-        InvalidJSONError: If no valid JSON content is found in the LLM response.
-        InvalidFormatError: If the LLM response format is invalid.
-        JSONParsingError: If the JSON parsing fails.
-        NetworkError: If a network error occurs.
-        UnexpectedError: For any other unexpected errors.
+        Various exceptions for different error conditions.
     """
 
     # Determine if system prompt should be used
@@ -59,24 +54,25 @@ async def perform_context_scan(
     )
 
     try:
-        # Send the prompt to the LLM asynchronously and log the raw response
+        # Send the prompt to the LLM asynchronously
         message_history = load_profile(profile)
-        print(message_history)
         prediction = await send_prompt_to_llm_async(
             LLM_MODEL, prompt, system_prompt, message_history
         )
+
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
             raise EmptyResponseError("LLM response was None or empty.")
 
-        # Use regex to extract the content between the triple backticks ```json ... ```
-        json_match = re.search(r"```json(.*?)```", prediction, re.DOTALL)
+        # Use regex to extract JSON content from the response
+        json_match = re.search(r"```json\s*(.*?)```", prediction, re.DOTALL)
 
         if json_match:
             prediction = json_match.group(1).strip()
         else:
             raise InvalidJSONError("No valid JSON content found in the LLM response.")
 
+        # Clean up JSON string if necessary
         if prediction.startswith('"') and prediction.endswith('"'):
             prediction = prediction[1:-1].replace('\\"', '"')
 
@@ -104,5 +100,5 @@ async def perform_context_scan(
         logger.exception(f"Unexpected Error: {str(e)}")
         raise UnexpectedError(f"An unexpected error occurred: {str(e)}") from e
 
-    # Return the structured result
-    return {"summary": summary, "contracts": contracts, "scan_result": findings}
+    # Return the list of findings
+    return findings

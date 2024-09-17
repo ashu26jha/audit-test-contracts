@@ -8,10 +8,17 @@ from pydantic import BaseModel, Field
 
 
 class AuditAgentRequest(BaseModel):
-    contracts: str = Field(..., description="Flattened smart contracts content")
-    profile: Profiles = Field(Profiles.NONE, description="Profile to use for the scan")
+    repositoryURL: str = Field(..., description="URL of the GitHub repository to scan")
+    contractFiles: List[str] = Field(
+        ...,
+        description="Array of relative file paths within the repository (e.g., 'contracts/MyContract.sol')",
+    )
+    authToken: Optional[str] = Field(
+        None, description="Authentication token for private repositories (optional)"
+    )
 
 
 class AuditAgentResponse(BaseModel):
     summary: Optional[str] = Field(None, description="Generated summary of the contracts")
+    type: Profiles = Field(..., description="Type of the contracts, based on the detected profile")
     scan_result: List[Finding] = Field(..., description="The result of the context scan")

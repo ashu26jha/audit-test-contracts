@@ -43,15 +43,14 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
         "Test Summary", "Test Contracts", Profiles.NFT
     )
 
-    assert result["summary"] == "Test Summary"
-    assert result["contracts"] == "Test Contracts"
-    assert isinstance(result["scan_result"], list)
-    assert len(result["scan_result"]) == 1
-    assert isinstance(result["scan_result"][0], Finding)
-    assert result["scan_result"][0].Issue == "Test Issue"
-    assert result["scan_result"][0].Severity == "High"
-    assert result["scan_result"][0].Contracts == ["TestContract"]
-    assert result["scan_result"][0].Description == "Test Description"
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert isinstance(result[0], Finding)
+    assert result[0].Issue == "Test Issue"
+    assert result[0].Severity == "High"
+    assert result[0].Contracts == ["TestContract"]
+    assert result[0].Description == "Test Description"
+    assert result[0].Recommendation == "Test Recommendation"
 
 
 @pytest.mark.asyncio
@@ -127,21 +126,18 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
     # List of currently implemented profiles
     implemented_profiles = [Profiles.NFT]
 
-    # for profile in Profiles:
     for profile in implemented_profiles:
         result = await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", profile
         )
-        assert result["summary"] == "Test Summary"
-        assert result["contracts"] == "Test Contracts"
-        assert isinstance(result["scan_result"], list)
-        assert len(result["scan_result"]) == 1
-        assert isinstance(result["scan_result"][0], Finding)
-        assert result["scan_result"][0].Issue == "Test Issue"
-        assert result["scan_result"][0].Severity == "High"
-        assert result["scan_result"][0].Contracts == ["TestContract"]
-        assert result["scan_result"][0].Description == "Test Description"
-        assert result["scan_result"][0].Recommendation == "Test Recommendation"
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert isinstance(result[0], Finding)
+        assert result[0].Issue == "Test Issue"
+        assert result[0].Severity == "High"
+        assert result[0].Contracts == ["TestContract"]
+        assert result[0].Description == "Test Description"
+        assert result[0].Recommendation == "Test Recommendation"
 
 
 @pytest.mark.asyncio
@@ -171,11 +167,9 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     )
 
     # Verify the results
-    assert result["summary"] == "Test Summary Claude"
-    assert result["contracts"] == "Test Contracts Claude"
-    assert isinstance(result["scan_result"], list)
-    assert len(result["scan_result"]) == 1
-    finding = result["scan_result"][0]
+    assert isinstance(result, list)
+    assert len(result) == 1
+    finding = result[0]
     assert isinstance(finding, Finding)
     assert finding.Issue == "Test Issue Claude"
     assert finding.Severity == "Medium"
@@ -212,11 +206,9 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
     )
 
     # Verify the results
-    assert result["summary"] == "Test Summary No Profile"
-    assert result["contracts"] == "Test Contracts No Profile"
-    assert isinstance(result["scan_result"], list)
-    assert len(result["scan_result"]) == 1
-    finding = result["scan_result"][0]
+    assert isinstance(result, list)
+    assert len(result) == 1
+    finding = result[0]
     assert isinstance(finding, Finding)
     assert finding.Issue == "Test Issue No Profile"
     assert finding.Severity == "Low"
@@ -245,6 +237,5 @@ def test_context_scan_endpoint():
         print("Response content:", response.text)
     assert response.status_code == 200
     result = response.json()
-    assert "summary" in result
-    assert "contracts" in result
-    assert "scan_result" in result
+    assert "findings" in result
+    assert isinstance(result["findings"], list)
