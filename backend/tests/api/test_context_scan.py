@@ -4,7 +4,6 @@ import pytest
 from api.v1.schemas.context_scan_exceptions import (
     EmptyResponseError,
     InvalidFormatError,
-    InvalidJSONError,
     JSONParsingError,
 )
 from api.v1.schemas.context_scan_schema import Finding
@@ -27,7 +26,7 @@ def mock_send_prompt_to_llm_async():
 
 @pytest.mark.asyncio
 async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
-    mock_send_prompt_to_llm_async.return_value = """```json
+    mock_send_prompt_to_llm_async.return_value = """
     [
         {
             "Issue": "Test Issue",
@@ -37,7 +36,7 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
             "Recommendation": "Test Recommendation"
         }
     ]
-    ```"""
+    """
 
     result = await context_scan_service.perform_context_scan(
         "Test Summary", "Test Contracts", Profiles.NFT
@@ -69,20 +68,6 @@ async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async
 async def test_perform_context_scan_no_json_content(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = "No JSON content here."
 
-    with pytest.raises(InvalidJSONError) as exc_info:
-        await context_scan_service.perform_context_scan(
-            "Test Summary", "Test Contracts", Profiles.NFT
-        )
-
-    assert str(exc_info.value) == "No valid JSON content found in the LLM response."
-
-
-@pytest.mark.asyncio
-async def test_perform_context_scan_invalid_json_syntax(mock_send_prompt_to_llm_async):
-    mock_send_prompt_to_llm_async.return_value = """```json
-    Invalid JSON syntax
-    ```"""
-
     with pytest.raises(JSONParsingError) as exc_info:
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
@@ -92,14 +77,28 @@ async def test_perform_context_scan_invalid_json_syntax(mock_send_prompt_to_llm_
 
 
 @pytest.mark.asyncio
+async def test_perform_context_scan_invalid_json_syntax(mock_send_prompt_to_llm_async):
+    mock_send_prompt_to_llm_async.return_value = """
+    Invalid JSON syntax
+    """
+
+    with pytest.raises(JSONParsingError) as exc_info:
+        await context_scan_service.perform_context_scan(
+            "Test Summary", "Test Contracts", Profiles.NFT
+        )
+
+    assert "Failed to parse LLM response as valid JSON." in str(exc_info.value)
+
+
+@pytest.mark.asyncio
 async def test_perform_context_scan_invalid_json_structure(
     mock_send_prompt_to_llm_async,
 ):
-    mock_send_prompt_to_llm_async.return_value = """```json
+    mock_send_prompt_to_llm_async.return_value = """
     {
         "Invalid": "JSON"
     }
-    ```"""
+    """
 
     with pytest.raises(InvalidFormatError) as exc_info:
         await context_scan_service.perform_context_scan(
@@ -111,7 +110,7 @@ async def test_perform_context_scan_invalid_json_structure(
 
 @pytest.mark.asyncio
 async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_async):
-    mock_send_prompt_to_llm_async.return_value = """```json
+    mock_send_prompt_to_llm_async.return_value = """
     [
         {
             "Issue": "Test Issue",
@@ -121,10 +120,9 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
             "Recommendation": "Test Recommendation"
         }
     ]
-    ```"""
+    """
 
-    # List of currently implemented profiles
-    implemented_profiles = [Profiles.NFT]
+    implemented_profiles = [Profiles.NFT, Profiles.DEFI, Profiles.DAO]
 
     for profile in implemented_profiles:
         result = await context_scan_service.perform_context_scan(
@@ -146,11 +144,9 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     Test the perform_context_scan function when using a Claude model.
     """
     # Monkeypatch the LLM_MODEL to simulate using a Claude model
-    monkeypatch.setattr(
-        "api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-sonnet-20240620"
-    )
+    monkeypatch.setattr("api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-20240620")
 
-    mock_send_prompt_to_llm_async.return_value = """```json
+    mock_send_prompt_to_llm_async.return_value = """
     [
         {
             "Issue": "Test Issue Claude",
@@ -160,7 +156,7 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
             "Recommendation": "Test Recommendation Claude"
         }
     ]
-    ```"""
+    """
 
     result = await context_scan_service.perform_context_scan(
         "Test Summary Claude", "Test Contracts Claude", Profiles.NFT
@@ -177,11 +173,11 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     assert finding.Description == "Test Description Claude"
     assert finding.Recommendation == "Test Recommendation Claude"
 
-    # Ensure that send_prompt_to_llm_async was called with 'claude-3-5-sonnet-20240620' as the model
+    # Ensure that send_prompt_to_llm_async was called with 'claude-3-5-20240620' as the model
     mock_send_prompt_to_llm_async.assert_awaited_once()
     called_args = mock_send_prompt_to_llm_async.call_args[0]
     model_used = called_args[0]
-    assert model_used == "claude-3-5-sonnet-20240620"
+    assert model_used == "claude-3-5-20240620"
 
 
 @pytest.mark.asyncio
@@ -189,7 +185,7 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
     """
     Test the perform_context_scan function when no profile is selected (Profiles.NONE).
     """
-    mock_send_prompt_to_llm_async.return_value = """```json
+    mock_send_prompt_to_llm_async.return_value = """
     [
         {
             "Issue": "Test Issue No Profile",
@@ -199,7 +195,7 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
             "Recommendation": "Test Recommendation No Profile"
         }
     ]
-    ```"""
+    """
 
     result = await context_scan_service.perform_context_scan(
         "Test Summary No Profile", "Test Contracts No Profile", Profiles.NONE
