@@ -1,8 +1,10 @@
+'use client';
+
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../../frontend/contexts/AuthContext';
 import { Button } from '@nextui-org/react';
-import RepositorySelector from '../../components/RepositorySelector';
+import RepositorySelector from '../../../frontend/components/RepositorySelector';
 
 const DashboardPage = () => {
   const { user, logout } = useAuth();

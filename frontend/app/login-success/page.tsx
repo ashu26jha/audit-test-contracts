@@ -1,13 +1,18 @@
+'use client';
+
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useAuth } from '../../../frontend/contexts/AuthContext';
 
 const LoginSuccessPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
   const { setToken } = useAuth();
 
   useEffect(() => {
-    const { token } = router.query;
     console.log('token', token);
     if (token) {
       if (typeof token === 'string') {
@@ -18,7 +23,7 @@ const LoginSuccessPage = () => {
         router.push('/login');
       }
     }
-  }, [router.query, router, setToken]);
+  }, [token, router, setToken]);
 
   return <div>Processing login...</div>;
 };
