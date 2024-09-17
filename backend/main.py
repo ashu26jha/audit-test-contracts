@@ -9,6 +9,7 @@ from api.v1.endpoints import (
     critics,
     generate_summary,
     health_check,
+    static_analyzer,
 )
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,6 +65,7 @@ app.include_router(health_check.router, prefix="/api/v1")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
+app.include_router(static_analyzer.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
 
 if __name__ == "__main__":

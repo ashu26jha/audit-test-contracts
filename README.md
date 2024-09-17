@@ -4,19 +4,33 @@
 
 ## Back-end
 
-To launch a local server:
+### Launch the backend
+
+#### To launch a local server:
 
 ```bash
 uvicorn main:app --reload
 ```
 
-To launch a prod server:
+#### To launch a docker image:
+
+```bash
+docker build -t backend-image -f backend/Dockerfile.backend .
+```
+
+Then run the container:
+
+```bash
+docker run -p 8000:8000 backend-image
+```
+
+#### To launch a prod server:
 
 ```bash
 fastapi run
 ```
 
-To run linter:
+### To run linter:
 
 ```bash
 cd backend
@@ -30,7 +44,7 @@ then:
 pre-commit run --all-files
 ```
 
-To Run tests:
+### To run tests:
 
 ```bash
 pytest backend/tests/ -v
