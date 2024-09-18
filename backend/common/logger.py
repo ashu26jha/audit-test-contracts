@@ -14,13 +14,8 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 stream_handler = logging.StreamHandler(sys.stdout)
 stream_handler.setFormatter(formatter)
 
-# Create a file handler (for logging to a file)
-file_handler = logging.FileHandler("app.log")
-file_handler.setFormatter(formatter)
-
-# Add the handlers to the logger
+# Add the handler to the logger
 logger.addHandler(stream_handler)
-logger.addHandler(file_handler)
 
 # Export the logger instance
 error = logger.error

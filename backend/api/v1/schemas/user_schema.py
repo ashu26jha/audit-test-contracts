@@ -9,6 +9,7 @@ from pydantic import (
     Field,
     GetCoreSchemaHandler,
     GetJsonSchemaHandler,
+    field_serializer,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
@@ -58,8 +59,11 @@ class UserInDB(UserBase):
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str},
     )
+
+    @field_serializer("id")
+    def serialize_object_id(self, object_id: PyObjectId):
+        return str(object_id)
 
 
 class UserResponse(UserBase):

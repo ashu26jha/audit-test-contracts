@@ -2,13 +2,13 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from beanie import Document, Indexed
-from pydantic import ConfigDict, EmailStr, Field
+from pydantic import ConfigDict, EmailStr, Field, field_serializer
 
 
 class User(Document):
-    username: Indexed(str, unique=True)
-    email: Indexed(EmailStr, unique=True)
-    githubId: Indexed(str, unique=True)
+    username: str = Indexed(unique=True)
+    email: EmailStr = Indexed(unique=True)
+    githubId: str = Indexed(unique=True)
     accessToken: str
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -28,6 +28,10 @@ class User(Document):
             }
         }
     )
+
+    @field_serializer("createdAt", "updatedAt")
+    def serialize_datetime(self, dt: datetime):
+        return dt.isoformat()
 
     @classmethod
     async def by_email(cls, email: str) -> Optional["User"]:

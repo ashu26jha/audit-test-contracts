@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get(
-    "/audit-agent/result/{scan_id}",
+    "/scans/{scan_id}",
     response_model=audit_agent_schema.AuditAgentResponse,
 )
 async def get_audit_agent_result(scan_id: UUID):
@@ -28,7 +28,7 @@ async def get_audit_agent_result(scan_id: UUID):
 
 
 @router.get(
-    "/audit-agent/result/partial/{scan_id}",
+    "/scans/partial/{scan_id}",
     response_model=audit_agent_schema.AuditAgentResponse,
 )
 async def get_partial_audit_agent_result(scan_id: UUID):
