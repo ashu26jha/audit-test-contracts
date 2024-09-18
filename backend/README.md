@@ -362,13 +362,70 @@ Performs a context-aware scan of smart contracts.
 }
 ```
 
-## Roadmap
+## Profiles
 
-- [x] Health check endpoint/service
-- [x] Context scan endpoint/service
-- [x] Generate summary endpoint/service
-- [ ] Critics endpoint/service
-- [ ] Flatten contracts endpoint/service
-- [ ] Scan restriction when not paid
-- [ ] Add missing profiles
-- [ ] Add test for all services
+<details>
+  <summary>DeFi</summary>
+  <ul>
+    <li>Total token: 34,865</li>
+    <li>NM0067: Tokens Input: 3,462</li>
+    <li>NM0074: Tokens Input: 18,726</li>
+    <li>NM0108: Tokens Input: 1,351</li>
+    <li>NM0227: Tokens Input: 11,326</li>
+  </ul>
+</details>
+
+<details>
+  <summary>NFT</summary>
+  <ul>
+    <li>NFT & Gaming, etc. Total token: 27,172</li>
+    <li>NM0062: Tokens Input: 1,627</li>
+    <li>NM0070: Tokens Input: 5,601</li>
+    <li>NM0073: Tokens Input: 6,234</li>
+    <li>NM0225: Tokens Input: 13,707</li>
+  </ul>
+</details>
+
+<details>
+  <summary>Utility</summary>
+  <ul>
+    <li>L2 Bridge & Oracle, etc. Total tokens: 25,001</li>
+    <li>NM0081: Tokens Input: 6,753</li>
+    <li>NM0234: Tokens Input: 6,254</li>
+    <li>NM0245: Tokens Input: 11,994</li>
+  </ul>
+</details>
+
+<details>
+  <summary>Identity</summary>
+  <ul>
+    <li>Identity Management & Wallets, etc. Total tokens: 31,659</li>
+    <li>NM0069: Tokens Input: 7,888</li>
+    <li>NM0083: Tokens Input: 1,715</li>
+    <li>NM0113: Token Input: 17,885</li>
+    <li>NM0160: Token Input: 4,171</li>
+  </ul>
+</details>
+
+<details>
+  <summary>DAO</summary>
+  <ul>
+    <li>Governance, etc. Total tokens: 29,347</li>
+    <li>NM00096: Tokens Input: 29,347</li>
+  </ul>
+</details>
+
+<details>
+  <summary>Default</summary>
+  <ul>
+    <li>Total tokens: 30,934</li>
+    <li>NM0062: Tokens Input: 1,627</li>
+    <li>NM0067: Tokens Input: 3,462</li>
+    <li>NM0070: Tokens Input: 5,601</li>
+    <li>NM0081: Token Input: 6,753</li>
+    <li>NM0083: Tokens Input: 1,715</li>
+    <li>NM0108: Tokens Input: 1,351</li>
+    <li>NM0160: Token Input: 4,171</li>
+    <li>NM0234: Tokens Input: 6,254</li>
+  </ul>
+</details>
