@@ -43,6 +43,8 @@ MONGODB_URL: str = os.getenv("MONGODB_URL")
 GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
 SECRET_KEY: str = os.getenv("SECRET_KEY")
+# Experimental LLM model for fuzzer
+LLM_MODEL_FUZZER = "o1-preview"
 ALGORITHM: str = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")

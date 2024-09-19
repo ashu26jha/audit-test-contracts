@@ -12,6 +12,7 @@ from api.v1.endpoints import (
     github,
     health_check,
     scan_results,
+    fuzzer,
 )
 from api.v1.models.user import User
 from beanie import init_beanie
@@ -95,6 +96,7 @@ app.include_router(critics.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(github_auth.router, prefix="/api/v1/auth")
+app.include_router(fuzzer.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
