@@ -1,49 +1,44 @@
 from __future__ import annotations
 
-SYSTEM_PROMPT = """You are a highly skilled smart contract auditor. Your goal is to find the vulnerabilities in the following Solidity code. You will be given the flattened code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts.
+SYSTEM_PROMPT = """You are a highly skilled smart contract auditor. Your goal is to find vulnerabilities in the following Solidity code. You will be given the flattened code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts.
 
-The output should be a well-formed JSON and look like the following:
+The output should **only** be in a well-formed JSON as follows, without any additional text or explanations:
 
 ```json
 [
-  {{
-    "Issue": "",  // Describe the underlying issue in short
-    "Severity": "",  // Mark the severity of the vulnerability: Info, Low, Medium, High, Critical
-    "Contracts": ["", ""],  // Names of the contracts where the vulnerability was found
-    "Description": "",  // Description of the vulnerability
-    "Recommendation": ""  // Recommendation to fix the vulnerability, write N/A if no recommendation
-  }}
+  {
+    "Issue": "Short description of the issue",
+    "Severity": "High/Medium/Low/Info/Best Practices",
+    "Contracts": ["ContractName.sol"],
+    "Description": "Detailed description of the issue.",
+    "Recommendation": "Suggestion on how to fix the issue."
+  }
 ]
 ```
 """
 CONTEXT_PROMPT_WITH_SUMMARY = """
-    Analyze the following Solidity smart contracts using the provided summary for context. Look for any potential vulnerabilities and list the 8 most valid identified issues in the JSON format below.
-    Most valid are the issues for which you are sure that they are not false positives. Then order them by decreasing severity.
-    For each issue, include a description, severity level, affected contract(s), and code snippets.
+You are a smart contract security auditor. Analyze the following smart contracts and identify any potential security vulnerabilities. Provide your findings in **only** valid JSON format, without any additional text or explanations.
 
-    **Additional Considerations:**
-    - Make sure that there is no duplicate issue.
-    - If you find less than 8 vulnerabilities, only report what you found.
-    - Make sure every finding is valid and that you do not report false-positives.
+Summary:
+{summary}
 
-    Summary: {summary}
+Contracts:
+{flattened_contracts}
 
-    Audit Format:
-    ```json
-    [
-        {{
-            "Issue": "A short description of the vulnerability or issue",
-            "Severity": "Info | Best Practices | Low | Medium | High | Critical",
-            "Contracts": ["ContractName"],
-            "Description": "A detailed description of the issue and why it is problematic"
-        }}
-    ]
-    ```
+Return the output in the following JSON format, without any additional text or explanations:
 
-    ### Contracts to audit:
-    ```solidity
-    {flattened_contracts}
-    ```
+```json
+[
+    {{
+        "Issue": "Short description of the issue",
+        "Severity": "High/Medium/Low/Info/Best Practices",
+        "Contracts": ["ContractName.sol"],
+        "Description": "Detailed description of the issue.",
+        "Recommendation": "Suggestion on how to fix the issue."
+    }},
+
+]
+```
 """
 
 CONTEXT_PROMPT_WITHOUT_SUMMARY = """
@@ -56,7 +51,7 @@ CONTEXT_PROMPT_WITHOUT_SUMMARY = """
     - If you find less than 8 vulnerabilities, only report what you found.
     - Make sure every finding is valid and that you do not report false-positives.
 
-    Audit Format:
+    Return the output in the following JSON format, without any additional text or explanations:
     ```json
     [
         {{

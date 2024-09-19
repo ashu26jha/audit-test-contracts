@@ -21,6 +21,4 @@ class ContextScanRequest(BaseModel):
 
 
 class ContextScanResponse(BaseModel):
-    summary: Optional[str] = Field(None, description="The summary provided for context")
-    contracts: str = Field(..., description="The smart contracts content that was scanned")
-    scan_result: List[Finding] = Field(..., description="The result of the context scan")
+    findings: List[Finding] = Field(..., description="The result of the context scan")

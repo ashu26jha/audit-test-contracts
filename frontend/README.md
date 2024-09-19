@@ -1,56 +1,53 @@
-# Material UI - Vite.js in TypeScript example
+# Next.js & NextUI Template
 
-## How to use
+This is a template for creating applications using Next.js 14 (app directory) and NextUI (v2).
 
-Download the example [or clone the repo](https://github.com/mui/material-ui):
+[Try it on CodeSandbox](https://githubbox.com/nextui-org/next-app-template)
 
-<!-- #default-branch-switch -->
+## Technologies Used
+
+- [Next.js 14](https://nextjs.org/docs/getting-started)
+- [NextUI v2](https://nextui.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Tailwind Variants](https://tailwind-variants.org)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Framer Motion](https://www.framer.com/motion/)
+- [next-themes](https://github.com/pacocoursey/next-themes)
+
+## How to Use
+
+### Use the template with create-next-app
+
+To create a new project based on this template using `create-next-app`, run the following command:
 
 ```bash
-curl https://codeload.github.com/mui/material-ui/tar.gz/next | tar -xz --strip=2 material-ui-next/examples/material-ui-vite-ts
-cd material-ui-vite-ts
+npx create-next-app -e https://github.com/nextui-org/next-app-template
 ```
 
-Install it and run:
+### Install dependencies
+
+You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
 
 ```bash
 npm install
+```
+
+### Run the development server
+
+```bash
 npm run dev
 ```
 
-or:
+### Setup pnpm (optional)
 
-<!-- #default-branch-switch -->
+If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
 
-[![Edit on StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/mui/material-ui/tree/next/examples/material-ui-vite-ts)
-
-[![Edit on CodeSandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/github/mui/material-ui/tree/next/examples/material-ui-vite-ts)
-
-## The idea behind the example
-
-This example uses [Vite.js](https://github.com/vitejs/vite).
-It includes `@mui/material` and its peer dependencies, including [Emotion](https://emotion.sh/docs/introduction), the default style engine in Material UI v5.
-
-## What's next?
-
-<!-- #default-branch-switch -->
-
-You now have a working example project.
-You can head back to the documentation and continue by browsing the [templates](https://next.mui.com/material-ui/getting-started/templates/) section.
-
-# Run the agent using docker
-This project contains a Streamlit application that uses several Python libraries including `pandas`, `openpyxl`, `bs4`, and `langchain`. The application also requires an OpenAI API key.
-
-## Requirements
-- Docker 26.1.3
-
-## Build the Docker Image
-Run the following command to build the Docker image:
 ```bash
-docker build -t promptplayground .
+public-hoist-pattern[]=*@nextui-org/*
 ```
-## Run the Docker Container
-Run the Docker container with the following command, passing the OPENAI_API_KEY environment variable:
-```bash
-docker run -p 8501:8501 -e BACKEND_URL=promt_playground_backend_url_here promptplayground
-```
+
+After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+
+## License
+
+Licensed under the [MIT license](https://github.com/nextui-org/next-app-template/blob/main/LICENSE).

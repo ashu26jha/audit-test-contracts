@@ -1,14 +1,26 @@
-from __future__ import annotations
-
 import logging
+import sys
 
-logging.basicConfig(level=logging.INFO)
+# Create a logger
 logger = logging.getLogger(__name__)
 
-# Expose logging methods
-debug = logger.debug
+# Set the logging level to DEBUG
+logger.setLevel(logging.DEBUG)
+
+# Create a formatter
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+# Create a stream handler (for console output)
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setFormatter(formatter)
+
+# Add the handler to the logger
+logger.addHandler(stream_handler)
+
+# Export the logger instance
+error = logger.error
+exception = logger.exception
 info = logger.info
 warning = logger.warning
-error = logger.error
+debug = logger.debug
 critical = logger.critical
-exception = logger.exception

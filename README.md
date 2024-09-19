@@ -1,82 +1,48 @@
-# yokai-ai-reviewer
+<div align="center">
+<h1><strong> Yokai Audit Agent </strong></h1>
+</div>
 
-## Front-end
+<br >
 
-## Back-end
+## Introduction
 
-### Launch the backend
+Yokai Audit Agent is an advanced smart contract auditing tool that leverages AI to detect vulnerabilities and provide comprehensive security analysis. Our platform offers automated scanning, detailed reporting, and expert insights to ensure the integrity and security of blockchain projects.
 
-#### To launch a local server:
+## Features
 
-```bash
-uvicorn main:app --reload
-```
+- AI-powered smart contract vulnerability detection
+- GitHub integration for seamless repository scanning
+- Detailed vulnerability reports with severity classifications
+- Context-aware analysis for more accurate results
+- Payment integration for full scan access
 
-#### To launch a docker image:
+## Project Structure
 
-```bash
-docker build -t backend-image -f backend/Dockerfile.backend .
-```
+This project is divided into two main components:
 
-Then run the container:
+- [Frontend](./frontend/README.md): The user interface for interacting with the Yokai Audit Agent.
+- [Backend](./backend/README.md): The API and core functionality of the Yokai Audit Agent.
 
-```bash
-docker run -p 8000:8000 backend-image
-```
+For specific information about each component, please refer to their respective README files.
 
-#### To launch a prod server:
+## Getting Started
 
-```bash
-fastapi run
-```
+To get started with Yokai Audit Agent, follow these steps:
 
-### To run linter:
+1. Clone the repository
+2. Set up the backend (see [Backend README](./backend/README.md))
+3. Set up the frontend (see Frontend README)
+4. Configure environment variables
+5. Run the application
 
-```bash
-cd backend
-```
+## Contributing
 
-```bash
-pre-commit install
-```
-then: 
-```bash
-pre-commit run --all-files
-```
+We welcome contributions to Yokai Audit Agent. Please read our contributing guidelines before submitting pull requests.
 
-### To run tests:
+## License
 
-```bash
-pytest backend/tests/ -v
-```
+[Specify your license here]
 
-with coverage:
+## Contact
 
-Add the following package:
-
-```bash
-pip install coverage pytest-cov
-```
-
-then run:
-
-```bash
-pytest backend/tests/ -v --cov=backend
-```
-
-or generate coverage report:
-
-```bash
-pytest backend/tests/ -v --cov=backend --cov-report=html
-``` 
-
-### roadmap:
-
-- [x] health check endpoint/service
-- [x] context scan endpoint/service
-- [x] generate summary endpoint/service
-- [ ] critics endpoint/service
-- [ ] flatten contracts endpoint/service
-- [ ] scan restriction when not paid
-- [ ] add missing profiles
-- [ ] add test for all services
+For any inquiries, please contact [Your Contact Information].

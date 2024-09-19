@@ -1,0 +1,53 @@
+import os
+import subprocess
+import tempfile
+from typing import List, Optional
+
+
+async def flatten_contracts(
+    repository_url: str, contract_files: List[str], auth_token: Optional[str] = None
+) -> str:
+    """
+    Clones the repository and retrieves the specified contract files, flattening them into a single string.
+
+    Args:
+        repository_url (str): The URL of the GitHub repository.
+        contract_files (List[str]): List of relative file paths within the repository.
+        auth_token (Optional[str]): Authentication token for private repositories.
+
+    Returns:
+        str: Concatenated content of all specified contract files.
+
+    Raises:
+        ValueError: If cloning fails or if a specified file is not found.
+    """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        try:
+            # Prepare clone command
+            if auth_token:
+                # Use the auth token in the URL securely
+                repository_url_with_auth = repository_url.replace(
+                    "https://", f"https://{auth_token}@"
+                )
+                clone_cmd = ["git", "clone", repository_url_with_auth, temp_dir]
+            else:
+                clone_cmd = ["git", "clone", repository_url, temp_dir]
+
+            subprocess.run(clone_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        except subprocess.CalledProcessError as e:
+            raise ValueError(
+                "Failed to clone repository. Please check the repository URL and authentication token."
+            ) from e
+
+        # Read and concatenate the contract files
+        flattened_code = ""
+        for file_path in contract_files:
+            full_path = os.path.join(temp_dir, file_path)
+            if not os.path.isfile(full_path):
+                raise ValueError(f"Contract file '{file_path}' not found in repository.")
+            with open(full_path, "r") as f:
+                flattened_code += f"// File: {file_path}\n"  # Add file path as a comment
+                flattened_code += f.read() + "\n\n"
+
+        return flattened_code
