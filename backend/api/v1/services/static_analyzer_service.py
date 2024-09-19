@@ -134,12 +134,6 @@ async def install_dependencies(
     # Check if lib directory exists and is not empty
     if os.path.exists(lib_dir) and os.listdir(lib_dir):
         logger.warning("lib directory is not empty. Removing existing contents.")
-        # for item in os.listdir(lib_dir):
-        #     item_path = os.path.join(lib_dir, item)
-        #     if os.path.isdir(item_path):
-        #         shutil.rmtree(item_path)
-        #     else:
-        #         os.remove(item_path)
         shutil.rmtree(lib_dir)
         os.makedirs(lib_dir)
 
