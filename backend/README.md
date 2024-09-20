@@ -362,6 +362,40 @@ Performs a context-aware scan of smart contracts.
 }
 ```
 
+### Running stripe:
+Fill your stripe API keys, please note WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
+You need to send a post request to `http://0.0.0.0:8000/api/v1/payments/create-checkout-session`
+```json
+{
+    "scanId": "String"
+}
+```
+
+The response is:
+```json
+{
+  "session_id": "String",
+  "URL": "String"
+}
+```
+
+To be able to use webhooks
+Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
+
+Login using: 
+```bash 
+stripe login
+```
+
+Run this command 
+```bash
+stripe listen --forward-to http://0.0.0.0:8000/api/v1/payments/webhook
+```
+
+The response of above command will be like, and paste your webhook URL:
+```bash
+Your webhook signing secret is whsec_ (^C to quit)
+```
 ## Profiles
 
 <details>

@@ -39,6 +39,10 @@ MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]
 LLM_MODEL = "gpt-4o-mini"
 LLM_MODEL_SUMMARY = "gpt-4o-mini"
 
+# Stripe API keys
+STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
+STRIPE_WEBHOOK_KEY = os.getenv("STRIPE_WEBHOOK_SECRET")
+
 MONGODB_URL: str = os.getenv("MONGODB_URL")
 GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")

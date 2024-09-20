@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
+import certifi
 import config.settings as settings
 import uvicorn
 from api.v1.auth import github_auth
@@ -11,7 +12,10 @@ from api.v1.endpoints import (
     generate_summary,
     github,
     health_check,
+    payment_success,
     scan_results,
+    stripe,
+    webhook,
 )
 from api.v1.models.user import User
 from beanie import init_beanie
@@ -24,7 +28,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     print("Connecting to MongoDB...")
     await init_beanie(database=client.myapp, document_models=[User])
     print("Connected to MongoDB")
@@ -95,6 +99,10 @@ app.include_router(critics.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(github_auth.router, prefix="/api/v1/auth")
+app.include_router(stripe.router, prefix="/api/v1/payments")
+app.include_router(payment_success.router, prefix="/api/v1/payments")
+app.include_router(webhook.router, prefix="/api/v1/payments")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
