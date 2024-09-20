@@ -26,15 +26,11 @@ class ScanResponse(BaseModel):
     completedAt: Optional[datetime]
     contractFiles: List[str]
     paid_status: bool
+    user_id: str = Field(exclude=True)
+    createdAt: datetime = Field(exclude=True)
+    updatedAt: datetime = Field(exclude=True)
 
-    model_config = ConfigDict(
-        from_attributes=True,
-        fields={
-            "user_id": {"exclude": True},
-            "createdAt": {"exclude": True},
-            "updatedAt": {"exclude": True},
-        },
-    )
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ScanResultResponse(BaseModel):

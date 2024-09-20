@@ -18,17 +18,32 @@ async def perform_audit_agent(
     current_user: User = Depends(get_current_user),
 ):
     try:
+        # Validate user access token
         if not current_user.accessToken:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User does not have a GitHub access token on file.",
             )
 
+        # Validate GitHub URL
+        if not audit_agent_service.validate_github_url(request.repositoryURL):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid GitHub repository URL.",
+            )
+
+        # Validate contract files
+        if not audit_agent_service.validate_contract_files(request.contractFiles):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid contract files. All files must have a .sol extension.",
+            )
+
         # Generate the scan ID
         scan_id = uuid4()
 
         # Create a new Scan object and store it
-        new_scan = Scan(  # Using Beanie model
+        new_scan = Scan(
             scan_id=scan_id,
             user_id=str(current_user.id),
             status="pending",

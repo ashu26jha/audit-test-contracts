@@ -353,7 +353,10 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 }
 ```
 
+
 **Note:** This endpoint is only available in development mode and is disabled in production.
+
+</details>
 
 ## Database Schema
 

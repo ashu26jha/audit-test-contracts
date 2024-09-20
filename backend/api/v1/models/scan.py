@@ -23,8 +23,8 @@ class Scan(Document):
         name = "scans"
 
     class Config:
-        orm_mode = True
-        schema_extra = {
+        from_attributes = True
+        json_schema_extra = {
             "example": {
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "user_id": "612e3a5e630d2b1a6f20fb4b",
@@ -51,9 +51,9 @@ class ScanResult(Document):
         name = "scan_results"
 
     class Config:
-        orm_mode = True
-        allow_population_by_field_name = True
-        schema_extra = {
+        from_attributes = True
+        populate_by_name = True
+        json_schema_extra = {
             "example": {
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "summary": "Generated summary of the scan.",

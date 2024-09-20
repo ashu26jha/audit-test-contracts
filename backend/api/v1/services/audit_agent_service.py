@@ -1,3 +1,4 @@
+import re
 from typing import List
 from uuid import UUID
 
@@ -10,6 +11,21 @@ from api.v1.services import (
 )
 from common.logger import logger
 from common.profiles import Profiles
+
+# Regular expression for GitHub repository URL validation
+GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
+
+
+def validate_github_url(url: str) -> bool:
+    """Validate if the given URL is a valid GitHub repository URL."""
+    return bool(re.match(GITHUB_URL_PATTERN, url))
+
+
+def validate_contract_files(contract_files: List[str]) -> bool:
+    """Validate if the given contract files are valid Solidity files."""
+    if not contract_files:
+        return False
+    return all(file.endswith(".sol") for file in contract_files)
 
 
 async def perform_audit_agent_background(
@@ -62,7 +78,8 @@ async def perform_audit_agent_background(
 
         logger.info(f"Completed audit scan with ID: {scan_id}")
 
-    except Exception:
-        logger.exception(f"Error in background audit scan with ID {scan_id}")
+    except Exception as e:
+        logger.exception(f"Error in background audit scan with ID {scan_id}: {str(e)}")
         # Update scan status to 'failed'
         await scan_history_service.update_scan_status(scan_id, "failed")
+        raise
