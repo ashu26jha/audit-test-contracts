@@ -13,10 +13,13 @@ from api.v1.endpoints import (
     github,
     health_check,
     payment_success,
+    scan_history,
     scan_results,
     stripe,
+    test_auth,
     webhook,
 )
+from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -30,7 +33,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     print("Connecting to MongoDB...")
-    await init_beanie(database=client.myapp, document_models=[User])
+    await init_beanie(
+        database=client.myapp,
+        document_models=[User, Scan, ScanResult],
+    )
     print("Connected to MongoDB")
     yield
     print("Closing MongoDB connection")
@@ -55,12 +61,6 @@ app.add_middleware(
 )
 
 security = HTTPBasic()
-
-
-# @app.on_event("startup")
-# async def startup_event():
-#     client = AsyncIOMotorClient(settings.MONGODB_URL)
-#     await init_beanie(database=client.myapp, document_models=[User])
 
 
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
@@ -97,12 +97,16 @@ app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
+app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(stripe.router, prefix="/api/v1/payments")
 app.include_router(payment_success.router, prefix="/api/v1/payments")
 app.include_router(webhook.router, prefix="/api/v1/payments")
 
+
+if settings.ENVIRONMENT == "development":
+    app.include_router(test_auth.router, prefix="/api/v1")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

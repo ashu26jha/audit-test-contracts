@@ -1,19 +1,21 @@
 import os
 import subprocess
 import tempfile
-from typing import List, Optional
+from typing import List
 
 
 async def flatten_contracts(
-    repository_url: str, contract_files: List[str], auth_token: Optional[str] = None
+    repository_url: str,
+    contractFiles: List[str],
+    auth_token: str,
 ) -> str:
     """
     Clones the repository and retrieves the specified contract files, flattening them into a single string.
 
     Args:
         repository_url (str): The URL of the GitHub repository.
-        contract_files (List[str]): List of relative file paths within the repository.
-        auth_token (Optional[str]): Authentication token for private repositories.
+        contractFiles (List[str]): List of relative file paths within the repository.
+        auth_token (str): Authentication token for private repositories.
 
     Returns:
         str: Concatenated content of all specified contract files.
@@ -42,12 +44,12 @@ async def flatten_contracts(
 
         # Read and concatenate the contract files
         flattened_code = ""
-        for file_path in contract_files:
+        for file_path in contractFiles:
             full_path = os.path.join(temp_dir, file_path)
             if not os.path.isfile(full_path):
                 raise ValueError(f"Contract file '{file_path}' not found in repository.")
             with open(full_path, "r") as f:
-                flattened_code += f"// File: {file_path}\n"  # Add file path as a comment
+                flattened_code += f"// File: {file_path}\n"
                 flattened_code += f.read() + "\n\n"
 
         return flattened_code

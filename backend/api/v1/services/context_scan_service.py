@@ -52,7 +52,8 @@ async def perform_context_scan(
 
     try:
         # Send the prompt to the LLM asynchronously
-        message_history = load_profile(profile)
+        # TODO: Add multi-profiles support
+        message_history = load_profile(Profiles.DEFAULT)
         prediction = await send_prompt_to_llm_async(
             LLM_MODEL, prompt, system_prompt, message_history
         )

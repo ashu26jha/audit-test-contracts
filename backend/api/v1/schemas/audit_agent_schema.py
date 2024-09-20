@@ -1,11 +1,10 @@
-from __future__ import annotations
-
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AuditAgentRequest(BaseModel):
@@ -14,21 +13,38 @@ class AuditAgentRequest(BaseModel):
         ...,
         description="Array of relative file paths within the repository (e.g., 'contracts/MyContract.sol')",
     )
-    authToken: Optional[str] = Field(
-        None, description="Authentication token for private repositories (optional)"
-    )
 
 
 class AuditAgentInitiateResponse(BaseModel):
     scan_id: UUID = Field(..., description="Unique identifier for the scan")
 
 
-class AuditAgentResponse(BaseModel):
-    scan_id: UUID = Field(..., description="Unique identifier for the scan")
-    summary: Optional[str] = Field(None, description="Generated summary of the contracts")
-    type: Optional[Profiles] = Field(
-        None, description="Type of the contracts, based on the detected profile"
+class ScanResponse(BaseModel):
+    scan_id: UUID
+    status: str
+    startedAt: datetime
+    completedAt: Optional[datetime]
+    contractFiles: List[str]
+    paid_status: bool
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        fields={
+            "user_id": {"exclude": True},
+            "createdAt": {"exclude": True},
+            "updatedAt": {"exclude": True},
+        },
     )
-    scan_result: List[Finding] = Field(
-        default_factory=list, description="The result of the context scan"
+
+
+class ScanResultResponse(BaseModel):
+    scan_id: UUID
+    summary: Optional[str]
+    type: Optional[Profiles]
+    findings: List[Finding]
+    createdAt: datetime
+    updatedAt: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True,
     )

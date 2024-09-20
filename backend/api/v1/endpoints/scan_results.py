@@ -1,47 +1,63 @@
 from uuid import UUID
 
-from api.v1.schemas import audit_agent_schema
-from api.v1.services.audit_agent_service import get_partial_scan_result, get_scan_result
-from fastapi import APIRouter, HTTPException, status
+from api.v1.models.user import User
+from api.v1.schemas.audit_agent_schema import ScanResultResponse
+from api.v1.services.auth_service import get_current_user
+from api.v1.services.scan_history_service import get_scan
+from api.v1.services.scan_results_service import (
+    get_full_scan_result,
+    get_partial_scan_result,
+)
+from fastapi import APIRouter, Depends, HTTPException, status
 
 router = APIRouter()
 
 
 @router.get(
-    "/scans/{scan_id}",
-    response_model=audit_agent_schema.AuditAgentResponse,
+    "/scans/{scan_id:uuid}",
+    response_model=ScanResultResponse,
 )
-async def get_audit_agent_result(scan_id: UUID):
-    result = await get_scan_result(scan_id)
-    if result is None:
+async def get_audit_agent_result(
+    scan_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
+    # Retrieve the scan metadata
+    scan = await get_scan(scan_id)
+    if scan is None or scan.user_id != str(current_user.id):
         raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail="Scan result is not ready yet. Please try again later.",
-            headers={"Retry-After": "10"},
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scan result not found.",
         )
-    elif isinstance(result, dict) and "error" in result:
+    # Retrieve the full scan result
+    scan_result = await get_full_scan_result(scan_id)
+    if scan_result is None:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during scan: {result['error']}",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scan result not found.",
         )
-    return result
+    return scan_result
 
 
 @router.get(
-    "/scans/partial/{scan_id}",
-    response_model=audit_agent_schema.AuditAgentResponse,
+    "/scans/partial/{scan_id:uuid}",
+    response_model=ScanResultResponse,
 )
-async def get_partial_audit_agent_result(scan_id: UUID):
-    result = await get_partial_scan_result(scan_id)
-    if result is None:
+async def get_partial_audit_agent_result(
+    scan_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
+    # Retrieve the scan metadata
+    scan = await get_scan(scan_id)
+    if scan is None or scan.user_id != str(current_user.id):
         raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail="Scan result is not ready yet. Please try again later.",
-            headers={"Retry-After": "10"},
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scan result not found.",
         )
-    elif isinstance(result, dict) and "error" in result:
+    # Retrieve the partial scan result
+    scan_result = await get_partial_scan_result(scan_id)
+    if scan_result is None:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during scan: {result['error']}",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Scan result not found.",
         )
-    return result
+    return scan_result

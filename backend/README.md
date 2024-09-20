@@ -10,7 +10,7 @@
 - [Running Tests](#running-tests)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
-- [Roadmap](#roadmap)
+- [Profiles](#profiles)
 
 ## Introduction
 
@@ -28,27 +28,27 @@ This is the backend component of the Yokai Audit Agent, providing the core funct
 
 1. Clone the repository:
 ```bash
-  git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
-  cd backend
+git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
+cd backend
 ```
 
 2. Install dependencies:
 ```bash
-   pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-3. Set up environment variables (create a .env file in the backend directory):
+3. Set up environment variables (create a `.env` file in the `backend` directory):
 ```bash
-  OPENAI_API_KEY=sk-...
-  ANTHROPIC_API_KEY=sk-...
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-...
 
-  LANGFUSE_SECRET_KEY=sk-lf-...
-  LANGFUSE_PUBLIC_KEY=pk-lf-...
-  LANGFUSE_HOST=https://...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_HOST=https://...
 
-  MONGODB_URL=your_mongodb_url
-  GITHUB_CLIENT_ID=your_github_client_id
-  GITHUB_CLIENT_SECRET=your_github_client_secret
+MONGODB_URL=your_mongodb_url
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
 ## Running the Server
@@ -60,7 +60,6 @@ uvicorn main:app --reload
 ```
 
 To launch a production server:
-
 ```bash
 fastapi run
 ```
@@ -126,13 +125,14 @@ Logs out the current user.
 Retrieves the current authenticated user's information.
 
 **Response:**
+```json
 {
   "id": "string",
   "username": "string",
   "email": "string",
   "githubId": "string"
 }
-
+```
 </details>
 
 ### GitHub Integration Endpoints
@@ -176,28 +176,31 @@ Retrieves the contents of a specific repository.
 Initiates a new scan for selected smart contracts.
 
 **Request Body:**
+```json
 {
   "repositoryURL": "string",
-  "contractFiles": ["string"],
-  "authToken": "string (optional)"
+  "contractFiles": ["string"]
 }
+```
 
 **Response:**
+```json
 {
   "scan_id": "UUID"
 }
-
+```
 </details>
 
 <details>
 <summary>GET /api/v1/scans/{scan_id}</summary>
 
-Retrieves the full results of a specific scan.
+Retrieves the results of a specific scan.
 
 **Parameters:**
 - `scan_id`: UUID of the scan (path parameter)
 
 **Response:**
+```json
 {
   "scan_id": "UUID",
   "summary": "string",
@@ -212,7 +215,7 @@ Retrieves the full results of a specific scan.
     }
   ]
 }
-
+```
 </details>
 
 <details>
@@ -226,6 +229,28 @@ Retrieves partial results of a specific scan (limited findings).
 **Response:** Same as full results, but with a limited number of findings.
 </details>
 
+<details>
+<summary>GET /api/v1/scans-history</summary>
+
+Retrieves the scan history for the authenticated user.
+
+**Response:**
+An array of scan objects, each including:
+```json
+{
+  "scan_id": "UUID",
+  "user_id": "string",
+  "status": "String",
+  "startedAt": "DateTime",
+  "completedAt": "DateTime",
+  "contractFiles": ["String"],
+  "paidStatus": "Boolean",
+  "createdAt": "DateTime",
+  "updatedAt": "DateTime"
+}
+```
+</details>
+
 ### Miscellaneous Endpoints
 
 <details>
@@ -234,11 +259,12 @@ Retrieves partial results of a specific scan (limited findings).
 Simple health check endpoint to verify API status.
 
 **Response:**
+```json
 {
   "status": "string",
   "version": "string"
 }
-
+```
 </details>
 
 <details>
@@ -247,16 +273,19 @@ Simple health check endpoint to verify API status.
 Generates a summary of smart contracts.
 
 **Request Body:**
+```json
 {
   "contracts": "string"
 }
+```
 
 **Response:**
+```json
 {
   "summary": "string",
   "type": "string"
 }
-
+```
 </details>
 
 <details>
@@ -265,13 +294,16 @@ Generates a summary of smart contracts.
 Performs a context-aware scan of smart contracts.
 
 **Request Body:**
+```json
 {
   "summary": "string (optional)",
   "contracts": "string",
   "profile": "string"
 }
+```
 
 **Response:**
+```json
 {
   "findings": [
     {
@@ -283,8 +315,45 @@ Performs a context-aware scan of smart contracts.
     }
   ]
 }
-
+```
 </details>
+
+<details>
+<summary>POST /api/v1/test-auth/token</summary>
+
+In development mode, you can generate JWT tokens for testing purposes using the `/api/v1/test-auth/token` endpoint.
+
+**Request Body:**
+
+- `username`: The username for which you want to generate a token.
+
+**Example Request:**
+
+```bash
+curl -X POST "http://localhost:8000/test-auth/token" \
+    -H "Content-Type: application/json" \
+    -d '{"username": "testuser"}'
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "<JWT_TOKEN>",
+  "token_type": "bearer",
+  "user": {
+    "id": "652f64e8c324d4eb783d4a61",
+    "username": "testuser",
+    "email": "testuser@example.com",
+    "githubId": "test_github_id",
+    "accessToken": "test_access_token",
+    "createdAt": "2023-10-01T12:00:00Z",
+    "updatedAt": "2023-10-01T12:00:00Z"
+  }
+}
+```
+
+**Note:** This endpoint is only available in development mode and is disabled in production.
 
 ## Database Schema
 
@@ -303,7 +372,7 @@ Performs a context-aware scan of smart contracts.
 }
 ```
 
-  ### Repositories Collection
+### Repositories Collection
 
 ```json
 {
@@ -463,3 +532,4 @@ Your webhook signing secret is whsec_ (^C to quit)
     <li>NM0234: Tokens Input: 6,254</li>
   </ul>
 </details>
+

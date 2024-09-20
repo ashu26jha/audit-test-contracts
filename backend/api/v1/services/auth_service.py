@@ -1,18 +1,14 @@
-from datetime import datetime, timedelta
-from time import timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import config.settings as settings
 from api.v1.models.user import User
 from bson import ObjectId
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl="https://github.com/login/oauth/authorize",
-    tokenUrl="https://github.com/login/oauth/access_token",
-)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
@@ -38,7 +34,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if user_id is None:
             raise credentials_exception
         user_id_obj = ObjectId(user_id)
-    except JWTError:
+    except (JWTError, ValueError):
         raise credentials_exception
     user = await User.find_one({"_id": user_id_obj})
     if user is None:
