@@ -8,7 +8,6 @@ from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
     context_scan,
-    critics,
     generate_summary,
     github,
     health_check,
@@ -22,7 +21,9 @@ from api.v1.endpoints import (
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
-from fastapi import Depends, FastAPI, HTTPException, status
+from common.error_handling import global_exception_handler
+from common.exceptions import UnauthorizedError
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -67,11 +68,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = os.getenv("API_USERNAME", "")
     correct_password = os.getenv("API_PASSWORD", "")
     if credentials.username != correct_username or credentials.password != correct_password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+        raise UnauthorizedError("Invalid credentials")
     return credentials.username
 
 
@@ -95,7 +92,6 @@ app.include_router(health_check.router, prefix="/api/v1")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
-app.include_router(critics.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
@@ -107,6 +103,8 @@ app.include_router(webhook.router, prefix="/api/v1/payments")
 
 if settings.ENVIRONMENT == "development":
     app.include_router(test_auth.router, prefix="/api/v1")
+
+app.add_exception_handler(Exception, global_exception_handler)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

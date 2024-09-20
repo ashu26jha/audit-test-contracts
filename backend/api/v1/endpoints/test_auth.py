@@ -3,7 +3,8 @@ from datetime import timedelta
 import config.settings as settings
 from api.v1.models.user import User
 from api.v1.services.test_auth_service import create_test_access_token, create_test_user
-from fastapi import APIRouter, HTTPException, status
+from common.exceptions import ValidationError
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -38,7 +39,4 @@ else:
 
     @router.post("/test-auth/token")
     async def disabled_endpoint():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Endpoint not available in production.",
-        )
+        raise ValidationError("Endpoint not available in production.")

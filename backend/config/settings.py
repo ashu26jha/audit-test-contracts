@@ -59,7 +59,7 @@ SECRET_KEY: str = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set.")
 ALGORITHM: str = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+ACCESS_TOKEN_EXPIRE_MINUTES: int = 10800  # 1 week
 
 
 ##################################################

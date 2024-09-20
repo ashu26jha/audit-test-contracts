@@ -11,8 +11,5 @@ router = APIRouter()
 
 @router.get("/scans-history", response_model=List[ScanResponse])
 async def get_scan_history(current_user: User = Depends(get_current_user)):
-    """
-    Retrieve the scan history for the authenticated user.
-    """
     scans = await get_scan_history_for_user(current_user)
     return [ScanResponse.model_validate(scan) for scan in scans]

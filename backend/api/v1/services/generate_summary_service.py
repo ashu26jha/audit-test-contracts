@@ -4,6 +4,7 @@ from typing import Tuple
 
 from api.v1.prompts.generate_summary_prompts import SUMMARY_PROMPT
 from common import logger
+from common.exceptions import InternalServerError
 from common.send_prompt_to_LLM import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_SUMMARY
 
@@ -44,4 +45,4 @@ async def generate_summary(contracts: str) -> Tuple[str, str]:
 
     except Exception as e:
         logger.error(f"Error in generate_summary: {str(e)}")
-        raise
+        raise InternalServerError("Failed to generate summary")

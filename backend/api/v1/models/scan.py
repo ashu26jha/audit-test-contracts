@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from api.v1.schemas.context_scan_schema import Finding
 from beanie import Document, Indexed
 from common.profiles import Profiles
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 
 class Scan(Document):
@@ -19,12 +19,9 @@ class Scan(Document):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Settings:
-        name = "scans"
-
-    class Config:
-        from_attributes = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "user_id": "612e3a5e630d2b1a6f20fb4b",
@@ -36,7 +33,11 @@ class Scan(Document):
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
             }
-        }
+        },
+    )
+
+    class Settings:
+        name = "scans"
 
 
 class ScanResult(Document):
@@ -47,13 +48,10 @@ class ScanResult(Document):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Settings:
-        name = "scan_results"
-
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-        json_schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        json_schema_extra={
             "example": {
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "summary": "Generated summary of the scan.",
@@ -70,4 +68,8 @@ class ScanResult(Document):
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
             }
-        }
+        },
+    )
+
+    class Settings:
+        name = "scan_results"

@@ -1,13 +1,9 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from api.v1.schemas.context_scan_exceptions import (
-    EmptyResponseError,
-    InvalidFormatError,
-    JSONParsingError,
-)
 from api.v1.schemas.context_scan_schema import Finding
 from api.v1.services import context_scan_service
+from common.exceptions import EmptyResponseError, InvalidFormatError, JSONParsingError
 from common.profiles import Profiles
 from fastapi.testclient import TestClient
 from main import app
@@ -56,24 +52,20 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
 async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = ""
 
-    with pytest.raises(EmptyResponseError) as exc_info:
+    with pytest.raises(EmptyResponseError):
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
         )
-
-    assert str(exc_info.value) == "LLM response was None or empty."
 
 
 @pytest.mark.asyncio
 async def test_perform_context_scan_no_json_content(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = "No JSON content here."
 
-    with pytest.raises(JSONParsingError) as exc_info:
+    with pytest.raises(JSONParsingError):
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
         )
-
-    assert str(exc_info.value) == "Failed to parse LLM response as valid JSON."
 
 
 @pytest.mark.asyncio
@@ -82,12 +74,10 @@ async def test_perform_context_scan_invalid_json_syntax(mock_send_prompt_to_llm_
     Invalid JSON syntax
     """
 
-    with pytest.raises(JSONParsingError) as exc_info:
+    with pytest.raises(JSONParsingError):
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
         )
-
-    assert "Failed to parse LLM response as valid JSON." in str(exc_info.value)
 
 
 @pytest.mark.asyncio
@@ -100,12 +90,10 @@ async def test_perform_context_scan_invalid_json_structure(
     }
     """
 
-    with pytest.raises(InvalidFormatError) as exc_info:
+    with pytest.raises(InvalidFormatError):
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
         )
-
-    assert str(exc_info.value) == "Expected the LLM response to be a list of findings."
 
 
 @pytest.mark.asyncio
@@ -220,18 +208,48 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
 
 
 def test_context_scan_endpoint():
-    response = client.post(
-        "/api/v1/context-scan",
-        json={
-            "summary": "Test Summary",
-            "contracts": "Test Contracts",
-            "profile": "nft",
-        },
-    )
-    if response.status_code != 200:
-        print("Response status code:", response.status_code)
-        print("Response content:", response.text)
-    assert response.status_code == 200
-    result = response.json()
-    assert "findings" in result
-    assert isinstance(result["findings"], list)
+    with patch(
+        "api.v1.services.context_scan_service.perform_context_scan",
+        new_callable=AsyncMock,
+    ) as mock_perform_context_scan:
+        mock_perform_context_scan.return_value = [
+            Finding(
+                Issue="Test Issue",
+                Severity="High",
+                Contracts=["TestContract"],
+                Description="Test Description",
+                Recommendation="Test Recommendation",
+            )
+        ]
+
+        response = client.post(
+            "/api/v1/context-scan",
+            json={
+                "summary": "Test Summary",
+                "contracts": "Test Contracts",
+                "profile": "nft",
+            },
+        )
+        assert response.status_code == 200
+        result = response.json()
+        assert "findings" in result
+        assert isinstance(result["findings"], list)
+
+
+def test_context_scan_endpoint_error():
+    with patch(
+        "api.v1.services.context_scan_service.perform_context_scan",
+        new_callable=AsyncMock,
+    ) as mock_perform_context_scan:
+        mock_perform_context_scan.side_effect = JSONParsingError()
+
+        response = client.post(
+            "/api/v1/context-scan",
+            json={
+                "summary": "Test Summary",
+                "contracts": "Test Contracts",
+                "profile": "nft",
+            },
+        )
+        assert response.status_code == 400
+        assert response.json() == {"detail": "Failed to parse LLM response as valid JSON"}

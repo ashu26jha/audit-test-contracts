@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
+from common.exceptions import ResourceNotFoundError
 
 
 async def store_scan(scan: Scan):
@@ -22,6 +23,8 @@ async def update_scan_status(scan_id: UUID, status: str):
         if status == "completed":
             scan.completedAt = datetime.now(timezone.utc)
         await scan.save()
+    else:
+        raise ResourceNotFoundError(f"Scan with ID {scan_id} not found")
 
 
 async def store_scan_result(scan_result: ScanResult):
@@ -31,14 +34,20 @@ async def store_scan_result(scan_result: ScanResult):
     await scan_result.create()
 
 
-async def get_scan(scan_id: UUID) -> Optional[Scan]:
+async def get_scan(scan_id: UUID) -> Scan:
     """Retrieve scan metadata by scan ID."""
-    return await Scan.find_one(Scan.scan_id == scan_id)
+    scan = await Scan.find_one(Scan.scan_id == scan_id)
+    if not scan:
+        raise ResourceNotFoundError(f"Scan with ID {scan_id} not found")
+    return scan
 
 
-async def get_scan_result(scan_id: UUID) -> Optional[ScanResult]:
+async def get_scan_result(scan_id: UUID) -> ScanResult:
     """Retrieve scan results by scan ID."""
-    return await ScanResult.find_one(ScanResult.scan_id == scan_id)
+    result = await ScanResult.find_one(ScanResult.scan_id == scan_id)
+    if not result:
+        raise ResourceNotFoundError(f"Scan result for ID {scan_id} not found")
+    return result
 
 
 async def get_scan_history_for_user(user: User) -> List[Scan]:

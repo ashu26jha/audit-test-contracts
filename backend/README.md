@@ -10,6 +10,7 @@
 - [Running Tests](#running-tests)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
+- [Running stripe](#running-stripe)
 - [Profiles](#profiles)
 
 ## Introduction
@@ -352,11 +353,9 @@ curl -X POST "http://localhost:8000/test-auth/token" \
   }
 }
 ```
-
+</details>
 
 **Note:** This endpoint is only available in development mode and is disabled in production.
-
-</details>
 
 ## Database Schema
 
@@ -434,7 +433,7 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 }
 ```
 
-### Running stripe:
+## Running stripe:
 Fill your stripe API keys, please note WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
 You need to send a post request to `http://0.0.0.0:8000/api/v1/payments/create-checkout-session`
 ```json

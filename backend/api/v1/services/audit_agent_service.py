@@ -3,29 +3,19 @@ from typing import List
 from uuid import UUID
 
 from api.v1.models.scan import ScanResult
+from api.v1.models.user import User
 from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
     generate_summary_service,
     scan_history_service,
 )
+from common.exceptions import UnauthorizedError, ValidationError
 from common.logger import logger
 from common.profiles import Profiles
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
-
-
-def validate_github_url(url: str) -> bool:
-    """Validate if the given URL is a valid GitHub repository URL."""
-    return bool(re.match(GITHUB_URL_PATTERN, url))
-
-
-def validate_contract_files(contract_files: List[str]) -> bool:
-    """Validate if the given contract files are valid Solidity files."""
-    if not contract_files:
-        return False
-    return all(file.endswith(".sol") for file in contract_files)
 
 
 async def perform_audit_agent_background(
@@ -82,4 +72,31 @@ async def perform_audit_agent_background(
         logger.exception(f"Error in background audit scan with ID {scan_id}: {str(e)}")
         # Update scan status to 'failed'
         await scan_history_service.update_scan_status(scan_id, "failed")
-        raise
+        # Store error information in the scan result
+        error_result = ScanResult(
+            scan_id=scan_id,
+            summary=f"Error occurred during scan: {str(e)}",
+            type=Profiles.NONE,
+            findings=[],
+        )
+        await error_result.create()
+
+
+def validate_user_has_github_token(user: User) -> bool:
+    """Validate if the user has a GitHub access token on file."""
+    if not user.accessToken:
+        raise UnauthorizedError("User does not have a GitHub access token on file.")
+
+
+def validate_github_url(url: str) -> bool:
+    """Validate if the given URL is a valid GitHub repository URL."""
+    if not bool(re.match(GITHUB_URL_PATTERN, url)):
+        raise ValidationError("Invalid GitHub repository URL")
+
+
+def validate_contract_files(contract_files: List[str]) -> bool:
+    """Validate if the given contract files are valid Solidity files."""
+    if not contract_files:
+        raise ValidationError("No contract files provided")
+    if not all(file.endswith(".sol") for file in contract_files):
+        raise ValidationError("Invalid contract files. All files must have a .sol extension")

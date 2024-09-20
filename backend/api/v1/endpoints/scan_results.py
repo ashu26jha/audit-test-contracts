@@ -8,7 +8,8 @@ from api.v1.services.scan_results_service import (
     get_full_scan_result,
     get_partial_scan_result,
 )
-from fastapi import APIRouter, Depends, HTTPException, status
+from common.exceptions import UnauthorizedError
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 
@@ -21,21 +22,12 @@ async def get_audit_agent_result(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
 ):
-    # Retrieve the scan metadata
     scan = await get_scan(scan_id)
-    if scan is None or scan.user_id != str(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan result not found.",
-        )
-    # Retrieve the full scan result
-    scan_result = await get_full_scan_result(scan_id)
-    if scan_result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan result not found.",
-        )
-    return scan_result
+
+    if scan.user_id != str(current_user.id):
+        raise UnauthorizedError("User not authorized to access this scan")
+
+    return await get_full_scan_result(scan_id)
 
 
 @router.get(
@@ -46,18 +38,9 @@ async def get_partial_audit_agent_result(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
 ):
-    # Retrieve the scan metadata
     scan = await get_scan(scan_id)
-    if scan is None or scan.user_id != str(current_user.id):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan result not found.",
-        )
-    # Retrieve the partial scan result
-    scan_result = await get_partial_scan_result(scan_id)
-    if scan_result is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Scan result not found.",
-        )
-    return scan_result
+
+    if scan.user_id != str(current_user.id):
+        raise UnauthorizedError("User not authorized to access this scan")
+
+    return await get_partial_scan_result(scan_id)

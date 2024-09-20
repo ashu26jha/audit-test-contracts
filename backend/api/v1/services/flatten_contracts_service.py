@@ -3,6 +3,9 @@ import subprocess
 import tempfile
 from typing import List
 
+from common import logger
+from common.exceptions import InternalServerError, ValidationError
+
 
 async def flatten_contracts(
     repository_url: str,
@@ -38,9 +41,16 @@ async def flatten_contracts(
             subprocess.run(clone_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         except subprocess.CalledProcessError as e:
-            raise ValueError(
+            logger.error(f"Failed to clone repository: {str(e)}")
+            raise ValidationError(
                 "Failed to clone repository. Please check the repository URL and authentication token."
-            ) from e
+            )
+        except FileNotFoundError as e:
+            logger.error(f"Contract file not found: {str(e)}")
+            raise ValidationError(f"Contract file '{e.filename}' not found in repository.")
+        except Exception as e:
+            logger.error(f"Unexpected error in flatten_contracts: {str(e)}")
+            raise InternalServerError("An error occurred while flattening contracts") from e
 
         # Read and concatenate the contract files
         flattened_code = ""

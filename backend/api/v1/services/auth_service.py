@@ -4,7 +4,8 @@ from typing import Optional
 import config.settings as settings
 from api.v1.models.user import User
 from bson import ObjectId
-from fastapi import Depends, HTTPException, status
+from common.exceptions import UnauthorizedError
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
@@ -23,20 +24,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id: str = payload.get("sub")
-        if user_id is None:
-            raise credentials_exception
         user_id_obj = ObjectId(user_id)
     except (JWTError, ValueError):
-        raise credentials_exception
+        raise UnauthorizedError("Could not validate credentials")
     user = await User.find_one({"_id": user_id_obj})
     if user is None:
-        raise credentials_exception
+        raise UnauthorizedError("User not found")
     return user

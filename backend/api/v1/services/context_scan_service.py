@@ -7,15 +7,15 @@ from api.v1.prompts.context_scan_prompts import (
     CONTEXT_PROMPT_WITHOUT_SUMMARY,
     SYSTEM_PROMPT,
 )
-from api.v1.schemas.context_scan_exceptions import (
-    ContextScanException,
+from api.v1.schemas.context_scan_schema import Finding
+from common.exceptions import (
     EmptyResponseError,
+    InternalServerError,
     InvalidFormatError,
     JSONParsingError,
     NetworkError,
-    UnexpectedError,
+    ValidationError,
 )
-from api.v1.schemas.context_scan_schema import Finding
 from common.logger import logger
 from common.profiles import Profiles, load_profile
 from common.send_prompt_to_LLM import send_prompt_to_llm_async
@@ -60,7 +60,7 @@ async def perform_context_scan(
 
         # Ensure the prediction is not None or empty
         if not prediction or not prediction.strip():
-            raise EmptyResponseError("LLM response was None or empty.")
+            raise EmptyResponseError()
 
         # Try to extract JSON content from the response
         json_matches = re.findall(r"```json\s*(.*?)```", prediction, re.DOTALL)
@@ -73,7 +73,7 @@ async def perform_context_scan(
                 findings_json = json.loads(cleaned_prediction)
             except json.JSONDecodeError as e:
                 logger.error(f"JSON Parsing Error after cleaning: {str(e)}")
-                raise JSONParsingError("Failed to parse LLM response as valid JSON.") from e
+                raise JSONParsingError() from e
             # Ensure the parsed response is a list of findings
             if not isinstance(findings_json, list):
                 raise InvalidFormatError("Expected the LLM response to be a list of findings.")
@@ -106,20 +106,17 @@ async def perform_context_scan(
             if not findings:
                 raise JSONParsingError("Failed to parse any valid findings from LLM response.")
 
-    except ContextScanException:
+    except (
+        EmptyResponseError,
+        JSONParsingError,
+        InvalidFormatError,
+        ValidationError,
+        NetworkError,
+    ):
         raise
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON Parsing Error: {str(e)}")
-        raise JSONParsingError("Failed to parse LLM response as valid JSON.") from e
-    except ValueError as e:
-        logger.error(f"Value Error: {str(e)}")
-        raise InvalidFormatError(str(e)) from e
-    except (ConnectionError, TimeoutError) as e:
-        logger.error(f"Network Error: {str(e)}")
-        raise NetworkError("A network error occurred while processing the response.") from e
     except Exception as e:
         logger.exception(f"Unexpected Error: {str(e)}")
-        raise UnexpectedError(f"An unexpected error occurred: {str(e)}") from e
+        raise InternalServerError(f"An unexpected error occurred: {str(e)}") from e
 
     # Return the list of findings
     return findings

@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from fastapi.testclient import TestClient
 from main import app
 
@@ -33,3 +34,20 @@ def test_generate_summary():
 
         # Ensure that send_prompt_to_llm_async was called
         assert mock_send_prompt.called
+
+
+@pytest.mark.asyncio
+async def test_generate_summary_error():
+    with patch(
+        "api.v1.services.generate_summary_service.send_prompt_to_llm_async",
+        new_callable=AsyncMock,
+    ) as mock_send_prompt:
+        mock_send_prompt.side_effect = Exception("LLM error")
+
+        response = client.post(
+            "/api/v1/generate-summary",
+            json={"contracts": "Test Contracts"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"detail": "Internal server error"}
