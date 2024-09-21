@@ -1,3 +1,4 @@
+# pylint: disable=too-many-ancestors,too-few-public-methods
 from datetime import datetime, timezone
 from typing import Optional
 

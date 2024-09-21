@@ -9,7 +9,7 @@ from common.exceptions import InternalServerError, ValidationError
 
 async def flatten_contracts(
     repository_url: str,
-    contractFiles: List[str],
+    contract_files: List[str],
     auth_token: str,
 ) -> str:
     """
@@ -17,7 +17,7 @@ async def flatten_contracts(
 
     Args:
         repository_url (str): The URL of the GitHub repository.
-        contractFiles (List[str]): List of relative file paths within the repository.
+        contract_files (List[str]): List of relative file paths within the repository.
         auth_token (str): Authentication token for private repositories.
 
     Returns:
@@ -44,21 +44,21 @@ async def flatten_contracts(
             logger.error(f"Failed to clone repository: {str(e)}")
             raise ValidationError(
                 "Failed to clone repository. Please check the repository URL and authentication token."
-            )
+            ) from e
         except FileNotFoundError as e:
             logger.error(f"Contract file not found: {str(e)}")
-            raise ValidationError(f"Contract file '{e.filename}' not found in repository.")
+            raise ValidationError(f"Contract file '{e.filename}' not found in repository.") from e
         except Exception as e:
             logger.error(f"Unexpected error in flatten_contracts: {str(e)}")
             raise InternalServerError("An error occurred while flattening contracts") from e
 
         # Read and concatenate the contract files
         flattened_code = ""
-        for file_path in contractFiles:
+        for file_path in contract_files:
             full_path = os.path.join(temp_dir, file_path)
             if not os.path.isfile(full_path):
                 raise ValueError(f"Contract file '{file_path}' not found in repository.")
-            with open(full_path, "r") as f:
+            with open(full_path, "r", encoding="utf-8") as f:
                 flattened_code += f"// File: {file_path}\n"
                 flattened_code += f.read() + "\n\n"
 

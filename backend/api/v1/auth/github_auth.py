@@ -1,9 +1,9 @@
-import config.settings as settings
 import httpx
 from api.v1.models.user import User
 from api.v1.schemas.user_schema import UserResponse
 from api.v1.services.auth_service import create_access_token, get_current_user
 from api.v1.services.github_service import GitHubService
+from config import settings
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -74,7 +74,7 @@ async def github_callback(code: str, request: Request):
 
 
 @router.post("/logout")
-async def logout(current_user: dict = Depends(get_current_user)):
+async def logout(current_user: User = Depends(get_current_user)):
     # In a real-world scenario, you might want to invalidate the token or perform other cleanup
     return {"message": "Successfully logged out"}
 

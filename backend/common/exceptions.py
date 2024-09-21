@@ -1,11 +1,13 @@
 from typing import Optional
 
+from api.v1.schemas.api_response_schema import ErrorResponse
 from fastapi import HTTPException, status
 
 
 class BaseAPIException(HTTPException):
     def __init__(self, status_code: int, detail: str):
-        super().__init__(status_code=status_code, detail=detail)
+        error_response = ErrorResponse(success=False, code=status_code, message=detail)
+        super().__init__(status_code=status_code, detail=error_response.model_dump())
 
 
 class ResourceNotFoundError(BaseAPIException):
@@ -24,16 +26,19 @@ class ValidationError(BaseAPIException):
 
 
 class InternalServerError(BaseAPIException):
-    def __init__(self, details: Optional[str] = None):
+    def __init__(self, detail: Optional[str] = None):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error",
+            detail=detail if detail else "Internal server error",
         )
 
 
 class EmptyResponseError(BaseAPIException):
-    def __init__(self):
-        super().__init__(status_code=status.HTTP_204_NO_CONTENT, detail="Empty response from LLM")
+    def __init__(self, detail: Optional[str] = None):
+        super().__init__(
+            status_code=status.HTTP_204_NO_CONTENT,
+            detail=detail if detail else "Empty response from LLM",
+        )
 
 
 class JSONParsingError(ValidationError):
@@ -43,7 +48,7 @@ class JSONParsingError(ValidationError):
 
 class NetworkError(InternalServerError):
     def __init__(self):
-        super().__init__(details="A network error occurred while processing the response")
+        super().__init__(detail="A network error occurred while processing the response")
 
 
 class InvalidFormatError(ValidationError):

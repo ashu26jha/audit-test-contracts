@@ -1,48 +1,36 @@
-import json
-import re
 from typing import Tuple
 
 from api.v1.prompts.generate_summary_prompts import SUMMARY_PROMPT
+from api.v1.schemas.generate_summary_schema import SummaryResponse
 from common import logger
-from common.exceptions import InternalServerError
-from common.send_prompt_to_LLM import send_prompt_to_llm_async
+from common.exceptions import EmptyResponseError, InternalServerError, JSONParsingError
+from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_SUMMARY
 
 
 async def generate_summary(contracts: str) -> Tuple[str, str]:
-    """
-    Generates a summary and type for the given contract text.
-
-    Args:
-        contracts: The contract text to summarize.
-
-    Returns:
-        A tuple containing (summary, contract_type).
-
-    Raises:
-        Exception: If an error occurs during processing.
-    """
-
     prompt = SUMMARY_PROMPT.format(contracts=contracts)
 
     try:
-        llm_response = await send_prompt_to_llm_async(LLM_MODEL_SUMMARY, prompt)
+        llm_response = await send_prompt_to_llm_async(
+            LLM_MODEL_SUMMARY, prompt, response_model=SummaryResponse
+        )
 
-        # Extract JSON content from the response
-        json_match = re.search(r"```json\s*(.*?)```", llm_response, re.DOTALL)
-        if json_match:
-            json_content = json_match.group(1).strip()
+        if not llm_response or not isinstance(llm_response, SummaryResponse):
+            logger.warning("LLM response was empty or invalid")
+            raise EmptyResponseError("LLM response was empty or invalid")
 
-            # Parse the JSON content
-            data = json.loads(json_content)
-            summary = data.get("summary", "")
-            contract_type = data.get("type", "")
+        summary = llm_response.summary
+        contract_type = llm_response.type
 
-            return summary, contract_type
-        else:
-            logger.error("Failed to extract JSON content from LLM response.")
-            raise Exception("Failed to extract summary from LLM response.")
+        if not summary or not contract_type:
+            logger.warning("Missing summary or contract type in parsed JSON.")
+            raise JSONParsingError("Missing summary or contract type in parsed JSON.")
 
+        return summary, contract_type
+
+    except (EmptyResponseError, JSONParsingError):
+        raise
     except Exception as e:
-        logger.error(f"Error in generate_summary: {str(e)}")
-        raise InternalServerError("Failed to generate summary")
+        logger.error(f"Unexpected error in generate_summary: {str(e)}")
+        raise InternalServerError("Failed to generate summary") from e

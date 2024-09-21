@@ -32,4 +32,4 @@ repos:
   #       args: [--rcfile=backend/setup.cfg]
   #       exclude: \.git|__pycache__|\.venv|env|venv|build|dist
   #       files: ^backend/
-  #       pass_failing: true
+  #       verbose: true

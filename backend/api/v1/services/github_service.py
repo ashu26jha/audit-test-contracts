@@ -1,3 +1,5 @@
+import base64
+
 import httpx
 from fastapi import HTTPException
 
@@ -114,11 +116,9 @@ class GitHubService:
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
-            import base64
-
             return base64.b64decode(content_data["content"]).decode("utf-8")
-        else:
-            return content_data["content"]
+
+        return content_data["content"]
 
     async def get_user_organizations(self, access_token: str) -> list:
         async with httpx.AsyncClient() as client:

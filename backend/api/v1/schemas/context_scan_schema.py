@@ -9,7 +9,7 @@ class Finding(BaseModel):
     Severity: str = Field(..., description="Severity level of the issue")
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
-    Recommendation: Optional[str] = None
+    Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
 
 
 class ContextScanRequest(BaseModel):

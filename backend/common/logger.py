@@ -2,7 +2,7 @@ import logging
 import sys
 
 # Create a logger
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("audit_api")
 
 # Set the logging level to DEBUG
 logger.setLevel(logging.DEBUG)

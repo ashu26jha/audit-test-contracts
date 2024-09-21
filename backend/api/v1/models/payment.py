@@ -1,8 +1,10 @@
+# pylint: disable=too-many-ancestors,too-few-public-methods
+
 from datetime import datetime, timezone
 from uuid import UUID
 
 from beanie import Document, Indexed
-from pydantic import Field
+from pydantic import ConfigDict, Field
 
 
 class Payment(Document):
@@ -16,12 +18,9 @@ class Payment(Document):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    class Settings:
-        name = "payments"
-
-    class Config:
-        orm_mode = True
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
             "example": {
                 "payment_id": "1f3a5e7c-b2c6-4d8a-9f0e-7d31b9f87e26",
                 "user_id": "612e3a5e630d2b1a6f20fb4b",
@@ -33,4 +32,8 @@ class Payment(Document):
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
             }
-        }
+        },
+    )
+
+    class Settings:
+        name = "payments"

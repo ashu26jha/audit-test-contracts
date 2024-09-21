@@ -11,10 +11,29 @@ def handle_exception(e: Exception):
     raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
-async def global_exception_handler(request: Request, exc: Exception):
+def global_exception_handler(request: Request, exc: Exception):
     if isinstance(exc, BaseAPIException):
-        logger.warning(f"API Exception: {exc.detail}")
-        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        logger.warning(f"API Exception in {request.url}: {exc.detail}")
+        return JSONResponse(status_code=exc.status_code, content=exc.detail)
+
+    elif isinstance(exc, HTTPException):
+        logger.warning(f"HTTP Exception in {request.url}: {exc.detail}")
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "code": exc.status_code,
+                "message": str(exc.detail),
+            },
+        )
+
     else:
         logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-        return JSONResponse(status_code=500, content={"detail": "An unexpected error occurred"})
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "code": 500,
+                "message": "An unexpected error occurred",
+            },
+        )

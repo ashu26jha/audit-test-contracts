@@ -1,28 +1,76 @@
 import re
+from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 
-from api.v1.models.scan import ScanResult
+from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
+from api.v1.schemas import audit_agent_schema
 from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
     generate_summary_service,
     scan_history_service,
 )
-from common.exceptions import UnauthorizedError, ValidationError
+from common.exceptions import (
+    InternalServerError,
+    JSONParsingError,
+    UnauthorizedError,
+    ValidationError,
+)
 from common.logger import logger
 from common.profiles import Profiles
+from fastapi import BackgroundTasks
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
+
+
+async def initiate_scan(
+    scan_id: UUID,
+    user: User,
+    request: audit_agent_schema.AuditAgentRequest,
+    background_tasks: BackgroundTasks,
+):
+    try:
+        validate_user_has_github_token(user)
+        validate_github_url(request.repositoryURL)
+        validate_contract_files(request.contractFiles)
+
+        # Create and store the new scan
+        new_scan = Scan(
+            scan_id=scan_id,
+            user_id=str(user.id),
+            status="pending",
+            startedAt=datetime.now(timezone.utc),
+            contractFiles=request.contractFiles,
+        )
+        await scan_history_service.store_scan(new_scan)
+
+        # Start the background task
+        background_tasks.add_task(
+            perform_audit_agent_background,
+            scan_id,
+            str(user.id),
+            request.repositoryURL,
+            request.contractFiles,
+            user.accessToken,
+        )
+
+    except (UnauthorizedError, ValidationError) as e:
+        await scan_history_service.update_scan_status(scan_id, "failed")
+        raise e
+    except Exception as e:
+        logger.exception(f"Unexpected error during scan initiation: {str(e)}")
+        await scan_history_service.update_scan_status(scan_id, "failed")
+        raise InternalServerError("Failed to initiate audit scan") from e
 
 
 async def perform_audit_agent_background(
     scan_id: UUID,
     user_id: str,
     repository_url: str,
-    contractFiles: List[str],
+    contract_files: List[str],
     auth_token: str,
 ):
     try:
@@ -33,7 +81,7 @@ async def perform_audit_agent_background(
 
         # Step 1: Flatten contracts
         flattened_contracts = await flatten_contracts_service.flatten_contracts(
-            repository_url, contractFiles, auth_token
+            repository_url, contract_files, auth_token
         )
 
         # Step 2: Generate Summary and detect profile
@@ -41,11 +89,11 @@ async def perform_audit_agent_background(
             flattened_contracts
         )
 
-        # Map 'detected_type' to a Profiles enum member
-        try:
-            detected_profile = Profiles[detected_type.upper()]
-        except KeyError:
-            detected_profile = Profiles.DEFAULT
+        detected_profile = (
+            Profiles[detected_type.upper()]
+            if detected_type.upper() in Profiles.__members__
+            else Profiles.DEFAULT
+        )
 
         # Step 3: Perform Context Scan
         context_scan_result = await context_scan_service.perform_context_scan(
@@ -59,27 +107,33 @@ async def perform_audit_agent_background(
             type=detected_profile,
             findings=context_scan_result,
         )
-
-        # Store the scan result
-        await scan_result.create()
+        await scan_history_service.store_scan_result(scan_result)
 
         # Update scan status to 'completed'
         await scan_history_service.update_scan_status(scan_id, "completed")
 
         logger.info(f"Completed audit scan with ID: {scan_id}")
 
-    except Exception as e:
-        logger.exception(f"Error in background audit scan with ID {scan_id}: {str(e)}")
-        # Update scan status to 'failed'
+    except (ValidationError, JSONParsingError) as e:
+        logger.exception(f"Validation error in audit scan {scan_id}: {str(e)}")
         await scan_history_service.update_scan_status(scan_id, "failed")
-        # Store error information in the scan result
         error_result = ScanResult(
             scan_id=scan_id,
             summary=f"Error occurred during scan: {str(e)}",
             type=Profiles.NONE,
             findings=[],
         )
-        await error_result.create()
+        await scan_history_service.store_scan_result(error_result)
+    except Exception as e:
+        logger.exception(f"Unexpected error in audit scan {scan_id}: {str(e)}")
+        await scan_history_service.update_scan_status(scan_id, "failed")
+        error_result = ScanResult(
+            scan_id=scan_id,
+            summary="An unexpected error occurred during the audit scan.",
+            type=Profiles.NONE,
+            findings=[],
+        )
+        await scan_history_service.store_scan_result(error_result)
 
 
 def validate_user_has_github_token(user: User) -> bool:

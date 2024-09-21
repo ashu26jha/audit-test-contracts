@@ -7,8 +7,6 @@ load_dotenv()
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 
-API_KEY = os.getenv("API_KEY")  # TODO: WHAT IS THIS?
-
 ##################################################
 #                 LLMs CONFIG
 ##################################################

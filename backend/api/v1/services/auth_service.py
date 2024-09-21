@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import config.settings as settings
 from api.v1.models.user import User
 from bson import ObjectId
 from common.exceptions import UnauthorizedError
+from config import settings
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -28,8 +28,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id: str = payload.get("sub")
         user_id_obj = ObjectId(user_id)
-    except (JWTError, ValueError):
-        raise UnauthorizedError("Could not validate credentials")
+    except (JWTError, ValueError) as exc:
+        raise UnauthorizedError("Could not validate credentials") from exc
     user = await User.find_one({"_id": user_id_obj})
     if user is None:
         raise UnauthorizedError("User not found")

@@ -2,7 +2,6 @@ import os
 from contextlib import asynccontextmanager
 
 import certifi
-import config.settings as settings
 import uvicorn
 from api.v1.auth import github_auth
 from api.v1.endpoints import (
@@ -22,6 +21,7 @@ from api.v1.models.user import User
 from beanie import init_beanie
 from common.error_handling import global_exception_handler
 from common.exceptions import UnauthorizedError
+from config import settings
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi

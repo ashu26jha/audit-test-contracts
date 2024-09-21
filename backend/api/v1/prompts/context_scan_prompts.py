@@ -5,15 +5,17 @@ SYSTEM_PROMPT = """You are a highly skilled smart contract auditor. Your goal is
 The output should **only** be in a well-formed JSON as follows, without any additional text or explanations:
 
 ```json
-[
-  {
-    "Issue": "Short description of the issue",
-    "Severity": "High/Medium/Low/Info/Best Practices",
-    "Contracts": ["ContractName.sol"],
-    "Description": "Detailed description of the issue.",
-    "Recommendation": "Suggestion on how to fix the issue."
-  }
-]
+{
+    "findings": [
+        {
+        "Issue": "Short description of the issue",
+        "Severity": "High/Medium/Low/Info/Best Practices",
+        "Contracts": ["ContractName.sol"],
+        "Description": "Detailed description of the issue.",
+        "Recommendation": "Suggestion on how to fix the issue."
+        }
+    ]
+}
 ```
 """
 CONTEXT_PROMPT_WITH_SUMMARY = """
@@ -28,16 +30,17 @@ Contracts:
 Return the output in the following JSON format, without any additional text or explanations:
 
 ```json
-[
-    {{
+{{
+    "findings": [
+        {{
         "Issue": "Short description of the issue",
         "Severity": "High/Medium/Low/Info/Best Practices",
         "Contracts": ["ContractName.sol"],
         "Description": "Detailed description of the issue.",
         "Recommendation": "Suggestion on how to fix the issue."
-    }},
-
-]
+        }}
+    ]
+}}
 ```
 """
 
@@ -53,14 +56,17 @@ CONTEXT_PROMPT_WITHOUT_SUMMARY = """
 
     Return the output in the following JSON format, without any additional text or explanations:
     ```json
-    [
-        {{
-            "Issue": "A short description of the vulnerability or issue",
-            "Severity": "Info | Best Practices | Low | Medium | High | Critical",
-            "Contracts": ["ContractName"],
-            "Description": "A detailed description of the issue and why it is problematic"
-        }}
-    ]
+    {{
+        "findings": [
+            {{
+            "Issue": "Short description of the issue",
+            "Severity": "High/Medium/Low/Info/Best Practices",
+            "Contracts": ["ContractName.sol"],
+            "Description": "Detailed description of the issue.",
+            "Recommendation": "Suggestion on how to fix the issue."
+            }}
+        ]
+    }}
     ```
 
     ### Contracts to audit:

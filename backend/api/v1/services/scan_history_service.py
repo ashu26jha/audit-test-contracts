@@ -20,7 +20,7 @@ async def update_scan_status(scan_id: UUID, status: str):
     if scan:
         scan.status = status
         scan.updatedAt = datetime.now(timezone.utc)
-        if status == "completed":
+        if status in ["completed", "failed"]:
             scan.completedAt = datetime.now(timezone.utc)
         await scan.save()
     else:

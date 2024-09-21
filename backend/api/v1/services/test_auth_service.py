@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-import config.settings as settings
 from api.v1.models.user import User
 from bson import ObjectId
+from config import settings
 from jose import jwt
 
 
