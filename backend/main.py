@@ -11,13 +11,12 @@ from api.v1.endpoints import (
     generate_summary,
     github,
     health_check,
-    payment_success,
     scan_history,
     scan_results,
-    stripe,
     test_auth,
-    webhook,
 )
+from api.v1.endpoints.payments import payment_success, stripe, webhook
+from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
@@ -36,7 +35,7 @@ async def lifespan(app: FastAPI):
     print("Connecting to MongoDB...")
     await init_beanie(
         database=client.myapp,
-        document_models=[User, Scan, ScanResult],
+        document_models=[User, Scan, ScanResult, Payment],
     )
     print("Connected to MongoDB")
     yield
