@@ -1,6 +1,6 @@
 # pylint: disable=too-many-ancestors,too-few-public-methods
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
 from api.v1.schemas.context_scan_schema import Finding
@@ -16,6 +16,7 @@ class Scan(Document):
     startedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completedAt: Optional[datetime] = None
     contractFiles: List[str] = Field(default_factory=list)
+    linesOfCode: Optional[Dict[str, int]] = None
     paid_status: bool = False
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -30,6 +31,12 @@ class Scan(Document):
                 "startedAt": "2023-10-01T12:00:00Z",
                 "completedAt": None,
                 "contractFiles": ["contracts/MyContract.sol"],
+                "linesOfCode": {
+                    "total_lines": 100,
+                    "code_lines": 80,
+                    "comment_lines": 15,
+                    "empty_lines": 5,
+                },
                 "paidStatus": False,
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",

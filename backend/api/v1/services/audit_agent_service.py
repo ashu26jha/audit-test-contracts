@@ -10,6 +10,7 @@ from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
     generate_summary_service,
+    lines_of_code_service,
     scan_history_service,
 )
 from common.exceptions import (
@@ -37,6 +38,14 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
 
+        # Flatten contracts and count lines of code
+        flattened_contracts = await flatten_contracts_service.flatten_contracts(
+            request.repositoryURL, request.contractFiles, user.accessToken
+        )
+        lines_of_code = await lines_of_code_service.count_lines_of_code(flattened_contracts)
+
+        print(lines_of_code)
+
         # Create and store the new scan
         new_scan = Scan(
             scan_id=scan_id,
@@ -44,6 +53,7 @@ async def initiate_scan(
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=request.contractFiles,
+            linesOfCode=lines_of_code,
         )
         await scan_history_service.store_scan(new_scan)
 
@@ -51,10 +61,7 @@ async def initiate_scan(
         background_tasks.add_task(
             perform_audit_agent_background,
             scan_id,
-            str(user.id),
-            request.repositoryURL,
-            request.contractFiles,
-            user.accessToken,
+            flattened_contracts,
         )
 
     except (UnauthorizedError, ValidationError) as e:
@@ -68,10 +75,7 @@ async def initiate_scan(
 
 async def perform_audit_agent_background(
     scan_id: UUID,
-    user_id: str,
-    repository_url: str,
-    contract_files: List[str],
-    auth_token: str,
+    flattened_contracts: str,
 ):
     try:
         logger.info(f"Starting background audit scan with ID: {scan_id}")
@@ -79,12 +83,7 @@ async def perform_audit_agent_background(
         # Update scan status to 'in_progress'
         await scan_history_service.update_scan_status(scan_id, "in_progress")
 
-        # Step 1: Flatten contracts
-        flattened_contracts = await flatten_contracts_service.flatten_contracts(
-            repository_url, contract_files, auth_token
-        )
-
-        # Step 2: Generate Summary and detect profile
+        # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
             flattened_contracts
         )
@@ -95,7 +94,7 @@ async def perform_audit_agent_background(
             else Profiles.DEFAULT
         )
 
-        # Step 3: Perform Context Scan
+        # Perform Context Scan
         context_scan_result = await context_scan_service.perform_context_scan(
             summary_result, flattened_contracts, detected_profile
         )

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from api.v1.schemas.context_scan_schema import Finding
@@ -25,6 +25,7 @@ class ScanResponse(BaseModel):
     startedAt: datetime
     completedAt: Optional[datetime]
     contractFiles: List[str]
+    linesOfCode: Optional[Dict[str, int]] = None
     paid_status: bool
     user_id: str = Field(exclude=True)
     createdAt: datetime = Field(exclude=True)
