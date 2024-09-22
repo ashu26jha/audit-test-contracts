@@ -1,0 +1,100 @@
+import asyncio
+import os
+import re
+import shutil
+from typing import Dict, List, Tuple
+
+import toml
+from common import logger
+
+SOLIDITY_EXTENSION = ".sol"
+FOUNDRY_CONFIG = "foundry.toml"
+POSSIBLE_CONTRACT_FOLDERS = ["contracts", "src"]
+
+
+def find_contract_folders(repo_dir: str) -> List[str]:
+    contract_folders = []
+    possible_folders = POSSIBLE_CONTRACT_FOLDERS.copy()
+
+    for root, dirs, files in os.walk(repo_dir):
+        for folder in possible_folders:
+            if folder in dirs:
+                contract_folders.append(os.path.relpath(os.path.join(root, folder), repo_dir))
+
+        if any(file.endswith(SOLIDITY_EXTENSION) for file in files):
+            contract_folders.append(os.path.relpath(root, repo_dir))
+
+    return list(set(contract_folders))
+
+
+def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
+    src_folder = "contracts" if project_type == "hardhat" else "src"
+    src_dir = os.path.join(repo_dir, src_folder)
+
+    if not os.path.exists(src_dir):
+        raise ValueError(f"{src_folder} directory not found in {repo_dir}")
+
+    for root, _, files in os.walk(src_dir):
+        for file in files:
+            if file.endswith(SOLIDITY_EXTENSION):
+                src_path = os.path.join(root, file)
+                rel_path = os.path.relpath(src_path, src_dir)
+                dst_path = os.path.join(dst_dir, rel_path)
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                shutil.copy2(src_path, dst_path)
+
+
+async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
+    with open(os.path.join(temp_dir, "remappings.txt"), "w") as f:
+        f.write("\n".join(remappings))
+
+
+async def run_command(
+    command: List[str], cwd: str, env: Dict[str, str] = None
+) -> Tuple[int, str, str]:
+    process = await asyncio.create_subprocess_exec(
+        *command,
+        cwd=cwd,
+        env=env,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    return process.returncode, stdout.decode(), stderr.decode()
+
+
+def preprocess_solidity_files(temp_dir: str) -> None:
+    logger.info("Preprocessing Solidity files to replace placeholders...")
+    src_dir = os.path.join(temp_dir, "src")
+    for root, _, files in os.walk(src_dir):
+        for file in files:
+            if file.endswith(".sol"):
+                file_path = os.path.join(root, file)
+                with open(file_path, "r") as f:
+                    content = f.read()
+                # Replace address variables assigned to empty strings
+                content = re.sub(
+                    r"(address\s+(?:public|private|internal|external)?\s*(?:constant\s+)?\s*\w+\s*=\s*)\"\";",
+                    r"\1 address(0);",
+                    content,
+                )
+                with open(file_path, "w") as f:
+                    f.write(content)
+    logger.info("Preprocessing completed.")
+
+
+def update_foundry_config(temp_dir: str, solc_version: str) -> None:
+    logger.info("Updating foundry.toml with the correct Solidity version...")
+    config_path = os.path.join(temp_dir, "foundry.toml")
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
+            config = toml.load(f)
+        config["profile"] = config.get("profile", {})
+        config["profile"]["default"] = config["profile"].get("default", {})
+        config["profile"]["default"]["solc_version"] = solc_version
+        with open(config_path, "w") as f:
+            toml.dump(config, f)
+        logger.info(f"Foundry configuration updated with solc_version = {solc_version}")
+    else:
+        logger.error(f"foundry.toml not found in {temp_dir}")
+        raise FileNotFoundError("foundry.toml not found")

@@ -65,6 +65,18 @@ To launch a production server:
 fastapi run
 ```
 
+To launch a docker image:
+
+```bash
+docker build -t backend-image -f backend/Dockerfile.backend .
+```
+
+Then run the container:
+
+```bash
+docker run -p 8000:8000 backend-image
+```
+
 ## Running the Linters
 
 ```bash

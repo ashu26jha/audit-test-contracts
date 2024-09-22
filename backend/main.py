@@ -12,6 +12,7 @@ from api.v1.endpoints import (
     github,
     health_check,
     scan_results,
+    static_analyzer,
     fuzzer,
 )
 from api.v1.models.user import User
@@ -92,6 +93,7 @@ app.include_router(health_check.router, prefix="/api/v1")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(generate_summary.router, prefix="/api/v1")
 app.include_router(context_scan.router, prefix="/api/v1")
+app.include_router(static_analyzer.router, prefix="/api/v1")
 app.include_router(critics.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(github.router, prefix="/api/v1/github")
