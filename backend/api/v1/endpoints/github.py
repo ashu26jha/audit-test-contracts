@@ -38,9 +38,7 @@ async def get_repository_branches(
     repo: str,
     current_user: User = Depends(get_current_user),
 ):
-    branches = await github_service.get_repository_branches(
-        current_user.accessToken, owner, repo
-    )
+    branches = await github_service.get_repository_branches(current_user.accessToken, owner, repo)
     return SuccessResponse(data=branches)
 
 

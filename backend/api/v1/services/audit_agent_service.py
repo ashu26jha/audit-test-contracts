@@ -13,15 +13,12 @@ from api.v1.services import (
     lines_of_code_service,
     scan_history_service,
 )
-from common.exceptions import (
-    InternalServerError,
-    JSONParsingError,
-    UnauthorizedError,
-    ValidationError,
-)
+from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
+
+github_service = GitHubService()
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
@@ -38,24 +35,32 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
 
-        # Flatten contracts and count lines of code
-        flattened_contracts = await flatten_contracts_service.flatten_contracts(
-            request.repositoryURL, request.contractFiles, user.accessToken
-        )
-        lines_of_code = await lines_of_code_service.count_lines_of_code(flattened_contracts)
-
-        print(lines_of_code)
-
-        # Create and store the new scan
+        # Create and store the new scan with initial status 'pending'
+        branch_name = request.branchName if request.branchName else "main"
         new_scan = Scan(
             scan_id=scan_id,
             user_id=str(user.id),
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=request.contractFiles,
-            linesOfCode=lines_of_code,
+            branchName=branch_name,
         )
         await scan_history_service.store_scan(new_scan)
+
+        # Fetch the commit hash using GitHub API
+        commit_hash = await github_service.get_commit_hash(
+            user.accessToken, request.repositoryURL, branch_name
+        )
+        new_scan.commitHash = commit_hash
+        await new_scan.save()
+
+        # Flatten contracts and count lines of code
+        flattened_contracts = await flatten_contracts_service.flatten_contracts(
+            request.repositoryURL, request.contractFiles, user.accessToken
+        )
+        lines_of_code = await lines_of_code_service.count_lines_of_code(flattened_contracts)
+        new_scan.linesOfCode = lines_of_code
+        await new_scan.save()
 
         # Start the background task
         background_tasks.add_task(
@@ -64,13 +69,16 @@ async def initiate_scan(
             flattened_contracts,
         )
 
-    except (UnauthorizedError, ValidationError) as e:
-        await scan_history_service.update_scan_status(scan_id, "failed")
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
-        await scan_history_service.update_scan_status(scan_id, "failed")
-        raise InternalServerError("Failed to initiate audit scan") from e
+        # Update scan status to 'failed' if scan exists
+        try:
+            await scan_history_service.update_scan_status(scan_id, "failed")
+        except Exception:
+            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
@@ -113,22 +121,12 @@ async def perform_audit_agent_background(
 
         logger.info(f"Completed audit scan with ID: {scan_id}")
 
-    except (ValidationError, JSONParsingError) as e:
-        logger.exception(f"Validation error in audit scan {scan_id}: {str(e)}")
-        await scan_history_service.update_scan_status(scan_id, "failed")
-        error_result = ScanResult(
-            scan_id=scan_id,
-            summary=f"Error occurred during scan: {str(e)}",
-            type=Profiles.NONE,
-            findings=[],
-        )
-        await scan_history_service.store_scan_result(error_result)
     except Exception as e:
-        logger.exception(f"Unexpected error in audit scan {scan_id}: {str(e)}")
+        logger.exception(f"Error in audit scan {scan_id}: {str(e)}")
         await scan_history_service.update_scan_status(scan_id, "failed")
         error_result = ScanResult(
             scan_id=scan_id,
-            summary="An unexpected error occurred during the audit scan.",
+            summary="An error occurred during the audit scan.",
             type=Profiles.NONE,
             findings=[],
         )
@@ -138,18 +136,23 @@ async def perform_audit_agent_background(
 def validate_user_has_github_token(user: User) -> bool:
     """Validate if the user has a GitHub access token on file."""
     if not user.accessToken:
-        raise UnauthorizedError("User does not have a GitHub access token on file.")
+        raise HTTPException(
+            status_code=401, detail="User does not have a GitHub access token on file."
+        )
 
 
 def validate_github_url(url: str) -> bool:
     """Validate if the given URL is a valid GitHub repository URL."""
     if not bool(re.match(GITHUB_URL_PATTERN, url)):
-        raise ValidationError("Invalid GitHub repository URL")
+        raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
 
 
 def validate_contract_files(contract_files: List[str]) -> bool:
     """Validate if the given contract files are valid Solidity files."""
     if not contract_files:
-        raise ValidationError("No contract files provided")
+        raise HTTPException(status_code=400, detail="No contract files provided")
     if not all(file.endswith(".sol") for file in contract_files):
-        raise ValidationError("Invalid contract files. All files must have a .sol extension")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid contract files. All files must have a .sol extension",
+        )

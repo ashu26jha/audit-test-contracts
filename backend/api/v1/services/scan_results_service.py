@@ -4,22 +4,17 @@ from uuid import UUID
 from api.v1.models.scan import ScanResult
 from api.v1.schemas.context_scan_schema import Finding
 from api.v1.services.scan_history_service import get_scan_result
-from common.exceptions import ResourceNotFoundError
 
 
 async def get_full_scan_result(scan_id: UUID) -> ScanResult:
     """Retrieve full scan results by scan ID."""
     result = await get_scan_result(scan_id)
-    if result is None:
-        raise ResourceNotFoundError(f"Scan result for ID {scan_id} not found")
     return result
 
 
 async def get_partial_scan_result(scan_id: UUID) -> ScanResult:
     """Retrieve partial scan results by scan ID."""
     full_result = await get_scan_result(scan_id)
-    if full_result is None:
-        raise ResourceNotFoundError(f"Scan result for ID {scan_id} not found")
     partial_findings = _get_partial_findings(full_result.findings)
     full_result.findings = partial_findings
     return full_result

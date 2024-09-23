@@ -3,9 +3,8 @@ from typing import Optional
 
 from api.v1.models.user import User
 from bson import ObjectId
-from common.exceptions import UnauthorizedError
 from config import settings
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
@@ -31,8 +30,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         user_id: str = payload.get("sub")
         user_id_obj = ObjectId(user_id)
     except (JWTError, ValueError) as exc:
-        raise UnauthorizedError("Could not validate credentials") from exc
+        raise HTTPException(status_code=401, detail="Could not validate credentials") from exc
     user = await User.find_one({"_id": user_id_obj})
     if user is None:
-        raise UnauthorizedError("User not found")
+        raise HTTPException(status_code=401, detail="User not found")
     return user

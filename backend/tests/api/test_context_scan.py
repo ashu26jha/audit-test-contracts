@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
 from api.v1.services import context_scan_service
-from common.exceptions import EmptyResponseError, JSONParsingError
 from common.profiles import Profiles
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from main import app
 
@@ -62,15 +62,12 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
 @pytest.mark.asyncio
 async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = None
-    with pytest.raises(EmptyResponseError) as exc_info:
+    with pytest.raises(HTTPException) as exc_info:
         await context_scan_service.perform_context_scan(
             "Test Summary", "Test Contracts", Profiles.NFT
         )
-    error_response = exc_info.value.detail
-    assert error_response["success"] is False
-    assert error_response["code"] == 204
-    assert error_response["message"] == "LLM response was empty or invalid"
-    assert error_response["details"] is None
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "LLM response was empty or invalid"
 
 
 @pytest.mark.asyncio
@@ -192,7 +189,9 @@ def test_context_scan_endpoint_error():
         "api.v1.services.context_scan_service.perform_context_scan",
         new_callable=AsyncMock,
     ) as mock_perform_context_scan:
-        mock_perform_context_scan.side_effect = JSONParsingError()
+        mock_perform_context_scan.side_effect = HTTPException(
+            status_code=400, detail="Failed to parse LLM response as valid JSON"
+        )
 
         response = client.post(
             "/api/v1/context-scan",
@@ -203,9 +202,7 @@ def test_context_scan_endpoint_error():
             },
         )
         assert response.status_code == 400
-        result = response.json()
-        assert "detail" in result, f"Expected 'detail' key in response, got {result}"
-        error_response = result["detail"]
+        error_response = response.json()
         assert error_response["success"] is False
         assert error_response["code"] == 400
         assert "Failed to parse LLM response as valid JSON" in error_response["message"]

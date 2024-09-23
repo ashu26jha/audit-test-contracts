@@ -6,6 +6,7 @@ from common.llm_clients import CLAUDE_CLIENT
 # Import the helper function
 from common.parse_llm_response import parse_model_response
 from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
+from fastapi import HTTPException
 from langfuse.decorators import langfuse_context
 from openai import AsyncOpenAI, OpenAIError
 from pydantic import BaseModel
@@ -84,20 +85,20 @@ async def send_prompt_to_llm_async(
             return structured_response
 
         else:
-            raise ValueError(f"Unsupported model type: {model_type}")
+            raise HTTPException(status_code=500, detail=f"Unsupported model type: {model_type}")
 
     except OpenAIError as e:
         langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.error(f"OpenAI API error when sending prompt to {model_type}: {e}")
-        return None
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     except ValueError as e:
         langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.error(f"Value error when sending prompt to {model_type}: {e}")
-        return None
+        raise HTTPException(status_code=500, detail="Internal Server Error")
     except Exception as e:
         langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.error(f"Unexpected error when sending prompt to {model_type}: {e}")
-        return None
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 def build_messages(

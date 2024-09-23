@@ -22,5 +22,4 @@ async def perform_audit_agent(
 ):
     scan_id = uuid4()
     await audit_agent_service.initiate_scan(scan_id, current_user, request, background_tasks)
-
     return SuccessResponse(data=audit_agent_schema.AuditAgentInitiateResponse(scan_id=scan_id))

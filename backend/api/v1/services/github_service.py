@@ -1,6 +1,8 @@
 import base64
+import re
 
 import httpx
+from common import logger
 from fastapi import HTTPException
 
 
@@ -20,8 +22,7 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=400, detail="Failed to fetch user data from GitHub")
+            raise HTTPException(status_code=400, detail="Failed to fetch user data from GitHub")
 
         user_data = response.json()
 
@@ -45,16 +46,13 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user/emails", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=400, detail="Failed to fetch user emails from GitHub")
+            raise HTTPException(status_code=400, detail="Failed to fetch user emails from GitHub")
 
         emails = response.json()
-        primary_email = next((email["email"]
-                             for email in emails if email["primary"]), None)
+        primary_email = next((email["email"] for email in emails if email["primary"]), None)
 
         if not primary_email:
-            raise HTTPException(
-                status_code=400, detail="No primary email found for the user")
+            raise HTTPException(status_code=400, detail="No primary email found for the user")
 
         return primary_email
 
@@ -68,7 +66,9 @@ class GitHubService:
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.BASE_URL}/user/repos", headers=headers)
+            response = await client.get(
+                f"{self.BASE_URL}/user/repos", headers=headers, params={"per_page": 100}
+            )
 
         if response.status_code != 200:
             raise HTTPException(
@@ -115,8 +115,7 @@ class GitHubService:
             response = await client.get(url, headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=400, detail="Failed to fetch file content from GitHub")
+            raise HTTPException(status_code=400, detail="Failed to fetch file content from GitHub")
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
@@ -154,8 +153,7 @@ class GitHubService:
             )
 
         orgs = (
-            [{"login": org["login"], "type": "organization"}
-                for org in orgs_response.json()]
+            [{"login": org["login"], "type": "organization"} for org in orgs_response.json()]
             if orgs_response.status_code == 200
             else []
         )
@@ -185,34 +183,108 @@ class GitHubService:
         response.raise_for_status()
         return [branch["name"] for branch in response.json()]
 
-    # async def get_repository_contents(
-    #     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
-    # ) -> list:
-    #     async def fetch_contents(path):
-    #         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-    #         params = {"ref": branch}
-    #         async with httpx.AsyncClient() as client:
-    #             response = await client.get(
-    #                 url, headers={"Authorization": f"token {access_token}"}, params=params
-    #             )
-    #         response.raise_for_status()
-    #         return response.json()
+    async def get_commit_hash(
+        self, access_token: str, repository_url: str, branch_name: str
+    ) -> str:
+        """
+        Fetch the latest commit hash from the specified branch of the repository.
+        """
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+        }
 
-    #     async def recursive_fetch(path=""):
-    #         contents = await fetch_contents(path)
-    #         result = []
-    #         for item in contents:
-    #             if item["type"] == "file" and item["name"].endswith(".sol"):
-    #                 result.append(
-    #                     {
-    #                         "name": item["name"],
-    #                         "path": item["path"],
-    #                         "type": "file",
-    #                         "download_url": item["download_url"],
-    #                     }
-    #                 )
-    #             elif item["type"] == "dir":
-    #                 result.extend(await recursive_fetch(item["path"]))
-    #         return result
+        # Include access token if provided
+        if access_token:
+            headers["Authorization"] = f"token {access_token}"
 
-    #     return await recursive_fetch()
+        # Improved URL parsing
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repository_url)
+        if not match:
+            message = "Invalid GitHub repository URL."
+            logger.error(message)
+            raise HTTPException(status_code=400, detail=message)
+
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{branch_name}"
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, headers=headers)
+
+                if response.status_code == 401 and access_token:
+                    # Invalid token, try without token
+                    logger.warning("Invalid access token provided. Retrying without access token.")
+                    headers.pop("Authorization", None)
+                    response = await client.get(url, headers=headers)
+
+                if response.status_code == 200:
+                    commit_data = response.json()
+                elif response.status_code == 401:
+                    message = "Unauthorized access. Access token required for private repositories."
+                    logger.error(message)
+                    raise HTTPException(status_code=401, detail=message)
+                elif response.status_code == 404:
+                    message = f"Repository or branch '{branch_name}' not found."
+                    logger.error(message)
+                    raise HTTPException(status_code=404, detail=message)
+                else:
+                    api_message = response.json().get("message", "No message provided")
+                    message = (
+                        f"Failed to fetch commit hash for branch '{branch_name}'. "
+                        f"GitHub API returned status {response.status_code}: {api_message}"
+                    )
+                    logger.error(message)
+                    raise HTTPException(status_code=500, detail="Internal Error Server")
+
+            commit_hash = commit_data.get("sha")
+            if not commit_hash:
+                message = f"Commit hash not found for branch '{branch_name}'."
+                logger.error(message)
+                raise HTTPException(status_code=500, detail="Internal Error Server")
+
+            return commit_hash
+
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            message = f"Unexpected error while fetching commit hash: {str(e)}"
+            logger.error(message)
+            raise HTTPException(status_code=500, detail="Internal Error Server")
+
+
+# async def get_repository_contents(
+#     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
+# ) -> list:
+#     async def fetch_contents(path):
+#         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+#         params = {"ref": branch}
+#         async with httpx.AsyncClient() as client:
+#             response = await client.get(
+#                 url, headers={"Authorization": f"token {access_token}"}, params=params
+#             )
+#         response.raise_for_status()
+#         return response.json()
+
+#     async def recursive_fetch(path=""):
+#         contents = await fetch_contents(path)
+#         result = []
+#         for item in contents:
+#             if item["type"] == "file" and item["name"].endswith(".sol"):
+#                 result.append(
+#                     {
+#                         "name": item["name"],
+#                         "path": item["path"],
+#                         "type": "file",
+#                         "download_url": item["download_url"],
+#                     }
+#                 )
+#             elif item["type"] == "dir":
+#                 result.extend(await recursive_fetch(item["path"]))
+#         return result
+
+#     return await recursive_fetch()

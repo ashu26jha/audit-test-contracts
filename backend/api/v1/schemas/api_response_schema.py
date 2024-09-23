@@ -13,9 +13,3 @@ class ErrorResponse(BaseModel):
 class SuccessResponse(BaseModel):
     success: bool = True
     data: Any
-
-
-class APIResponse(BaseModel):
-    success: bool
-    data: Any = None
-    error: ErrorResponse | None = None

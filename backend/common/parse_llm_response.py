@@ -3,14 +3,13 @@ import re
 from typing import Optional, Type, TypeVar, Union
 
 from common import logger
+from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_model_response(
-    content: str, response_model: Optional[Type[T]]
-) -> Optional[Union[T, str]]:
+def parse_model_response(content: str, response_model: Optional[Type[T]]) -> Union[T, str]:
     """
     Parse and clean the LLM response content into the specified Pydantic model.
 
@@ -19,7 +18,10 @@ def parse_model_response(
         response_model (Optional[Type[T]]): The Pydantic model to parse the content into.
 
     Returns:
-        Optional[T]: An instance of the response_model parsed from the content, or None if parsing fails.
+        Union[T, str]: An instance of the response_model parsed from the content, or raw content if no model is provided.
+
+    Raises:
+        HTTPException: If any error occurs during parsing or validation.
     """
     if response_model is None:
         return content
@@ -28,8 +30,9 @@ def parse_model_response(
         # Extract JSON content from the response
         json_content = extract_json(content)
         if not json_content:
-            logger.error("No JSON content found in the LLM response.")
-            return None
+            raise HTTPException(
+                status_code=400, detail="No JSON content found in the LLM response."
+            )
 
         # Clean the JSON content
         json_content_clean = remove_control_characters(json_content)
@@ -37,8 +40,7 @@ def parse_model_response(
         # Attempt to parse the JSON content
         parsed_json = try_parse_json(json_content_clean)
         if parsed_json is None:
-            logger.error("Failed to parse JSON content.")
-            return None
+            raise HTTPException(status_code=400, detail="Failed to parse JSON content.")
 
         # Try to parse using response_model
         try:
@@ -65,13 +67,18 @@ def parse_model_response(
                         return structured_response
                     except ValidationError as e2:
                         logger.error(f"Validation error after wrapping: {e2}")
-                        return None
-            logger.error(f"Validation error parsing JSON into {response_model}: {e}")
-            return None
+                        raise HTTPException(status_code=500, detail="Internal server error")
 
+            raise HTTPException(
+                status_code=500,
+                detail=f"Validation error parsing JSON into {response_model}",
+            )
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error parsing response into {response_model}: {e}")
-        return None
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 def extract_json(text: str) -> Optional[str]:
@@ -144,11 +151,8 @@ def remove_control_characters(json_content: str) -> str:
     json_content = re.sub(control_char_regex, "", json_content)
 
     # Replace curly quotes with straight quotes
-    json_content = json_content.replace(
-        """, ""').replace(""",
-        """)
-    json_content = json_content.replace(""', ""').replace(""', """,
-    )
+    json_content = json_content.replace(""", '"').replace(""", '"')
+    json_content = json_content.replace("'", "'").replace("'", "'")
 
     # Remove zero-width or non-printing Unicode characters
     json_content = re.sub(r"[\u200B-\u200D\uFEFF]", "", json_content)
