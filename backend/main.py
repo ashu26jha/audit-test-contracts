@@ -19,10 +19,14 @@ from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
-from common.error_handling import global_exception_handler
-from common.exceptions import UnauthorizedError
+from common.error_handling import (
+    general_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+)
 from config import settings
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -52,6 +56,8 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -67,7 +73,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = os.getenv("API_USERNAME", "")
     correct_password = os.getenv("API_PASSWORD", "")
     if credentials.username != correct_username or credentials.password != correct_password:
-        raise UnauthorizedError("Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     return credentials.username
 
 
@@ -103,7 +109,11 @@ app.include_router(webhook.router, prefix="/api/v1/payments")
 if settings.ENVIRONMENT == "development":
     app.include_router(test_auth.router, prefix="/api/v1")
 
-app.add_exception_handler(Exception, global_exception_handler)
+
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

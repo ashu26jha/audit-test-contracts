@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import tiktoken
 from config.settings import TOKENS_ENCODING
 

@@ -6,9 +6,15 @@ import stripe
 from api.v1.models.scan import Scan
 from api.v1.models.user import User
 from bson import ObjectId
+from common.logger import logger
 from config.settings import STRIPE_API_KEY, STRIPE_WEBHOOK_KEY
+from fastapi import HTTPException
 
 stripe.api_key = STRIPE_API_KEY
+if not STRIPE_API_KEY:
+    message = "Stripe API key is not set"
+    logger.error(message)
+    raise HTTPException(status_code=500, detail="Internal server error")
 
 
 class PaymentService:
@@ -18,13 +24,17 @@ class PaymentService:
         # Retrieve `user_id` from `scan_id`
         scan = await Scan.find_one(Scan.scan_id == UUID(scan_id))
         if not scan:
-            raise ValueError(f"No scan found with ID: {scan_id}")
+            message = f"No scan found with ID: {scan_id}"
+            logger.error(message)
+            raise HTTPException(status_code=404, detail=message)
         user_id = ObjectId(scan.user_id)
 
         # Retrieve `email` for the `user_id`
         user = await User.find_one(User.id == user_id)
         if not user:
-            raise ValueError(f"No user found with ID: {user_id}")
+            message = f"No user found with ID: {user_id}"
+            logger.error(message)
+            raise HTTPException(status_code=404, detail=message)
         user_email = user.email
 
         checkout_session = stripe.checkout.Session.create(
@@ -54,9 +64,9 @@ class PaymentService:
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_KEY)
         except json.JSONDecodeError:
-            raise ValueError("Invalid payload")
+            raise HTTPException(status_code=400, detail="Invalid payload")
         except stripe.error.SignatureVerificationError:
-            raise ValueError("Invalid signature")
+            raise HTTPException(status_code=400, detail="Invalid signature")
 
         if event["type"] == "checkout.session.completed":
             event_id = event["id"]
@@ -94,7 +104,9 @@ class PaymentService:
                     scan.paid_status = True
                     await scan.save()
 
-            except Exception:
-                return False
+            except Exception as e:
+                message = f"Failed to handle webhook: {str(e)}"
+                logger.error(message)
+                raise HTTPException(status_code=500, detail="Internal server error")
 
         return True

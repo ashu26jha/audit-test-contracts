@@ -4,7 +4,7 @@ from uuid import UUID
 
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
-from common.exceptions import ResourceNotFoundError
+from fastapi import HTTPException
 
 
 async def store_scan(scan: Scan):
@@ -24,13 +24,13 @@ async def update_scan_status(scan_id: UUID, status: str):
             scan.completedAt = datetime.now(timezone.utc)
         await scan.save()
     else:
-        raise ResourceNotFoundError(f"Scan with ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
 
 
 async def store_scan_result(scan_result: ScanResult):
     """Store the detailed results of a scan."""
     scan_result.createdAt = datetime.now(timezone.utc)
-    scan_result.updatedAt = datetime.now(timezone.utc)
+    scan_result.completedAt = datetime.now(timezone.utc)
     await scan_result.create()
 
 
@@ -38,7 +38,7 @@ async def get_scan(scan_id: UUID) -> Scan:
     """Retrieve scan metadata by scan ID."""
     scan = await Scan.find_one(Scan.scan_id == scan_id)
     if not scan:
-        raise ResourceNotFoundError(f"Scan with ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
     return scan
 
 
@@ -46,7 +46,7 @@ async def get_scan_result(scan_id: UUID) -> ScanResult:
     """Retrieve scan results by scan ID."""
     result = await ScanResult.find_one(ScanResult.scan_id == scan_id)
     if not result:
-        raise ResourceNotFoundError(f"Scan result for ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan result with ID {scan_id} not found")
     return result
 
 

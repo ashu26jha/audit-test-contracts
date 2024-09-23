@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from api.v1.schemas.generate_summary_schema import SummaryResponse
 from api.v1.services import generate_summary_service
-from common.exceptions import InternalServerError
 from config.settings import LLM_MODEL_SUMMARY
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from main import app
 
@@ -52,16 +52,14 @@ async def test_generate_summary_error(mock_send_prompt_to_llm_async):
 
     response = client.post("/api/v1/generate-summary", json={"contracts": "Test Contracts"})
     assert response.status_code == 500
-    response_data = response.json()
-    print(response_data)
-    assert "detail" in response_data, f"Expected 'detail' key in response, got {response_data}"
-    error_response = response_data["detail"]
+    error_response = response.json()
     assert error_response["success"] is False
     assert error_response["code"] == 500
-    assert "Failed to generate summary" in error_response["message"]
+    assert error_response["message"] == "Internal Server Error"
     assert error_response["details"] is None
 
-    with pytest.raises(InternalServerError) as exc_info:
+    with pytest.raises(HTTPException) as exc_info:
         await generate_summary_service.generate_summary("Test Contracts")
 
-    assert "Failed to generate summary" in str(exc_info.value)
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.detail == "Internal Server Error"

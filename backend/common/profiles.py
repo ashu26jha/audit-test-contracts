@@ -1,8 +1,9 @@
-from __future__ import annotations
-
 import json
 import os
 from enum import Enum
+
+from common import logger
+from fastapi import HTTPException
 
 # Define the path to the profiles directory
 PROFILES_DIR = os.path.join(os.path.dirname(__file__), "profiles_data")
@@ -46,6 +47,10 @@ def load_profile(profile_name: Profiles):
         with open(profile_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError as exc:
-        raise ValueError(f"Profile file for {profile_name} not found.") from exc
+        message = f"Profile file for {profile_name} not found."
+        logger.error(message)
+        raise HTTPException(status_code=404, detail=message) from exc
     except json.JSONDecodeError as exc:
-        raise ValueError(f"Profile file for {profile_name} is not a valid JSON file.") from exc
+        message = f"Profile file for {profile_name} is not a valid JSON file."
+        logger.error(message)
+        raise HTTPException(status_code=500, detail=message) from exc

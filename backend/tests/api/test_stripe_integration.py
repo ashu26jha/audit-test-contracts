@@ -86,7 +86,10 @@ def test_create_checkout_session_invalid_scan_id():
             "/api/v1/payments/create-checkout-session", json={"scanId": str(uuid4())}
         )
         assert response.status_code == 400
-        assert "No scan found" in response.json()["detail"]
+        error_response = response.json()
+        assert error_response["success"] is False
+        assert error_response["code"] == 400
+        assert "No scan found" in error_response["message"]
 
 
 def test_webhook_handler_invalid_signature():
@@ -102,4 +105,7 @@ def test_webhook_handler_invalid_signature():
             content=b"test_payload",
         )
         assert response.status_code == 400
-        assert "Invalid signature" in response.json()["detail"]
+        error_response = response.json()
+        assert error_response["success"] is False
+        assert error_response["code"] == 400
+        assert "Invalid signature" in error_response["message"]

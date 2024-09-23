@@ -6,11 +6,11 @@ from api.v1.prompts.context_scan_prompts import (
     SYSTEM_PROMPT,
 )
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
-from common.exceptions import EmptyResponseError, InternalServerError, JSONParsingError
 from common.logger import logger
 from common.profiles import Profiles, load_profile
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import LLM_MODEL
+from fastapi import HTTPException
 
 
 async def perform_context_scan(
@@ -38,12 +38,12 @@ async def perform_context_scan(
 
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
             logger.warning("LLM response was empty or invalid")
-            raise EmptyResponseError("LLM response was empty or invalid")
+            raise HTTPException(status_code=500, detail="LLM response was empty or invalid")
 
         return llm_response.findings
 
-    except (EmptyResponseError, JSONParsingError) as e:
-        raise e
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception(f"Unexpected Error: {str(e)}")
-        raise InternalServerError(f"An unexpected error occurred: {str(e)}") from e
+        raise HTTPException(status_code=500, detail="Internal Server Error")

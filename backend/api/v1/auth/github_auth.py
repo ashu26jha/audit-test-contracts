@@ -60,6 +60,8 @@ async def github_callback(code: str, request: Request):
             username=user_data["login"],
             email=user_data["email"],
             accessToken=access_token,
+            avatarUrl=user_data["avatar_url"],
+            name=user_data["name"],
         )
         await user.create()
     else:

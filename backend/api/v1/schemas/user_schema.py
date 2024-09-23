@@ -39,6 +39,8 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     githubId: str
+    avatarUrl: Optional[str] = None
+    name: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -53,6 +55,8 @@ class UserUpdate(BaseModel):
 class UserInDB(UserBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     accessToken: str
+    avatarUrl: Optional[str] = None
+    name: Optional[str] = None
     createdAt: datetime
     updatedAt: datetime
 

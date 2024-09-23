@@ -13,6 +13,10 @@ class AuditAgentRequest(BaseModel):
         ...,
         description="Array of relative file paths within the repository (e.g., 'contracts/MyContract.sol')",
     )
+    branchName: str = Field(
+        default="main",
+        description="Name of the branch to scan. Defaults to 'main' if not provided.",
+    )
 
 
 class AuditAgentInitiateResponse(BaseModel):
@@ -26,6 +30,8 @@ class ScanResponse(BaseModel):
     completedAt: Optional[datetime]
     contractFiles: List[str]
     linesOfCode: Optional[Dict[str, int]] = None
+    branchName: str
+    commitHash: Optional[str]
     paid_status: bool
     user_id: str = Field(exclude=True)
     createdAt: datetime = Field(exclude=True)
@@ -40,7 +46,7 @@ class ScanResultResponse(BaseModel):
     type: Optional[Profiles]
     findings: List[Finding]
     createdAt: datetime
-    updatedAt: datetime
+    completedAt: datetime
 
     model_config = ConfigDict(
         from_attributes=True,

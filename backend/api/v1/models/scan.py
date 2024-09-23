@@ -17,6 +17,8 @@ class Scan(Document):
     completedAt: Optional[datetime] = None
     contractFiles: List[str] = Field(default_factory=list)
     linesOfCode: Optional[Dict[str, int]] = None
+    branchName: str = Field(default="main")
+    commitHash: Optional[str] = None
     paid_status: bool = False
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -37,6 +39,8 @@ class Scan(Document):
                     "comment_lines": 15,
                     "empty_lines": 5,
                 },
+                "branchName": "main",
+                "commitHash": "1234567890",
                 "paidStatus": False,
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
@@ -54,7 +58,7 @@ class ScanResult(Document):
     type: Optional[Profiles]
     findings: List[Finding] = Field(default_factory=list)
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -74,7 +78,7 @@ class ScanResult(Document):
                     }
                 ],
                 "createdAt": "2023-10-01T12:00:00Z",
-                "updatedAt": "2023-10-01T12:00:00Z",
+                "completedAt": "2023-10-01T12:00:00Z",
             }
         },
     )
