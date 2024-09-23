@@ -58,7 +58,7 @@ class ScanResult(Document):
     type: Optional[Profiles]
     findings: List[Finding] = Field(default_factory=list)
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -78,7 +78,7 @@ class ScanResult(Document):
                     }
                 ],
                 "createdAt": "2023-10-01T12:00:00Z",
-                "updatedAt": "2023-10-01T12:00:00Z",
+                "completedAt": "2023-10-01T12:00:00Z",
             }
         },
     )

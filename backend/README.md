@@ -21,7 +21,7 @@ This is the backend component of the Yokai Audit Agent, providing the core funct
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.12+
 - MongoDB
 - Git
 
@@ -131,7 +131,9 @@ Retrieves the current authenticated user's information.
   "id": "string",
   "username": "string",
   "email": "string",
-  "githubId": "string"
+  "githubId": "string",
+  "name": "string",
+  "avatarUrl": "string"
 }
 ```
 </details>
@@ -180,14 +182,18 @@ Initiates a new scan for selected smart contracts.
 ```json
 {
   "repositoryURL": "string",
-  "contractFiles": ["string"]
+  "contractFiles": ["string"],
+  "branchName": "string"
 }
 ```
 
 **Response:**
 ```json
 {
-  "scan_id": "UUID"
+	"success": true,
+	"data": {
+		"scan_id": "UUID"
+	}
 }
 ```
 </details>
@@ -203,18 +209,42 @@ Retrieves the results of a specific scan.
 **Response:**
 ```json
 {
-  "scan_id": "UUID",
-  "summary": "string",
-  "type": "string",
-  "scan_result": [
-    {
-      "Issue": "string",
-      "Severity": "string",
-      "Contracts": ["string"],
-      "Description": "string",
-      "Recommendation": "string"
+	"success": true,
+	"data": {
+    "scan": {
+			"scan_id": "UUID",
+			"status": "string",
+			"startedAt": "Datetime",
+			"completedAt": "Datetime",
+			"contractFiles": [ "string"],
+			"linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "main",
+			"commitHash": "001",
+			"paid_status": "boolean",
+		},
+		"partial_result": {
+      "scan_id": "UUID",
+      "summary": "string",
+      "type": "string",
+      "findings": [
+        {
+          "Issue": "string",
+          "Severity": "string",
+          "Contracts": ["string"],
+          "Description": "string",
+          "Recommendation": "string"
+        }
+      ],
+      "createdAt": "DateTime",
+      "updatedAt": "DateTime",
     }
-  ]
+  }
 }
 ```
 </details>
@@ -227,7 +257,48 @@ Retrieves partial results of a specific scan (limited findings).
 **Parameters:**
 - `scan_id`: UUID of the scan (path parameter)
 
-**Response:** Same as full results, but with a limited number of findings.
+**Response:**
+```json
+{
+	"success": true,
+	"data": {
+    "scan": {
+			"scan_id": "UUID",
+			"status": "string",
+			"startedAt": "DateTime",
+			"completedAt": "DateTime",
+			"contractFiles": [ "string"],
+			"linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "string",
+			"commitHash": "string",
+			"paid_status": "boolean",
+		},
+		"partial_result": {
+      "scan_id": "UUID",
+      "summary": "string",
+      "type": "string",
+      "findings": [
+        {
+          "Issue": "string",
+          "Severity": "string",
+          "Contracts": ["string"],
+          "Description": "string",
+          "Recommendation": "string"
+        }
+      ],
+      "createdAt": "DateTime",
+      "updatedAt": "DateTime",
+    }
+  }
+}
+```
+
 </details>
 
 <details>
@@ -239,15 +310,24 @@ Retrieves the scan history for the authenticated user.
 An array of scan objects, each including:
 ```json
 {
-  "scan_id": "UUID",
-  "user_id": "string",
-  "status": "String",
-  "startedAt": "DateTime",
-  "completedAt": "DateTime",
-  "contractFiles": ["String"],
-  "paidStatus": "Boolean",
-  "createdAt": "DateTime",
-  "updatedAt": "DateTime"
+	"success": true,
+	"data": [
+    "scan_id": "UUID",
+    "status": "String",
+    "startedAt": "DateTime",
+    "completedAt": "DateTime",
+    "contractFiles": ["string"],
+    "linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "string",
+			"commitHash": "string",
+			"paid_status": "boolean",
+  ],
 }
 ```
 </details>
@@ -262,8 +342,11 @@ Simple health check endpoint to verify API status.
 **Response:**
 ```json
 {
-  "status": "string",
-  "version": "string"
+	"success": "boolean",
+	"data": {
+		"details": "string",
+    "version": "string"
+	}
 }
 ```
 </details>
@@ -283,8 +366,11 @@ Generates a summary of smart contracts.
 **Response:**
 ```json
 {
-  "summary": "string",
-  "type": "string"
+	"success": true,
+	"data": {
+    "summary": "string",
+    "type": "string"
+  }
 }
 ```
 </details>
@@ -299,22 +385,25 @@ Performs a context-aware scan of smart contracts.
 {
   "summary": "string (optional)",
   "contracts": "string",
-  "profile": "string"
+  "profile": "string (optional)"
 }
 ```
 
 **Response:**
 ```json
 {
-  "findings": [
-    {
-      "Issue": "string",
-      "Severity": "string",
-      "Contracts": ["string"],
-      "Description": "string",
-      "Recommendation": "string"
-    }
-  ]
+	"success": true,
+	"data": {
+    "findings": [
+        {
+        "Issue": "string",
+        "Severity": "string",
+        "Contracts": ["string"],
+        "Description": "string",
+        "Recommendation": "string"
+      }
+    ]
+  }
 }
 ```
 </details>
@@ -340,16 +429,19 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 
 ```json
 {
-  "access_token": "<JWT_TOKEN>",
-  "token_type": "bearer",
-  "user": {
-    "id": "652f64e8c324d4eb783d4a61",
-    "username": "testuser",
-    "email": "testuser@example.com",
-    "githubId": "test_github_id",
-    "accessToken": "test_access_token",
-    "createdAt": "2023-10-01T12:00:00Z",
-    "updatedAt": "2023-10-01T12:00:00Z"
+	"success": true,
+	"data": {
+    "access_token": "<JWT_TOKEN>",
+    "token_type": "bearer",
+    "user": {
+      "_id": "652f64e8c324d4eb783d4a61",
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "githubId": "test_github_id",
+      "accessToken": "test_access_token",
+      "createdAt": "2023-10-01T12:00:00Z",
+      "updatedAt": "2023-10-01T12:00:00Z"
+    }
   }
 }
 ```
@@ -364,13 +456,14 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```json
 {
   "_id": "ObjectId",
-  "githubId": "String",
-  "username": "String",
-  "email": "String",
-  "avatarUrl": "String",
-  "createdAt": "Date",
-  "updatedAt": "Date",
-  "lastLoginAt": "Date"
+  "username": "string",
+  "email": "string",
+  "githubId": "string",
+  "accessToken": "string",
+  "avatarUrl": "string",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime",
+  "lastLoginAt": "Datetime"
 }
 ```
 
@@ -395,25 +488,46 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```json
 {
   "_id": "ObjectId",
-  "repositoryId": "ObjectId",
-  "userId": "ObjectId",
-  "status": "String",
-  "startedAt": "Date",
-  "completedAt": "Date",
-  "contractFiles": ["String"],
-  "vulnerabilities": [
+  "scan_id": "UUID",
+  "user_id": "ObjectId",
+  "status": "string",
+  "startedAt": "Datetime",
+  "completedAt": "Datetime",
+  "contractFiles": ["string"],
+  "linesOfCode": {
+    "total_lines": "number",
+    "code_lines": "number",
+    "comment_lines": "number",
+    "empty_lines": "number",
+    "string_lines": "number",
+  },
+  "branchName": "string",
+  "commitHash": "string",
+  "paid_status": "boolean",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime"
+}
+```
+
+### Scan Results Collection
+
+```json
+{
+  "_id": "ObjectId",
+  "scan_id": "UUID",
+  "summary": "string",
+  "type": "string",
+  "findings": [
     {
-      "type": "String",
-      "issue": "String",
-      "severity": "String",
-      "contracts": ["String"],
-      "description": "String",
-      "recommendation": "String"
+      "Issue": "string",
+      "Severity": "string",
+      "Contracts": ["string"],
+      "Description": "string",
+      "Recommendation": "string"
     }
   ],
-  "paidStatus": "Boolean",
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "createdAt": "Datetime",
+  "completedAt": "Datetime",
 }
 ```
 
@@ -422,14 +536,15 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```json
 {
   "_id": "ObjectId",
-  "userId": "ObjectId",
-  "scanId": "ObjectId",
-  "amount": "Number",
-  "currency": "String",
-  "status": "String",
-  "stripeSessionId": "String",
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "event_id": "string",
+  "user_id": "ObjectId",
+  "scan_id": "ObjectId",
+  "amount": "number",
+  "currency": "string",
+  "status": "string",
+  "stripeSessionId": "string",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime"
 }
 ```
 

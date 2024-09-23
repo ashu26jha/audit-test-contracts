@@ -2,6 +2,7 @@ from uuid import UUID
 
 from api.v1.models.user import User
 from api.v1.schemas.api_response_schema import SuccessResponse
+from api.v1.schemas.audit_agent_schema import ScanResponse, ScanResultResponse
 from api.v1.services.auth_service import get_current_user
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import (
@@ -21,7 +22,12 @@ async def get_audit_agent_result(
     scan = await get_scan(scan_id)
     if scan.user_id != str(current_user.id):
         raise HTTPException(status_code=401, detail="User not authorized to access this scan")
-    result = await get_full_scan_result(scan_id)
+    full_result = await get_full_scan_result(scan_id)
+
+    result = {
+        "scan": ScanResponse.model_validate(scan),
+        "result": (ScanResultResponse.model_validate(full_result) if full_result else None),
+    }
     return SuccessResponse(data=result)
 
 
@@ -33,7 +39,16 @@ async def get_partial_audit_agent_result(
     scan = await get_scan(scan_id)
     if scan.user_id != str(current_user.id):
         raise HTTPException(status_code=401, detail="User not authorized to access this scan")
-    result = await get_partial_scan_result(scan_id)
-    # Combine partial result with scan history
-    result = {"scan": scan, "partial_result": result}
+    partial_result = await get_partial_scan_result(scan_id)
+
+    # Convert the scan to a ScanResponse
+    scan_response = ScanResponse.model_validate(scan)
+
+    # Combine partial result with scan response
+    result = {
+        "scan": scan_response,
+        "partial_result": (
+            ScanResultResponse.model_validate(partial_result) if partial_result else None
+        ),
+    }
     return SuccessResponse(data=result)
