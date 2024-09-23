@@ -1,4 +1,6 @@
-# Yokai Audit Agent Backend
+<div align="center">
+<h1><strong> <span style="color:#8660f2"> Audit</span> Agent APIs </strong></h1>
+</div>
 
 ## Table of Contents
 
