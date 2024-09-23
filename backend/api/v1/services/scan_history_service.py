@@ -30,7 +30,7 @@ async def update_scan_status(scan_id: UUID, status: str):
 async def store_scan_result(scan_result: ScanResult):
     """Store the detailed results of a scan."""
     scan_result.createdAt = datetime.now(timezone.utc)
-    scan_result.updatedAt = datetime.now(timezone.utc)
+    scan_result.completedAt = datetime.now(timezone.utc)
     await scan_result.create()
 
 

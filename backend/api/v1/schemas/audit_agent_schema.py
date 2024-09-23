@@ -46,7 +46,7 @@ class ScanResultResponse(BaseModel):
     type: Optional[Profiles]
     findings: List[Finding]
     createdAt: datetime
-    updatedAt: datetime
+    completedAt: datetime
 
     model_config = ConfigDict(
         from_attributes=True,
