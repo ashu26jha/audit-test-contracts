@@ -35,4 +35,9 @@ async def get_partial_audit_agent_result(
     if scan.user_id != str(current_user.id):
         raise UnauthorizedError("User not authorized to access this scan")
     result = await get_partial_scan_result(scan_id)
+    # Combine partial result with scan history
+    result = {
+        "scan": scan,
+        "partial_result": result
+    }
     return SuccessResponse(data=result)

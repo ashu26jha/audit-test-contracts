@@ -1,3 +1,4 @@
+'use client';
 import {
   Navbar as NextUINavbar,
   NavbarContent,
@@ -7,6 +8,8 @@ import {
   NavbarItem,
   NavbarMenuItem,
 } from '@nextui-org/navbar';
+// import { Image } from '@nextui-org/react';
+import Image from 'next/image';
 import { Button } from '@nextui-org/button';
 import { Kbd } from '@nextui-org/kbd';
 import { Link } from '@nextui-org/link';
@@ -25,108 +28,129 @@ import {
   SearchIcon,
   Logo,
 } from '@/components/icons';
+import {
+  Avatar,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from '@nextui-org/react';
+import { useAuth } from '../contexts/AuthContext';
+import { useRouter, usePathname } from 'next/navigation';
+import { ChevronDownIcon } from '@heroicons/react/24/solid'; // You may need to install @heroicons/react
+import LoginNavbar from './login-navbar';
 
 export const Navbar = () => {
-  const searchInput = (
-    <Input
-      aria-label="Search"
-      classNames={{
-        inputWrapper: 'bg-default-100',
-        input: 'text-sm',
-      }}
-      endContent={
-        <Kbd className="hidden lg:inline-block" keys={['command']}>
-          K
-        </Kbd>
-      }
-      labelPlacement="outside"
-      placeholder="Search..."
-      startContent={
-        <SearchIcon className="text-base text-default-400 pointer-events-none flex-shrink-0" />
-      }
-      type="search"
-    />
-  );
+  const { user, logout, token } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
+  if (pathname === '/login') {
+    return <LoginNavbar />;
+  }
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
+  if (!user) {
+    router.push('/login');
+  }
   return (
-    <NextUINavbar maxWidth="xl" position="sticky">
-      <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit">AUDIT AGENT</p>
-          </NextLink>
-        </NavbarBrand>
-        {/* <ul className="hidden lg:flex gap-4 justify-start ml-2">
-          {siteConfig.navItems.map((item) => (
-            <NavbarItem key={item.href}>
-              <NextLink
-                className={clsx(
-                  linkStyles({ color: "foreground" }),
-                  "data-[active=true]:text-primary data-[active=true]:font-medium",
-                )}
-                color="foreground"
-                href={item.href}
+    <NextUINavbar
+      maxWidth="full"
+      position="sticky"
+      className="h-20 px-8 py-6 bg-zinc-900 rounded-bl-lg rounded-br-lg shadow border-b border-zinc-800 flex flex-row"
+    >
+      {/* <NavbarContent className="basis-1/5 sm:basis-full" justify="start"> */}
+      <NavbarBrand as="li" className="gap-3 max-w-fit">
+        <NextLink className="flex justify-start items-center gap-1" href="/">
+          <Image
+            src="./logo.svg"
+            alt="logo"
+            width={120}
+            height={70}
+            // className="w-8 h-8"
+          />
+        </NextLink>
+      </NavbarBrand>
+      {/* </NavbarContent> */}
+
+      <NavbarContent justify="end">
+        <div className="justify-start items-center gap-1.5 flex">
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <div className="rounded-lg justify-center items-center gap-2 flex">
+                <Avatar
+                  name={user ? user.username[0].toUpperCase() : 'G'}
+                  size="sm"
+                  // textColor="neutral"
+                  className="bg-zinc-700 text-zinc-300"
+                />
+                <p className="text-neutral-50 text-base leading-normal">
+                  {user ? user.username : 'Guest'}
+                </p>
+              </div>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Profile Actions" variant="flat">
+              <DropdownItem
+                key="profile"
+                onClick={() => {
+                  router.push('/profile');
+                }}
               >
-                {item.label}
-              </NextLink>
-            </NavbarItem>
-          ))}
-        </ul> */}
+                Profile
+              </DropdownItem>
+              <DropdownItem key="support">Support Email</DropdownItem>
+              <DropdownItem key="logout" color="danger" onClick={handleLogout}>
+                Log out
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+
+          <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
+        </div>
       </NavbarContent>
 
-      <NavbarContent
+      {/* <NavbarContent
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
         <NavbarItem className="hidden sm:flex gap-2">
           <ThemeSwitch />
         </NavbarItem>
-        {/* <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
-        <NavbarItem className="hidden md:flex">
-          <Button
-            isExternal
-            as={Link}
-            className="text-sm font-normal text-default-600 bg-default-100"
-            href={siteConfig.links.sponsor}
-            startContent={<HeartFilledIcon className="text-danger" />}
-            variant="flat"
-          >
-            Sponsor
-          </Button>
-        </NavbarItem> */}
       </NavbarContent>
-
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        <Link isExternal aria-label="Github" href={siteConfig.links.github}>
-          <GithubIcon className="text-default-500" />
-        </Link>
-        <ThemeSwitch />
-        <NavbarMenuToggle />
-      </NavbarContent>
-
-      <NavbarMenu>
-        {searchInput}
-        <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navMenuItems.map((item, index) => (
-            <NavbarMenuItem key={`${item}-${index}`}>
-              <Link
-                color={
-                  index === 2
-                    ? 'primary'
-                    : index === siteConfig.navMenuItems.length - 1
-                      ? 'danger'
-                      : 'foreground'
-                }
-                href="#"
-                size="lg"
-              >
-                {item.label}
-              </Link>
-            </NavbarMenuItem>
-          ))}
-        </div>
-      </NavbarMenu>
+      <NavbarContent
+        className="hidden sm:flex basis-1/5 sm:basis-full"
+        justify="end"
+      >
+        <Dropdown placement="bottom-end">
+          <DropdownTrigger>
+            <Avatar
+              isBordered
+              as="button"
+              className="transition-transform"
+              color="secondary"
+              name={user ? user.username : 'Guest'}
+              size="sm"
+            />
+          </DropdownTrigger>
+          <DropdownMenu aria-label="Profile Actions" variant="flat">
+            <DropdownItem
+              key="profile"
+              onClick={() => {
+                router.push('/profile');
+              }}
+            >
+              Profile
+            </DropdownItem>
+            <DropdownItem key="support">Support Email</DropdownItem>
+            <DropdownItem key="logout" color="danger" onClick={handleLogout}>
+              Log out
+            </DropdownItem>
+          </DropdownMenu>
+        </Dropdown>
+      </NavbarContent> */}
     </NextUINavbar>
   );
 };

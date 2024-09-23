@@ -20,7 +20,8 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch user data from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch user data from GitHub")
 
         user_data = response.json()
 
@@ -44,13 +45,16 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user/emails", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch user emails from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch user emails from GitHub")
 
         emails = response.json()
-        primary_email = next((email["email"] for email in emails if email["primary"]), None)
+        primary_email = next((email["email"]
+                             for email in emails if email["primary"]), None)
 
         if not primary_email:
-            raise HTTPException(status_code=400, detail="No primary email found for the user")
+            raise HTTPException(
+                status_code=400, detail="No primary email found for the user")
 
         return primary_email
 
@@ -74,28 +78,27 @@ class GitHubService:
         return response.json()
 
     async def get_repository_contents(
-        self, access_token: str, owner: str, repo: str, path: str = ""
+        self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
     ) -> list:
-        """
-        Fetch contents of a repository or a specific path within a repository.
-        """
-        headers = {
-            "Authorization": f"token {access_token}",
-            "Accept": "application/vnd.github.v3+json",
-        }
-
-        url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/git/trees/{branch}"
+        params = {"recursive": 1}
+        headers = {"Authorization": f"token {access_token}"}
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(url, headers=headers, params=params)
+        response.raise_for_status()
 
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=400,
-                detail="Failed to fetch repository contents from GitHub",
-            )
-
-        return response.json()
+        tree = response.json()["tree"]
+        return [
+            {
+                "name": item["path"].split("/")[-1],
+                "path": item["path"],
+                "type": "file",
+                "download_url": f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{item['path']}",
+            }
+            for item in tree
+            if item["type"] == "blob" and item["path"].endswith(".sol")
+        ]
 
     async def get_file_content(self, access_token: str, owner: str, repo: str, path: str) -> str:
         """
@@ -112,7 +115,8 @@ class GitHubService:
             response = await client.get(url, headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch file content from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch file content from GitHub")
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
@@ -150,7 +154,8 @@ class GitHubService:
             )
 
         orgs = (
-            [{"login": org["login"], "type": "organization"} for org in orgs_response.json()]
+            [{"login": org["login"], "type": "organization"}
+                for org in orgs_response.json()]
             if orgs_response.status_code == 200
             else []
         )
@@ -173,36 +178,22 @@ class GitHubService:
         response.raise_for_status()
         return [{"name": repo["name"], "updatedAt": repo["updated_at"]} for repo in response.json()]
 
-    # async def get_repository_contents(self, access_token: str, owner: str, repo: str, path: str = "") -> list:
-    #     url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-    #     async with httpx.AsyncClient() as client:
-    #         response = await client.get(
-    #             url,
-    #             headers={"Authorization": f"token {access_token}"}
-    #         )
-    #     response.raise_for_status()
-    #     contents = response.json()
-    #     if isinstance(contents, list):
-    #         return [
-    #             {
-    #                 "name": item["name"],
-    #                 "path": item["path"],
-    #                 "type": item["type"],
-    #                 "download_url": item.get("download_url")
-    #             }
-    #             for item in contents
-    #             if item["type"] == "file" and item["name"].endswith(".sol")
-    #         ]
-    #     return []
+    async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers={"Authorization": f"token {access_token}"})
+        response.raise_for_status()
+        return [branch["name"] for branch in response.json()]
 
     # async def get_repository_contents(
-    #     self, access_token: str, owner: str, repo: str, path: str = ""
+    #     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
     # ) -> list:
     #     async def fetch_contents(path):
     #         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+    #         params = {"ref": branch}
     #         async with httpx.AsyncClient() as client:
     #             response = await client.get(
-    #                 url, headers={"Authorization": f"token {access_token}"}
+    #                 url, headers={"Authorization": f"token {access_token}"}, params=params
     #             )
     #         response.raise_for_status()
     #         return response.json()

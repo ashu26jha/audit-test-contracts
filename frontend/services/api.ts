@@ -31,7 +31,7 @@ export const getOrganizationsAndPersonal = async (token: string) => {
       Authorization: `Bearer ${token}`,
     },
   });
-  return response.data;
+  return response.data.data;
 };
 
 export const getRepositories = async (
@@ -47,25 +47,78 @@ export const getRepositories = async (
       },
     }
   );
-  return response.data;
+  console.log('getRepositories', response.data);
+  return response.data.data;
 };
 
-export const getRepositoryContents = async (
+export const getBranches = async (
   token: string,
   owner: string,
-  repo: string,
-  path: string = ''
+  repo: string
 ) => {
   const response = await api.get(
-    `/api/v1/github/repository-contents/${owner}/${repo}?path=${path}`,
+    `/api/v1/github/repository-branches/${owner}/${repo}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     }
   );
-  console.log('getRepositoryContents', response.data);
+  return response.data.data;
+};
+
+export const getRepositoryContents = async (
+  token: string,
+  owner: string,
+  repo: string,
+  branch: string,
+  path: string = ''
+) => {
+  const response = await api.get(
+    `/api/v1/github/repository-contents/${owner}/${repo}?branch=${branch}&path=${path}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data.data;
+};
+
+export const initiateScan = async (
+  token: string,
+  data: {
+    repositoryURL: string;
+    contractFiles: string[];
+  }
+) => {
+  const response = await api.post('/api/v1/audit-agent', data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return response.data;
+};
+
+export const getPartialScanResults = async (token: string, scanId: string) => {
+  const response = await api.get(`/api/v1/scans/partial/${scanId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const result = response.data.data.partial_result;
+  const scan = response.data.data.scan;
+  result.scan = scan;
+  return result;
+};
+
+export const getScanHistory = async (token: string) => {
+  const response = await api.get('/api/v1/scans-history', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data.data;
 };
 
 export default api;

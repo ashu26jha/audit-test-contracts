@@ -13,13 +13,12 @@ const LoginPage = () => {
     router.push('/dashboard');
   }
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center">
       <Card className="max-w-[420px] p-5">
         <CardBody className="py-10">
           <div className="flex flex-col items-center">
-            <h1 className="text-2xl font-bold mb-5 text-center">AUDIT AGENT</h1>
             <Image
-              src="/logo.png"
+              src="/nethermind_logo.svg"
               alt="Audit Agent Logo"
               width={100}
               height={100}
@@ -32,12 +31,7 @@ const LoginPage = () => {
             <Button
               color="secondary"
               startContent={
-                <Image
-                  src="/github-mark.png"
-                  alt="GitHub"
-                  width={20}
-                  height={20}
-                />
+                <Image src="/github.svg" alt="GitHub" width={20} height={20} />
               }
               onPress={initiateGithubLogin}
             >

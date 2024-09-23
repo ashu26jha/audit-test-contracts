@@ -32,14 +32,27 @@ async def get_repositories(
     return SuccessResponse(data=repos)
 
 
+@router.get("/repository-branches/{owner}/{repo}", response_model=SuccessResponse)
+async def get_repository_branches(
+    owner: str,
+    repo: str,
+    current_user: User = Depends(get_current_user),
+):
+    branches = await github_service.get_repository_branches(
+        current_user.accessToken, owner, repo
+    )
+    return SuccessResponse(data=branches)
+
+
 @router.get("/repository-contents/{owner}/{repo}", response_model=SuccessResponse)
 async def get_repository_contents(
     owner: str,
     repo: str,
+    branch: str,
     path: str = "",
     current_user: User = Depends(get_current_user),
 ):
     contents = await github_service.get_repository_contents(
-        current_user.accessToken, owner, repo, path
+        current_user.accessToken, owner, repo, branch, path
     )
     return SuccessResponse(data=contents)
