@@ -1,12 +1,11 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, HttpUrl
+from typing import Optional, Dict, Union
 
 class FuzzerRequest(BaseModel):
-    contract: str = Field(..., description="Solidity contract content")
-    contract_name: str = Field(..., description="Name of the contract file")
+    github_url: HttpUrl
+    oauth_token: Optional[str] = None
 
 class FuzzerResponse(BaseModel):
-    contract_name: str
     fuzz_test: Optional[str] = None
     fuzz_results: Optional[str] = None
     analysis: Optional[str] = None

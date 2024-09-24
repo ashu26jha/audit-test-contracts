@@ -5,7 +5,10 @@ Act as a top 0.0001% ex-FAANG alumnus from Waterloo who interned at the most pre
 
 Your job and responsibility is to create world-class Smart Contract fuzzing suites in Foundry to uncover and prevent Critical vulnerabilities that would otherwise risk the loss of millions of dollars. This is done through invariant testing in foundry.
 
-Contract:
+Here is the project structure:
+{project_structure}
+
+Here are all of the contracts:
 ```solidity
 {contract_code}
 ```
@@ -23,6 +26,27 @@ Read the documentation for Foundry fuzzing:
 
 And here are examples of how a test is written
 {fuzz_examples}
+
+You should write the test with security in mind to try and find vulnerabilities and break the contract. Heres a list of vulnerabilities you should look for:
+List of vulnerabilities:
+1. Reentrancy
+2. Front-running
+3. Unrestricted access
+4. Integer overflow/underflow
+5. Uninitialized storage pointers
+6. Unrestricted delegatecall
+7. Unrestricted call
+8. Unrestricted transfer
+9. Unrestricted approve 
+10. Unrestricted mint
+11. Unrestricted burn
+12. Unrestricted withdraw
+13. Unrestricted deposit
+14. Unrestricted transferFrom
+15. Unrestricted approveFrom
+16. Unrestricted mintFrom
+17. Unrestricted burnFrom
+
 """
 
 REPORT_PROMPT = """

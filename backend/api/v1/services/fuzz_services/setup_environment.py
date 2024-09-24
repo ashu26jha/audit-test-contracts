@@ -1,88 +1,92 @@
 import asyncio
 import os
 import tempfile
-import uuid
 import shutil
 from typing import Tuple
 from pathlib import Path
+from api.v1.utils.forge_helpers import (
+    copy_solidity_files,
+    run_command,
+    update_foundry_config,
+)
+from api.v1.utils.project_helpers import (
+    detect_project_structure,
+    parse_dependencies,
+    install_dependencies,
+    generate_and_write_remappings,
+    detect_and_install_solc_version,
+    compile_project,
+    clone_repository,
+)
+from pydantic import HttpUrl
+from common import logger
 
-async def setup_environment(
-    contracts: str,
-    contract_name: str
-) -> Tuple[str, str]:
+async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str, str]:
     """
-    Sets up the environment by creating a virtual environment, initializing a Foundry project,
-    and adding the contract to the src directory. Also removes Counter.sol, Counter.t.sol, and Counter.s.sol files.
+    Sets up the environment by creating a temporary directory, cloning the repository,
+    initializing a Foundry project, and adding the contract to the src directory.
 
     Args:
-        contracts (str): The Solidity contract code to be added.
-        contract_name (str): The name of the Solidity contract file.
+        github_url (HttpUrl): The GitHub repository URL.
+        oauth_token (str): The OAuth token for private repositories.
 
     Returns:
         Tuple[str, str]: The project directory and contract name.
     """
+
+    tmpdirname = tempfile.mkdtemp(prefix="fuzz_project_")
+
+
     try:
-        # Generate a random project directory name
-        project_dir = tempfile.mkdtemp(prefix="fuzz_project_")
+        project_dir = tmpdirname
         project_path = Path(project_dir)
-        
-        # 1. Create project directory if it doesn't exist
-        project_path.mkdir(parents=True, exist_ok=True)
-        # print(f"Project directory '{project_dir}' is ready.") # Debugging
-        
-        # NOTE: This is just a folder, not a virtual environment.
 
-        # 4. Initialize Foundry project with the specified template
-        print("Initializing Foundry project...")
-        process = await asyncio.create_subprocess_exec(
-            "forge", "init", "--template", "DanielBoye/foundry-template", str(project_path),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-        if process.returncode != 0:
-            raise Exception(f"Failed to initialize Foundry project: {stderr.decode().strip()}")
-        print("Foundry project initialized.")
+        github_url_str = str(github_url)
 
-        # 5. Remove Counter.sol, Counter.t.sol, and Counter.s.sol files if they exist
-        counter_files = [
-            project_path / "src" / "Counter.sol",
-            project_path / "test" / "Counter.t.sol",
-            project_path / "script" / "Counter.s.sol"
-        ]
-        for file_path in counter_files:
-            if file_path.exists():
-                file_path.unlink()
-                # print(f"Removed {file_path}") # Debugging
+        repo_dir = await clone_repository(github_url_str, project_dir, oauth_token)
+        # NOTE: Debugging: Print all files in the project directory, ignoring .git directory
+        # for root, dirs, files in os.walk(project_dir):
+        #     # Skip .git directory
+        #     if '.git' in dirs:
+        #         dirs.remove('.git')
+        #     for file in files:
+        #         logger.info(os.path.join(root, file))
 
-        # 5. Add the contract code to src directory
-        src_dir = project_path / "src"
-        src_dir.mkdir(parents=True, exist_ok=True)
-        contract_path = src_dir / contract_name
-        # print(f"Adding contract to '{contract_path}'...") # Debugging
-        await asyncio.to_thread(write_file, contract_path, contracts)
-        # print("Contract added successfully.") # Debugging
+        project_type, contract_folders = detect_project_structure(repo_dir)
 
-        # TODO: Should we create an empty TestContract.t.sol file in the test directory
-        # that will be later written with the fuzz test?
-        # NOTE: This is done in the run_fuzz function.
-        print("Virtual environment created, Foundry project initialized, and contract added successfully.")
+        # TODO: Fix hardhat project setup
+        if project_type == "hardhat" or project_type == "brownie":
+            # Psuedocode
 
-        return project_dir, contract_name
+            # Set up a viritual environment
+            # Initialize a foundry project
+            # Copy the solidity files into the foundry project
+            # Detect the dependencies
+            # Install the dependencies
+            # Generate the remappings
+            # Detect the solidity version
+            # Update the foundry.toml file
+            # Run the forge build command
+
+            # dependencies = parse_dependencies(repo_dir, project_type)
+            # await install_dependencies(project_dir, dependencies, project_type)
+            # remappings = await generate_and_write_remappings(project_dir)
+            # solc_version = detect_and_install_solc_version(project_dir)
+            # update_foundry_config(project_dir, solc_version)
+            # await compile_project(project_dir, solc_version)
+            # print(f"Dependencies: {dependencies}")
+            raise NotImplementedError(f"{project_type} project setup not implemented")
+
+        # Run "forge build" as a sanity check
+        returncode, stdout, stderr = await run_command(["forge", "build"], repo_dir)
+        if returncode != 0:
+            raise ValueError(f"Sanity check failed: {stderr}")
+        logger.info("Sanity check passed: Project compiled successfully.")
+
+        return repo_dir, contract_folders, project_type, project_path
 
     except Exception as e:
-        print(f"Error setting up environment: {str(e)}")
-        if project_dir and os.path.exists(project_dir):
+        logger.error(f"Error setting up environment: {str(e)}")
+        if os.path.exists(project_dir):
             shutil.rmtree(project_dir)
         raise
-
-def write_file(path: Path, content: str) -> None:
-    """
-    Writes the given content to the specified file path.
-
-    Args:
-        path (Path): The file path where the content will be written.
-        content (str): The content to write to the file.
-    """
-    with open(path, 'w') as f:
-        f.write(content)
