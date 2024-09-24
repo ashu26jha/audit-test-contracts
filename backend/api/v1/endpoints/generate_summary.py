@@ -1,7 +1,8 @@
-from api.v1.schemas import generate_summary_schema
 from api.v1.schemas.api_response_schema import SuccessResponse
-from api.v1.services import generate_summary_service
 from fastapi import APIRouter, status
+
+from api.v1.schemas import generate_summary_schema
+from api.v1.services import generate_summary_service
 
 router = APIRouter()
 

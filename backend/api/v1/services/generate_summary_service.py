@@ -1,9 +1,9 @@
 from typing import Tuple
 
-from api.v1.prompts.generate_summary_prompts import SUMMARY_PROMPT
 from api.v1.schemas.generate_summary_schema import SummaryResponse
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
+from config.prompts.generate_summary_prompts import SUMMARY_PROMPT
 from config.settings import LLM_MODEL_SUMMARY
 from fastapi import HTTPException
 

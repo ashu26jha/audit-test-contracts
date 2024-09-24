@@ -1,14 +1,14 @@
 from typing import List, Optional
 
-from api.v1.prompts.context_scan_prompts import (
-    CONTEXT_PROMPT_WITH_SUMMARY,
-    CONTEXT_PROMPT_WITHOUT_SUMMARY,
-    SYSTEM_PROMPT,
-)
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
 from common.logger import logger
 from common.profiles import Profiles, load_profile
 from common.send_prompt_to_llm import send_prompt_to_llm_async
+from config.prompts.context_scan_prompts import (
+    CONTEXT_PROMPT_WITH_SUMMARY,
+    CONTEXT_PROMPT_WITHOUT_SUMMARY,
+    SYSTEM_PROMPT,
+)
 from config.settings import LLM_MODEL
 from fastapi import HTTPException
 

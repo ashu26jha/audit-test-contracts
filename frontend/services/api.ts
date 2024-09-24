@@ -121,4 +121,17 @@ export const getScanHistory = async (token: string) => {
   return response.data.data;
 };
 
+
+export const getRepoInfo = async (token: string, repoUrl: string,) => {
+  const response = await api.get(`/api/v1/github/repository-info`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: {
+      repo_url: repoUrl,
+    },
+  });
+  return response.data.data;
+};
+
 export default api;

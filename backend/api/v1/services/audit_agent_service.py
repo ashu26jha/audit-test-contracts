@@ -5,6 +5,11 @@ from uuid import UUID
 
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
+from api.v1.services.github_service import GitHubService
+from common.logger import logger
+from common.profiles import Profiles
+from fastapi import BackgroundTasks, HTTPException
+
 from api.v1.schemas import audit_agent_schema
 from api.v1.services import (
     context_scan_service,
@@ -13,10 +18,6 @@ from api.v1.services import (
     lines_of_code_service,
     scan_history_service,
 )
-from api.v1.services.github_service import GitHubService
-from common.logger import logger
-from common.profiles import Profiles
-from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
 
@@ -35,6 +36,11 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
 
+        # Fetch repository info
+        repo_info = await github_service.fetch_github_repo_info(
+            user.accessToken, request.repositoryURL
+        )
+
         # Create and store the new scan with initial status 'pending'
         branch_name = request.branchName if request.branchName else "main"
         new_scan = Scan(
@@ -43,6 +49,8 @@ async def initiate_scan(
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=request.contractFiles,
+            repositoryURL=request.repositoryURL,
+            repositoryName=repo_info.repo_name,
             branchName=branch_name,
         )
         await scan_history_service.store_scan(new_scan)

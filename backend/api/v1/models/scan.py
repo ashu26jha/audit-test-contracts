@@ -17,6 +17,8 @@ class Scan(Document):
     completedAt: Optional[datetime] = None
     contractFiles: List[str] = Field(default_factory=list)
     linesOfCode: Optional[Dict[str, int]] = None
+    repositoryURL: Optional[str] = None
+    repositoryName: Optional[str] = None
     branchName: str = Field(default="main")
     commitHash: Optional[str] = None
     paid_status: bool = False
@@ -39,6 +41,8 @@ class Scan(Document):
                     "comment_lines": 15,
                     "empty_lines": 5,
                 },
+                "repositoryURL": "https://github.com/user/repo",
+                "repositoryName": "repo",
                 "branchName": "main",
                 "commitHash": "1234567890",
                 "paidStatus": False,

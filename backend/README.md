@@ -9,6 +9,7 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Running the Server](#running-the-server)
+- [Running the Linters](#running-the-linters)
 - [Running Tests](#running-tests)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
@@ -171,6 +172,29 @@ Retrieves the contents of a specific repository.
 - `repo`: Repository name (path parameter)
 
 **Response:** Array of file/directory objects.
+</details>
+
+<details>
+<summary>GET /api/v1/github/repository-info</summary>
+
+Retrieves information about a specific GitHub repository.
+
+**Parameters:**
+- `repo_url`: Full URL of the GitHub repository (query parameter)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "repo_url": "string",
+    "repo_name": "string",
+    "repo_full_name": "string",
+    "created_at": "Datetime",
+    "updated_at": "Datetime"
+  }
+}
+```
 </details>
 
 ### Scanning Endpoints
@@ -503,6 +527,8 @@ curl -X POST "http://localhost:8000/test-auth/token" \
     "empty_lines": "number",
     "string_lines": "number",
   },
+  "repositoryURL": "string",
+  "repositoryName": "string",
   "branchName": "string",
   "commitHash": "string",
   "paid_status": "boolean",
