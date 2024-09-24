@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from api.v1.schemas import context_scan_schema
 from api.v1.schemas.api_response_schema import SuccessResponse
-from api.v1.services import context_scan_service
 from fastapi import APIRouter, status
+
+from api.v1.schemas import context_scan_schema
+from api.v1.services import context_scan_service
 
 router = APIRouter()
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Card,
   CardBody,
@@ -11,35 +11,24 @@ import {
   ModalBody,
   ModalFooter,
   Divider,
-} from '@nextui-org/react';
-import {
-  AlertTriangle,
-  FileText,
-  Code,
-  Hash,
-  Info,
-  Home,
-  GitBranch,
-  FileCode,
-} from 'lucide-react';
-import Payment from './payment';
+} from "@nextui-org/react";
+import { AlertTriangle, FileText, Code, Hash, Info, Home, GitBranch, FileCode } from "lucide-react";
+import Payment from "./payment";
 
 interface ScanResultsProps {
   scanData: any; // Replace 'any' with a more specific type based on your API response
 }
 
 const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
-  console.log('scanData', scanData);
+  console.log("scanData", scanData);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<
-    'success' | 'failed' | null
-  >(null);
+  const [paymentStatus, setPaymentStatus] = useState<"success" | "failed" | null>(null);
 
   const handlePayment = () => {
     // Simulate payment process
     setTimeout(() => {
       // Randomly set payment status for demonstration
-      setPaymentStatus(Math.random() > 0.5 ? 'success' : 'failed');
+      setPaymentStatus(Math.random() > 0.5 ? "success" : "failed");
     }, 2000);
   };
 
@@ -55,20 +44,20 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
   const scanStats = [
     {
       icon: <AlertTriangle size={20} />,
-      label: 'Vulnerabilities Found',
-      value: scanData.findings.length.toString(),
+      label: "Vulnerabilities Found",
+      value: scanData.total_findings ?? 1,
     },
     {
       icon: <FileText size={20} />,
-      label: 'Contracts Scanned',
-      value: scanData.scan.contractFiles?.length.toString() || '0',
+      label: "Contracts Scanned",
+      value: scanData.scan.contractFiles?.length.toString() || "0",
     },
     {
       icon: <Code size={20} />,
-      label: 'Lines of Code',
-      value: scanData.scan.linesOfCode?.total_lines.toString() || 'N/A',
+      label: "Lines of Code",
+      value: scanData.scan.linesOfCode?.total_lines.toString() || "N/A",
     },
-    { icon: <Hash size={20} />, label: 'Scan ID', value: scanData.scan_id },
+    { icon: <Hash size={20} />, label: "Scan ID", value: scanData.scan_id },
   ];
 
   return (
@@ -76,7 +65,9 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
       {/* <div className="min-h-screen bg-black text-white flex flex-col"> */}
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-          <div className="text-l text-gray-400">Dashboard / Scan Results</div>
+          <div className="text-sm text-gray-400 flex">
+            Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
+          </div>
           <Tooltip content="More information">
             <Button
               size="sm"
@@ -112,17 +103,13 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
                 <div className="flex items-center space-x-2">
                   <AlertTriangle size={16} className="text-red-500" />
                   <span className="text-sm">
-                    Finding {index + 1} of {scanData.findings.length}
+                    Finding {index + 1} of {scanData.total_findings ?? scanData.findings.length}
                   </span>
                 </div>
-                <div className="text-sm text-gray-400">
-                  {finding.Contracts.join(', ')}
-                </div>
+                <div className="text-sm text-gray-400">{finding.Contracts.join(", ")}</div>
               </div>
               <h3 className="text-lg font-semibold mb-2">{finding.Issue}</h3>
-              <p className="text-sm text-gray-300 mb-2">
-                {finding.Description}
-              </p>
+              <p className="text-sm text-gray-300 mb-2">{finding.Description}</p>
               <p className="text-sm text-gray-300 mb-2">
                 <strong>Recommendation:</strong> {finding.Recommendation}
               </p>
@@ -133,14 +120,10 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
         <Card className="">
           <CardBody className="flex flex-row justify-between items-center">
             <p className="text-sm">
-              Only partial findings are shown. Unlock full access to detailed
-              report of all vulnerabilities.
+              Only partial findings are shown. Unlock full access to detailed report of all
+              vulnerabilities.
             </p>
-            <Button
-              color="secondary"
-              className="bg-[#8B5CF6]"
-              onPress={handlePayment}
-            >
+            <Button color="secondary" className="bg-[#8B5CF6]" onPress={handlePayment}>
               Pay $10 via stripe
             </Button>
           </CardBody>
@@ -154,9 +137,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
         className="bg-[#222222] text-white"
       >
         <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            Scanned Code Info
-          </ModalHeader>
+          <ModalHeader className="flex flex-col gap-1">Scanned Code Info</ModalHeader>
           <ModalBody>
             {/* {infoModalContent.map((section, index) => (
               <Card key={index} className="bg-[#333333] mb-4">
@@ -179,11 +160,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
             ))} */}
           </ModalBody>
           <ModalFooter>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={() => setIsInfoModalOpen(false)}
-            >
+            <Button color="danger" variant="light" onPress={() => setIsInfoModalOpen(false)}>
               Close
             </Button>
           </ModalFooter>

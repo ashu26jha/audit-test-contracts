@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
-import { getPartialScanResults } from '../../../services/api';
-import ScanResults from '../../../components/scan-results';
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../contexts/AuthContext";
+import { getPartialScanResults } from "../../../services/api";
+import ScanResults from "../../../components/scan-results";
 
 interface ScanResultsPageProps {
   params: {
@@ -26,8 +26,8 @@ const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
         const data = await getPartialScanResults(token, scanId);
         setScanData(data);
       } catch (err) {
-        console.error('Error fetching scan results:', err);
-        setError('Failed to fetch scan results. Please try again.');
+        console.error("Error fetching scan results:", err);
+        setError("Failed to fetch scan results. Please try again.");
       } finally {
         setIsLoading(false);
       }

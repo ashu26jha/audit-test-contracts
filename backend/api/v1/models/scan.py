@@ -17,6 +17,8 @@ class Scan(Document):
     completedAt: Optional[datetime] = None
     contractFiles: List[str] = Field(default_factory=list)
     linesOfCode: Optional[Dict[str, int]] = None
+    repositoryURL: Optional[str] = None
+    repositoryName: Optional[str] = None
     branchName: str = Field(default="main")
     commitHash: Optional[str] = None
     paid_status: bool = False
@@ -39,6 +41,8 @@ class Scan(Document):
                     "comment_lines": 15,
                     "empty_lines": 5,
                 },
+                "repositoryURL": "https://github.com/user/repo",
+                "repositoryName": "repo",
                 "branchName": "main",
                 "commitHash": "1234567890",
                 "paidStatus": False,
@@ -56,6 +60,7 @@ class ScanResult(Document):
     scan_id: UUID = Indexed(unique=True)
     summary: Optional[str]
     type: Optional[Profiles]
+    total_findings: int = Field(default=0)
     findings: List[Finding] = Field(default_factory=list)
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -68,6 +73,7 @@ class ScanResult(Document):
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "summary": "Generated summary of the scan.",
                 "type": "DEFAULT",
+                "total_findings": 1,
                 "findings": [
                     {
                         "Issue": "Reentrancy Vulnerability",

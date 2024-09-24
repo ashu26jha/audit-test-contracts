@@ -54,3 +54,12 @@ async def get_repository_contents(
         current_user.accessToken, owner, repo, branch, path
     )
     return SuccessResponse(data=contents)
+
+
+@router.get("/repository-info", response_model=SuccessResponse)
+async def get_github_repo_info(
+    repo_url: str,
+    current_user: User = Depends(get_current_user),
+):
+    repo_info = await github_service.get_github_repo_info(current_user.accessToken, repo_url)
+    return SuccessResponse(data=repo_info)

@@ -35,6 +35,11 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
 
+        # Fetch repository info
+        repo_info = await github_service.fetch_github_repo_info(
+            user.accessToken, request.repositoryURL
+        )
+
         # Create and store the new scan with initial status 'pending'
         branch_name = request.branchName if request.branchName else "main"
         new_scan = Scan(
@@ -43,9 +48,21 @@ async def initiate_scan(
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=request.contractFiles,
+            repositoryURL=request.repositoryURL,
+            repositoryName=repo_info.repo_name,
             branchName=branch_name,
         )
         await scan_history_service.store_scan(new_scan)
+
+        # Create and store an initial empty scan result
+        initial_scan_result = ScanResult(
+            scan_id=scan_id,
+            summary="Scan in progress",
+            type=Profiles.NONE,
+            total_findings=0,
+            findings=[],
+        )
+        await scan_history_service.store_scan_result(initial_scan_result)
 
         # Fetch the commit hash using GitHub API
         commit_hash = await github_service.get_commit_hash(
@@ -76,6 +93,15 @@ async def initiate_scan(
         # Update scan status to 'failed' if scan exists
         try:
             await scan_history_service.update_scan_status(scan_id, "failed")
+            # Also update the scan result to reflect the failure
+            failed_scan_result = ScanResult(
+                scan_id=scan_id,
+                summary="Scan failed to initiate",
+                type=Profiles.NONE,
+                total_findings=0,
+                findings=[],
+            )
+            await scan_history_service.store_scan_result(failed_scan_result)
         except Exception:
             logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
         raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
@@ -107,14 +133,17 @@ async def perform_audit_agent_background(
             summary_result, flattened_contracts, detected_profile
         )
 
-        # Create the scan result using the Beanie model
-        scan_result = ScanResult(
-            scan_id=scan_id,
-            summary=summary_result,
-            type=detected_profile,
-            findings=context_scan_result,
-        )
-        await scan_history_service.store_scan_result(scan_result)
+        # Calculate total findings
+        total_findings = len(context_scan_result)
+        logger.info(f"Total findings: {total_findings}")
+
+        # Update the existing scan result
+        scan_result = await scan_history_service.get_scan_result(scan_id)
+        scan_result.summary = summary_result
+        scan_result.type = detected_profile
+        scan_result.total_findings = total_findings
+        scan_result.findings = context_scan_result
+        await scan_result.save()
 
         # Update scan status to 'completed'
         await scan_history_service.update_scan_status(scan_id, "completed")
@@ -124,13 +153,13 @@ async def perform_audit_agent_background(
     except Exception as e:
         logger.exception(f"Error in audit scan {scan_id}: {str(e)}")
         await scan_history_service.update_scan_status(scan_id, "failed")
-        error_result = ScanResult(
-            scan_id=scan_id,
-            summary="An error occurred during the audit scan.",
-            type=Profiles.NONE,
-            findings=[],
-        )
-        await scan_history_service.store_scan_result(error_result)
+        # Update the existing scan result to reflect the failure
+        scan_result = await scan_history_service.get_scan_result(scan_id)
+        scan_result.summary = "An error occurred during the audit scan."
+        scan_result.type = Profiles.NONE
+        scan_result.total_findings = 0
+        scan_result.findings = []
+        await scan_result.save()
 
 
 def validate_user_has_github_token(user: User) -> bool:

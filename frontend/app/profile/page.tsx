@@ -1,12 +1,16 @@
 'use client';
-
+import { useAuth } from '../../contexts/AuthContext';
 import React from 'react';
-import { Card, CardBody, Input, Button, Avatar } from '@nextui-org/react';
-import { LogOut, Github } from 'lucide-react';
+import Image from 'next/image';
+import { Card, CardBody, CardHeader, Divider, Input, Button, Avatar } from '@nextui-org/react';
+import { LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 const ProfilePage: React.FC = () => {
   const router = useRouter();
+
+  const { user } = useAuth();
+  const { email, username, name, avatarUrl } = user;
 
   const handleLogout = () => {
     // Implement logout logic here
@@ -16,53 +20,74 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="text-sm text-gray-400">Dashboard / Profile</div>
-        <Button variant="light" onPress={() => router.back()}>
-          Go Back
-        </Button>
-      </div>
+    <div className="min-h-screen text-white p-8">
+      <Card className="min-h-screen">
+        <CardHeader>
+          <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
+            <div className="text-sm text-gray-400 flex">Dashboard <div className="mx-2">/</div> <div className="text-white">Profile</div></div>
+            <Button
+              variant="light"
+              onPress={() => router.back()}
+              className="bg-[#27272a] border border-[#3F3F46] rounded-lg">
+              Go Back
+            </Button>
+          </div>
+        </CardHeader>
+        <Divider />
 
-      <Card className="bg-[#222222] max-w-md mx-auto">
         <CardBody className="flex flex-col items-center gap-6">
-          <Avatar
-            src="https://i.pravatar.cc/150?u=a042581f4e29026704d"
-            size="lg"
-            className="w-24 h-24 text-large"
-          />
+          <div className='w-1/3'>
+            <div className="w-full flex justify-start">
+              <Avatar
+                src={avatarUrl}
+                size="sm"
+                className="w-16 h-16 text-large rounded-md mt-8"
+              />
+            </div>
+            {name && (
+              <div className="flex flex-col"> {/* Added white border */}
+                <div className="text-sm text-gray-400 mt-8">
+                  Name
+                </div>
 
-          <Input
-            label="Name"
-            value="Quinton Pereira"
-            readOnly
-            className="max-w-xs"
-          />
+                <div className="text-md mt-1 border border-[#3F3F46] p-2 rounded-md">
+                  {name}
+                </div>
+              </div>
+            )}
+            <div className="flex flex-col mt-8 "> {/* Added white border */}
+              <div className="text-sm text-gray-400">
+                Email
+              </div>
 
-          <Input
-            label="Email"
-            value="quintonp23@gmail.com"
-            readOnly
-            className="max-w-xs"
-          />
+              <div className="text-md mt-1 border border-[#3F3F46] p-2 rounded-md">
+                {email}
+              </div>
+            </div>
 
-          <Input
-            label="GitHub Username"
-            value="@quintonp23"
-            readOnly
-            className="max-w-xs"
-            endContent={<Github size={20} />}
-          />
+            <div className="flex flex-col mt-8">
+              <div className="text-sm text-gray-400 ">
+                GitHub Username
+              </div>
+              <div className='flex w-full justify-between'>
+                <div className="flex items-center text-md mt-1 border border-[#3F3F46] p-2 rounded-md w-full">
+                  {username}
+                  <Image src="/github.svg" alt="GitHub" width={20} height={20} className="ml-auto" />
 
-          <Button
-            color="danger"
-            variant="flat"
-            onPress={handleLogout}
-            startContent={<LogOut size={20} />}
-            className="max-w-xs w-full"
-          >
-            Log Out
-          </Button>
+                </div>
+              </div>
+
+            </div>
+
+            <Button
+              variant="flat"
+              onPress={handleLogout}
+              startContent={<LogOut size={14} />}
+              className="w-full mt-8 hover:bg-[#F3126033] hover:text-danger text-white"
+            >
+              Log Out
+            </Button>
+          </div>
         </CardBody>
       </Card>
     </div>

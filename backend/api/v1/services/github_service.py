@@ -1,8 +1,12 @@
 import base64
 import re
+from uuid import uuid4
 
 import httpx
+from api.v1.models.github import GitHubRepo
+from api.v1.schemas.github_schema import GitHubRepoCreate, GitHubRepoResponse
 from common import logger
+from config import settings
 from fastapi import HTTPException
 
 
@@ -216,8 +220,11 @@ class GitHubService:
             async with httpx.AsyncClient() as client:
                 response = await client.get(url, headers=headers)
 
-                if response.status_code == 401 and access_token:
-                    # Invalid token, try without token
+                if (
+                    settings.ENVIRONMENT == "development"
+                    and response.status_code == 401
+                    and access_token
+                ):
                     logger.warning("Invalid access token provided. Retrying without access token.")
                     headers.pop("Authorization", None)
                     response = await client.get(url, headers=headers)
@@ -255,6 +262,68 @@ class GitHubService:
             message = f"Unexpected error while fetching commit hash: {str(e)}"
             logger.error(message)
             raise HTTPException(status_code=500, detail="Internal Error Server")
+
+    async def fetch_github_repo_info(self, access_token: str, repo_url: str) -> GitHubRepoCreate:
+        headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+
+        # Improved URL parsing
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repo_url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+
+            if (
+                settings.ENVIRONMENT == "development"
+                and response.status_code == 401
+                and access_token
+            ):
+                logger.warning("Invalid access token provided. Retrying without access token.")
+                headers.pop("Authorization", None)
+                response = await client.get(url, headers=headers)
+
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        data = response.json()
+
+        return GitHubRepoCreate(
+            repo_url=repo_url,
+            repo_name=data.get("name", ""),
+            repo_full_name=data.get("full_name", ""),
+        )
+
+    async def save_github_repo_info(self, repo_info: GitHubRepoCreate) -> GitHubRepo:
+        db_repo = GitHubRepo(
+            id=uuid4(),
+            repo_url=repo_info.repo_url,
+            repo_name=repo_info.repo_name,
+            repo_full_name=repo_info.repo_full_name,
+        )
+        await db_repo.insert()
+        return db_repo
+
+    async def get_github_repo_info(self, access_token: str, repo_url: str) -> GitHubRepoResponse:
+        repo_info = await self.fetch_github_repo_info(access_token, repo_url)
+        saved_repo = await self.save_github_repo_info(repo_info)
+        return GitHubRepoResponse(
+            id=saved_repo.id,
+            repo_url=saved_repo.repo_url,
+            repo_name=saved_repo.repo_name,
+            repo_full_name=saved_repo.repo_full_name,
+        )
 
 
 # async def get_repository_contents(

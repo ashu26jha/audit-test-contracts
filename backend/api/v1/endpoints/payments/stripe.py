@@ -1,5 +1,5 @@
 from api.v1.schemas.api_response_schema import SuccessResponse
-from api.v1.schemas.payments import PaymentCheckoutRequest, PaymentResponse
+from api.v1.schemas.payments_schema import PaymentCheckoutRequest, PaymentResponse
 from api.v1.services.payment_service import PaymentService
 from fastapi import APIRouter, HTTPException
 

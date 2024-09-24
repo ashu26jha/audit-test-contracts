@@ -1,8 +1,18 @@
 <div align="center">
-<h1><strong> Yokai Audit Agent </strong></h1>
+<h1><strong> <span style="color:#8660f2"> Audit</span> Agent </strong></h1>
 </div>
 
 <br >
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
 
 ## Introduction
 
@@ -31,7 +41,7 @@ To get started with Yokai Audit Agent, follow these steps:
 
 1. Clone the repository
 2. Set up the backend (see [Backend README](./backend/README.md))
-3. Set up the frontend (see Frontend README)
+3. Set up the frontend (see [Frontend README](./frontend/README.md))
 4. Configure environment variables
 5. Run the application
 
