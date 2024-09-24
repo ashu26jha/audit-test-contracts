@@ -2,32 +2,11 @@
 import {
   Navbar as NextUINavbar,
   NavbarContent,
-  NavbarMenu,
-  NavbarMenuToggle,
   NavbarBrand,
-  NavbarItem,
-  NavbarMenuItem,
 } from '@nextui-org/navbar';
 // import { Image } from '@nextui-org/react';
 import Image from 'next/image';
-import { Button } from '@nextui-org/button';
-import { Kbd } from '@nextui-org/kbd';
-import { Link } from '@nextui-org/link';
-import { Input } from '@nextui-org/input';
-import { link as linkStyles } from '@nextui-org/theme';
 import NextLink from 'next/link';
-import clsx from 'clsx';
-
-import { siteConfig } from '@/config/site';
-import { ThemeSwitch } from '@/components/theme-switch';
-import {
-  TwitterIcon,
-  GithubIcon,
-  DiscordIcon,
-  HeartFilledIcon,
-  SearchIcon,
-  Logo,
-} from '@/components/icons';
 import {
   Avatar,
   Dropdown,
@@ -37,14 +16,14 @@ import {
 } from '@nextui-org/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { ChevronDownIcon } from '@heroicons/react/24/solid'; // You may need to install @heroicons/react
+import { ChevronDownIcon } from '@heroicons/react/24/solid';
 import LoginNavbar from './login-navbar';
 
 export const Navbar = () => {
-  const { user, logout, token } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-
+  console.log(user);
   if (pathname === '/login') {
     return <LoginNavbar />;
   }
@@ -60,7 +39,7 @@ export const Navbar = () => {
     <NextUINavbar
       maxWidth="full"
       position="sticky"
-      className="h-20 px-8 py-6 bg-zinc-900 rounded-bl-lg rounded-br-lg shadow border-b border-zinc-800 flex flex-row"
+      className="h-20 px-8 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
     >
       {/* <NavbarContent className="basis-1/5 sm:basis-full" justify="start"> */}
       <NavbarBrand as="li" className="gap-3 max-w-fit">
@@ -70,7 +49,7 @@ export const Navbar = () => {
             alt="logo"
             width={120}
             height={70}
-            // className="w-8 h-8"
+          // className="w-8 h-8"
           />
         </NextLink>
       </NavbarBrand>
@@ -80,19 +59,25 @@ export const Navbar = () => {
         <div className="justify-start items-center gap-1.5 flex">
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <div className="rounded-lg justify-center items-center gap-2 flex">
-                <Avatar
-                  name={user ? user.username[0].toUpperCase() : 'G'}
-                  size="sm"
-                  // textColor="neutral"
-                  className="bg-zinc-700 text-zinc-300"
-                />
+              <div className="justify-center items-center gap-2 flex cursor-pointer">
+                {user && user.avatarUrl ? ( // Changed to use a single ternary operator
+                  <Avatar
+                    src={user.avatarUrl}
+                    size="sm"
+                    className="bg-zinc-700 text-zinc-300 rounded-[10px]"
+                  />
+                ) : <></>} <></>
                 <p className="text-neutral-50 text-base leading-normal">
                   {user ? user.username : 'Guest'}
                 </p>
+                <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
               </div>
             </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions" variant="flat">
+            <DropdownMenu
+              aria-label="Profile Actions"
+              variant="flat"
+              className="border border-gray-600 rounded-lg"
+            >
               <DropdownItem
                 key="profile"
                 onClick={() => {
@@ -107,8 +92,6 @@ export const Navbar = () => {
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
-
-          <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
         </div>
       </NavbarContent>
 

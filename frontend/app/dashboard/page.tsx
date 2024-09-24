@@ -114,7 +114,7 @@ const DashboardPage = () => {
           {/* Main content */}
           <CardHeader>
             <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-              <h2 className="text-xl font-semibold">Dashboard</h2>
+              <h2 className="text-l font-light">Dashboard</h2>
               <Button
                 color="secondary"
                 className="bg-[#8B5CF6] text-white"
@@ -200,16 +200,13 @@ const DashboardPage = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-[60vh]">
-                <div className="bg-[#2A2A2A] p-4 rounded-full mb-4">
-                  <FileText size={48} className="text-gray-400" />
-                </div>
-                {/* <Image
-       src="/empty-dashboard.svg"
-       alt="No Code Scanned"
-       width={100}
-       height={100}
-     /> */}
-                <h3 className="text-xl font-semibold mb-2">No Code Scanned</h3>
+                <Image
+                  src="/empty-dashboard.svg"
+                  alt="No Code Scanned"
+                  width={100}
+                  height={100}
+                />
+                <h3 className="text-xl my-4">No Code Scanned</h3>
                 <p className="text-gray-400 text-center">
                   You haven't scanned any code yet.
                   <br />

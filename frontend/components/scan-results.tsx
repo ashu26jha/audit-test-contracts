@@ -76,7 +76,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
       {/* <div className="min-h-screen bg-black text-white flex flex-col"> */}
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-          <div className="text-l text-gray-400">Dashboard / Scan Results</div>
+          <div className="text-sm text-gray-400 flex">Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div></div>
           <Tooltip content="More information">
             <Button
               size="sm"
