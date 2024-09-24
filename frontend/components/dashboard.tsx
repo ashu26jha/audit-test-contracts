@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button } from '@nextui-org/react';
+import React from "react";
+import { Button } from "@nextui-org/react";
 
 const Dashboard: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
       <main className="flex flex-col items-center justify-center h-[calc(100vh-100px)]">
         <div className="w-32 h-32 bg-gray-700 rounded-full mb-4"></div>
         <p className="text-gray-400 text-center">
-          You don't have a scanned file yet.
+          You don&apos;t have a scanned file yet.
           <br />
           Please select a new file to scan
         </p>
