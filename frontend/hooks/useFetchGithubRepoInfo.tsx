@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getRepoInfo } from "@/services/api";
 
@@ -15,28 +15,31 @@ const useFetchGithubRepoInfo = (repoUrl: string) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRepoInfo = async (repoUrl: string) => {
-    if (!token) {
-      setError("No token found");
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await getRepoInfo(token, repoUrl);
-      setRepoInfo(response);
-    } catch (err) {
-      setError((err as Error).message ?? String(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchRepoInfo = useCallback(
+    async (repoUrl: string) => {
+      if (!token) {
+        setError("No token found");
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const response = await getRepoInfo(token, repoUrl);
+        setRepoInfo(response);
+      } catch (err) {
+        setError((err as Error).message ?? String(err));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token]
+  );
 
   useEffect(() => {
     if (repoUrl) {
       fetchRepoInfo(repoUrl);
     }
-  }, [repoUrl]);
+  }, [repoUrl, fetchRepoInfo]);
 
   return { repoInfo, loading, error };
 };
