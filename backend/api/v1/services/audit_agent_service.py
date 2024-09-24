@@ -5,11 +5,6 @@ from uuid import UUID
 
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
-from api.v1.services.github_service import GitHubService
-from common.logger import logger
-from common.profiles import Profiles
-from fastapi import BackgroundTasks, HTTPException
-
 from api.v1.schemas import audit_agent_schema
 from api.v1.services import (
     context_scan_service,
@@ -18,6 +13,10 @@ from api.v1.services import (
     lines_of_code_service,
     scan_history_service,
 )
+from api.v1.services.github_service import GitHubService
+from common.logger import logger
+from common.profiles import Profiles
+from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
 
@@ -115,11 +114,16 @@ async def perform_audit_agent_background(
             summary_result, flattened_contracts, detected_profile
         )
 
+        # Calculate total findings
+        total_findings = len(context_scan_result)
+        logger.info(f"Total findings: {total_findings}")
+
         # Create the scan result using the Beanie model
         scan_result = ScanResult(
             scan_id=scan_id,
             summary=summary_result,
             type=detected_profile,
+            total_findings=total_findings,
             findings=context_scan_result,
         )
         await scan_history_service.store_scan_result(scan_result)
@@ -136,6 +140,7 @@ async def perform_audit_agent_background(
             scan_id=scan_id,
             summary="An error occurred during the audit scan.",
             type=Profiles.NONE,
+            total_findings=0,
             findings=[],
         )
         await scan_history_service.store_scan_result(error_result)

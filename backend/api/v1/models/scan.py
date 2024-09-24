@@ -60,6 +60,7 @@ class ScanResult(Document):
     scan_id: UUID = Indexed(unique=True)
     summary: Optional[str]
     type: Optional[Profiles]
+    total_findings: int = Field(default=0)
     findings: List[Finding] = Field(default_factory=list)
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -72,6 +73,7 @@ class ScanResult(Document):
                 "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
                 "summary": "Generated summary of the scan.",
                 "type": "DEFAULT",
+                "total_findings": 1,
                 "findings": [
                     {
                         "Issue": "Reentrancy Vulnerability",

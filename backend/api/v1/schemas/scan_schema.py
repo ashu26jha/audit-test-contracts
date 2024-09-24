@@ -30,6 +30,7 @@ class ScanResultResponse(BaseModel):
     scan_id: UUID
     summary: Optional[str]
     type: Optional[Profiles]
+    total_findings: Optional[int] = None
     findings: List[Finding]
     createdAt: datetime
     completedAt: datetime
