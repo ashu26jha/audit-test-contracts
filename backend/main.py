@@ -32,12 +32,13 @@ from api.v1.endpoints import (
     scan_history,
     scan_results,
     test_auth,
+    generate_pdf
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    client = AsyncIOMotorClient(settings.MONGODB_URL)
     print("Connecting to MongoDB...")
     await init_beanie(
         database=client.myapp,
@@ -106,7 +107,7 @@ app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(stripe.router, prefix="/api/v1/payments")
 app.include_router(payment_success.router, prefix="/api/v1/payments")
 app.include_router(webhook.router, prefix="/api/v1/payments")
-
+app.include_router(generate_pdf.router, prefix="/api/v1")
 
 if settings.ENVIRONMENT == "development":
     app.include_router(test_auth.router, prefix="/api/v1")
