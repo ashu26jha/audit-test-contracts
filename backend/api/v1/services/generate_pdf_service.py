@@ -72,8 +72,11 @@ async def generate_pdf_from_scan(scan_id: str):
 
     await html_to_pdf(template_path, middle_path)
     await combine_pdfs(front_page_path, middle_path)
-    os.remove(middle_path)
-    os.remove(template_path)
+    try:
+        os.remove(middle_path)
+        os.remove(template_path)
+    except FileNotFoundError:
+        print(f"File not found")
 
 
 def extract_organization_name(url):
