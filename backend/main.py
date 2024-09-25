@@ -7,12 +7,14 @@ from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
     context_scan,
+    generate_pdf,
     generate_summary,
     github,
     health_check,
     scan_history,
     scan_results,
     test_auth,
+  
 )
 from api.v1.endpoints.payments import payment_success, stripe, webhook
 from api.v1.models.github import GitHubRepo
@@ -105,7 +107,7 @@ app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(stripe.router, prefix="/api/v1/payments")
 app.include_router(payment_success.router, prefix="/api/v1/payments")
 app.include_router(webhook.router, prefix="/api/v1/payments")
-
+app.include_router(generate_pdf.router, prefix="/api/v1")
 
 if settings.ENVIRONMENT == "development":
     app.include_router(test_auth.router, prefix="/api/v1")
