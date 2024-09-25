@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 
+from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
@@ -40,10 +41,14 @@ async def initiate_scan(
             user.accessToken, request.repositoryURL
         )
 
+        # Get the next scan_id for this user
+        scan_number = await Scan.get_next_scan_number(str(user.id))
+
         # Create and store the new scan with initial status 'pending'
         branch_name = request.branchName if request.branchName else "main"
         new_scan = Scan(
             scan_id=scan_id,
+            scan_number=scan_number,
             user_id=str(user.id),
             status="pending",
             startedAt=datetime.now(timezone.utc),
@@ -57,12 +62,16 @@ async def initiate_scan(
         # Create and store an initial empty scan result
         initial_scan_result = ScanResult(
             scan_id=scan_id,
+            scan_number=scan_number,
             summary="Scan in progress",
             type=Profiles.NONE,
             total_findings=0,
             findings=[],
         )
         await scan_history_service.store_scan_result(initial_scan_result)
+
+        # Increment global stats (unpaid by default)
+        await GlobalStats.increment_scan(status="pending", paid=False, findings=0)
 
         # Fetch the commit hash using GitHub API
         commit_hash = await github_service.get_commit_hash(
@@ -90,12 +99,16 @@ async def initiate_scan(
         raise
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
+        # Update global stats for failed scan
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+
         # Update scan status to 'failed' if scan exists
         try:
             await scan_history_service.update_scan_status(scan_id, "failed")
             # Also update the scan result to reflect the failure
             failed_scan_result = ScanResult(
                 scan_id=scan_id,
+                scan_number=scan_number,
                 summary="Scan failed to initiate",
                 type=Profiles.NONE,
                 total_findings=0,
@@ -108,14 +121,14 @@ async def initiate_scan(
 
 
 async def perform_audit_agent_background(
-    scan_id: UUID,
+    scan_uuid: UUID,
     flattened_contracts: str,
 ):
     try:
-        logger.info(f"Starting background audit scan with ID: {scan_id}")
+        logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
         # Update scan status to 'in_progress'
-        await scan_history_service.update_scan_status(scan_id, "in_progress")
+        await scan_history_service.update_scan_status(scan_uuid, "in_progress")
 
         # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
@@ -137,7 +150,7 @@ async def perform_audit_agent_background(
         total_findings = len(context_scan_result)
 
         # Update the existing scan result
-        scan_result = await scan_history_service.get_scan_result(scan_id)
+        scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = summary_result
         scan_result.type = detected_profile
         scan_result.total_findings = total_findings
@@ -145,15 +158,23 @@ async def perform_audit_agent_background(
         await scan_result.save()
 
         # Update scan status to 'completed' and include total_findings
-        await scan_history_service.update_scan_status(scan_id, "completed", total_findings)
+        await scan_history_service.update_scan_status(scan_uuid, "completed", total_findings)
 
-        logger.info(f"Completed audit scan with ID: {scan_id}")
+        # Update global stats with findings
+        scan = await scan_history_service.get_scan(scan_uuid)
+        await GlobalStats.increment_scan(
+            status="completed", paid=scan.paid_status, findings=total_findings
+        )
+
+        logger.info(f"Completed audit scan with ID: {scan_uuid}")
 
     except Exception as e:
-        logger.exception(f"Error in audit scan {scan_id}: {str(e)}")
-        await scan_history_service.update_scan_status(scan_id, "failed")
+        logger.exception(f"Error in audit scan {scan_uuid}: {str(e)}")
+        await scan_history_service.update_scan_status(scan_uuid, "failed")
+        # Update global stats for failed scan
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
         # Update the existing scan result to reflect the failure
-        scan_result = await scan_history_service.get_scan_result(scan_id)
+        scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = "An error occurred during the audit scan."
         scan_result.type = Profiles.NONE
         scan_result.total_findings = 0

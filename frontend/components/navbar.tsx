@@ -53,7 +53,7 @@ export const Navbar = () => {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <div className="justify-center items-center gap-2 flex cursor-pointer">
-                {user && user.avatarUrl ? ( // Changed to use a single ternary operator
+                {user?.avatarUrl ? (
                   <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
                 ) : (
                   <></>
@@ -64,12 +64,7 @@ export const Navbar = () => {
               </div>
             </DropdownTrigger>
             <DropdownMenu aria-label="Profile Actions" variant="flat" className="border border-gray-600 rounded-lg">
-              <DropdownItem
-                key="profile"
-                onClick={() => {
-                  router.push("/profile");
-                }}
-              >
+              <DropdownItem key="profile" href="/profile">
                 Profile
               </DropdownItem>
               <DropdownItem key="support">Support Email</DropdownItem>

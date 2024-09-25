@@ -14,6 +14,7 @@ interface ScanHistoryItem {
   name: string;
   logo: string;
   scan_id: string;
+  scan_number: string;
   status: string;
   startedAt: string;
   completedAt: string | null;
@@ -121,7 +122,7 @@ const DashboardPage = () => {
                       <div className="space-y-2">
                         <div className="flex items-center">
                           <Hash size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">Scan ID: {scan.scan_id}</span>
+                          <span className="text-sm">Scan ID: {scan.scan_number}</span>
                         </div>
                         <div className="flex items-center">
                           <Calendar size={16} className="mr-2 text-gray-400" />

@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class ScanResponse(BaseModel):
     scan_id: UUID
+    scan_number: int
     status: str
     startedAt: datetime
     completedAt: Optional[datetime]
@@ -29,6 +30,7 @@ class ScanResponse(BaseModel):
 
 class ScanResultResponse(BaseModel):
     scan_id: UUID
+    scan_number: int
     summary: Optional[str]
     type: Optional[Profiles]
     total_findings: Optional[int] = None

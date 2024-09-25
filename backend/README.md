@@ -239,6 +239,7 @@ Retrieves the results of a specific scan.
 	"data": {
     "scan": {
 			"scan_id": "UUID",
+      "scan_number": "number",
 			"status": "string",
 			"startedAt": "Datetime",
 			"completedAt": "Datetime",
@@ -256,6 +257,7 @@ Retrieves the results of a specific scan.
 		},
 		"partial_result": {
       "scan_id": "UUID",
+      "scan_number": "number",
       "summary": "string",
       "type": "string",
       "findings": [
@@ -290,6 +292,7 @@ Retrieves partial results of a specific scan (limited findings).
 	"data": {
     "scan": {
 			"scan_id": "UUID",
+      "scan_number": "number",
 			"status": "string",
 			"startedAt": "DateTime",
 			"completedAt": "DateTime",
@@ -307,6 +310,7 @@ Retrieves partial results of a specific scan (limited findings).
 		},
 		"partial_result": {
       "scan_id": "UUID",
+      "scan_number": "number",
       "summary": "string",
       "type": "string",
       "findings": [
@@ -339,6 +343,7 @@ An array of scan objects, each including:
 	"success": true,
 	"data": [
     "scan_id": "UUID",
+    "scan_number": "number",
     "status": "String",
     "startedAt": "DateTime",
     "completedAt": "DateTime",
@@ -515,6 +520,7 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 {
   "_id": "ObjectId",
   "scan_id": "UUID",
+  "scan_number": "number",
   "user_id": "ObjectId",
   "status": "string",
   "startedAt": "Datetime",
@@ -543,6 +549,7 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 {
   "_id": "ObjectId",
   "scan_id": "UUID",
+  "scan_number": "number",
   "summary": "string",
   "type": "string",
   "findings": [

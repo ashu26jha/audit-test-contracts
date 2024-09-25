@@ -13,11 +13,12 @@ from api.v1.endpoints import (
     health_check,
     scan_history,
     scan_results,
+    stats,
     test_auth,
-  
 )
 from api.v1.endpoints.payments import payment_success, stripe, webhook
 from api.v1.models.github import GitHubRepo
+from api.v1.models.global_stats import GlobalStats
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -42,7 +43,14 @@ async def lifespan(app: FastAPI):
     print("Connecting to MongoDB...")
     await init_beanie(
         database=client.myapp,
-        document_models=[User, GitHubRepo, Scan, ScanResult, Payment],
+        document_models=[
+            User,
+            GitHubRepo,
+            Scan,
+            ScanResult,
+            Payment,
+            GlobalStats,
+        ],
     )
     print("Connected to MongoDB")
     yield
@@ -97,19 +105,20 @@ app.openapi = custom_openapi
 
 # Include routers
 app.include_router(health_check.router, prefix="/api/v1")
+app.include_router(github_auth.router, prefix="/api/v1/auth")
+app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(audit_agent.router, prefix="/api/v1")
-app.include_router(generate_summary.router, prefix="/api/v1")
-app.include_router(context_scan.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1")
 app.include_router(scan_history.router, prefix="/api/v1")
-app.include_router(github.router, prefix="/api/v1/github")
-app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(stripe.router, prefix="/api/v1/payments")
 app.include_router(payment_success.router, prefix="/api/v1/payments")
 app.include_router(webhook.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")
+app.include_router(stats.router, prefix="/api/v1")
 
 if settings.ENVIRONMENT == "development":
+    app.include_router(generate_summary.router, prefix="/api/v1")
+    app.include_router(context_scan.router, prefix="/api/v1")
     app.include_router(test_auth.router, prefix="/api/v1")
 
 

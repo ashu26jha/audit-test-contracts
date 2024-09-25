@@ -11,6 +11,7 @@ from pydantic import ConfigDict, Field
 
 class Scan(Document):
     scan_id: UUID = Field(default_factory=uuid4)
+    scan_number: int = Field(default=0)
     user_id: str = Indexed()
     status: str
     startedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -30,7 +31,9 @@ class Scan(Document):
         from_attributes=True,
         json_schema_extra={
             "example": {
-                "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
+                "_id": "507f1f77bcf86cd799439011",
+                "scan_id": "507f1f77bcf86cd799439012",
+                "scan_number": 1,
                 "user_id": "612e3a5e630d2b1a6f20fb4b",
                 "status": "pending",
                 "startedAt": "2023-10-01T12:00:00Z",
@@ -57,9 +60,15 @@ class Scan(Document):
     class Settings:
         name = "scans"
 
+    @classmethod
+    async def get_next_scan_number(cls, user_id: str) -> int:
+        last_scan = await cls.find(cls.user_id == user_id).sort("-scan_number").limit(1).to_list()
+        return (last_scan[0].scan_number + 1) if last_scan else 1
+
 
 class ScanResult(Document):
     scan_id: UUID = Indexed(unique=True)
+    scan_number: int
     summary: Optional[str]
     type: Optional[Profiles]
     total_findings: int = Field(default=0)
@@ -72,7 +81,9 @@ class ScanResult(Document):
         populate_by_name=True,
         json_schema_extra={
             "example": {
-                "scan_id": "0e4e9e7c-d3a6-4f7a-9b6e-8d57b9f87e26",
+                "_id": "507f1f77bcf86cd799439012",
+                "scan_id": "507f1f77bcf86cd799439012",
+                "scan_number": 1,
                 "summary": "Generated summary of the scan.",
                 "type": "DEFAULT",
                 "total_findings": 1,

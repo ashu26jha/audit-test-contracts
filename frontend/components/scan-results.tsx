@@ -57,7 +57,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
       label: "Lines of Code",
       value: scanData.scan.linesOfCode?.total_lines.toString() || "N/A",
     },
-    { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_id },
+    { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_number },
   ];
 
   return (

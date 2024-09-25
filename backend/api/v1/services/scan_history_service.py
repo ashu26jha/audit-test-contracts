@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from fastapi import HTTPException
@@ -18,6 +19,7 @@ async def update_scan_status(scan_id: UUID, status: str, total_findings: Optiona
     """Update the status of a scan."""
     scan = await Scan.find_one(Scan.scan_id == scan_id)
     if scan:
+        old_status = scan.status
         scan.status = status
         scan.updatedAt = datetime.now(timezone.utc)
         if status in ["completed", "failed"]:
@@ -25,8 +27,27 @@ async def update_scan_status(scan_id: UUID, status: str, total_findings: Optiona
         if total_findings is not None:
             scan.total_findings = total_findings
         await scan.save()
+
+        # Update global stats
+        await GlobalStats.update_paid_status(old_status, status)
     else:
         raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
+
+
+async def update_scan_paid_status(scan_uuid: UUID, paid_status: bool):
+    """Update the paid status of a scan."""
+    scan = await Scan.find_one(Scan.uuid == scan_uuid)
+    if scan:
+        old_status = "paid" if scan.paid_status else "unpaid"
+        scan.paid_status = paid_status
+        new_status = "paid" if paid_status else "unpaid"
+        scan.updatedAt = datetime.now(timezone.utc)
+        await scan.save()
+
+        # Update global stats
+        await GlobalStats.update_paid_status(old_status, new_status)
+    else:
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_uuid} not found")
 
 
 async def store_scan_result(scan_result: ScanResult):
