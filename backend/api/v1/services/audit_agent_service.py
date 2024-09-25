@@ -135,7 +135,6 @@ async def perform_audit_agent_background(
 
         # Calculate total findings
         total_findings = len(context_scan_result)
-        logger.info(f"Total findings: {total_findings}")
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_id)
@@ -145,8 +144,8 @@ async def perform_audit_agent_background(
         scan_result.findings = context_scan_result
         await scan_result.save()
 
-        # Update scan status to 'completed'
-        await scan_history_service.update_scan_status(scan_id, "completed")
+        # Update scan status to 'completed' and include total_findings
+        await scan_history_service.update_scan_status(scan_id, "completed", total_findings)
 
         logger.info(f"Completed audit scan with ID: {scan_id}")
 

@@ -32,7 +32,7 @@ const useFetchGithubRepoInfo = (repoUrl: string) => {
         setLoading(false);
       }
     },
-    [token]
+    [token],
   );
 
   useEffect(() => {

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from api.v1.models.scan import Scan, ScanResult
@@ -14,7 +14,7 @@ async def store_scan(scan: Scan):
     await scan.create()
 
 
-async def update_scan_status(scan_id: UUID, status: str):
+async def update_scan_status(scan_id: UUID, status: str, total_findings: Optional[int] = None):
     """Update the status of a scan."""
     scan = await Scan.find_one(Scan.scan_id == scan_id)
     if scan:
@@ -22,6 +22,8 @@ async def update_scan_status(scan_id: UUID, status: str):
         scan.updatedAt = datetime.now(timezone.utc)
         if status in ["completed", "failed"]:
             scan.completedAt = datetime.now(timezone.utc)
+        if total_findings is not None:
+            scan.total_findings = total_findings
         await scan.save()
     else:
         raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
