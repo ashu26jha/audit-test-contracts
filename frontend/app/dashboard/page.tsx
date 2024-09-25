@@ -32,38 +32,8 @@ interface ScanHistoryItem {
   } | null;
 }
 
-const scans = [
-  {
-    name: "code-alchemy",
-    logo: "/path/to/code-alchemy-logo.png",
-    status: "Unpaid",
-    scanId: "253152",
-    scannedDate: "2 days ago",
-    vulnerabilitiesFound: 23,
-    contractsScanned: 3,
-  },
-  {
-    name: "nova-nodes",
-    logo: "/path/to/nova-nodes-logo.png",
-    status: "Paid",
-    scanId: "36234",
-    scannedDate: "3 days ago",
-    vulnerabilitiesFound: 14,
-    contractsScanned: 4,
-  },
-  {
-    name: "secures-phere",
-    logo: "/path/to/secures-phere-logo.png",
-    status: "Unpaid",
-    scanId: "124511",
-    scannedDate: "21 July 2024",
-    vulnerabilitiesFound: 7,
-    contractsScanned: 2,
-  },
-];
-
 const DashboardPage = () => {
-  const { user, logout, token } = useAuth();
+  const { user, token } = useAuth();
   const router = useRouter();
   const [showStepper, setShowStepper] = useState(false);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
@@ -100,16 +70,16 @@ const DashboardPage = () => {
   }
 
   const handleScanClick = (scanId: string) => {
-    console.log("handleScanClick called with scanId:", scanId); // Add this line for debugging
+    console.log("handleScanClick called with scanId:", scanId);
     router.push(`/scan-results/${scanId}`);
   };
 
   return (
-    <div className="overflow-y-auto">
+    <>
       {showStepper ? (
         <ScanStepper />
       ) : (
-        <Card>
+        <Card className="h-full">
           {/* Main content */}
           <CardHeader>
             <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
@@ -118,9 +88,7 @@ const DashboardPage = () => {
                 color="secondary"
                 className="bg-[#8B5CF6] text-white"
                 onClick={() => setShowStepper(true)}
-                startContent={
-                  <Image src="/scan-icon.svg" alt="Scan" width={20} height={20}></Image>
-                }
+                startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20}></Image>}
               >
                 Scan Code
               </Button>
@@ -142,16 +110,9 @@ const DashboardPage = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center">
                           <div className="w-10 h-10 mr-3 bg-gray-700 rounded-full flex items-center justify-center">
-                            <Image
-                              src={scan.logo ?? "/github.svg"}
-                              alt="logo"
-                              width={24}
-                              height={24}
-                            />
+                            <Image src={scan.logo ?? "/github.svg"} alt="logo" width={24} height={24} />
                           </div>
-                          <span className="font-semibold">
-                            {scan.repositoryName ?? "Repo Name"}
-                          </span>
+                          <span className="font-semibold">{scan.repositoryName ?? "Repo Name"}</span>
                         </div>
                         <Chip color={scan.status === "Paid" ? "success" : "warning"} size="sm">
                           {scan.status}
@@ -164,21 +125,15 @@ const DashboardPage = () => {
                         </div>
                         <div className="flex items-center">
                           <Calendar size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">
-                            Scanned Date: {new Date(scan.startedAt).toLocaleString()}
-                          </span>
+                          <span className="text-sm">Scanned Date: {new Date(scan.startedAt).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center">
                           <AlertTriangle size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">
-                            Vulnerabilities Found: {scan.total_findings ?? 1}
-                          </span>
+                          <span className="text-sm">Vulnerabilities Found: {scan.total_findings ?? 1}</span>
                         </div>
                         <div className="flex items-center">
                           <FileText size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">
-                            Contracts Scanned: {scan.contractFiles.length}
-                          </span>
+                          <span className="text-sm">Contracts Scanned: {scan.contractFiles.length}</span>
                         </div>
                       </div>
                     </CardBody>
@@ -199,7 +154,7 @@ const DashboardPage = () => {
           </CardBody>
         </Card>
       )}
-    </div>
+    </>
   );
 };
 

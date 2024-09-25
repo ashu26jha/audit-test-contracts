@@ -22,6 +22,7 @@ class Scan(Document):
     branchName: str = Field(default="main")
     commitHash: Optional[str] = None
     paid_status: bool = False
+    total_findings: Optional[int] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -45,6 +46,7 @@ class Scan(Document):
                 "repositoryName": "repo",
                 "branchName": "main",
                 "commitHash": "1234567890",
+                "total_findings": 1,
                 "paidStatus": False,
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",

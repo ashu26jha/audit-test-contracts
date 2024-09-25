@@ -1,63 +1,77 @@
-'use client';
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { getUser } from '../services/api';
+"use client";
+import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import { getUser } from "../services/api";
+
+interface User {
+  id: string;
+  githubId: string;
+  name: string;
+  username: string;
+  email: string;
+  avatarUrl: string;
+}
 
 interface AuthContextType {
-  user: any;
+  user: User | null;
   token: string | null;
-  setToken: (token: string) => void;
+  setToken: (token: string | null) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  token: null,
-  setToken: () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [token, setTokenState] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      setTokenState(storedToken);
+  const fetchUser = useCallback(async (authToken: string) => {
+    try {
+      const userData = await getUser(authToken);
+      setUser(userData);
+    } catch (error) {
+      console.error("Failed to fetch user data:", error);
+      setToken(null);
     }
   }, []);
 
   useEffect(() => {
-    if (user) {
-      console.log('user', user);
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+      fetchUser(storedToken);
     }
-  }, [user]);
+  }, [fetchUser]);
 
   useEffect(() => {
     if (token) {
-      localStorage.setItem('token', token);
-      getUser(token).then(setUser).catch(console.error);
+      localStorage.setItem("token", token);
+      fetchUser(token);
     } else {
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       setUser(null);
     }
-  }, [token]);
+  }, [token, fetchUser]);
 
-  const setToken = (newToken: string) => {
-    setTokenState(newToken);
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("token");
+  }, []);
+
+  const value = {
+    user,
+    token,
+    setToken,
+    logout,
   };
 
-  const logout = () => {
-    setTokenState(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, token, setToken, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

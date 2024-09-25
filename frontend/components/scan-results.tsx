@@ -43,25 +43,25 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
 
   const scanStats = [
     {
-      icon: <AlertTriangle size={20} />,
+      icon: <AlertTriangle size={22} />,
       label: "Vulnerabilities Found",
       value: scanData.total_findings ?? 1,
     },
     {
-      icon: <FileText size={20} />,
+      icon: <FileText size={22} />,
       label: "Contracts Scanned",
       value: scanData.scan.contractFiles?.length.toString() || "0",
     },
     {
-      icon: <Code size={20} />,
+      icon: <Code size={22} />,
       label: "Lines of Code",
       value: scanData.scan.linesOfCode?.total_lines.toString() || "N/A",
     },
-    { icon: <Hash size={20} />, label: "Scan ID", value: scanData.scan_id },
+    { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_id },
   ];
 
   return (
-    <Card className="min-h-screen">
+    <Card className="h-full">
       {/* <div className="min-h-screen bg-black text-white flex flex-col"> */}
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
@@ -69,11 +69,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
             Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
           </div>
           <Tooltip content="More information">
-            <Button
-              size="sm"
-              startContent={<Info size={20} />}
-              onPress={() => setIsInfoModalOpen(true)}
-            >
+            <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
               Info
             </Button>
           </Tooltip>
@@ -85,7 +81,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
         <div className="grid grid-cols-4 gap-4 mb-6">
           {scanStats.map((stat, index) => (
             <Card key={index} className="bg-[#222222]">
-              <CardBody className="flex flex-row items-center space-x-2">
+              <CardBody className="flex flex-row items-center space-x-3">
                 {stat.icon}
                 <div>
                   <p className="text-sm text-gray-400">{stat.label}</p>
@@ -120,8 +116,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
         <Card className="">
           <CardBody className="flex flex-row justify-between items-center">
             <p className="text-sm">
-              Only partial findings are shown. Unlock full access to detailed report of all
-              vulnerabilities.
+              Only partial findings are shown. Unlock full access to detailed report of all vulnerabilities.
             </p>
             <Button color="secondary" className="bg-[#8B5CF6]" onPress={handlePayment}>
               Pay $10 via stripe
@@ -131,11 +126,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
       </main>
 
       {/* Info Modal (you may need to update this based on the actual data structure) */}
-      <Modal
-        isOpen={isInfoModalOpen}
-        onClose={() => setIsInfoModalOpen(false)}
-        className="bg-[#222222] text-white"
-      >
+      <Modal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} className="bg-[#222222] text-white">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">Scanned Code Info</ModalHeader>
           <ModalBody>

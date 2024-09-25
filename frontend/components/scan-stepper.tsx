@@ -12,7 +12,6 @@ import {
   Spinner,
   Card,
   CardHeader,
-  CardBody,
   Input,
 } from "@nextui-org/react";
 import { Autocomplete, AutocompleteItem } from "@nextui-org/autocomplete";
@@ -24,9 +23,9 @@ import {
   getRepositories,
   getRepositoryContents,
   getBranches,
+  initiateScan,
 } from "../services/api";
 import Image from "next/image";
-import api from "../services/api";
 
 interface Owner {
   login: string;
@@ -45,6 +44,27 @@ interface File {
   download_url: string;
 }
 
+const steps = [
+  {
+    notSelectedIcon: <Image src="/repository.svg" alt="Repository" width={45} height={45} />,
+    selectingIcon: <Image src="/repository_selecting.svg" alt="Repository Selecting" width={45} height={45} />,
+    selectedIcon: <Image src="/repository_selected.svg" alt="Repository Selected" width={100} height={100} />,
+    label: "Repository",
+  },
+  {
+    notSelectedIcon: <Image src="/branch.svg" alt="Branch" width={45} height={45} />,
+    selectingIcon: <Image src="/branch_selecting.svg" alt="Branch Selecting" width={45} height={45} />,
+    selectedIcon: <Image src="/branch_selected.svg" alt="Branch Selected" width={60} height={60} />,
+    label: "Branch",
+  },
+  {
+    notSelectedIcon: <Image src="/contract.svg" alt="Contract" width={45} height={45} />,
+    selectingIcon: <Image src="/contract_selecting.svg" alt="Contract Selecting" width={45} height={45} />,
+    selectedIcon: <Image src="/contract_selected.svg" alt="Contract Selected" width={60} height={60} />,
+    label: "Contract",
+  },
+];
+
 const ScanStepper: React.FC = () => {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
@@ -52,7 +72,6 @@ const ScanStepper: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState("");
   const [selectedContracts, setSelectedContracts] = useState<string[]>([]);
   const [isNextEnabled, setIsNextEnabled] = useState(false);
-  const [branchSearch, setBranchSearch] = useState("");
   const [contractSearch, setContractSearch] = useState("");
 
   const { token } = useAuth();
@@ -60,9 +79,6 @@ const ScanStepper: React.FC = () => {
   const [selectedOwner, setSelectedOwner] = useState<Owner | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
-  const [files, setFiles] = useState<File[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [branches, setBranches] = useState<string[]>([]);
   const [solidityFiles, setSolidityFiles] = useState<File[]>([]);
@@ -70,69 +86,33 @@ const ScanStepper: React.FC = () => {
   const filteredSolidityFiles = solidityFiles.filter(
     (file) =>
       file.name.toLowerCase().includes(contractSearch.toLowerCase()) ||
-      file.path.toLowerCase().includes(contractSearch.toLowerCase())
+      file.path.toLowerCase().includes(contractSearch.toLowerCase()),
   );
-
-  const steps = [
-    {
-      notSelectedIcon: <Image src="/repository.svg" alt="Repository" width={45} height={45} />,
-      selectingIcon: (
-        <Image src="/repository_selecting.svg" alt="Repository Selecting" width={45} height={45} />
-      ),
-      selectedIcon: (
-        <Image src="/repository_selected.svg" alt="Repository Selected" width={100} height={100} />
-      ),
-      label: "Repository",
-    },
-    {
-      notSelectedIcon: <Image src="/branch.svg" alt="Branch" width={45} height={45} />,
-      selectingIcon: (
-        <Image src="/branch_selecting.svg" alt="Branch Selecting" width={45} height={45} />
-      ),
-      selectedIcon: (
-        <Image src="/branch_selected.svg" alt="Branch Selected" width={60} height={60} />
-      ),
-      label: "Branch",
-    },
-    {
-      notSelectedIcon: <Image src="/contract.svg" alt="Contract" width={45} height={45} />,
-      selectingIcon: (
-        <Image src="/contract_selecting.svg" alt="Contract Selecting" width={45} height={45} />
-      ),
-      selectedIcon: (
-        <Image src="/contract_selected.svg" alt="Contract Selected" width={60} height={60} />
-      ),
-      label: "Contract",
-    },
-  ];
 
   useEffect(() => {
     setIsNextEnabled(
       (currentStep === 1 && selectedOwner !== null && selectedRepo !== null) ||
         (currentStep === 2 && selectedBranch !== "") ||
-        (currentStep === 3 && selectedContracts.length > 0)
+        (currentStep === 3 && selectedContracts.length > 0),
     );
   }, [currentStep, selectedOwner, selectedOrg, selectedRepo, selectedBranch, selectedContracts]);
 
   const handleScan = async () => {
     if (currentStep === steps.length) {
-      setIsLoading(true);
-      try {
-        const response = await api.post(
-          "/api/v1/audit-agent",
-          {
-            repositoryURL: `https://github.com/${selectedOwner?.login}/${selectedRepo?.name}`,
-            contractFiles: selectedContracts,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+      if (!token) {
+        console.error("Token is null");
+        return;
+      }
+      const data = {
+        repositoryURL: `https://github.com/${selectedOwner?.login}/${selectedRepo?.name}`,
+        contractFiles: selectedContracts,
+        branchName: selectedBranch,
+      };
 
-        console.log("Scan initiated:", response.data);
-        router.push(`/scan-results/${response.data.data.scan_id}`);
+      try {
+        setIsLoading(true);
+        const response = await initiateScan(token, data);
+        router.push(`/scan-results/${response.data.scan_id}`);
       } catch (error) {
         console.error("Error initiating scan:", error);
       } finally {
@@ -164,17 +144,13 @@ const ScanStepper: React.FC = () => {
 
   useEffect(() => {
     if (token && selectedOwner) {
-      getRepositories(token, selectedOwner.login, selectedOwner.type)
-        .then(setRepositories)
-        .catch(console.error);
+      getRepositories(token, selectedOwner.login, selectedOwner.type).then(setRepositories).catch(console.error);
     }
   }, [token, selectedOwner]);
 
   useEffect(() => {
     if (token && selectedOwner && selectedRepo) {
-      getBranches(token, selectedOwner.login, selectedRepo.name)
-        .then(setBranches)
-        .catch(console.error);
+      getBranches(token, selectedOwner.login, selectedRepo.name).then(setBranches).catch(console.error);
     }
   }, [token, selectedOwner, selectedRepo]);
 
@@ -188,7 +164,7 @@ const ScanStepper: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+      <div className="h-full bg-black text-white flex flex-col items-center justify-center">
         <div className="bg-[#222222] rounded-lg p-8 flex flex-col items-center">
           <Spinner size="lg" color="secondary" />
           <p className="mt-4 text-lg font-semibold">Loading</p>
@@ -207,7 +183,7 @@ const ScanStepper: React.FC = () => {
   };
 
   return (
-    <Card className="w-full min-h-screen flex flex-col">
+    <Card className="h-full">
       <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
         <div className="text-sm text-gray-400 flex">
           Dashboard <div className="mx-2">/</div> <div className="text-white">Scan Code</div>
@@ -240,14 +216,10 @@ const ScanStepper: React.FC = () => {
                 {index + 1 < currentStep
                   ? step.selectedIcon
                   : index + 1 === currentStep
-                  ? step.selectingIcon
-                  : step.notSelectedIcon}
+                    ? step.selectingIcon
+                    : step.notSelectedIcon}
               </div>
-              <span
-                className={`mx-2 text-sm ${
-                  index + 1 === currentStep ? "text-[#C9A9E9]" : "text-gray-400"
-                }`}
-              >
+              <span className={`mx-2 text-sm ${index + 1 === currentStep ? "text-[#C9A9E9]" : "text-gray-400"}`}>
                 {step.label}
               </span>
               {index < steps.length - 1 && <div className="w-16 h-px bg-gray-700 mx-2" />}
@@ -274,8 +246,7 @@ const ScanStepper: React.FC = () => {
                     const selected = Array.from(keys)[0] as string;
                     setSelectedOwner(owners.find((owner) => owner.login === selected) || null);
                     setSelectedRepo(null);
-                    setFiles([]);
-                    setSelectedFiles([]);
+                    setSolidityFiles([]);
                   }}
                 >
                   {owners.map((org) => (
@@ -388,9 +359,7 @@ const ScanStepper: React.FC = () => {
                   aria-label="Solidity files table"
                   selectionMode="multiple"
                   selectedKeys={new Set(selectedContracts)}
-                  onSelectionChange={(selection) =>
-                    setSelectedContracts(Array.from(selection) as string[])
-                  }
+                  onSelectionChange={(selection) => setSelectedContracts(Array.from(selection) as string[])}
                 >
                   <TableHeader>
                     <TableColumn>NAME</TableColumn>
