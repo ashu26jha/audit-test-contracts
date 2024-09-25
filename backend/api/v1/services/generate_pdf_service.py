@@ -78,7 +78,7 @@ def create_html_file(
     findings_list
     ):
     template_path = BASE_DIR/ 'v1' /'services'/ 'template' / 'updated_frame48096177.html'
-    html_content = read_html(template_path)
+    html_content = read_html(template_path).splitlines()
     for i, line in enumerate(html_content):
         if "<!--vulnerabilties_found-->" in line:
             html_content[i] = line.replace("<!--vulnerabilties_found-->", str(vulnerabilities_found))
