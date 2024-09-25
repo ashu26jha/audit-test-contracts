@@ -3,12 +3,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
+from api.v1.services import context_scan_service
 from common.profiles import Profiles
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from main import app
-
-from api.v1.services import context_scan_service
 
 client = TestClient(app)
 

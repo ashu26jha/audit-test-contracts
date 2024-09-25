@@ -4,6 +4,17 @@ from contextlib import asynccontextmanager
 import certifi
 import uvicorn
 from api.v1.auth import github_auth
+from api.v1.endpoints import (
+    audit_agent,
+    context_scan,
+    generate_pdf,
+    generate_summary,
+    github,
+    health_check,
+    scan_history,
+    scan_results,
+    test_auth,
+)
 from api.v1.endpoints.payments import payment_success, stripe, webhook
 from api.v1.models.github import GitHubRepo
 from api.v1.models.payment import Payment
@@ -23,22 +34,10 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from api.v1.endpoints import (
-    audit_agent,
-    context_scan,
-    generate_summary,
-    github,
-    health_check,
-    scan_history,
-    scan_results,
-    test_auth,
-    generate_pdf
-)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
+    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     print("Connecting to MongoDB...")
     await init_beanie(
         database=client.myapp,
