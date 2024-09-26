@@ -35,8 +35,9 @@ async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str]) -
     for folder in contract_folders:
         folder_path = Path(project_dir) / folder
         for contract_file in folder_path.rglob("*.sol"):
-            all_contract_codes += f"// {contract_file.relative_to(project_dir)}\n"
-            all_contract_codes += read_file(contract_file) + "\n"
+            if "lib" not in contract_file.parts:
+                all_contract_codes += f"// {contract_file.relative_to(project_dir)}\n"
+                all_contract_codes += read_file(contract_file) + "\n"
 
     project_structure = get_project_structure(project_dir, contract_folders)
 
