@@ -1,16 +1,18 @@
 import os
 from pathlib import Path
-from urllib.parse import urlparse
-from config import settings
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
 
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import get_full_scan_result
-from playwright.async_api import async_playwright
+from common import logger
+from common.email_utils import send_pdf_email
+from common.pdf_generation import (
+    create_contract_div,
+    extract_organization_name,
+    html_to_pdf,
+    read_html,
+)
+from config import settings
+from fastapi import HTTPException
 from PyPDF2 import PdfReader, PdfWriter
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -20,87 +22,86 @@ async def generate_pdf_from_scan(scan_id: str):
     """
     Generate a PDF from the scan data and send it via email.
     """
-    scans = await get_scan(scan_id)
-    full_result = await get_full_scan_result(scan_id)
-
-    summary = full_result.summary
-    repository_name = scans.repositoryName
-    branch_name = scans.branchName
-    vulnerabilities_found = full_result.total_findings
-
-    loc = (scans.linesOfCode)["total_lines"]
-    organisations = extract_organization_name(scans.repositoryURL)
-    contracts = scans.contractFiles
-
-    findings_list = []
-    for finding in full_result.findings:
-
-        # Convert severity to chip color
-        if finding.Severity == "Critical":
-            severity = "chip1"
-        elif finding.Severity == "High":
-            severity = "chip2"
-        elif finding.Severity == "Medium":
-            severity = "chip3"
-        elif finding.Severity == "Low":
-            severity = "chip4"
-        elif finding.Severity == "Info":
-            severity = "chip5"
-        elif finding.Severity == "Best Practices":
-            severity = "chip6"
-
-        finding = {
-            "Issue": finding.Issue,
-            "Severity": severity,
-            "Contracts": finding.Contracts,
-            "Description": finding.Description,
-        }
-        findings_list.append(finding)
-    html_content = await create_html_file(
-        summary,
-        vulnerabilities_found,
-        contracts,
-        loc,
-        str(scan_id),
-        organisations,
-        repository_name,
-        branch_name,
-        contracts,
-        findings_list,
-    )
-    updated_html_content = "\n".join(html_content)
-
-    template_path = BASE_DIR / "v1" / "services" / \
-        "template" / f"{str(scan_id)}.html"
-    middle_path = BASE_DIR / "v1" / "services" / \
-        "template" / f"{str(scan_id)}.pdf"
-    front_page_path = BASE_DIR / "v1" / "services" / "template" / "frame48096177.pdf"
-    with open(template_path, "w", encoding="utf-8") as file:
-        file.write(updated_html_content)
-
-    await html_to_pdf(template_path, middle_path)
-    await combine_pdfs(front_page_path, middle_path)
-
-    # Send the PDF via email
-    await send_pdf_email(settings.EMAIL_ADDRESS, "final.pdf", scan_id)
-
     try:
+        scans = await get_scan(scan_id)
+        full_result = await get_full_scan_result(scan_id)
+
+        summary = full_result.summary
+        repository_name = scans.repositoryName
+        branch_name = scans.branchName
+        vulnerabilities_found = full_result.total_findings
+
+        loc = (scans.linesOfCode)["total_lines"]
+        organisations = extract_organization_name(scans.repositoryURL)
+        contracts = scans.contractFiles
+
+        findings_list = []
+        for finding in full_result.findings:
+
+            # Convert severity to chip color
+            if finding.Severity == "Critical":
+                severity = "chip1"
+            elif finding.Severity == "High":
+                severity = "chip2"
+            elif finding.Severity == "Medium":
+                severity = "chip3"
+            elif finding.Severity == "Low":
+                severity = "chip4"
+            elif finding.Severity == "Info":
+                severity = "chip5"
+            elif finding.Severity == "Best Practices":
+                severity = "chip6"
+
+            finding = {
+                "Issue": finding.Issue,
+                "Severity": severity,
+                "Contracts": finding.Contracts,
+                "Description": finding.Description,
+            }
+            findings_list.append(finding)
+
+        html_content = await create_html_file(
+            summary,
+            vulnerabilities_found,
+            contracts,
+            loc,
+            str(scan_id),
+            organisations,
+            repository_name,
+            branch_name,
+            contracts,
+            findings_list,
+        )
+        updated_html_content = "\n".join(html_content)
+
+        # Ensure the template directory exists
+        template_dir = BASE_DIR / "v1" / "services" / "template"
+        template_dir.mkdir(parents=True, exist_ok=True)
+        pdf_name = f"audit-agent-report_{str(scans.scan_number)}.pdf"
+
+        template_path = template_dir / f"{str(scan_id)}.html"
+        middle_path = template_dir / f"{str(scan_id)}.pdf"
+        front_page_path = template_dir / "frame48096177.pdf"
+        final_pdf_path = template_dir / pdf_name
+
+        with open(template_path, "w", encoding="utf-8") as file:
+            file.write(updated_html_content)
+
+        await html_to_pdf(template_path, middle_path)
+        await combine_pdfs(front_page_path, middle_path, final_pdf_path)
+
+        # Send the PDF via email
+        await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
+
         os.remove(middle_path)
         os.remove(template_path)
-        # os.remove("final.pdf")
-    except FileNotFoundError:
-        print(f"File not found")
+        # os.remove(pdf_name)
 
-
-def extract_organization_name(url):
-    parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip("/").split("/")
-
-    if len(path_parts) > 0:
-        organization_name = path_parts[0]
-        return organization_name
-    else:
-        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error during scan initiation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate PDF report")
 
 
 async def create_html_file(
@@ -115,8 +116,7 @@ async def create_html_file(
     contracts_files,
     findings_list,
 ):
-    template_path = BASE_DIR / "v1" / "services" / \
-        "template" / "updated_frame48096177.html"
+    template_path = BASE_DIR / "v1" / "services" / "template" / "updated_frame48096177.html"
     html_content = read_html(template_path).splitlines()
     for i, line in enumerate(html_content):
         if "<!--vulnerabilties_found-->" in line:
@@ -125,8 +125,7 @@ async def create_html_file(
             )
 
         elif "<!--Contracts_Scanned-->" in line:
-            html_content[i] = line.replace(
-                "<!--Contracts_Scanned-->", str(len(contracts)))
+            html_content[i] = line.replace("<!--Contracts_Scanned-->", str(len(contracts)))
 
         elif "<!--LoC-->" in line:
             html_content[i] = line.replace("<!--LoC-->", str(loc))
@@ -138,12 +137,10 @@ async def create_html_file(
             html_content[i] = line.replace("<!--summary-->", str(summary))
 
         elif "<!--organization-->" in line:
-            html_content[i] = line.replace(
-                "<!--organization-->", str(organization))
+            html_content[i] = line.replace("<!--organization-->", str(organization))
 
         elif "<!--repository-->" in line:
-            html_content[i] = line.replace(
-                "<!--repository-->", str(repository))
+            html_content[i] = line.replace("<!--repository-->", str(repository))
 
         elif "<!--branch-->" in line:
             html_content[i] = line.replace("<!--branch-->", str(branch))
@@ -185,137 +182,7 @@ async def create_html_file(
     return html_content
 
 
-def read_html(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        html_content = file.read()
-
-    html_lines = [line.lstrip() for line in html_content.splitlines()]
-    processed_html_content = "\n".join(html_lines)
-    return processed_html_content
-
-
-def create_contract_div(
-    index, total_findings, risk_level, issue_title, contract_files, description
-):
-    contract_files_html = "".join(
-        f"""<span class="frame48096177-text161 textSmleading-5fontNormal"><span>{file}</span></span>"""
-        for file in contract_files
-    )
-    return f"""
-          <div class="frame48096177-option-wrapper4">
-            <div class="frame48096177-content-wrapper4">
-              <div class="frame48096177-frame2085660373">
-                <div class="frame48096177-frame20856603271">
-                  <img alt="interfacefolderemptyfolder2572" class="frame48096177-interfacefolderemptyfolder1"
-                    src="public/external/interfacefolderemptyfolder2572-22j.svg" />
-                  <span class="frame48096177-text159 textSmleading-5fontNormal">
-                    <span>
-                      {index}
-                      of
-                      {total_findings}
-                      Findings
-                    </span>
-                  </span>
-
-                  <div class="frame48096177-frame20856603272">
-                    <img alt="interfacefolderemptyfolder2572"
-                      src="public/external/interfacefolderemptyfolder2572-mwvt.svg"
-                      class="frame48096177-interfacefolderemptyfolder2" />
-
-                    <span class="frame48096177-text161 textSmleading-5fontNormal">
-                      <span>
-                       {contract_files_html}
-                      </span>
-                    </span>
-
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="frame48096177-content-wrapper5">
-              <span class="frame48096177-text163 textSmleading-5fontMedium">
-                <span>
-                  {issue_title}
-                </span>
-              </span>
-              <div class="frame48096177-chip5">
-                <img src='public/external/{risk_level}.svg' />
-              </div>
-            </div>
-            <div class="frame48096177-frame480961904">
-              <div class="frame48096177-frame480961963">
-                <!--ISSUE TITLE-->
-                <span class="frame48096177-text167 textSmleading-5fontNormal">
-                  <span>
-                    {description}
-                  </span>
-                </span>
-              </div>
-            </div>
-          </div>
-    """
-
-
-async def html_to_pdf(html_file, pdf_file):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-
-        await page.goto(f"file://{html_file}")
-
-        await page.evaluate(
-            """() => {
-            const style = document.createElement('style');
-            style.textContent = `
-                body {
-                    background-color: black;
-                    color: black;
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-size: 14px;
-                }
-
-                .frame48096177-option-wrapper4 {
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                    margin-bottom: 20px;
-                }
-                img { max-width: 100%; height: auto; }
-            `;
-            document.head.appendChild(style);
-        }"""
-        )
-
-        await page.wait_for_load_state("networkidle")
-
-        width = await page.evaluate(
-            """() => {
-            return Math.max(
-                document.body.scrollWidth,
-                document.documentElement.scrollWidth,
-                document.body.offsetWidth,
-                document.documentElement.offsetWidth,
-                document.body.clientWidth,
-                document.documentElement.clientWidth
-            );
-        }"""
-        )
-
-        pdf_options = {
-            "width": f"{width}px",
-            "height": "1123px",
-            "print_background": True,
-            "margin": {"top": "0px", "right": "0px", "bottom": "0px", "left": "0px"},
-            "scale": 1.1,
-        }
-
-        await page.pdf(path=pdf_file, **pdf_options)
-
-        await browser.close()
-
-
-async def combine_pdfs(pdf1_path, pdf2_path, output_path="final.pdf"):
+async def combine_pdfs(pdf1_path, pdf2_path, output_path):
     writer = PdfWriter()
 
     reader1 = PdfReader(pdf1_path)
@@ -328,46 +195,3 @@ async def combine_pdfs(pdf1_path, pdf2_path, output_path="final.pdf"):
 
     with open(output_path, "wb") as f:
         writer.write(f)
-
-
-async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
-    """
-    Send the generated PDF as an email attachment.
-    """
-    # Email configuration
-    smtp_server = settings.SMTP_SERVER
-    smtp_port = settings.SMTP_PORT  # or the appropriate port for your SMTP server
-    smtp_username = settings.SMTP_USERNAME
-    smtp_password = settings.SMTP_PASSWORD
-
-    # Create the email message
-    msg = MIMEMultipart()
-    msg['From'] = smtp_username
-    msg['To'] = to_email
-    msg['Subject'] = f"Scan Results - Scan ID: {scan_id}"
-
-    # Email body
-    body = f"Please find attached the scan results for Scan ID: {scan_id}"
-    msg.attach(MIMEText(body, 'plain'))
-
-    # Attach the PDF
-    with open(pdf_path, "rb") as attachment:
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(attachment.read())
-
-    encoders.encode_base64(part)
-    part.add_header(
-        "Content-Disposition",
-        f"attachment; filename= {os.path.basename(pdf_path)}",
-    )
-    msg.attach(part)
-
-    # Send the email
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.send_message(msg)
-        print(f"Email sent successfully to {to_email}")
-    except Exception as e:
-        print(f"Error sending email: {str(e)}")

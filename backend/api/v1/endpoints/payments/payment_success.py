@@ -1,14 +1,14 @@
-from api.v1.schemas.api_response_schema import SuccessResponse
-from fastapi.responses import RedirectResponse
-from fastapi import APIRouter, Query, status, HTTPException
-from config import settings
-from api.v1.services.scan_history_service import update_scan_paid_status
-from api.v1.services.payment_service import PaymentService
-from api.v1.models.payment import Payment
-from api.v1.services.generate_pdf_service import generate_pdf_from_scan
-from uuid import UUID
-import stripe
 from datetime import datetime, timezone
+from uuid import UUID
+
+import stripe
+from api.v1.models.payment import Payment
+from api.v1.schemas.api_response_schema import SuccessResponse
+from api.v1.services.generate_pdf_service import generate_pdf_from_scan
+from api.v1.services.scan_history_service import update_scan_paid_status
+from config import settings
+from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 
 router = APIRouter()
 
@@ -24,17 +24,17 @@ async def payment_success(session_id: str = Query(...)):
         session = stripe.checkout.Session.retrieve(session_id)
 
         # Validate the session
-        if session.payment_status != 'paid':
+        if session.payment_status != "paid":
             raise ValueError("Payment has not been completed")
 
-        # Optionally, check if the session has expired
+        # Check if the session has expired
         expiry_date = datetime.fromtimestamp(session.expires_at, timezone.utc)
         if expiry_date < datetime.now(timezone.utc):
             raise ValueError("Session has expired")
 
         # Extract scanId and userId from the session metadata
-        scan_id = UUID(session.metadata.get('scanId'))
-        user_id = session.metadata.get('userId')
+        scan_id = UUID(session.metadata.get("scanId"))
+        user_id = session.metadata.get("userId")
 
         if not scan_id or not user_id:
             raise ValueError("Missing scanId or userId in session metadata")
@@ -56,7 +56,7 @@ async def payment_success(session_id: str = Query(...)):
             amount=session.amount_total / 100,  # Convert from cents to dollars
             currency=session.currency,
             status="completed",
-            stripeSessionId=session_id
+            stripeSessionId=session_id,
         )
         await payment.create()
 
@@ -64,19 +64,21 @@ async def payment_success(session_id: str = Query(...)):
         await generate_pdf_from_scan(scan_id)
 
         # Redirect to payment results page
-        print(
-            f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=success")
-        redirect_url = f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=success"
+        print(f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=success")
+        redirect_url = (
+            f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=success"
+        )
         return RedirectResponse(url=redirect_url)
 
     except stripe.error.StripeError as e:
         print(f"Stripe error: {str(e)}")
-        raise HTTPException(
-            status_code=400, detail="Error retrieving Stripe session")
+        raise HTTPException(status_code=400, detail="Error retrieving Stripe session")
     except ValueError as e:
         print(f"Value error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"Error in payment_success: {str(e)}")
-        redirect_url = f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=error"
+        redirect_url = (
+            f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=error"
+        )
         return RedirectResponse(url=redirect_url)

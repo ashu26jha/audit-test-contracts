@@ -12,9 +12,10 @@ from api.v1.services.scan_results_service import (
 from fastapi import APIRouter, Depends, HTTPException
 
 router = APIRouter()
+dev_router = APIRouter()
 
 
-@router.get("/scans/{scan_id}", response_model=SuccessResponse)
+@dev_router.get("/full/{scan_id}", response_model=SuccessResponse)
 async def get_audit_agent_result(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -31,7 +32,7 @@ async def get_audit_agent_result(
     return SuccessResponse(data=result)
 
 
-@router.get("/scans/partial/{scan_id}", response_model=SuccessResponse)
+@router.get("/partial/{scan_id}", response_model=SuccessResponse)
 async def get_partial_audit_agent_result(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -41,12 +42,9 @@ async def get_partial_audit_agent_result(
         raise HTTPException(status_code=401, detail="User not authorized to access this scan")
     partial_result = await get_partial_scan_result(scan_id)
 
-    # Convert the scan to a ScanResponse
-    scan_response = ScanResponse.model_validate(scan)
-
     # Combine partial result with scan response
     result = {
-        "scan": scan_response,
+        "scan": ScanResponse.model_validate(scan),
         "partial_result": (
             ScanResultResponse.model_validate(partial_result) if partial_result else None
         ),

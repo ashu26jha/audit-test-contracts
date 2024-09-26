@@ -68,6 +68,17 @@ To launch a production server:
 fastapi run
 ```
 
+To launch a server with Docker:
+```bash
+cd backend
+docker build -t audit-agent-backend -f Dockerfile.backend .
+```
+
+then run the following command to run the server:
+```bash
+docker run -p 8000:8000 audit-agent-backend
+```
+
 ## Running the Linters
 
 ```bash
@@ -225,9 +236,9 @@ Initiates a new scan for selected smart contracts.
 </details>
 
 <details>
-<summary>GET /api/v1/scans/{scan_id}</summary>
+<summary>GET /api/v1/scans/full/{scan_id}</summary>
 
-Retrieves the results of a specific scan.
+Retrieves the full results of a specific scan (Only available in development mode)
 
 **Parameters:**
 - `scan_id`: UUID of the scan (path parameter)
@@ -359,6 +370,24 @@ An array of scan objects, each including:
 			"commitHash": "string",
 			"paid_status": "boolean",
   ],
+}
+```
+</details>
+
+<details>
+<summary>GET /api/v1/generate-pdf/{scan_id}</summary>
+
+Generates a PDF report for a specific scan and send it to the user's email.
+
+**Parameters:**
+- `scan_id`: UUID of the scan (path parameter)
+
+**Response:**
+An array of scan objects, each including:
+```json
+{
+	"success": true,
+	"data": "PDF send by email successfully"
 }
 ```
 </details>
