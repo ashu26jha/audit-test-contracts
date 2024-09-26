@@ -11,7 +11,9 @@ const api = axios.create({
 
 export const initiateGithubLogin = () => {
   console.log("initiateGithubLogin", `${API_URL}/api/v1/auth/github-login`);
-  window.location.href = `${API_URL}/api/v1/auth/github-login`;
+  if (typeof window !== "undefined") {
+    window.location.href = `${API_URL}/api/v1/auth/github-login`;
+  }
 };
 
 export const getUser = async (token: string) => {
@@ -110,6 +112,28 @@ export const getRepoInfo = async (token: string, repoUrl: string) => {
     },
     params: {
       repo_url: repoUrl,
+    },
+  });
+  return response.data.data;
+};
+
+export const createCheckoutSession = async (token: string, scanId: string) => {
+  const response = await api.post(
+    "/api/v1/payments/create-checkout-session",
+    { scanId },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+  return response.data.data;
+};
+
+export const sendReportAgain = async (token: string, scanId: string) => {
+  const response = await api.post(`/api/v1/generate-pdf/${scanId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
   });
   return response.data.data;

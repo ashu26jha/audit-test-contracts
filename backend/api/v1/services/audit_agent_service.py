@@ -35,6 +35,7 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
+        await validate_no_unpaid_scans(user)
 
         # Fetch repository info
         repo_info = await github_service.fetch_github_repo_info(
@@ -116,8 +117,10 @@ async def initiate_scan(
             )
             await scan_history_service.store_scan_result(failed_scan_result)
         except Exception:
-            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
-        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
+            logger.warning(
+                f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(
+            status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
@@ -182,6 +185,16 @@ async def perform_audit_agent_background(
         await scan_result.save()
 
 
+async def validate_no_unpaid_scans(user: User):
+    """Validate that the user has no unpaid scans."""
+    unpaid_scans = await Scan.find(Scan.user_id == str(user.id), Scan.paid_status == False).to_list()
+    if unpaid_scans:
+        raise HTTPException(
+            status_code=400,
+            detail="User has unpaid scans. Please pay for existing scans before initiating a new one."
+        )
+
+
 def validate_user_has_github_token(user: User) -> bool:
     """Validate if the user has a GitHub access token on file."""
     if not user.accessToken:
@@ -193,13 +206,15 @@ def validate_user_has_github_token(user: User) -> bool:
 def validate_github_url(url: str) -> bool:
     """Validate if the given URL is a valid GitHub repository URL."""
     if not bool(re.match(GITHUB_URL_PATTERN, url)):
-        raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+        raise HTTPException(
+            status_code=400, detail="Invalid GitHub repository URL")
 
 
 def validate_contract_files(contract_files: List[str]) -> bool:
     """Validate if the given contract files are valid Solidity files."""
     if not contract_files:
-        raise HTTPException(status_code=400, detail="No contract files provided")
+        raise HTTPException(
+            status_code=400, detail="No contract files provided")
     if not all(file.endswith(".sol") for file in contract_files):
         raise HTTPException(
             status_code=400,

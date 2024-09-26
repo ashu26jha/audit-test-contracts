@@ -12,34 +12,38 @@ import {
   ModalFooter,
   Divider,
 } from "@nextui-org/react";
-import { AlertTriangle, FileText, Code, Hash, Info, Home, GitBranch, FileCode } from "lucide-react";
-import Payment from "./payment";
+import { AlertTriangle, FileText, Code, Hash, Info, Home, GitBranch, FileCode, LockIcon } from "lucide-react";
+import BluredFindings from "./blured-findings";
+import Image from "next/image";
+import { sendReportAgain } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "@/hooks/useToast";
 
 interface ScanResultsProps {
-  scanData: any; // Replace 'any' with a more specific type based on your API response
+  scanData: any;
+  handlePayment: () => void;
 }
 
-const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
+const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) => {
+  const { toast } = useToast();
   console.log("scanData", scanData);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<"success" | "failed" | null>(null);
+  const { token } = useAuth();
+  const isPaid = scanData.scan.paid_status;
+  console.log("isPaid", isPaid);
 
-  const handlePayment = () => {
-    // Simulate payment process
-    setTimeout(() => {
-      // Randomly set payment status for demonstration
-      setPaymentStatus(Math.random() > 0.5 ? "success" : "failed");
-    }, 2000);
+  const handleSendReportAgain = () => {
+    console.log("send report again");
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+    sendReportAgain(token, scanData.scan_id);
+    toast({
+      title: "Report sent",
+      status: "success",
+    });
   };
-
-  const handleRetryPayment = () => {
-    setPaymentStatus(null);
-    handlePayment();
-  };
-
-  if (paymentStatus) {
-    return <Payment status={paymentStatus} onRetry={handleRetryPayment} />;
-  }
 
   const scanStats = [
     {
@@ -61,18 +65,32 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
   ];
 
   return (
-    <Card className="h-full">
+    <Card className="h-full relative">
       {/* <div className="min-h-screen bg-black text-white flex flex-col"> */}
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
           <div className="text-sm text-gray-400 flex">
             Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
           </div>
-          <Tooltip content="More information">
-            <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
-              Info
-            </Button>
-          </Tooltip>
+          <div className="flex space-x-2">
+            <Tooltip content="More information">
+              <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
+                Info
+              </Button>
+            </Tooltip>
+            {isPaid && (
+              <Tooltip content="Send to email">
+                <Button
+                  size="sm"
+                  className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                  startContent={<Image src="/mail.svg" width={20} height={20} alt="mail" />}
+                  onPress={() => handleSendReportAgain()}
+                >
+                  Send Report Again
+                </Button>
+              </Tooltip>
+            )}
+          </div>
         </div>
       </CardHeader>
       <Divider />
@@ -113,16 +131,42 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData }) => {
           </Card>
         ))}
 
-        <Card className="">
-          <CardBody className="flex flex-row justify-between items-center">
-            <p className="text-sm">
-              Only partial findings are shown. Unlock full access to detailed report of all vulnerabilities.
-            </p>
-            <Button color="secondary" className="bg-[#8B5CF6]" onPress={handlePayment}>
-              Pay $10 via stripe
-            </Button>
-          </CardBody>
-        </Card>
+        {/* If it is not paid show the blured findings */}
+        {!isPaid && <BluredFindings />}
+
+        {!isPaid && (
+          <Card className="absolute bottom-5 left-0 right-0 bg-[#F2EAFA] flex justify-between items-center p-2">
+            <CardBody className="flex flex-row justify-between items-center space-x-2">
+              <div className="flex flex-col pl-5">
+                <strong className="text-sm text-black">Only partial findings are shown.</strong>
+                <p className="text-sm text-black">
+                  Unlock full access to detailed report of {scanData.total_findings} vulnerabilities.
+                </p>
+              </div>
+
+              <Button color="secondary" className="bg-[#8B5CF6] hover:bg-[#7C3AED]" onPress={handlePayment}>
+                Pay $20 via stripe
+              </Button>
+            </CardBody>
+          </Card>
+        )}
+
+        {isPaid && (
+          <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
+            <CardBody className="flex flex-row justify-between items-center space-x-2">
+              <div className="flex flex-col pl-5">
+                <strong className="text-sm">You've already paid for this contract report.</strong>
+                <p className="text-sm">
+                  Please check your email for the detailed report of {scanData.total_findings} vulnerabilities.
+                </p>
+              </div>
+
+              <Button endContent={<Image src="/feedback.svg" width={20} height={20} alt="feedback" />}>
+                Send Feedback
+              </Button>
+            </CardBody>
+          </Card>
+        )}
       </main>
 
       {/* Info Modal (you may need to update this based on the actual data structure) */}

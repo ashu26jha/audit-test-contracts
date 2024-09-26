@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { getPartialScanResults } from "../../../services/api";
+import { getPartialScanResults, createCheckoutSession } from "../../../services/api";
 import ScanResults from "../../../components/scan-results";
 
 interface ScanResultsPageProps {
@@ -36,6 +36,21 @@ const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
     fetchScanResults();
   }, [token, scanId]);
 
+  const handlePayment = async () => {
+    if (!token || !scanId) return;
+
+    try {
+      const { session_id, URL } = await createCheckoutSession(token, scanId);
+      console.log(URL);
+      console.log(session_id);
+      // Redirect to Stripe Checkout
+      window.location.href = URL;
+    } catch (err) {
+      console.error("Error creating checkout session:", err);
+      setError("Failed to initiate payment. Please try again.");
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -44,7 +59,11 @@ const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
     return <div>Error: {error}</div>;
   }
 
-  return <ScanResults scanData={scanData} />;
+  return (
+    <div className="h-full">
+      <ScanResults scanData={scanData} handlePayment={handlePayment} />
+    </div>
+  );
 };
 
 export default ScanResultsPage;

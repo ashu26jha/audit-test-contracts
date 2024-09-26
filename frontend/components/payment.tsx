@@ -12,7 +12,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+    <div className="h-full bg-black text-white flex flex-col items-center justify-center">
       <Card className="bg-[#222222] p-8 max-w-md w-full text-center">
         <div
           className={`bg-[#333333] w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${status === "failed" ? "text-red-500" : "text-purple-500"}`}
@@ -24,7 +24,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           <p className="text-gray-400 mb-6">
             You will receive the full vulnerabilities report shortly on the following email:
             <br />
-            <span className="text-white">quinton23@gmail.com</span>
+            <span className="text-white">kirill.balakhonov@nethermind.io</span>
           </p>
         ) : (
           <p className="text-gray-400 mb-6">We did not receive your payment, please try again!</p>
@@ -44,7 +44,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           </div>
         )}
       </Card>
-      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at help@auditgent.rethemind.io</p>
+      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at help@auditgent.nethemind.io</p>
     </div>
   );
 };

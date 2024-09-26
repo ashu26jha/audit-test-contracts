@@ -26,7 +26,8 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch user data from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch user data from GitHub")
 
         user_data = response.json()
 
@@ -50,13 +51,16 @@ class GitHubService:
             response = await client.get(f"{self.BASE_URL}/user/emails", headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch user emails from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch user emails from GitHub")
 
         emails = response.json()
-        primary_email = next((email["email"] for email in emails if email["primary"]), None)
+        primary_email = next((email["email"]
+                             for email in emails if email["primary"]), None)
 
         if not primary_email:
-            raise HTTPException(status_code=400, detail="No primary email found for the user")
+            raise HTTPException(
+                status_code=400, detail="No primary email found for the user")
 
         return primary_email
 
@@ -119,7 +123,8 @@ class GitHubService:
             response = await client.get(url, headers=headers)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch file content from GitHub")
+            raise HTTPException(
+                status_code=400, detail="Failed to fetch file content from GitHub")
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
@@ -157,7 +162,8 @@ class GitHubService:
             )
 
         orgs = (
-            [{"login": org["login"], "type": "organization"} for org in orgs_response.json()]
+            [{"login": org["login"], "type": "organization"}
+                for org in orgs_response.json()]
             if orgs_response.status_code == 200
             else []
         )
@@ -225,7 +231,8 @@ class GitHubService:
                     and response.status_code == 401
                     and access_token
                 ):
-                    logger.warning("Invalid access token provided. Retrying without access token.")
+                    logger.warning(
+                        "Invalid access token provided. Retrying without access token.")
                     headers.pop("Authorization", None)
                     response = await client.get(url, headers=headers)
 
@@ -246,13 +253,15 @@ class GitHubService:
                         f"GitHub API returned status {response.status_code}: {api_message}"
                     )
                     logger.error(message)
-                    raise HTTPException(status_code=500, detail="Internal Error Server")
+                    raise HTTPException(
+                        status_code=500, detail="Internal Error Server")
 
             commit_hash = commit_data.get("sha")
             if not commit_hash:
                 message = f"Commit hash not found for branch '{branch_name}'."
                 logger.error(message)
-                raise HTTPException(status_code=500, detail="Internal Error Server")
+                raise HTTPException(
+                    status_code=500, detail="Internal Error Server")
 
             return commit_hash
 
@@ -261,7 +270,8 @@ class GitHubService:
         except Exception as e:
             message = f"Unexpected error while fetching commit hash: {str(e)}"
             logger.error(message)
-            raise HTTPException(status_code=500, detail="Internal Error Server")
+            raise HTTPException(
+                status_code=500, detail="Internal Error Server")
 
     async def fetch_github_repo_info(self, access_token: str, repo_url: str) -> GitHubRepoCreate:
         headers = {
@@ -275,7 +285,8 @@ class GitHubService:
         )
         match = re.match(pattern, repo_url)
         if not match:
-            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+            raise HTTPException(
+                status_code=400, detail="Invalid GitHub repository URL")
 
         owner = match.group("owner")
         repo = match.group("repo").replace(".git", "")
@@ -290,12 +301,14 @@ class GitHubService:
                 and response.status_code == 401
                 and access_token
             ):
-                logger.warning("Invalid access token provided. Retrying without access token.")
+                logger.warning(
+                    "Invalid access token provided. Retrying without access token.")
                 headers.pop("Authorization", None)
                 response = await client.get(url, headers=headers)
 
             if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=response.text)
+                raise HTTPException(
+                    status_code=response.status_code, detail=response.text)
 
         data = response.json()
 

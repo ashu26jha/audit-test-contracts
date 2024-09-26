@@ -1,11 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { NextUIProvider } from "@nextui-org/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ThemeProviderProps } from "next-themes/dist/types";
 import { AuthProvider } from "../contexts/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -21,7 +23,18 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <NextUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
-        <AuthProvider>{mounted && children}</AuthProvider>
+        <AuthProvider>
+          {mounted && children}
+          <Toaster
+            position="bottom-center"
+            toastOptions={{
+              className: "",
+              style: {
+                boxShadow: "none",
+              },
+            }}
+          />
+        </AuthProvider>
       </NextThemesProvider>
     </NextUIProvider>
   );

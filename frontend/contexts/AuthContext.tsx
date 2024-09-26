@@ -14,8 +14,10 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  loading: boolean;
   setToken: (token: string | null) => void;
   logout: () => void;
+  isPublicRoute: (pathname: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async (authToken: string) => {
     try {
@@ -31,6 +34,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Failed to fetch user data:", error);
       setToken(null);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -38,17 +43,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedToken = localStorage.getItem("token");
     if (storedToken) {
       setToken(storedToken);
-      fetchUser(storedToken);
+      (async () => {
+        await fetchUser(storedToken);
+      })();
+    } else {
+      setLoading(false);
     }
   }, [fetchUser]);
 
   useEffect(() => {
     if (token) {
       localStorage.setItem("token", token);
-      fetchUser(token);
+      setLoading(true);
+      (async () => {
+        await fetchUser(token);
+      })();
     } else {
       localStorage.removeItem("token");
       setUser(null);
+      setLoading(false);
     }
   }, [token, fetchUser]);
 
@@ -58,11 +71,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("token");
   }, []);
 
+  const isPublicRoute = useCallback((pathname: string): boolean => {
+    const publicRoutes = ["/login", "/payment-result", "/login-success"];
+    return (
+      publicRoutes.includes(pathname) ||
+      pathname.startsWith("/scan-results/") ||
+      /^\/scan-results\/[^/]+$/.test(pathname)
+    );
+  }, []);
+
   const value = {
     user,
     token,
+    loading,
     setToken,
     logout,
+    isPublicRoute,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

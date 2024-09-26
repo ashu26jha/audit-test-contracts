@@ -3,18 +3,27 @@
 import { Button, Card, CardBody, Image } from "@nextui-org/react";
 import { initiateGithubLogin } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 const LoginPage = () => {
-  const { user } = useAuth();
+  const { user, loading, isPublicRoute } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (user) {
+    if (!loading && user && pathname !== "/payment-result") {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [user, loading, router, pathname]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center">

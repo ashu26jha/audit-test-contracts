@@ -66,3 +66,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = 10800  # 1 week
 
 GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
+
+
+##################################################
+#                   EMAIL
+##################################################
+
+SMTP_SERVER = os.getenv("SMTP_SERVER")
+SMTP_PORT = os.getenv("SMTP_PORT", 587)
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "kocakbilgin@gmail.com")

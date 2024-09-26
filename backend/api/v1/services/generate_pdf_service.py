@@ -1,6 +1,12 @@
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from config import settings
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
 
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import get_full_scan_result
@@ -12,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 async def generate_pdf_from_scan(scan_id: str):
     """
-    Generate a PDF from the scan data.
+    Generate a PDF from the scan data and send it via email.
     """
     scans = await get_scan(scan_id)
     full_result = await get_full_scan_result(scan_id)
@@ -64,17 +70,24 @@ async def generate_pdf_from_scan(scan_id: str):
     )
     updated_html_content = "\n".join(html_content)
 
-    template_path = BASE_DIR / "v1" / "services" / "template" / f"{str(scan_id)}.html"
-    middle_path = BASE_DIR / "v1" / "services" / "template" / f"{str(scan_id)}.pdf"
+    template_path = BASE_DIR / "v1" / "services" / \
+        "template" / f"{str(scan_id)}.html"
+    middle_path = BASE_DIR / "v1" / "services" / \
+        "template" / f"{str(scan_id)}.pdf"
     front_page_path = BASE_DIR / "v1" / "services" / "template" / "frame48096177.pdf"
     with open(template_path, "w", encoding="utf-8") as file:
         file.write(updated_html_content)
 
     await html_to_pdf(template_path, middle_path)
     await combine_pdfs(front_page_path, middle_path)
+
+    # Send the PDF via email
+    await send_pdf_email(settings.EMAIL_ADDRESS, "final.pdf", scan_id)
+
     try:
         os.remove(middle_path)
         os.remove(template_path)
+        # os.remove("final.pdf")
     except FileNotFoundError:
         print(f"File not found")
 
@@ -102,7 +115,8 @@ async def create_html_file(
     contracts_files,
     findings_list,
 ):
-    template_path = BASE_DIR / "v1" / "services" / "template" / "updated_frame48096177.html"
+    template_path = BASE_DIR / "v1" / "services" / \
+        "template" / "updated_frame48096177.html"
     html_content = read_html(template_path).splitlines()
     for i, line in enumerate(html_content):
         if "<!--vulnerabilties_found-->" in line:
@@ -111,7 +125,8 @@ async def create_html_file(
             )
 
         elif "<!--Contracts_Scanned-->" in line:
-            html_content[i] = line.replace("<!--Contracts_Scanned-->", str(len(contracts)))
+            html_content[i] = line.replace(
+                "<!--Contracts_Scanned-->", str(len(contracts)))
 
         elif "<!--LoC-->" in line:
             html_content[i] = line.replace("<!--LoC-->", str(loc))
@@ -123,10 +138,12 @@ async def create_html_file(
             html_content[i] = line.replace("<!--summary-->", str(summary))
 
         elif "<!--organization-->" in line:
-            html_content[i] = line.replace("<!--organization-->", str(organization))
+            html_content[i] = line.replace(
+                "<!--organization-->", str(organization))
 
         elif "<!--repository-->" in line:
-            html_content[i] = line.replace("<!--repository-->", str(repository))
+            html_content[i] = line.replace(
+                "<!--repository-->", str(repository))
 
         elif "<!--branch-->" in line:
             html_content[i] = line.replace("<!--branch-->", str(branch))
@@ -311,3 +328,46 @@ async def combine_pdfs(pdf1_path, pdf2_path, output_path="final.pdf"):
 
     with open(output_path, "wb") as f:
         writer.write(f)
+
+
+async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
+    """
+    Send the generated PDF as an email attachment.
+    """
+    # Email configuration
+    smtp_server = settings.SMTP_SERVER
+    smtp_port = settings.SMTP_PORT  # or the appropriate port for your SMTP server
+    smtp_username = settings.SMTP_USERNAME
+    smtp_password = settings.SMTP_PASSWORD
+
+    # Create the email message
+    msg = MIMEMultipart()
+    msg['From'] = smtp_username
+    msg['To'] = to_email
+    msg['Subject'] = f"Scan Results - Scan ID: {scan_id}"
+
+    # Email body
+    body = f"Please find attached the scan results for Scan ID: {scan_id}"
+    msg.attach(MIMEText(body, 'plain'))
+
+    # Attach the PDF
+    with open(pdf_path, "rb") as attachment:
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read())
+
+    encoders.encode_base64(part)
+    part.add_header(
+        "Content-Disposition",
+        f"attachment; filename= {os.path.basename(pdf_path)}",
+    )
+    msg.attach(part)
+
+    # Send the email
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+        print(f"Email sent successfully to {to_email}")
+    except Exception as e:
+        print(f"Error sending email: {str(e)}")

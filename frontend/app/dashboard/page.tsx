@@ -9,6 +9,7 @@ import Image from "next/image";
 import ScanStepper from "../../components/scan-stepper";
 import { Hash, Calendar, AlertTriangle, FileText } from "lucide-react";
 import { getScanHistory } from "../../services/api";
+import { useToast } from "../../hooks/useToast";
 
 interface ScanHistoryItem {
   name: string;
@@ -36,12 +37,11 @@ interface ScanHistoryItem {
 const DashboardPage = () => {
   const { user, token } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [showStepper, setShowStepper] = useState(false);
   const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
+  const [scanable, setScanable] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  console.log("user", user);
-  console.log("scanHistory", scanHistory);
 
   useEffect(() => {
     if (!user) {
@@ -54,6 +54,14 @@ const DashboardPage = () => {
       if (token) {
         try {
           const history = await getScanHistory(token);
+          console.log("history", history);
+          // To scan repository all history must be paid
+          const unpaidHistory = history.filter((scan: ScanHistoryItem) => !scan.paid_status);
+          if (unpaidHistory.length > 0) {
+            setScanable(false);
+          } else {
+            setScanable(true);
+          }
           setScanHistory(history);
         } catch (error) {
           console.error("Error fetching scan history:", error);
@@ -75,6 +83,18 @@ const DashboardPage = () => {
     router.push(`/scan-results/${scanId}`);
   };
 
+  const handleScan = () => {
+    if (scanable) {
+      setShowStepper(true);
+    } else {
+      toast({
+        title: "You must pay for previous scans to continue",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <>
       {showStepper ? (
@@ -88,7 +108,7 @@ const DashboardPage = () => {
               <Button
                 color="secondary"
                 className="bg-[#8B5CF6] text-white"
-                onClick={() => setShowStepper(true)}
+                onClick={() => handleScan()}
                 startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20}></Image>}
               >
                 Scan Code
@@ -115,8 +135,11 @@ const DashboardPage = () => {
                           </div>
                           <span className="font-semibold">{scan.repositoryName ?? "Repo Name"}</span>
                         </div>
-                        <Chip color={scan.status === "Paid" ? "success" : "warning"} size="sm">
-                          {scan.status}
+                        <Chip
+                          color={scan.paid_status ? "success" : scan.status === "completed" ? "warning" : "primary"}
+                          size="sm"
+                        >
+                          {scan.paid_status ? "paid" : scan.status === "completed" ? "unpaid" : scan.status}
                         </Chip>
                       </div>
                       <div className="space-y-2">

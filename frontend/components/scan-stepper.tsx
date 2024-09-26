@@ -99,20 +99,18 @@ const ScanStepper: React.FC = () => {
 
   const handleScan = async () => {
     if (currentStep === steps.length) {
-      if (!token) {
-        console.error("Token is null");
-        return;
-      }
-      const data = {
-        repositoryURL: `https://github.com/${selectedOwner?.login}/${selectedRepo?.name}`,
-        contractFiles: selectedContracts,
-        branchName: selectedBranch,
-      };
-
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const response = await initiateScan(token, data);
-        router.push(`/scan-results/${response.data.scan_id}`);
+        if (token) {
+          const response = await initiateScan(token, {
+            repositoryURL: `https://github.com/${selectedOwner?.login}/${selectedRepo?.name}`,
+            contractFiles: selectedContracts,
+            branchName: selectedBranch,
+          });
+
+          console.log("Scan initiated:", response);
+          router.push(`/scan-results/${response.data.scan_id}`);
+        }
       } catch (error) {
         console.error("Error initiating scan:", error);
       } finally {

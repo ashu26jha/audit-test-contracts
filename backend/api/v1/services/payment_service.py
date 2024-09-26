@@ -45,7 +45,7 @@ class PaymentService:
                     "price_data": {
                         "currency": "usd",
                         "product_data": {"name": "Payment for scan"},
-                        "unit_amount": 120,
+                        "unit_amount": 2000,
                     },
                     "quantity": 1,
                 }
@@ -62,7 +62,8 @@ class PaymentService:
     @staticmethod
     async def handle_webhook(payload: bytes, sig_header: str):
         try:
-            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_KEY)
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, STRIPE_WEBHOOK_KEY)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid payload")
         except stripe.error.SignatureVerificationError:
@@ -107,6 +108,7 @@ class PaymentService:
             except Exception as e:
                 message = f"Failed to handle webhook: {str(e)}"
                 logger.error(message)
-                raise HTTPException(status_code=500, detail="Internal server error")
+                raise HTTPException(
+                    status_code=500, detail="Internal server error")
 
         return True
