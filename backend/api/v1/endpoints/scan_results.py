@@ -39,7 +39,7 @@ async def get_partial_audit_agent_result(
 ):
     scan = await get_scan(scan_id)
     if scan.user_id != str(current_user.id):
-        raise HTTPException(status_code=401, detail="User not authorized to access this scan")
+        raise HTTPException(status_code=404, detail="Scan with ID {scan_id} not found")
     partial_result = await get_partial_scan_result(scan_id)
 
     # Combine partial result with scan response

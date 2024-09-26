@@ -1,0 +1,66 @@
+body {
+  background-color: #ffffff;
+  font-family: Inter, sans-serif;
+  line-height: 1.4;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.a4-container {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 25mm 20mm 20mm;
+  box-sizing: border-box;
+}
+
+.report-container {
+  width: 100%;
+}
+
+.report-content {
+  width: 100%;
+}
+
+.report-section {
+  margin-bottom: 15mm;
+}
+
+.divider {
+  width: 1px;
+  background-color: #F4F4F5;
+  margin: 0 8px;
+}
+
+.horizontal-divider {
+  height: 1px;
+  background-color: #F4F4F5;
+  margin: 8px 0;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .a4-container {
+    padding: 25mm 10mm 10mm;
+    page-break-after: always;
+  }
+
+  .findings-section {
+    page-break-inside: avoid;
+  }
+
+  /* Add top margin to all pages */
+  @page {
+    margin-top: 25mm;
+  }
+
+}

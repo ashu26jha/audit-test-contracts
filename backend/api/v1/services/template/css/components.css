@@ -1,0 +1,112 @@
+.info-section {
+  border: 1px solid #F4F4F5;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 15px; 
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 100%;
+}
+
+.info-row > * {
+  display: flex;
+  align-items: center;
+}
+
+.info-column {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.icon-wrapper {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f4f4f5;
+  border-radius: 12px;
+  margin-right: 12px;
+}
+
+.info-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+}
+
+.section-header {
+  background-color: #F4F4F5;
+  padding: 15px 10px;
+  border-bottom: 1px solid #F4F4F5;
+}
+
+.section-content {
+  padding: 10px; 
+}
+
+.contracts-section {
+  padding: 10px;
+  border: 1px solid #F4F4F5;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.contracts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px; 
+}
+
+.file-name {
+  background-color: #F4F4F5;
+  padding: 2px 4px; 
+  border-radius: 3px;
+}
+
+.findings-section {
+  border: 1px solid #F4F4F5;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.finding-header {
+  background-color: #F4F4F5;
+  padding: 15px 10px;
+}
+
+.finding-content {
+  padding: 10px 10px 0 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.severity-chip {
+  padding: 2px 4px; /* Reduced from 3px 6px */
+  border-radius: 4px; /* Reduced from 6px */
+}
+
+.finding-description {
+  padding: 10px; /* Reduced from 12px */
+}
+
+/* Severity chip colors */
+.chip1 { background-color: #dc3545; color: white; }
+.chip2 { background-color: #fd7e14; color: white; }
+.chip3 { background-color: #ffc107; color: black; }
+.chip4 { background-color: #28a745; color: white; }
+.chip5 { background-color: #17a2b8; color: white; }
+.chip6 { background-color: #6c757d; color: white; }
