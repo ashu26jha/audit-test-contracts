@@ -83,12 +83,13 @@ async def generate_pdf_from_scan(scan_id: str):
         middle_path = template_dir / f"{str(scan_id)}.pdf"
         front_page_path = template_dir / "frame48096177.pdf"
         final_pdf_path = template_dir / pdf_name
+        disclaimer_path = template_dir / "disclaimer.pdf"
 
         with open(template_path, "w", encoding="utf-8") as file:
             file.write(updated_html_content)
 
         await html_to_pdf(template_path, middle_path)
-        await combine_pdfs(front_page_path, middle_path, final_pdf_path)
+        await combine_pdfs(front_page_path, middle_path, disclaimer_path, final_pdf_path)
 
         # Send the PDF via email
         await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
@@ -182,7 +183,7 @@ async def create_html_file(
     return html_content
 
 
-async def combine_pdfs(pdf1_path, pdf2_path, output_path):
+async def combine_pdfs(pdf1_path, pdf2_path, pdf3_path, output_path):
     writer = PdfWriter()
 
     reader1 = PdfReader(pdf1_path)
@@ -191,6 +192,10 @@ async def combine_pdfs(pdf1_path, pdf2_path, output_path):
 
     reader2 = PdfReader(pdf2_path)
     for page in reader2.pages:
+        writer.add_page(page)
+
+    reader3 = PdfReader(pdf3_path)
+    for page in reader3.pages:
         writer.add_page(page)
 
     with open(output_path, "wb") as f:
