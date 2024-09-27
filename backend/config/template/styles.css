@@ -1,18 +1,19 @@
 /* Root Variables */
 :root {
-  --font-size-small: 16px; /* Increased from 14px */
-  --font-size-base: 18px; /* Increased from 16px */
-  --font-size-large: 20px; /* Increased from 18px */
+  --font-size-small: 16px;
+  --font-size-base: 18px;
+  --font-size-large: 20px;
   --color-primary: #000000;
   --color-secondary: #71717a;
   --color-accent: #52525b;
+  --color-background: #f4f4f5;
 }
 
 /* Base Styles */
 body {
   background-color: #ffffff;
   font-family: Inter, sans-serif;
-  line-height: 1.6; /* Increased from 1.4 */
+  line-height: 1.6;
   color: #333;
   margin: 0;
   padding: 0;
@@ -40,13 +41,13 @@ body {
 
 .divider {
   width: 1px;
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   margin: 0 8px;
 }
 
 .horizontal-divider {
   height: 1px;
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   margin: 8px 0;
 }
 
@@ -70,7 +71,8 @@ body {
 }
 
 .info-section {
-  border: 1px solid #f4f4f5;
+  break-inside: avoid;
+  border: 1px solid var(--color-background);
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 30px;
@@ -78,9 +80,9 @@ body {
 }
 
 .section-header {
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   padding: 20px 15px;
-  border-bottom: 1px solid #f4f4f5;
+  border-bottom: 1px solid var(--color-background);
 }
 
 .section-title {
@@ -134,10 +136,16 @@ body {
 }
 
 .file-name {
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   padding: 4px 6px;
   border-radius: 3px;
   font-size: var(--font-size-small);
+}
+
+.contracts-in-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 /* Findings Section */
@@ -149,7 +157,7 @@ body {
 
 .findings-section {
   break-inside: avoid;
-  border: 1px solid #f4f4f5;
+  border: 1px solid var(--color-background);
   border-radius: 6px;
   overflow: hidden;
   width: 100%;
@@ -162,7 +170,7 @@ body {
 }
 
 .finding-header {
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   padding: 15px 10px;
 }
 

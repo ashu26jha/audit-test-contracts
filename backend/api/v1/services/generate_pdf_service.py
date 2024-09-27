@@ -15,7 +15,8 @@ from config import settings
 from fastapi import HTTPException
 from PyPDF2 import PdfReader, PdfWriter
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+TEMPLATE_DIR = BASE_DIR / "config" / "template"
 
 
 async def generate_pdf_from_scan(scan_id: str):
@@ -30,12 +31,14 @@ async def generate_pdf_from_scan(scan_id: str):
             "summary": full_result.summary,
             "repository_name": scan.repositoryName,
             "branch_name": scan.branchName,
+            "commit_hash": scan.commitHash,
             "total_vulnerabilities": full_result.total_findings,
             "total_lines_of_code": scan.linesOfCode["total_lines"],
             "organization": extract_organization_name(scan.repositoryURL),
             "contract_files": scan.contractFiles,
             "findings": prepare_findings_data(full_result.findings),
             "scan_id": scan_id,
+            "scan_number": scan.scan_number,
         }
 
         html_content = await create_report_html(report_data)
@@ -78,14 +81,15 @@ def prepare_findings_data(findings):
 
 
 async def create_report_html(report_data):
-    template_path = BASE_DIR / "v1" / "services" / "template" / "report_template.html"
+    template_path = TEMPLATE_DIR / "report_template.html"
     html_content = read_html(template_path)
 
     # Use a single placeholder replacement
     html_content = html_content.replace("<!--organization-->", str(report_data["organization"]))
-    html_content = html_content.replace("<!--scanId-->", str(report_data["scan_id"]))
+    html_content = html_content.replace("<!--scanId-->", str(report_data["scan_number"]))
     html_content = html_content.replace("<!--repository-->", str(report_data["repository_name"]))
     html_content = html_content.replace("<!--branch-->", str(report_data["branch_name"]))
+    html_content = html_content.replace("<!--commit_hash-->", str(report_data["commit_hash"]))
     html_content = html_content.replace(
         "<!--vulnerabilties_found-->", str(report_data["total_vulnerabilities"])
     )
@@ -126,13 +130,10 @@ def create_findings_html(findings):
 
 
 async def generate_pdf(html_content, pdf_filename):
-    # Ensure the template directory exists
-    template_dir = BASE_DIR / "v1" / "services" / "template"
-    template_dir.mkdir(parents=True, exist_ok=True)
 
-    pdf_path = template_dir / pdf_filename
+    pdf_path = TEMPLATE_DIR / pdf_filename
 
-    html_file_path = template_dir / f"{pdf_filename}.html"
+    html_file_path = TEMPLATE_DIR / f"{pdf_filename}.html"
     with open(html_file_path, "w", encoding="utf-8") as file:
         file.write(html_content)
 
@@ -143,8 +144,8 @@ async def generate_pdf(html_content, pdf_filename):
 
 
 def combine_pdfs(report_pdf_path):
-    cover_page_path = BASE_DIR / "v1" / "services" / "template" / "cover_page.pdf"
-    disclaimer_page_path = BASE_DIR / "v1" / "services" / "template" / "disclaimer_page.pdf"
+    cover_page_path = TEMPLATE_DIR / "cover_page.pdf"
+    disclaimer_page_path = TEMPLATE_DIR / "disclaimer_page.pdf"
     final_pdf_path = report_pdf_path.with_name(f"final_{report_pdf_path.name}")
 
     pdf_writer = PdfWriter()
