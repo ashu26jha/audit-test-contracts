@@ -1,23 +1,12 @@
 import React, { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Tooltip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Divider,
-} from "@nextui-org/react";
-import { AlertTriangle, FileText, Code, Hash, Info, Home, GitBranch, FileCode, LockIcon } from "lucide-react";
+import { Card, CardBody, CardHeader, Button, Tooltip, Divider } from "@nextui-org/react";
+import { AlertTriangle, FileText, Code, Hash, Info } from "lucide-react";
 import BluredFindings from "./blured-findings";
 import Image from "next/image";
 import { sendReportAgain } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
+import ScanInfo from "./scan-info";
 
 interface ScanResultsProps {
   scanData: any;
@@ -63,6 +52,12 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
     },
     { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_number },
   ];
+
+  function getOrganizationName(scanData: any) {
+    const organizationId = scanData.scan.repositoryURL;
+    const organizationName = organizationId.split("/")[3];
+    return organizationName;
+  }
 
   return (
     <Card className="h-full relative">
@@ -169,38 +164,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
         )}
       </main>
 
-      {/* Info Modal (you may need to update this based on the actual data structure) */}
-      <Modal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} className="bg-[#222222] text-white">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">Scanned Code Info</ModalHeader>
-          <ModalBody>
-            {/* {infoModalContent.map((section, index) => (
-              <Card key={index} className="bg-[#333333] mb-4">
-                <CardBody>
-                  <div className="flex items-center gap-2 mb-2">
-                    {section.icon}
-                    <h3 className="text-sm font-semibold">{section.title}</h3>
-                  </div>
-                  {section.content.map((item, itemIndex) => (
-                    <div
-                      key={itemIndex}
-                      className="flex justify-between text-sm"
-                    >
-                      <span className="text-gray-400">{item.label}</span>
-                      <span>{item.value}</span>
-                    </div>
-                  ))}
-                </CardBody>
-              </Card>
-            ))} */}
-          </ModalBody>
-          <ModalFooter>
-            <Button color="danger" variant="light" onPress={() => setIsInfoModalOpen(false)}>
-              Close
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
     </Card>
   );
 };

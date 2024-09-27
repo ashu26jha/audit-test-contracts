@@ -48,6 +48,7 @@ async def generate_pdf_from_scan(scan_id: str):
 
         final_pdf_path = combine_pdfs(report_pdf_path)
 
+        # Send the PDF via email
         await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)
