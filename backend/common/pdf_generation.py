@@ -1,5 +1,6 @@
 from urllib.parse import urlparse
 
+import markdown
 from playwright.async_api import async_playwright
 
 
@@ -29,6 +30,9 @@ def create_finding_section(
     contract_files_html = "".join(
         f"""<span class="file-name"><span>{file}</span></span>""" for file in contract_files
     )
+    # Convert markdown description to HTML
+    description_html = markdown.markdown(description)
+
     return f"""
     <div class="findings-section">
       <div class="finding-header">
@@ -68,11 +72,9 @@ def create_finding_section(
       <div class="horizontal-divider"></div>
 
       <div class="finding-description">
-        <span class="description-text">
-          <span>
-            {description}
-          </span>
-        </span>
+        <div class="description-text">
+            {description_html}
+        </div>
       </div>
     </div>
     """

@@ -204,6 +204,33 @@ body {
   color: var(--color-accent);
 }
 
+/* Styles for inline code */
+.description-text code {
+  background-color: #f4f4f5;
+  color: #d6336c; /* A darker color to stand out */
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 95%; /* Slightly smaller font size */
+}
+
+/* Styles for code blocks */
+.description-text pre {
+  background-color: #f4f4f5;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 95%; /* Slightly smaller font size */
+  line-height: 1.4;
+}
+
+.description-text pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
 .severity-chip {
   padding: 2px 4px;
   border-radius: 4px;
