@@ -185,7 +185,9 @@ async def perform_audit_agent_background(
 
 async def validate_no_unpaid_scans(user: User):
     """Validate that the user has no unpaid scans."""
-    unpaid_scans = await Scan.find(Scan.user_id == str(user.id), not Scan.paid_status).to_list()
+    unpaid_scans = await Scan.find(
+        Scan.user_id == str(user.id), Scan.paid_status == False
+    ).to_list()
     if unpaid_scans:
         raise HTTPException(
             status_code=400,
