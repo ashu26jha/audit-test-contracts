@@ -206,7 +206,7 @@ body {
 
 /* Styles for inline code */
 .description-text code {
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   color: #d6336c; /* A darker color to stand out */
   padding: 2px 4px;
   border-radius: 4px;
@@ -216,12 +216,12 @@ body {
 
 /* Styles for code blocks */
 .description-text pre {
-  background-color: #f4f4f5;
+  background-color: var(--color-background);
   padding: 10px;
   border-radius: 6px;
   overflow-x: auto;
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-  font-size: 95%; /* Slightly smaller font size */
+  font-size: 95%;
   line-height: 1.4;
 }
 
@@ -269,7 +269,6 @@ body {
 }
 
 /* MARKDOWN Syntax Highlighting */
-/* Include the contents of pygments.css here */
 pre {
   line-height: 125%;
 }

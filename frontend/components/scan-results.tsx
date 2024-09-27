@@ -155,7 +155,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
           <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
             <CardBody className="flex flex-row justify-between items-center space-x-2">
               <div className="flex flex-col pl-5">
-                <strong className="text-sm">You've already paid for this contract report.</strong>
+                <strong className="text-sm">You&apos;ve already paid for this contract report.</strong>
                 <p className="text-sm">
                   Please check your email for the detailed report of {scanData.total_findings} vulnerabilities.
                 </p>
