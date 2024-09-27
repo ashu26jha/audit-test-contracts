@@ -5,7 +5,7 @@
 }
 
 .info-label {
-  color: #71717A;
+  color: #71717a;
   font-size: 12px;
   display: inline-block;
   vertical-align: middle;
@@ -37,7 +37,7 @@
 
 .finding-title {
   font-size: 12px;
-  color: #71717A;
+  color: #71717a;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -59,7 +59,7 @@
 }
 
 .textSmleading-5fontNormal {
-  font-size: 12px; 
+  font-size: 12px;
   font-weight: 400;
 }
 

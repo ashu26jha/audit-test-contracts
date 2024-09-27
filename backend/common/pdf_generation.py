@@ -38,7 +38,7 @@ def create_finding_section(
             <img
               alt="interfacefolderemptyfolder2572"
               class="frame48096177-interfacefolderemptyfolder1"
-              src="public/external/interfacefolderemptyfolder2572-22j.svg"
+              src="public/findings_stars.svg"
             />
             <span> {index} of {total_findings} Findings </span>
           </span>
@@ -47,7 +47,7 @@ def create_finding_section(
             <span class="finding-title">
               <img
                 alt="interfacefolderemptyfolder2572"
-                src="public/external/interfacefolderemptyfolder2572-mwvt.svg"
+                src="public/folder_icon.svg"
                 class="frame48096177-interfacefolderemptyfolder2"
               />
 
@@ -64,7 +64,7 @@ def create_finding_section(
           <span> {issue_title} </span>
         </span>
         <div class="severity-chip">
-          <img src="public/external/{risk_level}.svg" />
+          <img src="public/{risk_level}.svg" />
         </div>
       </div>
 

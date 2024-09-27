@@ -115,8 +115,15 @@ def create_contract_files_html(contract_files):
 
 
 def create_findings_html(findings):
-    return "".join(
-        create_finding_section(
+    # Start with a page break to ensure the first finding starts on a new page
+    html = '<div style="page-break-before: always; margin-top: 20mm;"></div>'
+
+    for index, finding in enumerate(findings):
+        # Insert a page break before every fifth finding (i.e., 5th, 10th, 15th, ...)
+        if index != 0 and index % 4 == 0:
+            html += '<div style="page-break-before: always; margin-top: 20mm;"></div>'
+
+        html += create_finding_section(
             index + 1,
             len(findings),
             finding["severity"],
@@ -124,8 +131,8 @@ def create_findings_html(findings):
             finding["contracts"],
             finding["description"],
         )
-        for index, finding in enumerate(findings)
-    )
+
+    return html
 
 
 async def generate_pdf(html_content, pdf_filename):
