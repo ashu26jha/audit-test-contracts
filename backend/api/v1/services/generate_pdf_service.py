@@ -79,50 +79,40 @@ def prepare_findings_data(findings):
 
 async def create_report_html(report_data):
     template_path = BASE_DIR / "v1" / "services" / "template" / "report_template.html"
-    html_content = read_html(template_path).splitlines()
+    html_content = read_html(template_path)
 
-    placeholders = {
-        "<!--vulnerabilties_found-->": str(report_data["total_vulnerabilities"]),
-        "<!--Contracts_Scanned-->": str(len(report_data["contract_files"])),
-        "<!--LoC-->": str(report_data["total_lines_of_code"]),
-        "<!--scanId-->": str(report_data["scan_id"]),
-        "<!--summary-->": str(report_data["summary"]),
-        "<!--organization-->": str(report_data["organization"]),
-        "<!--repository-->": str(report_data["repository_name"]),
-        "<!--branch-->": str(report_data["branch_name"]),
-    }
+    # Use a single placeholder replacement
+    html_content = html_content.replace("<!--organization-->", str(report_data["organization"]))
+    html_content = html_content.replace("<!--scanId-->", str(report_data["scan_id"]))
+    html_content = html_content.replace("<!--repository-->", str(report_data["repository_name"]))
+    html_content = html_content.replace("<!--branch-->", str(report_data["branch_name"]))
+    html_content = html_content.replace(
+        "<!--vulnerabilties_found-->", str(report_data["total_vulnerabilities"])
+    )
+    html_content = html_content.replace(
+        "<!--Contracts_Scanned-->", str(len(report_data["contract_files"]))
+    )
+    html_content = html_content.replace("<!--LoC-->", str(report_data["total_lines_of_code"]))
+    html_content = html_content.replace("<!--summary-->", str(report_data["summary"]))
 
-    for i, line in enumerate(html_content):
-        for placeholder, value in placeholders.items():
-            if placeholder in line:
-                html_content[i] = line.replace(placeholder, value)
+    contract_files_html = create_contract_files_html(report_data["contract_files"])
+    html_content = html_content.replace("<!--contracts_files-->", contract_files_html)
 
-        if "<!--contracts_files-->" in line:
-            contract_files_html = create_contract_files_html(report_data["contract_files"])
-            html_content[i] = line.replace("<!--contracts_files-->", contract_files_html)
+    findings_html = create_findings_html(report_data["findings"])
+    html_content = html_content.replace("<!--findings-->", findings_html)
 
-        elif "<!--findings-->" in line:
-            findings_html = create_findings_html(report_data["findings"])
-            html_content[i] = line.replace("<!--findings-->", findings_html)
-
-    return "\n".join(html_content)
+    return html_content
 
 
 def create_contract_files_html(contract_files):
-    return "".join(
-        f"""<span class="file-name textSmall">{contract}</span>""" for contract in contract_files
-    )
+    return "".join(f"""<span class="file-name">{contract}</span>""" for contract in contract_files)
 
 
 def create_findings_html(findings):
-    # Start with a page break to ensure the first finding starts on a new page
-    html = '<div style="page-break-before: always; margin-top: 20mm;"></div>'
+    # Initialize without any manual page breaks
+    html = ""
 
     for index, finding in enumerate(findings):
-        # Insert a page break before every fifth finding (i.e., 5th, 10th, 15th, ...)
-        if index != 0 and index % 4 == 0:
-            html += '<div style="page-break-before: always; margin-top: 20mm;"></div>'
-
         html += create_finding_section(
             index + 1,
             len(findings),

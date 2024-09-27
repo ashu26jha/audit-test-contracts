@@ -27,8 +27,7 @@ def create_finding_section(
     index, total_findings, risk_level, issue_title, contract_files, description
 ):
     contract_files_html = "".join(
-        f"""<span class="file-name textSmleading-5fontNormal"><span>{file}</span></span>"""
-        for file in contract_files
+        f"""<span class="file-name"><span>{file}</span></span>""" for file in contract_files
     )
     return f"""
     <div class="findings-section">
@@ -36,8 +35,7 @@ def create_finding_section(
         <div class="info-row">
           <span class="finding-title">
             <img
-              alt="interfacefolderemptyfolder2572"
-              class="frame48096177-interfacefolderemptyfolder1"
+              alt="Findings stars"
               src="public/findings_stars.svg"
             />
             <span> {index} of {total_findings} Findings </span>
@@ -46,9 +44,8 @@ def create_finding_section(
           <div class="info-row">
             <span class="finding-title">
               <img
-                alt="interfacefolderemptyfolder2572"
+                alt="Folder icon"
                 src="public/folder_icon.svg"
-                class="frame48096177-interfacefolderemptyfolder2"
               />
 
               <div class="contracts-list">
@@ -60,7 +57,7 @@ def create_finding_section(
       </div>
 
       <div class="finding-content">
-        <span class="finding-issue textSmleading-5fontMedium">
+        <span class="finding-issue">
           <span> {issue_title} </span>
         </span>
         <div class="severity-chip">
@@ -71,7 +68,7 @@ def create_finding_section(
       <div class="horizontal-divider"></div>
 
       <div class="finding-description">
-        <span class="description-text textSmleading-5fontNormal">
+        <span class="description-text">
           <span>
             {description}
           </span>
@@ -88,36 +85,17 @@ async def html_to_pdf(html_file, pdf_file):
 
         await page.goto(f"file://{html_file}")
 
-        await page.evaluate(
-            """() => {
-            const style = document.createElement('style');
-            style.textContent = `
-                @page {
-                    size: A4;
-                    margin: 0;
-                }
-                body {
-                    margin: 0;
-                    padding: 0;
-                }
-                .a4-container {
-                    width: 210mm;
-                    height: 297mm;
-                    padding: 20mm;
-                    box-sizing: border-box;
-                }
-            `;
-            document.head.appendChild(style);
-        }"""
-        )
-
         await page.wait_for_load_state("networkidle")
+        # Optionally wait for a short time to ensure page is fully rendered
+        await page.wait_for_timeout(1000)
 
         pdf_options = {
+            "path": pdf_file,
             "format": "A4",
+            "print_background": True,
+            "display_header_footer": False,
             "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
         }
 
-        await page.pdf(path=pdf_file, **pdf_options)
-
+        await page.pdf(**pdf_options)
         await browser.close()
