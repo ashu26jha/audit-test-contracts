@@ -60,6 +60,15 @@ async def generate_pdf_from_scan(scan_id: str):
 
 
 def prepare_findings_data(findings):
+    severity_order = {
+        "Critical": 1,
+        "High": 2,
+        "Medium": 3,
+        "Low": 4,
+        "Info": 5,
+        "Best Practices": 6,
+    }
+
     severity_map = {
         "Critical": "chip1",
         "High": "chip2",
@@ -69,6 +78,9 @@ def prepare_findings_data(findings):
         "Best Practices": "chip6",
     }
 
+    # Sort findings by severity using the defined severity order
+    sorted_findings = sorted(findings, key=lambda x: severity_order.get(x.Severity, 6))
+
     return [
         {
             "issue": finding.Issue,
@@ -76,7 +88,7 @@ def prepare_findings_data(findings):
             "contracts": finding.Contracts,
             "description": finding.Description,
         }
-        for finding in findings
+        for finding in sorted_findings
     ]
 
 

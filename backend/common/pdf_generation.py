@@ -1,6 +1,8 @@
 from urllib.parse import urlparse
 
+import bleach
 import markdown
+from markdown.extensions.codehilite import CodeHiliteExtension
 from playwright.async_api import async_playwright
 
 
@@ -28,10 +30,40 @@ def create_finding_section(
     index, total_findings, risk_level, issue_title, contract_files, description
 ):
     contract_files_html = "".join(
-        f"""<span class="file-name"><span>{file}</span></span>""" for file in contract_files
+        f"""<span class="file-name">{file}</span>""" for file in contract_files
     )
-    # Convert markdown description to HTML
-    description_html = markdown.markdown(description)
+
+    # Convert markdown description to HTML with code highlighting
+    description_html = markdown.markdown(
+        description, extensions=[CodeHiliteExtension(linenums=False)]
+    )
+
+    # Sanitize the HTML output
+    allowed_tags = bleach.ALLOWED_TAGS.union(
+        {
+            "p",
+            "pre",
+            "code",
+            "span",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+        }
+    )
+    allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES.copy()
+    allowed_attributes.update(
+        {
+            "code": ["class"],
+            "span": ["class"],
+            "pre": ["class"],
+        }
+    )
+    description_html = bleach.clean(
+        description_html, tags=allowed_tags, attributes=allowed_attributes
+    )
 
     return f"""
     <div class="findings-section">
@@ -73,7 +105,7 @@ def create_finding_section(
 
       <div class="finding-description">
         <div class="description-text">
-            {description_html}
+          {description_html}
         </div>
       </div>
     </div>
