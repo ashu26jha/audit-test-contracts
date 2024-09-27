@@ -19,4 +19,4 @@ async def generate_pdf(
     if scan.user_id != str(current_user.id):
         raise HTTPException(status_code=401, detail="User not authorized to access this scan")
     await generate_pdf_from_scan(scan_id)
-    return SuccessResponse(data="PDF send by email successfully")
+    return SuccessResponse(data="Audit Agent report sent by email successfully")

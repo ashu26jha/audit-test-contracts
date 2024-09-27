@@ -1,5 +1,8 @@
 from urllib.parse import urlparse
 
+import bleach
+import markdown
+from markdown.extensions.codehilite import CodeHiliteExtension
 from playwright.async_api import async_playwright
 
 
@@ -23,65 +26,89 @@ def read_html(file_path):
     return processed_html_content
 
 
-def create_contract_div(
+def create_finding_section(
     index, total_findings, risk_level, issue_title, contract_files, description
 ):
     contract_files_html = "".join(
-        f"""<span class="frame48096177-text161 textSmleading-5fontNormal"><span>{file}</span></span>"""
-        for file in contract_files
+        f"""<span class="file-name">{file}</span>""" for file in contract_files
     )
+
+    # Convert markdown description to HTML with code highlighting
+    description_html = markdown.markdown(
+        description, extensions=[CodeHiliteExtension(linenums=False)]
+    )
+
+    # Sanitize the HTML output
+    allowed_tags = bleach.ALLOWED_TAGS.union(
+        {
+            "p",
+            "pre",
+            "code",
+            "span",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+        }
+    )
+    allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES.copy()
+    allowed_attributes.update(
+        {
+            "code": ["class"],
+            "span": ["class"],
+            "pre": ["class"],
+        }
+    )
+    description_html = bleach.clean(
+        description_html, tags=allowed_tags, attributes=allowed_attributes
+    )
+
     return f"""
-          <div class="frame48096177-option-wrapper4">
-            <div class="frame48096177-content-wrapper4">
-              <div class="frame48096177-frame2085660373">
-                <div class="frame48096177-frame20856603271">
-                  <img alt="interfacefolderemptyfolder2572" class="frame48096177-interfacefolderemptyfolder1"
-                    src="public/external/interfacefolderemptyfolder2572-22j.svg" />
-                  <span class="frame48096177-text159 textSmleading-5fontNormal">
-                    <span>
-                      {index}
-                      of
-                      {total_findings}
-                      Findings
-                    </span>
-                  </span>
+    <div class="findings-section">
+      <div class="finding-header">
+        <div class="info-row">
+          <span class="finding-title">
+            <img
+              alt="Findings stars"
+              src="public/findings_stars.svg"
+            />
+            <span> {index} of {total_findings} Findings </span>
+          </span>
 
-                  <div class="frame48096177-frame20856603272">
-                    <img alt="interfacefolderemptyfolder2572"
-                      src="public/external/interfacefolderemptyfolder2572-mwvt.svg"
-                      class="frame48096177-interfacefolderemptyfolder2" />
+          <div class="info-row">
+            <span class="finding-title">
+              <img
+                alt="Folder icon"
+                src="public/folder_icon.svg"
+              />
 
-                    <span class="frame48096177-text161 textSmleading-5fontNormal">
-                      <span>
-                       {contract_files_html}
-                      </span>
-                    </span>
-
-                  </div>
-                </div>
+              <div class="contracts-list">
+                {contract_files_html}
               </div>
-            </div>
-            <div class="frame48096177-content-wrapper5">
-              <span class="frame48096177-text163 textSmleading-5fontMedium">
-                <span>
-                  {issue_title}
-                </span>
-              </span>
-              <div class="frame48096177-chip5">
-                <img src='public/external/{risk_level}.svg' />
-              </div>
-            </div>
-            <div class="frame48096177-frame480961904">
-              <div class="frame48096177-frame480961963">
-                <!--ISSUE TITLE-->
-                <span class="frame48096177-text167 textSmleading-5fontNormal">
-                  <span>
-                    {description}
-                  </span>
-                </span>
-              </div>
-            </div>
+            </span>
           </div>
+        </div>
+      </div>
+
+      <div class="finding-content">
+        <span class="finding-issue">
+          <span> {issue_title} </span>
+        </span>
+        <div class="severity-chip">
+          <img src="public/{risk_level}.svg" />
+        </div>
+      </div>
+
+      <div class="horizontal-divider"></div>
+
+      <div class="finding-description">
+        <div class="description-text">
+          {description_html}
+        </div>
+      </div>
+    </div>
     """
 
 
@@ -92,53 +119,17 @@ async def html_to_pdf(html_file, pdf_file):
 
         await page.goto(f"file://{html_file}")
 
-        await page.evaluate(
-            """() => {
-            const style = document.createElement('style');
-            style.textContent = `
-                body {
-                    background-color: black;
-                    color: black;
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                    font-size: 14px;
-                }
-
-                .frame48096177-option-wrapper4 {
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                    margin-bottom: 20px;
-                }
-                img { max-width: 100%; height: auto; }
-            `;
-            document.head.appendChild(style);
-        }"""
-        )
-
         await page.wait_for_load_state("networkidle")
-
-        width = await page.evaluate(
-            """() => {
-            return Math.max(
-                document.body.scrollWidth,
-                document.documentElement.scrollWidth,
-                document.body.offsetWidth,
-                document.documentElement.offsetWidth,
-                document.body.clientWidth,
-                document.documentElement.clientWidth
-            );
-        }"""
-        )
+        # Optionally wait for a short time to ensure page is fully rendered
+        await page.wait_for_timeout(1000)
 
         pdf_options = {
-            "width": f"{width}px",
-            "height": "1123px",
+            "path": pdf_file,
+            "format": "A4",
             "print_background": True,
-            "margin": {"top": "0px", "right": "0px", "bottom": "0px", "left": "0px"},
-            "scale": 1.1,
+            "display_header_footer": False,
+            "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
         }
 
-        await page.pdf(path=pdf_file, **pdf_options)
-
+        await page.pdf(**pdf_options)
         await browser.close()

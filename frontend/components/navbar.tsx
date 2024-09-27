@@ -15,7 +15,14 @@ export const Navbar = () => {
   const { user, loading, logout, isPublicRoute } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast(); // Add this line
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!loading && !user && !isPublicRoute(pathname)) {
+      router.push("/login");
+    }
+  }, [loading, user, pathname, isPublicRoute, router]);
+
   if (pathname === "/login") {
     return <LoginNavbar />;
   }
@@ -25,12 +32,6 @@ export const Navbar = () => {
     router.push("/login");
   };
 
-  useEffect(() => {
-    if (!loading && !user && !isPublicRoute(pathname)) {
-      router.push("/login");
-    }
-  }, [loading, user, pathname, isPublicRoute, router]);
-
   const handleCopyEmail = () => {
     navigator.clipboard.writeText("kirill.balakhonov@nethermind.io");
     toast({
@@ -39,6 +40,7 @@ export const Navbar = () => {
       duration: 3000,
     });
   };
+
   return (
     <NextUINavbar
       maxWidth="full"
@@ -47,12 +49,7 @@ export const Navbar = () => {
     >
       <NavbarBrand as="li" className="gap-3 max-w-fit">
         <NextLink className="flex justify-start items-center gap-1" href="/">
-          <Image
-            src="/logo.svg"
-            alt="logo"
-            width={120}
-            height={70}
-          />
+          <Image src="/logo.svg" alt="logo" width={120} height={70} />
         </NextLink>
       </NavbarBrand>
 

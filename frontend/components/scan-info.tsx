@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-} from "@nextui-org/react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
 import Image from "next/image";
 
 interface ScanInfoProps {
@@ -89,7 +82,13 @@ const ScanInfo: React.FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
 
             <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
               <p className="text-sm text-gray-400">Contract Files</p>
-              <p>{scanData.scan.contractFiles.map((file: any) => <p className="mt-1" key={file}>{file}</p>)}</p>
+              <p>
+                {scanData.scan.contractFiles.map((file: any) => (
+                  <p className="mt-1" key={file}>
+                    {file}
+                  </p>
+                ))}
+              </p>
             </div>
           </div>
         </ModalBody>

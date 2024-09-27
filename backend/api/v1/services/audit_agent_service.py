@@ -17,6 +17,7 @@ from api.v1.services import (
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
+from config import settings
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
@@ -35,7 +36,8 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
-        await validate_no_unpaid_scans(user)
+        if settings.ENVIRONMENT == "production":
+            await validate_no_unpaid_scans(user)
 
         # Fetch repository info
         repo_info = await github_service.fetch_github_repo_info(
@@ -75,9 +77,38 @@ async def initiate_scan(
         await GlobalStats.increment_scan(status="pending", paid=False, findings=0)
 
         # Fetch the commit hash using GitHub API
-        commit_hash = await github_service.get_commit_hash(
-            user.accessToken, request.repositoryURL, branch_name
-        )
+        try:
+            commit_hash = await github_service.get_commit_hash(
+                user.accessToken, request.repositoryURL, branch_name
+            )
+        except HTTPException as e:
+            # Update scan status to 'failed'
+            await scan_history_service.update_scan_status(scan_id, "failed")
+            # Update global stats for failed scan
+            await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+            # Update the scan result to reflect the failure
+            failed_scan_result = ScanResult(
+                scan_id=scan_id,
+                scan_number=scan_number,
+                summary=f"Scan failed: {e.detail}",
+                type=Profiles.NONE,
+                total_findings=0,
+                findings=[],
+            )
+            await scan_history_service.store_scan_result(failed_scan_result)
+            # Re-raise the exception with additional context
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"Failed to fetch commit hash: {e.detail}",
+            )
+
+        if not commit_hash:
+            await scan_history_service.update_scan_status(scan_id, "failed")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch commit hash. Check if branch exists.",
+            )
+
         new_scan.commitHash = commit_hash
         await new_scan.save()
 
@@ -117,10 +148,8 @@ async def initiate_scan(
             )
             await scan_history_service.store_scan_result(failed_scan_result)
         except Exception:
-            logger.warning(
-                f"Scan {scan_id} not found when updating status to 'failed'")
-        raise HTTPException(
-            status_code=500, detail="Failed to initiate audit scan")
+            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
@@ -187,11 +216,13 @@ async def perform_audit_agent_background(
 
 async def validate_no_unpaid_scans(user: User):
     """Validate that the user has no unpaid scans."""
-    unpaid_scans = await Scan.find(Scan.user_id == str(user.id), Scan.paid_status == False).to_list()
+    unpaid_scans = await Scan.find(
+        Scan.user_id == str(user.id), Scan.paid_status == False
+    ).to_list()
     if unpaid_scans:
         raise HTTPException(
             status_code=400,
-            detail="User has unpaid scans. Please pay for existing scans before initiating a new one."
+            detail="User has unpaid scans. Please pay for existing scans before initiating a new one.",
         )
 
 
@@ -206,15 +237,13 @@ def validate_user_has_github_token(user: User) -> bool:
 def validate_github_url(url: str) -> bool:
     """Validate if the given URL is a valid GitHub repository URL."""
     if not bool(re.match(GITHUB_URL_PATTERN, url)):
-        raise HTTPException(
-            status_code=400, detail="Invalid GitHub repository URL")
+        raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
 
 
 def validate_contract_files(contract_files: List[str]) -> bool:
     """Validate if the given contract files are valid Solidity files."""
     if not contract_files:
-        raise HTTPException(
-            status_code=400, detail="No contract files provided")
+        raise HTTPException(status_code=400, detail="No contract files provided")
     if not all(file.endswith(".sol") for file in contract_files):
         raise HTTPException(
             status_code=400,
