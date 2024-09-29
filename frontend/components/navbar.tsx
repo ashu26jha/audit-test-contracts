@@ -33,7 +33,7 @@ export const Navbar = () => {
   };
 
   const handleCopyEmail = () => {
-    navigator.clipboard.writeText("kirill.balakhonov@nethermind.io");
+    navigator.clipboard.writeText("auditagent@nethermind.io");
     toast({
       title: "Support Email Copied",
       status: "success",
@@ -78,13 +78,13 @@ export const Navbar = () => {
               >
                 Profile
               </DropdownItem>
-              <DropdownItem
+              {/* <DropdownItem
                 key="support"
                 startContent={<Image src="/copy.svg" alt="support" width={20} height={20} />}
                 onClick={handleCopyEmail}
               >
                 Support Email
-              </DropdownItem>
+              </DropdownItem> */}
               <DropdownItem
                 key="logout"
                 startContent={<Image src="/logout.svg" alt="logout" width={20} height={20} />}

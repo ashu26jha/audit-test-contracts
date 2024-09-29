@@ -24,7 +24,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           <p className="text-gray-400 mb-6">
             You will receive the full vulnerabilities report shortly on the following email:
             <br />
-            <span className="text-white">kirill.balakhonov@nethermind.io</span>
+            <span className="text-white">auditagent@nethermind.io</span>
           </p>
         ) : (
           <p className="text-gray-400 mb-6">We did not receive your payment, please try again!</p>
@@ -44,7 +44,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           </div>
         )}
       </Card>
-      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at help@auditgent.nethemind.io</p>
+      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at auditagent@nethermind.io</p>
     </div>
   );
 };

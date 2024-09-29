@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Tooltip, Divider } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@nextui-org/react";
 import { AlertTriangle, FileText, Code, Hash, Info } from "lucide-react";
 import BluredFindings from "./blured-findings";
 import Image from "next/image";
@@ -7,6 +7,7 @@ import { sendReportAgain } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
 import ScanInfo from "./scan-info";
+import { openFeedbackEmail } from "../utils/email";
 
 interface ScanResultsProps {
   scanData: any;
@@ -19,6 +20,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const { token } = useAuth();
   const isPaid = scanData.scan.paid_status;
+  const isCompleted = scanData.scan.status === "completed";
   console.log("isPaid", isPaid);
 
   const handleSendReportAgain = () => {
@@ -32,6 +34,20 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
       title: "Report sent",
       status: "success",
     });
+  };
+
+  const handleSendFeedback = () => {
+    const subject = `Feedback for Scan ${scanData.scan_number}`;
+    const body = `Dear Support Team,
+
+I would like to provide feedback for my recent scan (ID: ${scanData.scan_number}).
+
+[Please enter your feedback here]
+
+Thank you,
+[Your Name]`;
+
+    openFeedbackEmail(subject, body);
   };
 
   const scanStats = [
@@ -105,6 +121,13 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
           ))}
         </div>
 
+        {!isCompleted && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <Spinner size="lg" color="secondary" />
+            <p className="mt-4 text-lg">Scan in progress...</p>
+          </div>
+        )}
+
         {scanData.findings.map((finding: any, index: any) => (
           <Card key={index} className="bg-[#222222] mb-6">
             <CardBody>
@@ -127,9 +150,9 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
         ))}
 
         {/* If it is not paid show the blured findings */}
-        {!isPaid && <BluredFindings />}
+        {isCompleted && !isPaid && <BluredFindings />}
 
-        {!isPaid && (
+        {isCompleted && !isPaid && (
           <Card className="absolute bottom-5 left-0 right-0 bg-[#F2EAFA] flex justify-between items-center p-2">
             <CardBody className="flex flex-row justify-between items-center space-x-2">
               <div className="flex flex-col pl-5">
@@ -146,7 +169,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
           </Card>
         )}
 
-        {isPaid && (
+        {isCompleted && isPaid && (
           <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
             <CardBody className="flex flex-row justify-between items-center space-x-2">
               <div className="flex flex-col pl-5">
@@ -156,7 +179,10 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
                 </p>
               </div>
 
-              <Button endContent={<Image src="/feedback.svg" width={20} height={20} alt="feedback" />}>
+              <Button
+                endContent={<Image src="/feedback.svg" width={20} height={20} alt="feedback" />}
+                onPress={handleSendFeedback}
+              >
                 Send Feedback
               </Button>
             </CardBody>
