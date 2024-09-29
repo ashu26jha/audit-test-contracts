@@ -639,7 +639,7 @@ stripe login
 
 Run this command 
 ```bash
-stripe listen --forward-to http://0.0.0.0:8000/api/v1/payments/webhook
+stripe listen --forward-to http://localhost:8000/api/v1/payments/webhook
 ```
 
 The response of above command will be like, and paste your webhook URL:

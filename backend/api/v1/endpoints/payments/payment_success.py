@@ -3,9 +3,11 @@ from uuid import UUID
 
 import stripe
 from api.v1.models.payment import Payment
+from api.v1.models.user import User
 from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services.generate_pdf_service import generate_pdf_from_scan
 from api.v1.services.scan_history_service import update_scan_paid_status
+from bson import ObjectId
 from config import settings
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
@@ -60,8 +62,13 @@ async def payment_success(session_id: str = Query(...)):
         )
         await payment.create()
 
+        # Retrieve the User object
+        user = await User.get(ObjectId(user_id))
+        if not user:
+            raise ValueError(f"No user found with ID: {user_id}")
+
         # Generate PDF
-        await generate_pdf_from_scan(scan_id)
+        await generate_pdf_from_scan(user, scan_id)
 
         # Redirect to payment results page
         print(f"{settings.FRONTEND_URL}/payment-result?session_id={session_id}&status=success")

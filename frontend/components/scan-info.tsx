@@ -84,9 +84,9 @@ const ScanInfo: React.FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
               <p className="text-sm text-gray-400">Contract Files</p>
               <p>
                 {scanData.scan.contractFiles.map((file: any) => (
-                  <p className="mt-1" key={file}>
+                  <div className="mt-1" key={file}>
                     {file}
-                  </p>
+                  </div>
                 ))}
               </p>
             </div>

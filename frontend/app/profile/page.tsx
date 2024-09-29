@@ -1,6 +1,6 @@
 "use client";
 import { useAuth } from "../../contexts/AuthContext";
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { Card, CardBody, CardHeader, Divider, Input, Button, Avatar } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
@@ -8,11 +8,15 @@ import { useRouter } from "next/navigation";
 
 const ProfilePage: React.FC = () => {
   const router = useRouter();
-
   const { user, logout } = useAuth();
 
+  useEffect(() => {
+    if (!user) {
+      router.push("/login");
+    }
+  }, [user, router]);
+
   if (!user) {
-    router.push("/login");
     return null;
   }
 

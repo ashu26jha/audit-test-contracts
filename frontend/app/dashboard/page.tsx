@@ -10,6 +10,7 @@ import ScanStepper from "../../components/scan-stepper";
 import { Hash, Calendar, AlertTriangle, FileText } from "lucide-react";
 import { getScanHistory } from "../../services/api";
 import { useToast } from "../../hooks/useToast";
+import { Loading } from "@/components/Loading";
 
 interface ScanHistoryItem {
   name: string;
@@ -75,7 +76,7 @@ const DashboardPage = () => {
   }, [token]);
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   const handleScanClick = (scanId: string) => {

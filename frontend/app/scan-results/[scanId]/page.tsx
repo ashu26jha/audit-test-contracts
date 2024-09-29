@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { getPartialScanResults, createCheckoutSession } from "../../../services/api";
 import ScanResults from "../../../components/scan-results";
+import { Loading } from "@/components/Loading";
 
 interface ScanResultsPageProps {
   params: {
@@ -52,7 +53,7 @@ const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (error) {

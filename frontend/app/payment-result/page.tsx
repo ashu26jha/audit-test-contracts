@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Payment from "../../components/payment";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../contexts/AuthContext";
+import { Loading } from "@/components/Loading";
 
 const PaymentResultPage = () => {
   const searchParams = useSearchParams();
@@ -30,7 +31,7 @@ const PaymentResultPage = () => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!user) {

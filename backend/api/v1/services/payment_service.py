@@ -7,7 +7,7 @@ from api.v1.models.scan import Scan
 from api.v1.models.user import User
 from bson import ObjectId
 from common.logger import logger
-from config.settings import STRIPE_API_KEY, STRIPE_WEBHOOK_KEY
+from config.settings import BASE_URL, STRIPE_API_KEY, STRIPE_WEBHOOK_KEY
 from fastapi import HTTPException
 
 stripe.api_key = STRIPE_API_KEY
@@ -51,7 +51,7 @@ class PaymentService:
                 }
             ],
             mode="payment",
-            success_url="http://0.0.0.0:8000/api/v1/payments/payment_success?session_id={CHECKOUT_SESSION_ID}",
+            success_url=f"{BASE_URL}/api/v1/payments/payment_success?session_id={{CHECKOUT_SESSION_ID}}",
             metadata={
                 "userId": str(user_id),
                 "scanId": scan_id,
@@ -62,8 +62,7 @@ class PaymentService:
     @staticmethod
     async def handle_webhook(payload: bytes, sig_header: str):
         try:
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, STRIPE_WEBHOOK_KEY)
+            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_KEY)
         except json.JSONDecodeError:
             raise HTTPException(status_code=400, detail="Invalid payload")
         except stripe.error.SignatureVerificationError:
@@ -108,7 +107,6 @@ class PaymentService:
             except Exception as e:
                 message = f"Failed to handle webhook: {str(e)}"
                 logger.error(message)
-                raise HTTPException(
-                    status_code=500, detail="Internal server error")
+                raise HTTPException(status_code=500, detail="Internal server error")
 
         return True

@@ -131,7 +131,7 @@ export const createCheckoutSession = async (token: string, scanId: string) => {
 };
 
 export const sendReportAgain = async (token: string, scanId: string) => {
-  const response = await api.post(`/api/v1/generate-pdf/${scanId}`, {
+  const response = await api.get(`/api/v1/generate-pdf/${scanId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

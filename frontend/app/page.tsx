@@ -11,6 +11,7 @@ import { GithubIcon } from "@/components/icons";
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
+import { Loading } from "@/components/Loading";
 
 export default function Home() {
   const { user, loading, isPublicRoute } = useAuth();
@@ -29,7 +30,7 @@ export default function Home() {
   }, [user, loading, router, pathname, isPublicRoute]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   return null;

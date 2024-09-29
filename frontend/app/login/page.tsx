@@ -5,6 +5,7 @@ import { initiateGithubLogin } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { Loading } from "@/components/Loading";
 
 const LoginPage = () => {
   const { user, loading, isPublicRoute } = useAuth();
@@ -18,7 +19,7 @@ const LoginPage = () => {
   }, [user, loading, router, pathname]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (user) {

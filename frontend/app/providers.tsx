@@ -1,7 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { NextUIProvider } from "@nextui-org/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
@@ -10,7 +9,7 @@ import { AuthProvider } from "../contexts/AuthContext";
 import { Toaster } from "react-hot-toast";
 
 export interface ProvidersProps {
-  children: React.ReactNode;
+  children: ReactNode;
   themeProps?: ThemeProviderProps;
 }
 
