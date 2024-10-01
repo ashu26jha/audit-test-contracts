@@ -1,10 +1,17 @@
 # pylint: disable=too-many-ancestors,too-few-public-methods
 
 from datetime import datetime, timezone
+from enum import Enum
 from uuid import UUID
 
 from beanie import Document, Indexed
 from pydantic import ConfigDict, Field
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 class Payment(Document):
@@ -13,12 +20,10 @@ class Payment(Document):
     scan_id: UUID = Indexed()
     amount: float
     currency: str
-    status: str
-    stripeSessionId: str
-    createdAt: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc))
-    updatedAt: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc))
+    status: PaymentStatus = Field(default=PaymentStatus.PENDING)
+    stripeSessionId: str = Indexed()
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     model_config = ConfigDict(
         from_attributes=True,

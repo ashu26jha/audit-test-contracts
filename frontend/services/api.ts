@@ -119,7 +119,7 @@ export const getRepoInfo = async (token: string, repoUrl: string) => {
 
 export const createCheckoutSession = async (token: string, scanId: string) => {
   const response = await api.post(
-    "/api/v1/payments/create-checkout-session",
+    "/api/v1/payments/create-stripe-session",
     { scanId },
     {
       headers: {
@@ -127,7 +127,19 @@ export const createCheckoutSession = async (token: string, scanId: string) => {
       },
     },
   );
-  return response.data.data;
+  return response.data;
+};
+
+export const paymentSuccess = async (token: string, sessionId: string) => {
+  const response = await api.get("/api/v1/payments/payment-success", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    params: {
+      session_id: sessionId,
+    },
+  });
+  return response.data;
 };
 
 export const sendReportAgain = async (token: string, scanId: string) => {

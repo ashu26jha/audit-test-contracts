@@ -52,6 +52,6 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
             server.starttls()
             server.login(smtp_username, smtp_password)
             server.send_message(msg)
-        print(f"Email sent successfully to {to_email}")
+        logger.info(f"Email sent successfully to {to_email}")
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        logger.error(f"Error sending email: {str(e)}")

@@ -1,6 +1,8 @@
 import React from "react";
+
 import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import Image from "next/image";
+
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const BranchSelection: React.FC = () => {

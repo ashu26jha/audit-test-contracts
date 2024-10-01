@@ -1,17 +1,20 @@
 import React, { useEffect } from "react";
-import { Button, Card, CardHeader, Spinner } from "@nextui-org/react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../contexts/AuthContext";
+
+import { Button, Card, CardHeader } from "@nextui-org/react";
 import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+
 import { STEPS } from "@/data/steps";
-import { useScanStepperStore } from "../store/scanStepperStore";
+
+import { Loading } from "./Loading";
+import { useAuth } from "../contexts/AuthContext";
 import { useScanStepper } from "../hooks/useScanStepper";
-import { StepperVisualization } from "./scan-stepper/StepperVisualization";
-import { OwnerSelection } from "./scan-stepper/OwnerSelection";
-import { RepositorySelection } from "./scan-stepper/RepositorySelection";
+import { useScanStepperStore } from "../store/scanStepperStore";
 import { BranchSelection } from "./scan-stepper/BranchSelection";
 import { ContractSelection } from "./scan-stepper/ContractSelection";
-import { Loading } from "./Loading";
+import { OwnerSelection } from "./scan-stepper/OwnerSelection";
+import { RepositorySelection } from "./scan-stepper/RepositorySelection";
+import { StepperVisualization } from "./scan-stepper/StepperVisualization";
 
 const ScanStepper: React.FC = () => {
   const router = useRouter();
@@ -73,7 +76,6 @@ const ScanStepper: React.FC = () => {
         }
       } catch (error) {
         console.error("Error initiating scan:", error);
-      } finally {
         setIsLoading(false);
       }
     } else {

@@ -31,8 +31,7 @@ async def update_scan_status(scan_id: UUID, status: str, total_findings: Optiona
         # Update global stats
         await GlobalStats.update_paid_status(old_status, status)
     else:
-        raise HTTPException(
-            status_code=404, detail=f"Scan with ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
 
 
 async def update_scan_paid_status(scan_uuid: UUID, paid_status: bool):
@@ -48,8 +47,7 @@ async def update_scan_paid_status(scan_uuid: UUID, paid_status: bool):
         # Update global stats
         await GlobalStats.update_paid_status(old_status, new_status)
     else:
-        raise HTTPException(
-            status_code=404, detail=f"Scan with ID {scan_uuid} not found")
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_uuid} not found")
 
 
 async def store_scan_result(scan_result: ScanResult):
@@ -63,8 +61,7 @@ async def get_scan(scan_id: UUID) -> Scan:
     """Retrieve scan metadata by scan ID."""
     scan = await Scan.find_one(Scan.scan_id == scan_id)
     if not scan:
-        raise HTTPException(
-            status_code=404, detail=f"Scan with ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
     return scan
 
 
@@ -72,8 +69,7 @@ async def get_scan_result(scan_id: UUID) -> ScanResult:
     """Retrieve scan results by scan ID."""
     result = await ScanResult.find_one(ScanResult.scan_id == scan_id)
     if not result:
-        raise HTTPException(
-            status_code=404, detail=f"Scan result with ID {scan_id} not found")
+        raise HTTPException(status_code=404, detail=f"Scan result with ID {scan_id} not found")
     return result
 
 

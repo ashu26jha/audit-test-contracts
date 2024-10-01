@@ -613,8 +613,11 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```
 
 ## Running stripe:
-Fill your stripe API keys, please note WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
-You need to send a post request to `http://0.0.0.0:8000/api/v1/payments/create-checkout-session`
+Fill the STRIPE_API_KEY and WEBHOOK_SECRET in the `.env` file.
+> Note that WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
+
+You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
+
 ```json
 {
     "scanId": "String"
@@ -629,23 +632,24 @@ The response is:
 }
 ```
 
-To be able to use webhooks
-Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
+### To be able to use webhooks
+1. Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
 
-Login using: 
+2. Login using: 
 ```bash 
 stripe login
 ```
 
-Run this command 
+3. Run the following command to start the webhook listener:
 ```bash
-stripe listen --forward-to http://localhost:8000/api/v1/payments/webhook
+stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook
 ```
 
-The response of above command will be like, and paste your webhook URL:
+4. The response of above command will be like, and paste your webhook URL:
 ```bash
 Your webhook signing secret is whsec_ (^C to quit)
 ```
+
 ## Profiles
 
 <details>

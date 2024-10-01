@@ -16,13 +16,18 @@ from api.v1.endpoints import (
     stats,
     test_auth,
 )
-from api.v1.endpoints.payments import payment_success, stripe, webhook
+from api.v1.endpoints.payments import (
+    create_stripe_session,
+    payment_success,
+    stripe_webhook,
+)
 from api.v1.models.github import GitHubRepo
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
+from common import logger
 from common.error_handling import (
     general_exception_handler,
     http_exception_handler,
@@ -40,7 +45,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
-    print("Connecting to MongoDB...")
+    logger.info("Connecting to MongoDB...")
     await init_beanie(
         database=client.myapp,
         document_models=[
@@ -52,11 +57,11 @@ async def lifespan(app: FastAPI):
             GlobalStats,
         ],
     )
-    print("Connected to MongoDB")
+    logger.info("Connected to MongoDB")
     yield
-    print("Closing MongoDB connection")
+    logger.info("Closing MongoDB connection")
     client.close()
-    print("MongoDB connection closed")
+    logger.info("MongoDB connection closed")
 
 
 app = FastAPI(
@@ -110,9 +115,9 @@ app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(audit_agent.router, prefix="/api/v1")
 app.include_router(scan_results.router, prefix="/api/v1/scans")
 app.include_router(scan_history.router, prefix="/api/v1")
-app.include_router(stripe.router, prefix="/api/v1/payments")
+app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
 app.include_router(payment_success.router, prefix="/api/v1/payments")
-app.include_router(webhook.router, prefix="/api/v1/payments")
+app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")
 app.include_router(stats.router, prefix="/api/v1")
 

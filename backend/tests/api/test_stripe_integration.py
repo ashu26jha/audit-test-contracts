@@ -42,7 +42,7 @@ def test_create_checkout_session():
         mock_create_session.return_value = AsyncMock(id="test_session_id", url="https://test.com")
 
         response = client.post(
-            "/api/v1/payments/create-checkout-session", json={"scanId": str(uuid4())}
+            "/api/v1/payments/create-stripe-session", json={"scanId": str(uuid4())}
         )
         assert response.status_code == 200
         result = response.json()
@@ -60,7 +60,7 @@ def test_webhook_handler():
         mock_handle_webhook.return_value = True
 
         response = client.post(
-            "/api/v1/payments/webhook",
+            "/api/v1/payments/stripe-webhook",
             headers={"Stripe-Signature": "test_signature"},
             content=b"test_payload",
         )
@@ -71,25 +71,8 @@ def test_webhook_handler():
 
 
 def test_payment_success():
-    response = client.get("/api/v1/payments/payment_success?session_id=test_session_id")
+    response = client.get("/api/v1/payments/payment-success?session_id=test_session_id")
     assert response.status_code == 201
-
-
-def test_create_checkout_session_invalid_scan_id():
-    with patch(
-        "api.v1.services.payment_service.PaymentService.create_checkout_session",
-        new_callable=AsyncMock,
-    ) as mock_create_session:
-        mock_create_session.side_effect = ValueError("No scan found")
-
-        response = client.post(
-            "/api/v1/payments/create-checkout-session", json={"scanId": str(uuid4())}
-        )
-        assert response.status_code == 400
-        error_response = response.json()
-        assert error_response["success"] is False
-        assert error_response["code"] == 400
-        assert "No scan found" in error_response["message"]
 
 
 def test_webhook_handler_invalid_signature():
@@ -100,7 +83,7 @@ def test_webhook_handler_invalid_signature():
         mock_handle_webhook.side_effect = ValueError("Invalid signature")
 
         response = client.post(
-            "/api/v1/payments/webhook",
+            "/api/v1/payments/stripe-webhook",
             headers={"Stripe-Signature": "invalid_signature"},
             content=b"test_payload",
         )
@@ -109,3 +92,20 @@ def test_webhook_handler_invalid_signature():
         assert error_response["success"] is False
         assert error_response["code"] == 400
         assert "Invalid signature" in error_response["message"]
+
+
+def test_create_checkout_session_invalid_scan_id():
+    with patch(
+        "api.v1.services.payment_service.PaymentService.create_checkout_session",
+        new_callable=AsyncMock,
+    ) as mock_create_session:
+        mock_create_session.side_effect = ValueError("No scan found")
+
+        response = client.post(
+            "/api/v1/payments/create-stripe-session", json={"scanId": str(uuid4())}
+        )
+        assert response.status_code == 400
+        error_response = response.json()
+        assert error_response["success"] is False
+        assert error_response["code"] == 400
+        assert "No scan found" in error_response["message"]

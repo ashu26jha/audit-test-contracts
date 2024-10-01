@@ -1,6 +1,5 @@
-import toast, { Toast } from "react-hot-toast";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
-import { Chip } from "@nextui-org/react";
+import toast, { type Toast } from "react-hot-toast";
 
 interface ToastOptions {
   title: string;

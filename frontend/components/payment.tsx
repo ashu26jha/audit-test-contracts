@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+
 import { Button, Card } from "@nextui-org/react";
 import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";

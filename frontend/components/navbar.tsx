@@ -1,21 +1,22 @@
 "use client";
-import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
-// import { Image } from '@nextui-org/react';
 import { useEffect } from "react";
+
+import { ChevronDownIcon } from "@heroicons/react/24/solid";
+import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
+import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
 import Image from "next/image";
 import NextLink from "next/link";
-import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
-import { useAuth } from "../contexts/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-import { ChevronDownIcon } from "@heroicons/react/24/solid";
+
 import LoginNavbar from "./login-navbar";
-import { useToast } from "../hooks/useToast";
+import { useAuth } from "../contexts/AuthContext";
+// import { useToast } from "../hooks/useToast";
 
 export const Navbar = () => {
   const { user, loading, logout, isPublicRoute } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   useEffect(() => {
     if (!loading && !user && !isPublicRoute(pathname)) {
@@ -32,14 +33,14 @@ export const Navbar = () => {
     router.push("/login");
   };
 
-  const handleCopyEmail = () => {
-    navigator.clipboard.writeText("auditagent@nethermind.io");
-    toast({
-      title: "Support Email Copied",
-      status: "success",
-      duration: 3000,
-    });
-  };
+  // const handleCopyEmail = () => {
+  //   navigator.clipboard.writeText("auditagent@nethermind.io");
+  //   toast({
+  //     title: "Support Email Copied",
+  //     status: "success",
+  //     duration: 3000,
+  //   });
+  // };
 
   return (
     <NextUINavbar

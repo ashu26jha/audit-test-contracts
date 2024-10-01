@@ -1,6 +1,8 @@
 import React from "react";
+
 import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/react";
 import Image from "next/image";
+
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {

@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+
 import { getUser } from "../services/api";
 
 interface User {

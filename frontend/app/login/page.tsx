@@ -1,14 +1,17 @@
 "use client";
 
-import { Button, Card, CardBody, Image } from "@nextui-org/react";
-import { initiateGithubLogin } from "../../services/api";
-import { useAuth } from "../../contexts/AuthContext";
-import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+
+import { Button, Card, CardBody, Image } from "@nextui-org/react";
+import { useRouter, usePathname } from "next/navigation";
+
 import { Loading } from "@/components/Loading";
 
+import { useAuth } from "../../contexts/AuthContext";
+import { initiateGithubLogin } from "../../services/api";
+
 const LoginPage = () => {
-  const { user, loading, isPublicRoute } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 

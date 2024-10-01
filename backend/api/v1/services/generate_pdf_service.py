@@ -1,12 +1,5 @@
 import os
 from pathlib import Path
-from urllib.parse import urlparse
-from config import settings
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
 
 from api.v1.models.scan import Scan
 from api.v1.models.user import User
@@ -71,10 +64,8 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(
-            f"Unexpected error during Audit Agent report generation: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to generate Audit Agent report")
+        logger.exception(f"Unexpected error during Audit Agent report generation: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to generate Audit Agent report")
 
 
 def prepare_findings_data(findings):
@@ -97,8 +88,7 @@ def prepare_findings_data(findings):
     }
 
     # Sort findings by severity using the defined severity order
-    sorted_findings = sorted(
-        findings, key=lambda x: severity_order.get(x.Severity, 6))
+    sorted_findings = sorted(findings, key=lambda x: severity_order.get(x.Severity, 6))
 
     return [
         {
@@ -116,32 +106,22 @@ async def create_report_html(report_data):
     html_content = read_html(template_path)
 
     # Use a single placeholder replacement
+    html_content = html_content.replace("<!--organization-->", str(report_data["organization"]))
+    html_content = html_content.replace("<!--scanId-->", str(report_data["scan_number"]))
+    html_content = html_content.replace("<!--repository-->", str(report_data["repository_name"]))
+    html_content = html_content.replace("<!--branch-->", str(report_data["branch_name"]))
+    html_content = html_content.replace("<!--commit_hash-->", str(report_data["commit_hash"]))
     html_content = html_content.replace(
-        "<!--organization-->", str(report_data["organization"]))
-    html_content = html_content.replace(
-        "<!--scanId-->", str(report_data["scan_number"]))
-    html_content = html_content.replace(
-        "<!--repository-->", str(report_data["repository_name"]))
-    html_content = html_content.replace(
-        "<!--branch-->", str(report_data["branch_name"]))
-    html_content = html_content.replace(
-        "<!--commit_hash-->", str(report_data["commit_hash"]))
-    html_content = html_content.replace(
-        "<!--vulnerabilties_found-->", str(
-            report_data["total_vulnerabilities"])
+        "<!--vulnerabilties_found-->", str(report_data["total_vulnerabilities"])
     )
     html_content = html_content.replace(
         "<!--Contracts_Scanned-->", str(len(report_data["contract_files"]))
     )
-    html_content = html_content.replace(
-        "<!--LoC-->", str(report_data["total_lines_of_code"]))
-    html_content = html_content.replace(
-        "<!--summary-->", str(report_data["summary"]))
+    html_content = html_content.replace("<!--LoC-->", str(report_data["total_lines_of_code"]))
+    html_content = html_content.replace("<!--summary-->", str(report_data["summary"]))
 
-    contract_files_html = create_contract_files_html(
-        report_data["contract_files"])
-    html_content = html_content.replace(
-        "<!--contracts_files-->", contract_files_html)
+    contract_files_html = create_contract_files_html(report_data["contract_files"])
+    html_content = html_content.replace("<!--contracts_files-->", contract_files_html)
 
     findings_html = create_findings_html(report_data["findings"])
     html_content = html_content.replace("<!--findings-->", findings_html)

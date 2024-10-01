@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useScanStepperStore } from "../store/scanStepperStore";
+
 import {
   getOrganizationsAndPersonal,
   getRepositories,
@@ -7,6 +7,7 @@ import {
   getBranches,
   initiateScan,
 } from "../services/api";
+import { useScanStepperStore } from "../store/scanStepperStore";
 
 export const useScanStepper = () => {
   const {

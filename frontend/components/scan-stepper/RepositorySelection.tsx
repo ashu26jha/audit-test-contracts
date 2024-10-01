@@ -1,6 +1,8 @@
 import React from "react";
+
 import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import Image from "next/image";
+
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const RepositorySelection: React.FC = () => {
@@ -9,7 +11,7 @@ export const RepositorySelection: React.FC = () => {
   if (!selectedOwner) {
     return (
       <div className="mb-6">
-        <label className="block text-sm font-medium mb-2 text-left">
+        <label htmlFor="repository-autocomplete" className="block text-sm font-medium mb-2 text-left">
           Git Repository
           <span style={{ color: "red", marginLeft: "4px" }}>*</span>
         </label>
@@ -28,6 +30,7 @@ export const RepositorySelection: React.FC = () => {
   return (
     <div className="mb-6">
       <Autocomplete
+        id="repository-autocomplete"
         variant="bordered"
         label={
           <>

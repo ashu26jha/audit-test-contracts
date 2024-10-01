@@ -1,26 +1,30 @@
 import React, { useState } from "react";
+
 import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@nextui-org/react";
 import { AlertTriangle, FileText, Code, Hash, Info } from "lucide-react";
-import BluredFindings from "./blured-findings";
 import Image from "next/image";
-import { sendReportAgain } from "../services/api";
-import { useAuth } from "../contexts/AuthContext";
+
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
+import { sendReportAgain } from "@/services/api";
+
+import BluredFindings from "./blured-findings";
 import ScanInfo from "./scan-info";
 import { openFeedbackEmail } from "../utils/email";
 
 interface ScanResultsProps {
-  scanData: any;
+  scanData: ScanResult;
   handlePayment: () => void;
 }
 
 const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) => {
   const { toast } = useToast();
-  console.log("scanData", scanData);
-  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const { token } = useAuth();
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
   const isPaid = scanData.scan.paid_status;
   const isCompleted = scanData.scan.status === "completed";
+
   console.log("isPaid", isPaid);
 
   const handleSendReportAgain = () => {
@@ -69,15 +73,14 @@ Thank you,
     { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_number },
   ];
 
-  function getOrganizationName(scanData: any) {
-    const organizationId = scanData.scan.repositoryURL;
-    const organizationName = organizationId.split("/")[3];
-    return organizationName;
-  }
+  // function getOrganizationName(scanData: any) {
+  //   const organizationId = scanData.scan.repositoryURL;
+  //   const organizationName = organizationId.split("/")[3];
+  //   return organizationName;
+  // }
 
   return (
     <Card className="h-full relative">
-      {/* <div className="min-h-screen bg-black text-white flex flex-col"> */}
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
           <div className="text-sm text-gray-400 flex">
@@ -128,7 +131,7 @@ Thank you,
           </div>
         )}
 
-        {scanData.findings.map((finding: any, index: any) => (
+        {scanData.findings.map((finding: Finding, index: number) => (
           <Card key={index} className="bg-[#222222] mb-6">
             <CardBody>
               <div className="flex justify-between items-center mb-2">

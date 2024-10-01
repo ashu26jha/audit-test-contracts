@@ -1,5 +1,7 @@
 import React from "react";
+
 import { Select, SelectItem } from "@nextui-org/react";
+
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const OwnerSelection: React.FC = () => {

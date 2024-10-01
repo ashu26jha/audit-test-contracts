@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { getRepoInfo } from "@/services/api";
 
@@ -8,7 +9,6 @@ interface GitHubRepoResponse {
   repo_url: string;
 }
 
-// To use: const { repoInfo, loading, error } = useFetchGithubRepoInfo({ repoUrl: "" });
 const useFetchGithubRepoInfo = (repoUrl: string) => {
   const { token } = useAuth();
   const [repoInfo, setRepoInfo] = useState<GitHubRepoResponse | null>(null);

@@ -1,39 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "../../contexts/AuthContext";
 import React from "react";
+
 import { Button, Divider, Card, CardBody, CardHeader, Chip } from "@nextui-org/react";
-import Image from "next/image";
-import ScanStepper from "../../components/scan-stepper";
 import { Hash, Calendar, AlertTriangle, FileText } from "lucide-react";
-import { getScanHistory } from "../../services/api";
-import { useToast } from "../../hooks/useToast";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+
 import { Loading } from "@/components/Loading";
 
-interface ScanHistoryItem {
-  name: string;
-  logo: string;
-  scan_id: string;
-  scan_number: string;
-  status: string;
-  startedAt: string;
-  completedAt: string | null;
-  contractFiles: string[];
-  repositoryURL: string;
-  repositoryName: string;
-  branchName: string;
-  commitHash: string;
-  paid_status: boolean;
-  total_findings: number;
-  linesOfCode: {
-    total_lines: number;
-    code_lines: number;
-    comment_lines: number;
-    empty_lines: number;
-  } | null;
-}
+import ScanStepper from "../../components/scan-stepper";
+import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../hooks/useToast";
+import { getScanHistory } from "../../services/api";
 
 const DashboardPage = () => {
   const { user, token } = useAuth();
@@ -54,6 +34,7 @@ const DashboardPage = () => {
     const fetchScanHistory = async () => {
       if (token) {
         try {
+          setIsLoading(true);
           const history = await getScanHistory(token);
           console.log("history", history);
           // To scan repository all history must be paid
@@ -75,7 +56,7 @@ const DashboardPage = () => {
     fetchScanHistory();
   }, [token]);
 
-  if (!user) {
+  if (!user || isLoading) {
     return <Loading />;
   }
 
