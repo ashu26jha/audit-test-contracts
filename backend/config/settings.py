@@ -79,3 +79,9 @@ SMTP_PORT = os.getenv("SMTP_PORT", 587)
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+
+##################################################
+#                   REDIS
+##################################################
+
+REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")

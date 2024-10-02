@@ -20,5 +20,8 @@ COPY . .
 # Expose the port that Streamlit will run on
 EXPOSE 8000
 
-# Command to run your application
-CMD ["python3", "main.py"]
+# Install Redis
+RUN apt-get update && apt-get install -y redis-server
+
+# Start Redis server before your application
+CMD redis-server --daemonize yes && redis-cli ping && python3 main.py
