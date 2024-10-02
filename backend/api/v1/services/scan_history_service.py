@@ -15,9 +15,17 @@ async def store_scan(scan: Scan):
     await scan.create()
 
 
+async def get_scan(scan_id: UUID) -> Scan:
+    """Retrieve scan metadata by scan ID."""
+    scan = await Scan.find_one(Scan.scan_id == scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
+    return scan
+
+
 async def update_scan_status(scan_id: UUID, status: str, total_findings: Optional[int] = None):
     """Update the status of a scan."""
-    scan = await Scan.find_one(Scan.scan_id == scan_id)
+    scan = await get_scan(scan_id)
     if scan:
         old_status = scan.status
         scan.status = status
@@ -36,7 +44,7 @@ async def update_scan_status(scan_id: UUID, status: str, total_findings: Optiona
 
 async def update_scan_paid_status(scan_uuid: UUID, paid_status: bool):
     """Update the paid status of a scan."""
-    scan = await Scan.find_one(Scan.scan_id == scan_uuid)
+    scan = await get_scan(scan_uuid)
     if scan:
         old_status = "paid" if scan.paid_status else "unpaid"
         scan.paid_status = paid_status
@@ -55,14 +63,6 @@ async def store_scan_result(scan_result: ScanResult):
     scan_result.createdAt = datetime.now(timezone.utc)
     scan_result.completedAt = datetime.now(timezone.utc)
     await scan_result.create()
-
-
-async def get_scan(scan_id: UUID) -> Scan:
-    """Retrieve scan metadata by scan ID."""
-    scan = await Scan.find_one(Scan.scan_id == scan_id)
-    if not scan:
-        raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
-    return scan
 
 
 async def get_scan_result(scan_id: UUID) -> ScanResult:

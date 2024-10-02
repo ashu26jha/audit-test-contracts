@@ -9,7 +9,8 @@ from api.v1.services.scan_results_service import (
     get_full_scan_result,
     get_partial_scan_result,
 )
-from fastapi import APIRouter, Depends, HTTPException
+from common.validate import validate_user_scan_access
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 dev_router = APIRouter()
@@ -21,8 +22,10 @@ async def get_audit_agent_result(
     current_user: User = Depends(get_current_user),
 ):
     scan = await get_scan(scan_id)
-    if scan.user_id != str(current_user.id):
-        raise HTTPException(status_code=401, detail="User not authorized to access this scan")
+
+    # Check if the scan belongs to the user
+    await validate_user_scan_access(scan_id, current_user)
+
     full_result = await get_full_scan_result(scan_id)
 
     result = {
@@ -38,8 +41,10 @@ async def get_partial_audit_agent_result(
     current_user: User = Depends(get_current_user),
 ):
     scan = await get_scan(scan_id)
-    if scan.user_id != str(current_user.id):
-        raise HTTPException(status_code=404, detail="Scan with ID {scan_id} not found")
+
+    # Check if the scan belongs to the user
+    await validate_user_scan_access(scan_id, current_user)
+
     partial_result = await get_partial_scan_result(scan_id)
 
     # Combine partial result with scan response

@@ -130,25 +130,13 @@ export const createCheckoutSession = async (token: string, scanId: string) => {
   return response.data;
 };
 
-export const paymentSuccess = async (token: string, sessionId: string) => {
-  const response = await api.get("/api/v1/payments/payment-success", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    params: {
-      session_id: sessionId,
-    },
-  });
-  return response.data;
-};
-
-export const sendReportAgain = async (token: string, scanId: string) => {
+export const sendPdfReport = async (token: string, scanId: string) => {
   const response = await api.get(`/api/v1/generate-pdf/${scanId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  return response.data.data;
+  return response.data;
 };
 
 export default api;

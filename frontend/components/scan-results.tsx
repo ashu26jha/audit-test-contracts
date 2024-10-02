@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
-import { sendReportAgain } from "@/services/api";
+import { sendPdfReport } from "@/services/api";
 
 import BluredFindings from "./blured-findings";
 import ScanInfo from "./scan-info";
@@ -33,7 +33,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
       console.error("No token found");
       return;
     }
-    sendReportAgain(token, scanData.scan_id);
+    sendPdfReport(token, scanData.scan_id);
     toast({
       title: "Report sent",
       status: "success",

@@ -26,4 +26,4 @@ async def count_lines_of_code(flattened_contracts: str) -> Dict[str, int]:
     except Exception as e:
         message = f"Failed to count lines of code: {str(e)}"
         logger.error(message)
-        raise HTTPException(status_code=500, detail=message)
+        raise HTTPException(status_code=500, detail="Internal Server Error")

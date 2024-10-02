@@ -70,11 +70,6 @@ def test_webhook_handler():
         assert result["data"] == {"success": True}
 
 
-def test_payment_success():
-    response = client.get("/api/v1/payments/payment-success?session_id=test_session_id")
-    assert response.status_code == 201
-
-
 def test_webhook_handler_invalid_signature():
     with patch(
         "api.v1.services.payment_service.PaymentService.handle_webhook",

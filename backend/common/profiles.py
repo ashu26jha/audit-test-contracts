@@ -53,4 +53,4 @@ def load_profile(profile_name: Profiles):
     except json.JSONDecodeError as exc:
         message = f"Profile file for {profile_name} is not a valid JSON file."
         logger.error(message)
-        raise HTTPException(status_code=500, detail=message) from exc
+        raise HTTPException(status_code=500, detail="Internal Server Error") from exc

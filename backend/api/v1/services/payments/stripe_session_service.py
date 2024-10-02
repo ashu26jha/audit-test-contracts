@@ -2,10 +2,9 @@ from uuid import UUID
 
 import stripe
 from api.v1.models.payment import Payment
-from api.v1.models.scan import Scan
 from api.v1.models.user import User
-from bson import ObjectId
 from common.logger import logger
+from common.validate import validate_user_scan_access
 from config.settings import FRONTEND_URL, STRIPE_API_KEY
 from fastapi import HTTPException
 
@@ -18,21 +17,11 @@ if not STRIPE_API_KEY:
 
 class StripeSessionService:
     @staticmethod
-    async def create_checkout_session(scan_id: str):
-        scan = await Scan.find_one(Scan.scan_id == UUID(scan_id))
-        if not scan:
-            message = f"No scan found with ID: {scan_id}"
-            logger.error(message)
-            raise HTTPException(status_code=404, detail=message)
+    async def create_checkout_session(user: User, scan_id: str):
+        # Check if the scan exists and belongs to the user
+        await validate_user_scan_access(UUID(scan_id), user)
 
-        user_id = str(scan.user_id)
-
-        user = await User.find_one(User.id == ObjectId(user_id))
-        if not user:
-            message = f"No user found with ID: {user_id}"
-            logger.error(message)
-            raise HTTPException(status_code=404, detail=message)
-
+        user_id = str(User.id)
         user_email = user.email
 
         checkout_session = stripe.checkout.Session.create(
@@ -49,8 +38,8 @@ class StripeSessionService:
                 }
             ],
             mode="payment",
-            success_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=success",
-            cancel_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=error",
+            success_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=success&scan_id={scan_id}",
+            cancel_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=error&scan_id={scan_id}",
             metadata={
                 "userId": str(user_id),
                 "scanId": scan_id,
