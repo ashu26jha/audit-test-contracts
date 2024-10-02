@@ -18,6 +18,7 @@ export const ContractSelection: React.FC = () => {
     <>
       <div className="mb-4">
         <Input
+          aria-label="Search contracts"
           isClearable={true}
           placeholder="Search contracts..."
           value={contractSearch}

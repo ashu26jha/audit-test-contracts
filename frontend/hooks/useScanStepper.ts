@@ -19,6 +19,9 @@ export const useScanStepper = () => {
     selectedRepo,
     selectedBranch,
     selectedContracts,
+    setSelectedOwner,
+    setSelectedRepo,
+    setRepositoryURL,
   } = useScanStepperStore();
 
   const fetchOwners = useCallback(
@@ -89,11 +92,38 @@ export const useScanStepper = () => {
     [selectedOwner, selectedRepo, selectedBranch, selectedContracts],
   );
 
+  const extractOwnerAndRepo = useCallback(
+    (url: string) => {
+      try {
+        const parsedUrl = new URL(url);
+        const pathParts = parsedUrl.pathname.split("/").filter(Boolean);
+
+        if (pathParts.length >= 2 && parsedUrl.hostname === "github.com") {
+          const owner = pathParts[0];
+          const repo = pathParts[1];
+
+          setSelectedOwner({ login: owner, type: "user" });
+          setSelectedRepo({ name: repo, updatedAt: "" });
+          setRepositoryURL(url);
+
+          return { owner, repo };
+        } else {
+          throw new Error("Invalid GitHub URL");
+        }
+      } catch (error) {
+        console.error("Error parsing GitHub URL:", error);
+        return null;
+      }
+    },
+    [setSelectedOwner, setSelectedRepo, setRepositoryURL],
+  );
+
   return {
     fetchOwners,
     fetchRepositories,
     fetchBranches,
     fetchSolidityFiles,
     initiateScanProcess,
+    extractOwnerAndRepo,
   };
 };

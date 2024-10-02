@@ -613,8 +613,12 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```
 
 ## Running stripe:
-Fill the STRIPE_API_KEY and WEBHOOK_SECRET in the `.env` file.
-> Note that WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
+
+> Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
+
+> Note that `WEBHOOK_SECRET` for local deployment is generated in CLI (detail steps below)
+
+Fill the `STRIPE_API_KEY` and `WEBHOOK_SECRET` in the `.env` file.
 
 You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
 

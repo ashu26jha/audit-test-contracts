@@ -106,7 +106,7 @@ export const getScanHistory = async (token: string) => {
 };
 
 export const getRepoInfo = async (token: string, repoUrl: string) => {
-  const response = await api.get(`/api/v1/github/repository-info`, {
+  const response = await api.get(`/api/v1/github/validate-repo-url`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

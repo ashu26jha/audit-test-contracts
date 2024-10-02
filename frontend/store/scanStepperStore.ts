@@ -13,6 +13,7 @@ interface ScanStepperState {
   isLoading: boolean;
   isNextEnabled: boolean;
   contractSearch: string;
+  repositoryURL: string;
   setCurrentStep: (step: number) => void;
   setSelectedOwner: (owner: Owner | null) => void;
   setSelectedRepo: (repo: Repository | null) => void;
@@ -25,6 +26,8 @@ interface ScanStepperState {
   setSolidityFiles: (files: File[]) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsNextEnabled: (isEnabled: boolean) => void;
+  setRepositoryURL: (url: string) => void;
+  resetStepper: () => void;
 }
 
 export const useScanStepperStore = create<ScanStepperState>((set) => ({
@@ -40,10 +43,10 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   isLoading: false,
   isNextEnabled: false,
   contractSearch: "",
+  repositoryURL: "",
   setCurrentStep: (step) => set({ currentStep: step }),
-  setSelectedOwner: (owner) =>
-    set({ selectedOwner: owner, selectedRepo: null, selectedBranch: "", selectedContracts: [] }),
-  setSelectedRepo: (repo) => set({ selectedRepo: repo, selectedBranch: "", selectedContracts: [] }),
+  setSelectedOwner: (owner) => set({ selectedOwner: owner }),
+  setSelectedRepo: (repo) => set({ selectedRepo: repo }),
   setSelectedBranch: (branch) => set({ selectedBranch: branch }),
   setSelectedContracts: (contracts) => set({ selectedContracts: contracts }),
   setContractSearch: (search) => set({ contractSearch: search }),
@@ -53,4 +56,20 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setSolidityFiles: (files) => set({ solidityFiles: files }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsNextEnabled: (isEnabled) => set({ isNextEnabled: isEnabled }),
+  setRepositoryURL: (url) => set({ repositoryURL: url }),
+  resetStepper: () =>
+    set({
+      currentStep: 1,
+      selectedOwner: null,
+      selectedRepo: null,
+      selectedBranch: "",
+      selectedContracts: [],
+      repositories: [],
+      branches: [],
+      solidityFiles: [],
+      isLoading: false,
+      isNextEnabled: false,
+      contractSearch: "",
+      repositoryURL: "",
+    }),
 }));

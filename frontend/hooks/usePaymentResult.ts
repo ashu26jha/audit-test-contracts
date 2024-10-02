@@ -26,12 +26,8 @@ export const usePaymentResult = () => {
       isPdfReportSentRef.current = true;
 
       try {
-        const result = await sendPdfReport(token, scanId);
-        if (result.success) {
-          setStatus("success");
-        } else {
-          setStatus("failed");
-        }
+        sendPdfReport(token, scanId);
+        setStatus("success");
       } catch (error) {
         console.error("Error in report generation:", error);
         setStatus("failed");

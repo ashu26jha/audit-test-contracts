@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
 import { Button, Card, CardHeader } from "@nextui-org/react";
 import { ArrowRight } from "lucide-react";
@@ -12,7 +12,6 @@ import { useScanStepper } from "../hooks/useScanStepper";
 import { useScanStepperStore } from "../store/scanStepperStore";
 import { BranchSelection } from "./scan-stepper/BranchSelection";
 import { ContractSelection } from "./scan-stepper/ContractSelection";
-import { OwnerSelection } from "./scan-stepper/OwnerSelection";
 import { RepositorySelection } from "./scan-stepper/RepositorySelection";
 import { StepperVisualization } from "./scan-stepper/StepperVisualization";
 
@@ -26,9 +25,11 @@ const ScanStepper: React.FC = () => {
     selectedBranch,
     selectedContracts,
     isLoading,
+    repositoryURL,
     setCurrentStep,
     setIsLoading,
     setIsNextEnabled,
+    resetStepper,
   } = useScanStepperStore();
 
   const { fetchOwners, fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
@@ -57,13 +58,17 @@ const ScanStepper: React.FC = () => {
     }
   }, [token, selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
 
+  const isNextStepEnabled = useCallback(() => {
+    const isStep1Valid =
+      currentStep === 1 && ((selectedOwner !== null && selectedRepo !== null) || repositoryURL !== "");
+    const isStep2Valid = currentStep === 2 && selectedBranch !== "";
+    const isStep3Valid = currentStep === 3 && selectedContracts.length > 0;
+    return isStep1Valid || isStep2Valid || isStep3Valid;
+  }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, repositoryURL]);
+
   useEffect(() => {
-    setIsNextEnabled(
-      (currentStep === 1 && selectedOwner !== null && selectedRepo !== null) ||
-        (currentStep === 2 && selectedBranch !== "") ||
-        (currentStep === 3 && selectedContracts.length > 0),
-    );
-  }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, setIsNextEnabled]);
+    setIsNextEnabled(isNextStepEnabled());
+  }, [isNextStepEnabled, setIsNextEnabled]);
 
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
@@ -72,7 +77,6 @@ const ScanStepper: React.FC = () => {
         if (token) {
           const response = await initiateScanProcess(token);
           console.log("Scan initiated:", response);
-          router.push(`/scan-results/${response.data.scan_id}`);
         }
       } catch (error) {
         console.error("Error initiating scan:", error);
@@ -84,11 +88,14 @@ const ScanStepper: React.FC = () => {
   };
 
   const handleBack = () => {
+    if (currentStep === 1) {
+      resetStepper();
+    }
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-    } else {
-      router.push("/dashboard");
     }
+
+    router.push("/dashboard");
   };
 
   if (isLoading) {
@@ -120,16 +127,9 @@ const ScanStepper: React.FC = () => {
       <main className="flex-grow p-8">
         <StepperVisualization />
 
-        <div className="max-w-2xl mx-auto mt-4">
-          {currentStep === 1 && (
-            <>
-              <OwnerSelection />
-              <RepositorySelection />
-            </>
-          )}
-
+        <div className="max-w-2xl mx-auto mt-4 flex flex-col gap-4">
+          {currentStep === 1 && <RepositorySelection />}
           {currentStep === 2 && <BranchSelection />}
-
           {currentStep === 3 && <ContractSelection />}
         </div>
       </main>

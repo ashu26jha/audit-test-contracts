@@ -366,6 +366,41 @@ class GitHubService:
             repo_full_name=saved_repo.repo_full_name,
         )
 
+    async def check_repository_access(self, access_token: str, repo_url: str) -> dict:
+        """
+        Check if the authenticated user has access to the repository
+        and return repository information.
+        """
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repo_url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+
+        headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Repository not found or access denied")
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail="Error accessing repository"
+            )
+
 
 # async def get_repository_contents(
 #     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
