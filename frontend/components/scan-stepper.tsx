@@ -60,8 +60,8 @@ const ScanStepper: React.FC = () => {
   useEffect(() => {
     setIsNextEnabled(
       (currentStep === 1 && selectedOwner !== null && selectedRepo !== null) ||
-        (currentStep === 2 && selectedBranch !== "") ||
-        (currentStep === 3 && selectedContracts.length > 0),
+      (currentStep === 2 && selectedBranch !== "") ||
+      (currentStep === 3 && selectedContracts.length > 0),
     );
   }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, setIsNextEnabled]);
 
@@ -107,7 +107,7 @@ const ScanStepper: React.FC = () => {
           </Button>
           <Button
             color="secondary"
-            className="bg-[#8B5CF6]"
+            className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3]"
             disabled={!useScanStepperStore.getState().isNextEnabled}
             endContent={<ArrowRight size={20} />}
             onClick={handleScan}

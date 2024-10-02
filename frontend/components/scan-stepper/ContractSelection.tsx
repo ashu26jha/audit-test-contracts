@@ -32,7 +32,6 @@ export const ContractSelection: React.FC = () => {
         <Table
           aria-label="Solidity files table"
           selectionMode="multiple"
-          selectedKeys={new Set(selectedContracts)}
           onSelectionChange={(selection) => setSelectedContracts(Array.from(selection) as string[])}
         >
           <TableHeader>

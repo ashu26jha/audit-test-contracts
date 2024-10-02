@@ -50,7 +50,7 @@ export const Navbar = () => {
     >
       <NavbarBrand as="li" className="gap-3 max-w-fit">
         <NextLink className="flex justify-start items-center gap-1" href="/">
-          <Image src="/logo.svg" alt="logo" width={120} height={70} />
+          <Image src="/logo.svg" alt="logo" width={195} height={150} />
         </NextLink>
       </NavbarBrand>
 
