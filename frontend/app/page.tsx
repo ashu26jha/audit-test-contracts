@@ -1,72 +1,39 @@
-'use client';
-import { Link } from '@nextui-org/link';
-import { Snippet } from '@nextui-org/snippet';
-import { Code } from '@nextui-org/code';
-import { button as buttonStyles } from '@nextui-org/theme';
+"use client";
+import { useEffect } from "react";
 
-import { siteConfig } from '@/config/site';
-import { title, subtitle } from '@/components/primitives';
-import { GithubIcon } from '@/components/icons';
+// import { Code } from "@nextui-org/code";
+// import { Link } from "@nextui-org/link";
+// import { Snippet } from "@nextui-org/snippet";
+// import { button as buttonStyles } from "@nextui-org/theme";
+import { useRouter, usePathname } from "next/navigation";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../contexts/AuthContext';
+// import { GithubIcon } from "@/components/icons";
+// import { title, subtitle } from "@/components/primitives";
+// import { siteConfig } from "@/config/site";
+
+import { Loading } from "@/components/Loading";
+
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading, isPublicRoute } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (user) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
+    if (!loading) {
+      console.log("user", user);
+      if (user && pathname === "/") {
+        router.push("/dashboard");
+      } else if (!user && !isPublicRoute(pathname) && pathname !== "/") {
+        router.push("/login");
+      }
     }
-  }, [user, router]);
+  }, [user, loading, router, pathname, isPublicRoute]);
 
-  return (
-    <section className="flex flex-col items-center justify-center gap-4 py-8 md:py-10">
-      <div className="inline-block max-w-xl text-center justify-center">
-        <h1 className={title()}>Make&nbsp;</h1>
-        <h1 className={title({ color: 'violet' })}>beautiful&nbsp;</h1>
-        <br />
-        <h1 className={title()}>
-          websites regardless of your design experience.
-        </h1>
-        <h2 className={subtitle({ class: 'mt-4' })}>
-          Beautiful, fast and modern React UI library.
-        </h2>
-      </div>
+  if (loading) {
+    return <Loading />;
+  }
 
-      <div className="flex gap-3">
-        <Link
-          isExternal
-          className={buttonStyles({
-            color: 'primary',
-            radius: 'full',
-            variant: 'shadow',
-          })}
-          href={siteConfig.links.docs}
-        >
-          Documentation
-        </Link>
-        <Link
-          isExternal
-          className={buttonStyles({ variant: 'bordered', radius: 'full' })}
-          href={siteConfig.links.github}
-        >
-          <GithubIcon size={20} />
-          GitHub
-        </Link>
-      </div>
-
-      <div className="mt-8">
-        <Snippet hideCopyButton hideSymbol variant="bordered">
-          <span>
-            Get started by editing <Code color="primary">app/page.tsx</Code>
-          </span>
-        </Snippet>
-      </div>
-    </section>
-  );
+  return null;
 }

@@ -1,47 +1,57 @@
 from uuid import UUID
 
-from api.v1.schemas import audit_agent_schema
-from api.v1.services.audit_agent_service import get_partial_scan_result, get_scan_result
-from fastapi import APIRouter, HTTPException, status
+from api.v1.models.user import User
+from api.v1.schemas.api_response_schema import SuccessResponse
+from api.v1.schemas.scan_schema import ScanResponse, ScanResultResponse
+from api.v1.services.auth_service import get_current_user
+from api.v1.services.scan_history_service import get_scan
+from api.v1.services.scan_results_service import (
+    get_full_scan_result,
+    get_partial_scan_result,
+)
+from common.validate import validate_user_scan_access
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
+dev_router = APIRouter()
 
 
-@router.get(
-    "/scans/{scan_id}",
-    response_model=audit_agent_schema.AuditAgentResponse,
-)
-async def get_audit_agent_result(scan_id: UUID):
-    result = await get_scan_result(scan_id)
-    if result is None:
-        raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail="Scan result is not ready yet. Please try again later.",
-            headers={"Retry-After": "10"},
-        )
-    elif isinstance(result, dict) and "error" in result:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during scan: {result['error']}",
-        )
-    return result
+@dev_router.get("/full/{scan_id}", response_model=SuccessResponse)
+async def get_audit_agent_result(
+    scan_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
+    scan = await get_scan(scan_id)
+
+    # Check if the scan belongs to the user
+    await validate_user_scan_access(scan_id, current_user)
+
+    full_result = await get_full_scan_result(scan_id)
+
+    result = {
+        "scan": ScanResponse.model_validate(scan),
+        "result": (ScanResultResponse.model_validate(full_result) if full_result else None),
+    }
+    return SuccessResponse(data=result)
 
 
-@router.get(
-    "/scans/partial/{scan_id}",
-    response_model=audit_agent_schema.AuditAgentResponse,
-)
-async def get_partial_audit_agent_result(scan_id: UUID):
-    result = await get_partial_scan_result(scan_id)
-    if result is None:
-        raise HTTPException(
-            status_code=status.HTTP_202_ACCEPTED,
-            detail="Scan result is not ready yet. Please try again later.",
-            headers={"Retry-After": "10"},
-        )
-    elif isinstance(result, dict) and "error" in result:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error during scan: {result['error']}",
-        )
-    return result
+@router.get("/partial/{scan_id}", response_model=SuccessResponse)
+async def get_partial_audit_agent_result(
+    scan_id: UUID,
+    current_user: User = Depends(get_current_user),
+):
+    scan = await get_scan(scan_id)
+
+    # Check if the scan belongs to the user
+    await validate_user_scan_access(scan_id, current_user)
+
+    partial_result = await get_partial_scan_result(scan_id)
+
+    # Combine partial result with scan response
+    result = {
+        "scan": ScanResponse.model_validate(scan),
+        "partial_result": (
+            ScanResultResponse.model_validate(partial_result) if partial_result else None
+        ),
+    }
+    return SuccessResponse(data=result)

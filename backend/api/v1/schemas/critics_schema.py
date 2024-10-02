@@ -18,4 +18,4 @@ class CriticReviewCreate(CriticReviewBase):
 
 class CriticReviewResponse(CriticReviewBase):
     id: int = Field(..., description="Unique ID of the critic")
-    created_at: datetime = Field(..., description="Timestamp of when the critic was created")
+    createdAt: datetime = Field(..., description="Timestamp of when the critic was created")

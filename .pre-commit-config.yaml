@@ -32,4 +32,24 @@ repos:
   #       args: [--rcfile=backend/setup.cfg]
   #       exclude: \.git|__pycache__|\.venv|env|venv|build|dist
   #       files: ^backend/
-  #       pass_failing: true
+  #       verbose: true
+
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: Frontend Lint
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/
+        types: [file]
+        pass_filenames: false
+
+      - id: frontend-prettier
+        name: Frontend Prettier
+        entry: bash -c 'cd frontend && npm run prettier'
+        language: system
+        files: ^frontend/
+        types: [file]
+        pass_filenames: false
+
+

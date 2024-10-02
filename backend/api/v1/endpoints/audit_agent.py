@@ -1,38 +1,25 @@
-from __future__ import annotations
+from uuid import uuid4
 
+from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
+from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services import audit_agent_service
-from common.logger import logger
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from api.v1.services.auth_service import get_current_user
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 
 router = APIRouter()
 
 
-@router.post("/audit-agent", response_model=audit_agent_schema.AuditAgentInitiateResponse)
+@router.post(
+    "/audit-agent",
+    response_model=SuccessResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def perform_audit_agent(
-    request: audit_agent_schema.AuditAgentRequest, background_tasks: BackgroundTasks
+    request: audit_agent_schema.AuditAgentRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
 ):
-    try:
-        # Generate the scan ID here to return it immediately
-        scan_id = audit_agent_service.generate_scan_id()
-
-        # Start the audit_agent_service in the background
-        background_tasks.add_task(
-            audit_agent_service.perform_audit_agent_background,
-            scan_id,
-            request.repositoryURL,
-            request.contractFiles,
-            request.authToken,
-        )
-
-        # Return the scan ID immediately
-        return audit_agent_schema.AuditAgentInitiateResponse(scan_id=scan_id)
-    except ValueError as e:
-        logger.error(f"Value error in audit_agent: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except Exception as e:
-        logger.exception(f"Unexpected error in audit_agent: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred. Please try again later or contact support if the problem persists.",
-        )
+    scan_id = uuid4()
+    await audit_agent_service.initiate_scan(scan_id, current_user, request, background_tasks)
+    return SuccessResponse(data=audit_agent_schema.AuditAgentInitiateResponse(scan_id=scan_id))

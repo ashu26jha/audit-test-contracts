@@ -1,4 +1,12 @@
+import base64
+import re
+from uuid import uuid4
+
 import httpx
+from api.v1.models.github import GitHubRepo
+from api.v1.schemas.github_schema import GitHubRepoCreate, GitHubRepoResponse
+from common import logger
+from config import settings
 from fastapi import HTTPException
 
 
@@ -62,7 +70,9 @@ class GitHubService:
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.BASE_URL}/user/repos", headers=headers)
+            response = await client.get(
+                f"{self.BASE_URL}/user/repos", headers=headers, params={"per_page": 100}
+            )
 
         if response.status_code != 200:
             raise HTTPException(
@@ -72,28 +82,27 @@ class GitHubService:
         return response.json()
 
     async def get_repository_contents(
-        self, access_token: str, owner: str, repo: str, path: str = ""
+        self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
     ) -> list:
-        """
-        Fetch contents of a repository or a specific path within a repository.
-        """
-        headers = {
-            "Authorization": f"token {access_token}",
-            "Accept": "application/vnd.github.v3+json",
-        }
-
-        url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/git/trees/{branch}"
+        params = {"recursive": 1}
+        headers = {"Authorization": f"token {access_token}"}
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(url, headers=headers, params=params)
+        response.raise_for_status()
 
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=400,
-                detail="Failed to fetch repository contents from GitHub",
-            )
-
-        return response.json()
+        tree = response.json()["tree"]
+        return [
+            {
+                "name": item["path"].split("/")[-1],
+                "path": item["path"],
+                "type": "file",
+                "download_url": f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{item['path']}",
+            }
+            for item in tree
+            if item["type"] == "blob" and item["path"].endswith(".sol")
+        ]
 
     async def get_file_content(self, access_token: str, owner: str, repo: str, path: str) -> str:
         """
@@ -114,11 +123,9 @@ class GitHubService:
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
-            import base64
-
             return base64.b64decode(content_data["content"]).decode("utf-8")
-        else:
-            return content_data["content"]
+
+        return content_data["content"]
 
     async def get_user_organizations(self, access_token: str) -> list:
         async with httpx.AsyncClient() as client:
@@ -163,65 +170,266 @@ class GitHubService:
         return [user] + orgs if user else orgs
 
     async def get_repositories(self, access_token: str, owner: str, owner_type: str) -> list:
-        url = (
-            f"{self.BASE_URL}/users/{owner}/repos"
-            if owner_type == "user"
-            else f"{self.BASE_URL}/orgs/{owner}/repos"
-        )
+        if owner_type == "user":
+            # This will fetch all repos the user has access to
+            url = f"{self.BASE_URL}/user/repos"
+            # For users, we want repos they own or are a member of
+            params = {"type": "owner", "sort": "updated", "per_page": 100}
+        else:
+            url = f"{self.BASE_URL}/orgs/{owner}/repos"
+            # For organizations, we want all repos
+            params = {"type": "all", "sort": "updated", "per_page": 100}
+
+        headers = {"Authorization": f"token {access_token}"}
+
+        all_repos = []
+        page = 1
+
+        async with httpx.AsyncClient() as client:
+            while True:
+                params["page"] = page
+                response = await client.get(url, headers=headers, params=params)
+
+                if response.status_code != 200:
+                    logger.error(
+                        f"Failed to fetch repositories for {owner_type} {owner}. Status: {response.status_code}, Response: {response.text}"
+                    )
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"GitHub API error: {response.text}",
+                    )
+
+                repos = response.json()
+                if not repos:
+                    break
+
+                all_repos.extend(repos)
+
+                # Check if there are more pages
+                if "next" not in response.links:
+                    break
+
+                page += 1
+
+        if not all_repos:
+            logger.warning(f"No repositories found for {owner_type} {owner}")
+
+        repositories = [
+            {"name": repo["name"], "updatedAt": repo["updated_at"], "private": repo["private"]}
+            for repo in all_repos
+        ]
+
+        return repositories
+
+    async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers={"Authorization": f"token {access_token}"})
         response.raise_for_status()
-        return [{"name": repo["name"], "updatedAt": repo["updated_at"]} for repo in response.json()]
+        return [branch["name"] for branch in response.json()]
 
-    # async def get_repository_contents(self, access_token: str, owner: str, repo: str, path: str = "") -> list:
-    #     url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-    #     async with httpx.AsyncClient() as client:
-    #         response = await client.get(
-    #             url,
-    #             headers={"Authorization": f"token {access_token}"}
-    #         )
-    #     response.raise_for_status()
-    #     contents = response.json()
-    #     if isinstance(contents, list):
-    #         return [
-    #             {
-    #                 "name": item["name"],
-    #                 "path": item["path"],
-    #                 "type": item["type"],
-    #                 "download_url": item.get("download_url")
-    #             }
-    #             for item in contents
-    #             if item["type"] == "file" and item["name"].endswith(".sol")
-    #         ]
-    #     return []
+    async def get_commit_hash(
+        self, access_token: str, repository_url: str, branch_name: str
+    ) -> str:
+        """
+        Fetch the latest commit hash from the specified branch of the repository.
+        """
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+        }
 
-    # async def get_repository_contents(
-    #     self, access_token: str, owner: str, repo: str, path: str = ""
-    # ) -> list:
-    #     async def fetch_contents(path):
-    #         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-    #         async with httpx.AsyncClient() as client:
-    #             response = await client.get(
-    #                 url, headers={"Authorization": f"token {access_token}"}
-    #             )
-    #         response.raise_for_status()
-    #         return response.json()
+        # Include access token if provided
+        if access_token:
+            headers["Authorization"] = f"token {access_token}"
 
-    #     async def recursive_fetch(path=""):
-    #         contents = await fetch_contents(path)
-    #         result = []
-    #         for item in contents:
-    #             if item["type"] == "file" and item["name"].endswith(".sol"):
-    #                 result.append(
-    #                     {
-    #                         "name": item["name"],
-    #                         "path": item["path"],
-    #                         "type": "file",
-    #                         "download_url": item["download_url"],
-    #                     }
-    #                 )
-    #             elif item["type"] == "dir":
-    #                 result.extend(await recursive_fetch(item["path"]))
-    #         return result
+        # Improved URL parsing
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repository_url)
+        if not match:
+            message = "Invalid GitHub repository URL."
+            logger.error(message)
+            raise HTTPException(status_code=400, detail=message)
 
-    #     return await recursive_fetch()
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}/commits/{branch_name}"
+
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, headers=headers)
+
+                if (
+                    settings.ENVIRONMENT == "development"
+                    and response.status_code == 401
+                    and access_token
+                ):
+                    logger.warning("Invalid access token provided. Retrying without access token.")
+                    headers.pop("Authorization", None)
+                    response = await client.get(url, headers=headers)
+
+                if response.status_code == 200:
+                    commit_data = response.json()
+                elif response.status_code == 401:
+                    message = "Unauthorized access. Access token required for private repositories."
+                    logger.error(message)
+                    raise HTTPException(status_code=401, detail=message)
+                elif response.status_code == 404:
+                    message = f"Repository or branch '{branch_name}' not found."
+                    logger.error(message)
+                    raise HTTPException(status_code=404, detail=message)
+                else:
+                    api_message = response.json().get("message", "No message provided")
+                    message = (
+                        f"Failed to fetch commit hash for branch '{branch_name}'. "
+                        f"GitHub API returned status {response.status_code}: {api_message}"
+                    )
+                    logger.error(message)
+                    raise HTTPException(status_code=500, detail="Internal Error Server")
+
+            commit_hash = commit_data.get("sha")
+            if not commit_hash:
+                message = f"Commit hash not found for branch '{branch_name}'."
+                logger.error(message)
+                raise HTTPException(status_code=500, detail="Internal Error Server")
+
+            return commit_hash
+
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            message = f"Unexpected error while fetching commit hash: {str(e)}"
+            logger.error(message)
+            raise HTTPException(status_code=500, detail="Internal Error Server")
+
+    async def fetch_github_repo_info(self, access_token: str, repo_url: str) -> GitHubRepoCreate:
+        headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+
+        # Improved URL parsing
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repo_url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+
+            if (
+                settings.ENVIRONMENT == "development"
+                and response.status_code == 401
+                and access_token
+            ):
+                logger.warning("Invalid access token provided. Retrying without access token.")
+                headers.pop("Authorization", None)
+                response = await client.get(url, headers=headers)
+
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=response.text)
+
+        data = response.json()
+
+        return GitHubRepoCreate(
+            repo_url=repo_url,
+            repo_name=data.get("name", ""),
+            repo_full_name=data.get("full_name", ""),
+        )
+
+    async def save_github_repo_info(self, repo_info: GitHubRepoCreate) -> GitHubRepo:
+        db_repo = GitHubRepo(
+            id=uuid4(),
+            repo_url=repo_info.repo_url,
+            repo_name=repo_info.repo_name,
+            repo_full_name=repo_info.repo_full_name,
+        )
+        await db_repo.insert()
+        return db_repo
+
+    async def get_github_repo_info(self, access_token: str, repo_url: str) -> GitHubRepoResponse:
+        repo_info = await self.fetch_github_repo_info(access_token, repo_url)
+        saved_repo = await self.save_github_repo_info(repo_info)
+        return GitHubRepoResponse(
+            id=saved_repo.id,
+            repo_url=saved_repo.repo_url,
+            repo_name=saved_repo.repo_name,
+            repo_full_name=saved_repo.repo_full_name,
+        )
+
+    async def check_repository_access(self, access_token: str, repo_url: str) -> dict:
+        """
+        Check if the authenticated user has access to the repository
+        and return repository information.
+        """
+        pattern = (
+            r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
+        )
+        match = re.match(pattern, repo_url)
+        if not match:
+            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+
+        owner = match.group("owner")
+        repo = match.group("repo").replace(".git", "")
+
+        url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+
+        headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github.v3+json",
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail="Repository not found or access denied")
+        else:
+            raise HTTPException(
+                status_code=response.status_code, detail="Error accessing repository"
+            )
+
+
+# async def get_repository_contents(
+#     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
+# ) -> list:
+#     async def fetch_contents(path):
+#         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+#         params = {"ref": branch}
+#         async with httpx.AsyncClient() as client:
+#             response = await client.get(
+#                 url, headers={"Authorization": f"token {access_token}"}, params=params
+#             )
+#         response.raise_for_status()
+#         return response.json()
+
+#     async def recursive_fetch(path=""):
+#         contents = await fetch_contents(path)
+#         result = []
+#         for item in contents:
+#             if item["type"] == "file" and item["name"].endswith(".sol"):
+#                 result.append(
+#                     {
+#                         "name": item["name"],
+#                         "path": item["path"],
+#                         "type": "file",
+#                         "download_url": item["download_url"],
+#                     }
+#                 )
+#             elif item["type"] == "dir":
+#                 result.extend(await recursive_fetch(item["path"]))
+#         return result
+
+#     return await recursive_fetch()

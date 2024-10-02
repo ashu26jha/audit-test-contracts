@@ -1,45 +1,27 @@
 # Use the official Python image from the Docker Hub
 FROM python:3.12
 
-# Avoid prompts from apt
-ENV DEBIAN_FRONTEND=noninteractive
+# Set the working directory in the container
+WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    git \
-    build-essential \
-    libssl-dev
+# Copy the requirements.txt file into the container
+COPY ./requirements.txt .
 
-# Install Foundry
-RUN curl -L https://foundry.paradigm.xyz | bash && \
-    /root/.foundry/bin/foundryup
-ENV PATH="/root/.foundry/bin:${PATH}"
-
-# Install Python dependencies
-COPY backend/requirements.txt .
+# Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Slither
-RUN pip install slither-analyzer toml
+# Install playwright
+RUN playwright install 
+RUN playwright install-deps 
 
-# Install solc-select
-RUN pip3 install solc-select
-
-# TODO: Install solc versions dynamically
-RUN solc-select install 0.8.27 0.8.26 0.8.25 0.8.24 0.8.23 0.8.22 0.8.21 \
-    0.8.20 0.8.19 0.8.18 0.8.17 0.8.16 0.8.15 0.8.14 0.8.13 0.8.12 0.8.11 \
-    0.8.10 0.8.9 0.8.8 0.8.7 0.8.6 0.8.5 0.8.4 0.8.3 0.8.2 0.8.1 0.8.0 \
-    0.7.6 0.6.12 0.5.17
-
-# Set working directory
-WORKDIR /app/backend
-
-# Copy your backend code
-COPY backend/ .
+# Copy the rest of your application code into the container
+COPY . .
 
 # Set environment variable for Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1
 
-# Command to run your backend service with increased verbosity
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "debug"]
+# Install Redis
+RUN apt-get update && apt-get install -y redis-server
+
+# Start Redis server before your application
+CMD redis-server --daemonize yes && redis-cli ping && python3 main.py

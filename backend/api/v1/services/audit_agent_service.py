@@ -1,131 +1,215 @@
-from __future__ import annotations
+from datetime import datetime, timezone
+from uuid import UUID
 
-from threading import Lock
-from typing import Dict, List, Optional, Union
-from uuid import UUID, uuid4
-
+from api.v1.models.global_stats import GlobalStats
+from api.v1.models.scan import Scan, ScanResult
+from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
-from api.v1.schemas.context_scan_schema import Finding
 from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
     generate_summary_service,
+    lines_of_code_service,
+    scan_history_service,
 )
+from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
+from common.validate import (
+    validate_contract_files,
+    validate_github_url,
+    validate_no_unpaid_scans,
+    validate_user_has_github_token,
+)
+from config import settings
+from fastapi import BackgroundTasks, HTTPException
 
-# In-memory storage for scan results (temporary solution)
-_SCAN_RESULTS: Dict[UUID, Union[audit_agent_schema.AuditAgentResponse, Dict[str, str]]] = {}
-_SCAN_RESULTS_LOCK = Lock()
+github_service = GitHubService()
 
 
-def generate_scan_id() -> UUID:
-    """Generate a unique scan ID."""
-    return uuid4()
+async def initiate_scan(
+    scan_id: UUID,
+    user: User,
+    request: audit_agent_schema.AuditAgentRequest,
+    background_tasks: BackgroundTasks,
+):
+    try:
+        validate_user_has_github_token(user)
+        validate_github_url(request.repositoryURL)
+        validate_contract_files(request.contractFiles)
+        if settings.ENVIRONMENT == "production":
+            await validate_no_unpaid_scans(user)
+
+        # Fetch repository info
+        repo_info = await github_service.fetch_github_repo_info(
+            user.accessToken, request.repositoryURL
+        )
+
+        # Get the next scan_id for this user
+        scan_number = await Scan.get_next_scan_number(str(user.id))
+
+        # Create and store the new scan with initial status 'pending'
+        branch_name = request.branchName if request.branchName else "main"
+        new_scan = Scan(
+            scan_id=scan_id,
+            scan_number=scan_number,
+            user_id=str(user.id),
+            status="pending",
+            startedAt=datetime.now(timezone.utc),
+            contractFiles=request.contractFiles,
+            repositoryURL=request.repositoryURL,
+            repositoryName=repo_info.repo_name,
+            branchName=branch_name,
+        )
+        await scan_history_service.store_scan(new_scan)
+
+        # Create and store an initial empty scan result
+        initial_scan_result = ScanResult(
+            scan_id=scan_id,
+            scan_number=scan_number,
+            summary="Scan in progress",
+            type=Profiles.NONE,
+            total_findings=0,
+            findings=[],
+        )
+        await scan_history_service.store_scan_result(initial_scan_result)
+
+        # Increment global stats (unpaid by default)
+        await GlobalStats.increment_scan(status="pending", paid=False, findings=0)
+
+        # Fetch the commit hash using GitHub API
+        try:
+            commit_hash = await github_service.get_commit_hash(
+                user.accessToken, request.repositoryURL, branch_name
+            )
+        except HTTPException as e:
+            # Update scan status to 'failed'
+            await scan_history_service.update_scan_status(scan_id, "failed")
+            # Update global stats for failed scan
+            await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+            # Update the scan result to reflect the failure
+            failed_scan_result = ScanResult(
+                scan_id=scan_id,
+                scan_number=scan_number,
+                summary=f"Scan failed: {e.detail}",
+                type=Profiles.NONE,
+                total_findings=0,
+                findings=[],
+            )
+            await scan_history_service.store_scan_result(failed_scan_result)
+            # Re-raise the exception with additional context
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=f"Failed to fetch commit hash: {e.detail}",
+            )
+
+        if not commit_hash:
+            await scan_history_service.update_scan_status(scan_id, "failed")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to fetch commit hash. Check if branch exists.",
+            )
+
+        new_scan.commitHash = commit_hash
+        await new_scan.save()
+
+        # Flatten contracts and count lines of code
+        flattened_contracts = await flatten_contracts_service.flatten_contracts(
+            request.repositoryURL, request.contractFiles, user.accessToken
+        )
+        lines_of_code = await lines_of_code_service.count_lines_of_code(flattened_contracts)
+        new_scan.linesOfCode = lines_of_code
+        await new_scan.save()
+
+        # Start the background task
+        background_tasks.add_task(
+            perform_audit_agent_background,
+            scan_id,
+            flattened_contracts,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Unexpected error during scan initiation: {str(e)}")
+        # Update global stats for failed scan
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+
+        # Update scan status to 'failed' if scan exists
+        try:
+            await scan_history_service.update_scan_status(scan_id, "failed")
+            # Also update the scan result to reflect the failure
+            failed_scan_result = ScanResult(
+                scan_id=scan_id,
+                scan_number=scan_number,
+                summary="Scan failed to initiate",
+                type=Profiles.NONE,
+                total_findings=0,
+                findings=[],
+            )
+            await scan_history_service.store_scan_result(failed_scan_result)
+        except Exception:
+            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
-    scan_id: UUID,
-    repository_url: str,
-    contract_files: List[str],
-    auth_token: Optional[str],
+    scan_uuid: UUID,
+    flattened_contracts: str,
 ):
-    """
-    Perform audit in the background and store the result.
-    """
     try:
-        logger.info(f"Starting background audit scan with ID: {scan_id}")
+        logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
-        # Step 1: Flatten contracts
-        flattened_contracts = await flatten_contracts_service.flatten_contracts(
-            repository_url, contract_files, auth_token
-        )
+        # Update scan status to 'in_progress'
+        await scan_history_service.update_scan_status(scan_uuid, "in_progress")
 
-        # Step 2: Generate Summary and detect profile
+        # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
             flattened_contracts
         )
 
-        # Map 'detected_type' to a Profiles enum member
-        try:
-            detected_profile = Profiles[detected_type.upper()]
-        except KeyError:
-            detected_profile = Profiles.DEFAULT
+        detected_profile = (
+            Profiles[detected_type.upper()]
+            if detected_type.upper() in Profiles.__members__
+            else Profiles.DEFAULT
+        )
 
-        # Step 3: Perform Context Scan
+        # Perform Context Scan
         context_scan_result = await context_scan_service.perform_context_scan(
             summary_result, flattened_contracts, detected_profile
         )
 
-        # Create the audit response
-        audit_response = audit_agent_schema.AuditAgentResponse(
-            scan_id=scan_id,
-            summary=summary_result,
-            type=detected_profile,
-            scan_result=context_scan_result,
+        # Calculate total findings
+        total_findings = len(context_scan_result)
+
+        # Update the existing scan result
+        scan_result = await scan_history_service.get_scan_result(scan_uuid)
+        scan_result.summary = summary_result
+        scan_result.type = detected_profile
+        scan_result.total_findings = total_findings
+        scan_result.findings = context_scan_result
+        await scan_result.save()
+
+        # Update scan status to 'completed' and include total_findings
+        await scan_history_service.update_scan_status(scan_uuid, "completed", total_findings)
+
+        # Update global stats with findings
+        scan = await scan_history_service.get_scan(scan_uuid)
+        await GlobalStats.increment_scan(
+            status="completed", paid=scan.paid_status, findings=total_findings
         )
 
-        # Store the result
-        await _store_scan_result(scan_id, audit_response)
-
-        logger.info(f"Completed audit scan with ID: {scan_id}")
+        logger.info(f"Completed audit scan with ID: {scan_uuid}")
 
     except Exception as e:
-        logger.exception(f"Error in background audit scan with ID {scan_id}: {str(e)}")
-        # Store the error information
-        await _store_scan_error(scan_id, str(e))
-
-
-async def get_scan_result(
-    scan_id: UUID,
-) -> Optional[Union[audit_agent_schema.AuditAgentResponse, Dict[str, str]]]:
-    """Retrieve the scan result by scan ID."""
-    return await _retrieve_scan_result(scan_id)
-
-
-async def get_partial_scan_result(
-    scan_id: UUID,
-) -> Optional[Union[audit_agent_schema.AuditAgentResponse, Dict[str, str]]]:
-    """Retrieve partial scan results by scan ID."""
-    full_result = await _retrieve_scan_result(scan_id)
-    if full_result is None or isinstance(full_result, dict):
-        # Return None or error if scan is not ready or an error occurred
-        return full_result
-    else:
-        # Create a partial response
-        partial_findings = _get_partial_findings(full_result.scan_result)
-        partial_response = audit_agent_schema.AuditAgentResponse(
-            scan_id=full_result.scan_id,
-            summary=full_result.summary,
-            type=full_result.type,
-            scan_result=partial_findings,
-        )
-        return partial_response
-
-
-def _get_partial_findings(findings: List[Finding]) -> List[Finding]:
-    """Return a subset of findings (10% or up to 3 findings)."""
-    num_findings = len(findings)
-    num_partial = max(1, min(3, max(1, num_findings // 10)))
-    partial_findings = findings[:num_partial]
-    return partial_findings
-
-
-async def _store_scan_result(scan_id: UUID, result: audit_agent_schema.AuditAgentResponse):
-    """Store the scan result. Replace this with DB storage in the future."""
-    with _SCAN_RESULTS_LOCK:
-        _SCAN_RESULTS[scan_id] = result
-
-
-async def _store_scan_error(scan_id: UUID, error_message: str):
-    """Store an error message for a scan. Replace this with DB storage in the future."""
-    with _SCAN_RESULTS_LOCK:
-        _SCAN_RESULTS[scan_id] = {"error": error_message}
-
-
-async def _retrieve_scan_result(
-    scan_id: UUID,
-) -> Optional[Union[audit_agent_schema.AuditAgentResponse, Dict[str, str]]]:
-    """Retrieve the scan result or error message. Replace this with DB retrieval in the future."""
-    with _SCAN_RESULTS_LOCK:
-        return _SCAN_RESULTS.get(scan_id)
+        logger.exception(f"Error in audit scan {scan_uuid}: {str(e)}")
+        await scan_history_service.update_scan_status(scan_uuid, "failed")
+        # Update global stats for failed scan
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+        # Update the existing scan result to reflect the failure
+        scan_result = await scan_history_service.get_scan_result(scan_uuid)
+        scan_result.summary = "An error occurred during the audit scan."
+        scan_result.type = Profiles.NONE
+        scan_result.total_findings = 0
+        scan_result.findings = []
+        await scan_result.save()

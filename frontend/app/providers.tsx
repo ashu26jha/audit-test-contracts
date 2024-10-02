@@ -1,24 +1,46 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { NextUIProvider } from '@nextui-org/system';
-import { useRouter } from 'next/navigation';
-import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { ThemeProviderProps } from 'next-themes/dist/types';
-import { AuthProvider } from '../contexts/AuthContext';
+import { useState, useEffect, type ReactNode } from "react";
+
+import { NextUIProvider } from "@nextui-org/system";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { type ThemeProviderProps } from "next-themes/dist/types";
+import { Toaster } from "react-hot-toast";
+
+import { AuthProvider } from "../contexts/AuthContext";
+
+const queryClient = new QueryClient();
 
 export interface ProvidersProps {
-  children: React.ReactNode;
+  children: ReactNode;
   themeProps?: ThemeProviderProps;
 }
 
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   return (
     <NextUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
-        <AuthProvider>{children}</AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            {mounted && children}
+            <Toaster
+              position="bottom-center"
+              toastOptions={{
+                className: "",
+                style: {
+                  boxShadow: "none",
+                },
+              }}
+            />
+          </AuthProvider>
+        </QueryClientProvider>
       </NextThemesProvider>
     </NextUIProvider>
   );

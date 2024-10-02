@@ -1,9 +1,31 @@
-from __future__ import annotations
+from api.v1.schemas.api_response_schema import ErrorResponse
+from fastapi import HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
-from common.logger import logger
-from fastapi import HTTPException
+
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            success=False, code=exc.status_code, message=exc.detail, details=None
+        ).model_dump(),
+    )
 
 
-def handle_exception(e: Exception):
-    logger.error(f"An error occurred: {str(e)}")
-    raise HTTPException(status_code=500, detail="Internal server error") from e
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            success=False, code=422, message="Validation error", details=exc.errors()
+        ).model_dump(),
+    )
+
+
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            success=False, code=500, message="Internal server error", details=str(exc)
+        ).model_dump(),
+    )

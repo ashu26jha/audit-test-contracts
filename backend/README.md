@@ -1,4 +1,6 @@
-# Yokai Audit Agent Backend
+<div align="center">
+<h1><strong> <span style="color:#8660f2"> Audit</span> Agent APIs </strong></h1>
+</div>
 
 ## Table of Contents
 
@@ -7,20 +9,22 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Running the Server](#running-the-server)
+- [Running the Linters](#running-the-linters)
 - [Running Tests](#running-tests)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
-- [Roadmap](#roadmap)
+- [Running stripe](#running-stripe)
+- [Profiles](#profiles)
 
 ## Introduction
 
 This is the backend component of the Yokai Audit Agent, providing the core functionality for smart contract auditing, GitHub integration, and user management.
 
-## Getting Started
+## Getting StartedV
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.12+
 - MongoDB
 - Git
 
@@ -28,27 +32,27 @@ This is the backend component of the Yokai Audit Agent, providing the core funct
 
 1. Clone the repository:
 ```bash
-  git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
-  cd backend
+git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
+cd backend
 ```
 
 2. Install dependencies:
 ```bash
-   pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
-3. Set up environment variables (create a .env file in the backend directory):
+3. Set up environment variables (create a `.env` file in the `backend` directory):
 ```bash
-  OPENAI_API_KEY=sk-...
-  ANTHROPIC_API_KEY=sk-...
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-...
 
-  LANGFUSE_SECRET_KEY=sk-lf-...
-  LANGFUSE_PUBLIC_KEY=pk-lf-...
-  LANGFUSE_HOST=https://...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_HOST=https://...
 
-  MONGODB_URL=your_mongodb_url
-  GITHUB_CLIENT_ID=your_github_client_id
-  GITHUB_CLIENT_SECRET=your_github_client_secret
+MONGODB_URL=your_mongodb_url
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
 ## Running the Server
@@ -60,21 +64,19 @@ uvicorn main:app --reload
 ```
 
 To launch a production server:
-
 ```bash
 fastapi run
 ```
 
-To launch a docker image:
-
+To launch a server with Docker:
 ```bash
-docker build -t backend-image -f backend/Dockerfile.backend .
+cd backend
+docker build -t audit-agent-backend -f Dockerfile.backend .
 ```
 
-Then run the container:
-
+then run the following command to run the server:
 ```bash
-docker run -p 8000:8000 backend-image
+docker run -p 8000:8000 audit-agent-backend
 ```
 
 ## Running the Linters
@@ -138,13 +140,16 @@ Logs out the current user.
 Retrieves the current authenticated user's information.
 
 **Response:**
+```json
 {
   "id": "string",
   "username": "string",
   "email": "string",
-  "githubId": "string"
+  "githubId": "string",
+  "name": "string",
+  "avatarUrl": "string"
 }
-
+```
 </details>
 
 ### GitHub Integration Endpoints
@@ -180,6 +185,29 @@ Retrieves the contents of a specific repository.
 **Response:** Array of file/directory objects.
 </details>
 
+<details>
+<summary>GET /api/v1/github/repository-info</summary>
+
+Retrieves information about a specific GitHub repository.
+
+**Parameters:**
+- `repo_url`: Full URL of the GitHub repository (query parameter)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "repo_url": "string",
+    "repo_name": "string",
+    "repo_full_name": "string",
+    "created_at": "Datetime",
+    "updated_at": "Datetime"
+  }
+}
+```
+</details>
+
 ### Scanning Endpoints
 
 <details>
@@ -188,43 +216,76 @@ Retrieves the contents of a specific repository.
 Initiates a new scan for selected smart contracts.
 
 **Request Body:**
+```json
 {
   "repositoryURL": "string",
   "contractFiles": ["string"],
-  "authToken": "string (optional)"
+  "branchName": "string"
 }
+```
 
 **Response:**
+```json
 {
-  "scan_id": "UUID"
+	"success": true,
+	"data": {
+		"scan_id": "UUID"
+	}
 }
-
+```
 </details>
 
 <details>
-<summary>GET /api/v1/scans/{scan_id}</summary>
+<summary>GET /api/v1/scans/full/{scan_id}</summary>
 
-Retrieves the full results of a specific scan.
+Retrieves the full results of a specific scan (Only available in development mode)
 
 **Parameters:**
 - `scan_id`: UUID of the scan (path parameter)
 
 **Response:**
+```json
 {
-  "scan_id": "UUID",
-  "summary": "string",
-  "type": "string",
-  "scan_result": [
-    {
-      "Issue": "string",
-      "Severity": "string",
-      "Contracts": ["string"],
-      "Description": "string",
-      "Recommendation": "string"
+	"success": true,
+	"data": {
+    "scan": {
+			"scan_id": "UUID",
+      "scan_number": "number",
+			"status": "string",
+			"startedAt": "Datetime",
+			"completedAt": "Datetime",
+			"contractFiles": [ "string"],
+			"linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "main",
+			"commitHash": "001",
+			"paid_status": "boolean",
+		},
+		"partial_result": {
+      "scan_id": "UUID",
+      "scan_number": "number",
+      "summary": "string",
+      "type": "string",
+      "findings": [
+        {
+          "Issue": "string",
+          "Severity": "string",
+          "Contracts": ["string"],
+          "Description": "string",
+          "Recommendation": "string"
+        }
+      ],
+      "createdAt": "DateTime",
+      "updatedAt": "DateTime",
     }
-  ]
+  }
 }
-
+```
 </details>
 
 <details>
@@ -235,7 +296,100 @@ Retrieves partial results of a specific scan (limited findings).
 **Parameters:**
 - `scan_id`: UUID of the scan (path parameter)
 
-**Response:** Same as full results, but with a limited number of findings.
+**Response:**
+```json
+{
+	"success": true,
+	"data": {
+    "scan": {
+			"scan_id": "UUID",
+      "scan_number": "number",
+			"status": "string",
+			"startedAt": "DateTime",
+			"completedAt": "DateTime",
+			"contractFiles": [ "string"],
+			"linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "string",
+			"commitHash": "string",
+			"paid_status": "boolean",
+		},
+		"partial_result": {
+      "scan_id": "UUID",
+      "scan_number": "number",
+      "summary": "string",
+      "type": "string",
+      "findings": [
+        {
+          "Issue": "string",
+          "Severity": "string",
+          "Contracts": ["string"],
+          "Description": "string",
+          "Recommendation": "string"
+        }
+      ],
+      "createdAt": "DateTime",
+      "updatedAt": "DateTime",
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>GET /api/v1/scans-history</summary>
+
+Retrieves the scan history for the authenticated user.
+
+**Response:**
+An array of scan objects, each including:
+```json
+{
+	"success": true,
+	"data": [
+    "scan_id": "UUID",
+    "scan_number": "number",
+    "status": "String",
+    "startedAt": "DateTime",
+    "completedAt": "DateTime",
+    "contractFiles": ["string"],
+    "linesOfCode": {
+				"total_lines": "number",
+				"code_lines": "number",
+				"comment_lines": "number",
+				"empty_lines": "number",
+				"string_lines": "number",
+			},
+			"branchName": "string",
+			"commitHash": "string",
+			"paid_status": "boolean",
+  ],
+}
+```
+</details>
+
+<details>
+<summary>GET /api/v1/generate-pdf/{scan_id}</summary>
+
+Generates a PDF report for a specific scan and send it to the user's email.
+
+**Parameters:**
+- `scan_id`: UUID of the scan (path parameter)
+
+**Response:**
+An array of scan objects, each including:
+```json
+{
+	"success": true,
+	"data": "PDF send by email successfully"
+}
+```
 </details>
 
 ### Miscellaneous Endpoints
@@ -246,11 +400,15 @@ Retrieves partial results of a specific scan (limited findings).
 Simple health check endpoint to verify API status.
 
 **Response:**
+```json
 {
-  "status": "string",
-  "version": "string"
+	"success": "boolean",
+	"data": {
+		"details": "string",
+    "version": "string"
+	}
 }
-
+```
 </details>
 
 <details>
@@ -259,16 +417,22 @@ Simple health check endpoint to verify API status.
 Generates a summary of smart contracts.
 
 **Request Body:**
+```json
 {
   "contracts": "string"
 }
+```
 
 **Response:**
+```json
 {
-  "summary": "string",
-  "type": "string"
+	"success": true,
+	"data": {
+    "summary": "string",
+    "type": "string"
+  }
 }
-
+```
 </details>
 
 <details>
@@ -277,26 +441,73 @@ Generates a summary of smart contracts.
 Performs a context-aware scan of smart contracts.
 
 **Request Body:**
+```json
 {
   "summary": "string (optional)",
   "contracts": "string",
-  "profile": "string"
+  "profile": "string (optional)"
 }
+```
 
 **Response:**
+```json
 {
-  "findings": [
-    {
-      "Issue": "string",
-      "Severity": "string",
-      "Contracts": ["string"],
-      "Description": "string",
-      "Recommendation": "string"
-    }
-  ]
+	"success": true,
+	"data": {
+    "findings": [
+        {
+        "Issue": "string",
+        "Severity": "string",
+        "Contracts": ["string"],
+        "Description": "string",
+        "Recommendation": "string"
+      }
+    ]
+  }
 }
-
+```
 </details>
+
+<details>
+<summary>POST /api/v1/test-auth/token</summary>
+
+In development mode, you can generate JWT tokens for testing purposes using the `/api/v1/test-auth/token` endpoint.
+
+**Request Body:**
+
+- `username`: The username for which you want to generate a token.
+
+**Example Request:**
+
+```bash
+curl -X POST "http://localhost:8000/test-auth/token" \
+    -H "Content-Type: application/json" \
+    -d '{"username": "testuser"}'
+```
+
+**Response:**
+
+```json
+{
+	"success": true,
+	"data": {
+    "access_token": "<JWT_TOKEN>",
+    "token_type": "bearer",
+    "user": {
+      "_id": "652f64e8c324d4eb783d4a61",
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "githubId": "test_github_id",
+      "accessToken": "test_access_token",
+      "createdAt": "2023-10-01T12:00:00Z",
+      "updatedAt": "2023-10-01T12:00:00Z"
+    }
+  }
+}
+```
+</details>
+
+**Note:** This endpoint is only available in development mode and is disabled in production.
 
 ## Database Schema
 
@@ -305,17 +516,18 @@ Performs a context-aware scan of smart contracts.
 ```json
 {
   "_id": "ObjectId",
-  "githubId": "String",
-  "username": "String",
-  "email": "String",
-  "avatarUrl": "String",
-  "createdAt": "Date",
-  "updatedAt": "Date",
-  "lastLoginAt": "Date"
+  "username": "string",
+  "email": "string",
+  "githubId": "string",
+  "accessToken": "string",
+  "avatarUrl": "string",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime",
+  "lastLoginAt": "Datetime"
 }
 ```
 
-  ### Repositories Collection
+### Repositories Collection
 
 ```json
 {
@@ -336,25 +548,50 @@ Performs a context-aware scan of smart contracts.
 ```json
 {
   "_id": "ObjectId",
-  "repositoryId": "ObjectId",
-  "userId": "ObjectId",
-  "status": "String",
-  "startedAt": "Date",
-  "completedAt": "Date",
-  "contractFiles": ["String"],
-  "vulnerabilities": [
+  "scan_id": "UUID",
+  "scan_number": "number",
+  "user_id": "ObjectId",
+  "status": "string",
+  "startedAt": "Datetime",
+  "completedAt": "Datetime",
+  "contractFiles": ["string"],
+  "linesOfCode": {
+    "total_lines": "number",
+    "code_lines": "number",
+    "comment_lines": "number",
+    "empty_lines": "number",
+    "string_lines": "number",
+  },
+  "repositoryURL": "string",
+  "repositoryName": "string",
+  "branchName": "string",
+  "commitHash": "string",
+  "paid_status": "boolean",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime"
+}
+```
+
+### Scan Results Collection
+
+```json
+{
+  "_id": "ObjectId",
+  "scan_id": "UUID",
+  "scan_number": "number",
+  "summary": "string",
+  "type": "string",
+  "findings": [
     {
-      "type": "String",
-      "issue": "String",
-      "severity": "String",
-      "contracts": ["String"],
-      "description": "String",
-      "recommendation": "String"
+      "Issue": "string",
+      "Severity": "string",
+      "Contracts": ["string"],
+      "Description": "string",
+      "Recommendation": "string"
     }
   ],
-  "paidStatus": "Boolean",
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "createdAt": "Datetime",
+  "completedAt": "Datetime",
 }
 ```
 
@@ -363,15 +600,58 @@ Performs a context-aware scan of smart contracts.
 ```json
 {
   "_id": "ObjectId",
-  "userId": "ObjectId",
-  "scanId": "ObjectId",
-  "amount": "Number",
-  "currency": "String",
-  "status": "String",
-  "stripeSessionId": "String",
-  "createdAt": "Date",
-  "updatedAt": "Date"
+  "event_id": "string",
+  "user_id": "ObjectId",
+  "scan_id": "ObjectId",
+  "amount": "number",
+  "currency": "string",
+  "status": "string",
+  "stripeSessionId": "string",
+  "createdAt": "Datetime",
+  "updatedAt": "Datetime"
 }
+```
+
+## Running stripe:
+
+> Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
+
+> Note that `WEBHOOK_SECRET` for local deployment is generated in CLI (detail steps below)
+
+Fill the `STRIPE_API_KEY` and `WEBHOOK_SECRET` in the `.env` file.
+
+You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
+
+```json
+{
+    "scanId": "String"
+}
+```
+
+The response is:
+```json
+{
+  "session_id": "String",
+  "URL": "String"
+}
+```
+
+### To be able to use webhooks
+1. Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
+
+2. Login using: 
+```bash 
+stripe login
+```
+
+3. Run the following command to start the webhook listener:
+```bash
+stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook
+```
+
+4. The response of above command will be like, and paste your webhook URL:
+```bash
+Your webhook signing secret is whsec_ (^C to quit)
 ```
 
 ## Profiles
@@ -441,3 +721,4 @@ Performs a context-aware scan of smart contracts.
     <li>NM0234: Tokens Input: 6,254</li>
   </ul>
 </details>
+

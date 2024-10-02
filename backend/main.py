@@ -1,23 +1,39 @@
 import os
 from contextlib import asynccontextmanager
 
-import config.settings as settings
+import certifi
 import uvicorn
 from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
     context_scan,
-    critics,
+    generate_pdf,
     generate_summary,
     github,
     health_check,
+    scan_history,
     scan_results,
+    stats,
+    test_auth,
     static_analyzer,
     fuzzer,
 )
+from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
+from api.v1.models.github import GitHubRepo
+from api.v1.models.global_stats import GlobalStats
+from api.v1.models.payment import Payment
+from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from beanie import init_beanie
-from fastapi import Depends, FastAPI, HTTPException, status
+from common import logger
+from common.error_handling import (
+    general_exception_handler,
+    http_exception_handler,
+    validation_exception_handler,
+)
+from config import settings
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -26,14 +42,24 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(settings.MONGODB_URL)
-    print("Connecting to MongoDB...")
-    await init_beanie(database=client.myapp, document_models=[User])
-    print("Connected to MongoDB")
+    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    logger.info("Connecting to MongoDB...")
+    await init_beanie(
+        database=client.myapp,
+        document_models=[
+            User,
+            GitHubRepo,
+            Scan,
+            ScanResult,
+            Payment,
+            GlobalStats,
+        ],
+    )
+    logger.info("Connected to MongoDB")
     yield
-    print("Closing MongoDB connection")
+    logger.info("Closing MongoDB connection")
     client.close()
-    print("MongoDB connection closed")
+    logger.info("MongoDB connection closed")
 
 
 app = FastAPI(
@@ -44,6 +70,8 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,21 +83,11 @@ app.add_middleware(
 security = HTTPBasic()
 
 
-# @app.on_event("startup")
-# async def startup_event():
-#     client = AsyncIOMotorClient(settings.MONGODB_URL)
-#     await init_beanie(database=client.myapp, document_models=[User])
-
-
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = os.getenv("API_USERNAME", "")
     correct_password = os.getenv("API_PASSWORD", "")
     if credentials.username != correct_username or credentials.password != correct_password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
-            headers={"WWW-Authenticate": "Basic"},
-        )
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     return credentials.username
 
 
@@ -89,16 +107,31 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Include routers
-app.include_router(health_check.router, prefix="/api/v1")
-app.include_router(audit_agent.router, prefix="/api/v1")
-app.include_router(generate_summary.router, prefix="/api/v1")
-app.include_router(context_scan.router, prefix="/api/v1")
-app.include_router(static_analyzer.router, prefix="/api/v1")
-app.include_router(critics.router, prefix="/api/v1")
-app.include_router(scan_results.router, prefix="/api/v1")
-app.include_router(github.router, prefix="/api/v1/github")
+app.include_router(health_check.router, prefix="/api/v1")  # Admin protected
 app.include_router(github_auth.router, prefix="/api/v1/auth")
+app.include_router(github.router, prefix="/api/v1/github")
+app.include_router(audit_agent.router, prefix="/api/v1")
+app.include_router(scan_results.router, prefix="/api/v1/scans")  # Partial only
+app.include_router(scan_history.router, prefix="/api/v1")
+app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
+app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
+app.include_router(generate_pdf.router, prefix="/api/v1")
+app.include_router(stats.router, prefix="/api/v1")  # Admin protected
 app.include_router(fuzzer.router, prefix="/api/v1")
+app.include_router(static_analyzer.router, prefix="/api/v1")
+
+
+if settings.ENVIRONMENT == "development":
+    app.include_router(generate_summary.router, prefix="/api/v1")
+    app.include_router(context_scan.router, prefix="/api/v1")
+    app.include_router(test_auth.router, prefix="/api/v1")
+    app.include_router(scan_results.dev_router, prefix="/api/v1/scans")
+
+
+app.add_exception_handler(HTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, general_exception_handler)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

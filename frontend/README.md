@@ -1,8 +1,30 @@
-# Next.js & NextUI Template
+<div align="center">
+<h1><strong> <span style="color:#8660f2"> Audit</span> Agent UI </strong></h1>
+</div>
 
-This is a template for creating applications using Next.js 14 (app directory) and NextUI (v2).
+## Table of Contents
 
-[Try it on CodeSandbox](https://githubbox.com/nextui-org/next-app-template)
+- [Introduction](#introduction)
+- [Technologies Used](#technologies-used)
+- [Getting Started](#getting-started)
+  - [Install dependencies](#install-dependencies)
+  - [Run the development server](#run-the-development-server)
+- [License](#license)
+
+## Introduction
+
+Agent Audit UI is the frontend component of the Yokai Audit Agent, a powerful tool designed for smart contract auditing and security analysis. This user interface provides an intuitive and efficient way for developers and auditors to interact with the Yokai Audit Agent's core functionality.
+
+Key features of the Agent Audit UI include:
+
+1. User-friendly dashboard for managing and initiating smart contract audits
+2. Real-time display of audit progress and results
+3. Detailed vulnerability reports with severity classifications
+4. Integration with GitHub for seamless code repository analysis
+5. Customizable audit parameters and settings
+6. Secure user authentication and project management
+
+The Agent Audit UI is built with modern web technologies to ensure a responsive, accessible, and performant experience across devices. It serves as the primary interface for users to leverage the advanced capabilities of the Yokai Audit Agent, streamlining the process of identifying and addressing potential vulnerabilities in smart contract code.
 
 ## Technologies Used
 
@@ -14,15 +36,7 @@ This is a template for creating applications using Next.js 14 (app directory) an
 - [Framer Motion](https://www.framer.com/motion/)
 - [next-themes](https://github.com/pacocoursey/next-themes)
 
-## How to Use
-
-### Use the template with create-next-app
-
-To create a new project based on this template using `create-next-app`, run the following command:
-
-```bash
-npx create-next-app -e https://github.com/nextui-org/next-app-template
-```
+## Getting Started
 
 ### Install dependencies
 
