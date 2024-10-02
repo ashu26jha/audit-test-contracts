@@ -22,7 +22,7 @@ github_service = GitHubService()
 @router.get("/github-login")
 async def github_login():
     return RedirectResponse(
-        f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=user:email read:org"
+        f"https://github.com/login/oauth/authorize?client_id={settings.GITHUB_CLIENT_ID}&scope=user:email read:org repo"
     )
 
 

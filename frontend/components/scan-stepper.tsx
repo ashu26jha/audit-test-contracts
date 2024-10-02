@@ -60,8 +60,8 @@ const ScanStepper: React.FC = () => {
   useEffect(() => {
     setIsNextEnabled(
       (currentStep === 1 && selectedOwner !== null && selectedRepo !== null) ||
-      (currentStep === 2 && selectedBranch !== "") ||
-      (currentStep === 3 && selectedContracts.length > 0),
+        (currentStep === 2 && selectedBranch !== "") ||
+        (currentStep === 3 && selectedContracts.length > 0),
     );
   }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, setIsNextEnabled]);
 

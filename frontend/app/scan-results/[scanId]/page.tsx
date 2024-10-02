@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { Loading } from "@/components/Loading";
 import ScanResults from "@/components/scan-results";
 import { usePaymentProcessing } from "@/hooks/usePaymentProcessing";
@@ -14,13 +12,9 @@ interface ScanResultsPageProps {
 
 const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
   const { scanId } = params;
-  const { scanData, isProcessing, error, handlePayment, fetchScanResults } = usePaymentProcessing(scanId);
+  const { scanData, isProcessing, error, isLoading, handlePayment } = usePaymentProcessing(scanId);
 
-  useEffect(() => {
-    fetchScanResults();
-  }, [fetchScanResults]);
-
-  if (isProcessing) {
+  if (isProcessing || isLoading) {
     return <Loading />;
   }
 

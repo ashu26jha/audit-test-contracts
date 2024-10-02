@@ -6,8 +6,7 @@ import Image from "next/image";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {
-  const { solidityFiles, contractSearch, setContractSearch, selectedContracts, setSelectedContracts } =
-    useScanStepperStore();
+  const { solidityFiles, contractSearch, setContractSearch, setSelectedContracts } = useScanStepperStore();
 
   const filteredSolidityFiles = solidityFiles.filter(
     (file) =>

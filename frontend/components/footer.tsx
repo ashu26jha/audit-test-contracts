@@ -14,7 +14,9 @@ export default function Footer() {
     <footer className="w-full flex items-center justify-center py-3">
       <p className="text-sm text-gray-400">
         By proceeding you agree to our <Link href="https://nethermind.io/terms-of-use">Terms of Use</Link> and{" "}
-        <Link href="https://nethermind.io/privacy-policy" className="mr-1">Privacy Policy</Link>
+        <Link href="https://nethermind.io/privacy-policy" className="mr-1">
+          Privacy Policy
+        </Link>
         • Copyright © 2024 by Nethermind
       </p>
     </footer>

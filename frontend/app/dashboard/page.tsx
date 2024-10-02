@@ -12,49 +12,21 @@ import { Loading } from "@/components/Loading";
 
 import ScanStepper from "../../components/scan-stepper";
 import { useAuth } from "../../contexts/AuthContext";
+import { useFetchScanHistory } from "../../hooks/useFetchScanHistory";
 import { useToast } from "../../hooks/useToast";
-import { getScanHistory } from "../../services/api";
 
 const DashboardPage = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [showStepper, setShowStepper] = useState(false);
-  const [scanHistory, setScanHistory] = useState<ScanHistoryItem[]>([]);
-  const [scanable, setScanable] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { scanHistory, isLoading, scanable } = useFetchScanHistory();
 
   useEffect(() => {
     if (!user) {
       router.push("/login");
     }
   }, [user, router]);
-
-  useEffect(() => {
-    const fetchScanHistory = async () => {
-      if (token) {
-        try {
-          setIsLoading(true);
-          const history = await getScanHistory(token);
-          console.log("history", history);
-          // To scan repository all history must be paid
-          const unpaidHistory = history.filter((scan: ScanHistoryItem) => !scan.paid_status);
-          if (unpaidHistory.length > 0) {
-            setScanable(false);
-          } else {
-            setScanable(true);
-          }
-          setScanHistory(history);
-        } catch (error) {
-          console.error("Error fetching scan history:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchScanHistory();
-  }, [token]);
 
   if (!user || isLoading) {
     return <Loading />;
@@ -102,7 +74,7 @@ const DashboardPage = () => {
           <CardBody className="overflow-y-auto">
             {scanHistory.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {scanHistory.map((scan, index) => (
+                {scanHistory.map((scan: ScanHistoryItem, index: number) => (
                   <Card
                     key={index}
                     isPressable

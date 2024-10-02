@@ -170,15 +170,56 @@ class GitHubService:
         return [user] + orgs if user else orgs
 
     async def get_repositories(self, access_token: str, owner: str, owner_type: str) -> list:
-        url = (
-            f"{self.BASE_URL}/users/{owner}/repos"
-            if owner_type == "user"
-            else f"{self.BASE_URL}/orgs/{owner}/repos"
-        )
+        if owner_type == "user":
+            # This will fetch all repos the user has access to
+            url = f"{self.BASE_URL}/user/repos"
+            # For users, we want repos they own or are a member of
+            params = {"type": "owner", "sort": "updated", "per_page": 100}
+        else:
+            url = f"{self.BASE_URL}/orgs/{owner}/repos"
+            # For organizations, we want all repos
+            params = {"type": "all", "sort": "updated", "per_page": 100}
+
+        headers = {"Authorization": f"token {access_token}"}
+
+        all_repos = []
+        page = 1
+
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers={"Authorization": f"token {access_token}"})
-        response.raise_for_status()
-        return [{"name": repo["name"], "updatedAt": repo["updated_at"]} for repo in response.json()]
+            while True:
+                params["page"] = page
+                response = await client.get(url, headers=headers, params=params)
+
+                if response.status_code != 200:
+                    logger.error(
+                        f"Failed to fetch repositories for {owner_type} {owner}. Status: {response.status_code}, Response: {response.text}"
+                    )
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"GitHub API error: {response.text}",
+                    )
+
+                repos = response.json()
+                if not repos:
+                    break
+
+                all_repos.extend(repos)
+
+                # Check if there are more pages
+                if "next" not in response.links:
+                    break
+
+                page += 1
+
+        if not all_repos:
+            logger.warning(f"No repositories found for {owner_type} {owner}")
+
+        repositories = [
+            {"name": repo["name"], "updatedAt": repo["updated_at"], "private": repo["private"]}
+            for repo in all_repos
+        ]
+
+        return repositories
 
     async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"

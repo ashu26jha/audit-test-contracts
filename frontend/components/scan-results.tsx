@@ -24,7 +24,6 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
 
   const isPaid = scanData.scan.paid_status;
   const isCompleted = scanData.scan.status === "completed";
-
   console.log("isPaid", isPaid);
 
   const handleSendReportAgain = () => {
