@@ -1,6 +1,6 @@
 from typing import Dict, Union, Optional
 from config.settings import SUPPORTED_MODELS, LLM_MODEL_FUZZER
-from common.send_prompt_to_LLM import send_prompt_to_llm_async
+from common.send_prompt_to_llm import send_prompt_to_llm_async
 from common.profiles import Profiles
 from api.v1.services.fuzz_services.setup_environment import setup_environment
 from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
