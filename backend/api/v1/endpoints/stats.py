@@ -1,11 +1,12 @@
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan
-from fastapi import APIRouter
+from api.v1.services.auth_service import get_api_key
+from fastapi import APIRouter, Depends
 
 router = APIRouter()
 
 
-@router.get("/global-stats")
+@router.get("/global-stats", dependencies=[Depends(get_api_key)])
 async def get_global_stats():
     stats = await GlobalStats.get_or_create()
     return {
