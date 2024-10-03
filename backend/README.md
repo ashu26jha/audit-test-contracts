@@ -613,8 +613,12 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```
 
 ## Running stripe:
-Fill the STRIPE_API_KEY and WEBHOOK_SECRET in the `.env` file.
-> Note that WEBHOOK_SECRET for local deployment is generated in CLI (detail steps )
+
+> Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
+
+> Note that `WEBHOOK_SECRET` for local deployment is generated in CLI (detail steps below)
+
+Fill the `STRIPE_API_KEY` and `WEBHOOK_SECRET` in the `.env` file.
 
 You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
 
@@ -669,7 +673,7 @@ Your webhook signing secret is whsec_ (^C to quit)
     <li>NFT & Gaming, etc. Total token: 27,172</li>
     <li>NM0062: Tokens Input: 1,627</li>
     <li>NM0070: Tokens Input: 5,601</li>
-    <li>NM0073: Tokens Input: 6,234</li>
+    <li>NM0073: Tokens Input: 6,237</li>
     <li>NM0225: Tokens Input: 13,707</li>
   </ul>
 </details>
@@ -706,14 +710,16 @@ Your webhook signing secret is whsec_ (^C to quit)
 <details>
   <summary>Default</summary>
   <ul>
-    <li>Total tokens: 30,934</li>
+    <li>Total tokens: 48,497</li>
     <li>NM0062: Tokens Input: 1,627</li>
     <li>NM0067: Tokens Input: 3,462</li>
     <li>NM0070: Tokens Input: 5,601</li>
+    <li>NM0073: Tokens Input: 6,237</li>
     <li>NM0081: Token Input: 6,753</li>
     <li>NM0083: Tokens Input: 1,715</li>
     <li>NM0108: Tokens Input: 1,351</li>
     <li>NM0160: Token Input: 4,171</li>
+    <li>NM0227: Tokens Input: 11,326</li>
     <li>NM0234: Tokens Input: 6,254</li>
   </ul>
 </details>

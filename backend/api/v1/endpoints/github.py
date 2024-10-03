@@ -2,7 +2,8 @@ from api.v1.models.user import User
 from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services.auth_service import get_current_user
 from api.v1.services.github_service import GitHubService
-from fastapi import APIRouter, Depends
+from common import logger
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter()
 github_service = GitHubService()
@@ -63,3 +64,25 @@ async def get_github_repo_info(
 ):
     repo_info = await github_service.get_github_repo_info(current_user.accessToken, repo_url)
     return SuccessResponse(data=repo_info)
+
+
+@router.get("/validate-repo-url", response_model=SuccessResponse)
+async def validate_repo_url(
+    repo_url: str = Query(...),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        repo_info = await github_service.check_repository_access(current_user.accessToken, repo_url)
+        return SuccessResponse(
+            data={
+                "repo_name": repo_info.get("name"),
+                "owner": repo_info.get("owner", {}).get("login"),
+                "default_branch": repo_info.get("default_branch", "main"),
+                "repo_url": repo_url,
+            }
+        )
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Error validating repository URL: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")

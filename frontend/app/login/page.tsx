@@ -16,7 +16,7 @@ const LoginPage = () => {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && user && pathname !== "/payment-result") {
+    if (!loading && user && pathname === "/login") {
       router.push("/dashboard");
     }
   }, [user, loading, router, pathname]);

@@ -1,6 +1,4 @@
-import re
 from datetime import datetime, timezone
-from typing import List
 from uuid import UUID
 
 from api.v1.models.global_stats import GlobalStats
@@ -17,13 +15,16 @@ from api.v1.services import (
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
+from common.validate import (
+    validate_contract_files,
+    validate_github_url,
+    validate_no_unpaid_scans,
+    validate_user_has_github_token,
+)
 from config import settings
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
-
-# Regular expression for GitHub repository URL validation
-GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
 
 
 async def initiate_scan(
@@ -212,40 +213,3 @@ async def perform_audit_agent_background(
         scan_result.total_findings = 0
         scan_result.findings = []
         await scan_result.save()
-
-
-async def validate_no_unpaid_scans(user: User):
-    """Validate that the user has no unpaid scans."""
-    unpaid_scans = await Scan.find(
-        Scan.user_id == str(user.id), Scan.paid_status == False
-    ).to_list()
-    if unpaid_scans:
-        raise HTTPException(
-            status_code=400,
-            detail="User has unpaid scans. Please pay for existing scans before initiating a new one.",
-        )
-
-
-def validate_user_has_github_token(user: User) -> bool:
-    """Validate if the user has a GitHub access token on file."""
-    if not user.accessToken:
-        raise HTTPException(
-            status_code=401, detail="User does not have a GitHub access token on file."
-        )
-
-
-def validate_github_url(url: str) -> bool:
-    """Validate if the given URL is a valid GitHub repository URL."""
-    if not bool(re.match(GITHUB_URL_PATTERN, url)):
-        raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
-
-
-def validate_contract_files(contract_files: List[str]) -> bool:
-    """Validate if the given contract files are valid Solidity files."""
-    if not contract_files:
-        raise HTTPException(status_code=400, detail="No contract files provided")
-    if not all(file.endswith(".sol") for file in contract_files):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid contract files. All files must have a .sol extension",
-        )

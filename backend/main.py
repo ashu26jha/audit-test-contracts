@@ -16,11 +16,7 @@ from api.v1.endpoints import (
     stats,
     test_auth,
 )
-from api.v1.endpoints.payments import (
-    create_stripe_session,
-    payment_success,
-    stripe_webhook,
-)
+from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
 from api.v1.models.github import GitHubRepo
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.payment import Payment
@@ -109,17 +105,16 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Include routers
-app.include_router(health_check.router, prefix="/api/v1")
+app.include_router(health_check.router, prefix="/api/v1")  # Admin protected
 app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(audit_agent.router, prefix="/api/v1")
-app.include_router(scan_results.router, prefix="/api/v1/scans")
+app.include_router(scan_results.router, prefix="/api/v1/scans")  # Partial only
 app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
-app.include_router(payment_success.router, prefix="/api/v1/payments")
 app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")
-app.include_router(stats.router, prefix="/api/v1")
+app.include_router(stats.router, prefix="/api/v1")  # Admin protected
 
 if settings.ENVIRONMENT == "development":
     app.include_router(generate_summary.router, prefix="/api/v1")

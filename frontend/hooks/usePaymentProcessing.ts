@@ -1,25 +1,37 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { createCheckoutSession, getPartialScanResults } from "@/services/api";
 
-export const usePaymentProcessing = (scanId: string) => {
+export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => {
   const { token } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scanData, setScanData] = useState<ScanResult | null>(null);
+  const [shouldPoll, setShouldPoll] = useState(true);
 
-  const fetchScanResults = useCallback(async () => {
-    if (!token || !scanId) return;
+  const {
+    data: scanData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["scanResults", scanId],
+    queryFn: async () => {
+      if (!token || !scanId) throw new Error("Token or scanId not available");
+      return await getPartialScanResults(token, scanId);
+    },
+    enabled: !!token && !!scanId && shouldPoll,
+    refetchInterval: shouldPoll ? pollingInterval : false,
+    refetchIntervalInBackground: shouldPoll,
+  });
 
-    try {
-      const data = await getPartialScanResults(token, scanId);
-      setScanData(data);
-    } catch (err) {
-      console.error("Error fetching scan results:", err);
-      setError("Failed to fetch scan results. Please try again.");
+  useEffect(() => {
+    if (scanData) {
+      const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
+      setShouldPoll(!isCompleted);
     }
-  }, [token, scanId]);
+  }, [scanData]);
 
   const handlePayment = useCallback(async () => {
     if (!token || !scanId) return;
@@ -44,7 +56,8 @@ export const usePaymentProcessing = (scanId: string) => {
     scanData,
     isProcessing,
     error,
+    isLoading,
     handlePayment,
-    fetchScanResults,
+    refetchScanResults: refetch,
   };
 };

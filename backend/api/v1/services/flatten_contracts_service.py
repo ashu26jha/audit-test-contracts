@@ -46,7 +46,7 @@ async def flatten_contracts(
         except Exception as e:
             message = f"An unexpected error occurred while flattening contracts: {str(e)}"
             logger.error(message)
-            raise HTTPException(status_code=500, detail=message)
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
         # Read and concatenate the contract files
         flattened_code = ""

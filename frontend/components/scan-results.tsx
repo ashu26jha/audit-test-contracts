@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
-import { sendReportAgain } from "@/services/api";
+import { sendPdfReport } from "@/services/api";
 
 import BluredFindings from "./blured-findings";
 import ScanInfo from "./scan-info";
@@ -24,7 +24,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
 
   const isPaid = scanData.scan.paid_status;
   const isCompleted = scanData.scan.status === "completed";
-
+  const isFailed = scanData.scan.status === "failed";
   console.log("isPaid", isPaid);
 
   const handleSendReportAgain = () => {
@@ -33,7 +33,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
       console.error("No token found");
       return;
     }
-    sendReportAgain(token, scanData.scan_id);
+    sendPdfReport(token, scanData.scan_id);
     toast({
       title: "Report sent",
       status: "success",
@@ -124,10 +124,17 @@ Thank you,
           ))}
         </div>
 
-        {!isCompleted && (
+        {!isCompleted && !isFailed && (
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner size="lg" color="secondary" />
             <p className="mt-4 text-lg">Scan in progress...</p>
+          </div>
+        )}
+
+        {isFailed && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <AlertTriangle size={40} className="text-red-500" />
+            <p className="mt-4 text-lg">Scan failed</p>
           </div>
         )}
 

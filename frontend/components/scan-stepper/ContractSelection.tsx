@@ -6,8 +6,7 @@ import Image from "next/image";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {
-  const { solidityFiles, contractSearch, setContractSearch, selectedContracts, setSelectedContracts } =
-    useScanStepperStore();
+  const { solidityFiles, contractSearch, setContractSearch, setSelectedContracts } = useScanStepperStore();
 
   const filteredSolidityFiles = solidityFiles.filter(
     (file) =>
@@ -19,6 +18,7 @@ export const ContractSelection: React.FC = () => {
     <>
       <div className="mb-4">
         <Input
+          aria-label="Search contracts"
           isClearable={true}
           placeholder="Search contracts..."
           value={contractSearch}
@@ -32,7 +32,6 @@ export const ContractSelection: React.FC = () => {
         <Table
           aria-label="Solidity files table"
           selectionMode="multiple"
-          selectedKeys={new Set(selectedContracts)}
           onSelectionChange={(selection) => setSelectedContracts(Array.from(selection) as string[])}
         >
           <TableHeader>

@@ -38,7 +38,7 @@ async def perform_context_scan(
 
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
             logger.warning("LLM response was empty or invalid")
-            raise HTTPException(status_code=500, detail="LLM response was empty or invalid")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
         return llm_response.findings
 

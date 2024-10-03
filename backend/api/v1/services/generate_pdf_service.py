@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 
-from api.v1.models.scan import Scan
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import get_full_scan_result
@@ -13,6 +12,7 @@ from common.pdf_generation import (
     html_to_pdf,
     read_html,
 )
+from common.validate import validate_scan_paid, validate_user_scan_access
 from config import settings
 from fastapi import HTTPException
 from PyPDF2 import PdfReader, PdfWriter
@@ -26,6 +26,12 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
     Generate a PDF report from the scan data and send it via email.
     """
     try:
+        # Check if the scan exists and belongs to the user
+        await validate_user_scan_access(scan_id, user)
+
+        # Check if scan has been paid for
+        await validate_scan_paid(scan_id)
+
         scan = await get_scan(scan_id)
         full_result = await get_full_scan_result(scan_id)
 
@@ -50,17 +56,12 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
 
         final_pdf_path = combine_pdfs(report_pdf_path)
 
-        # Check if scan has been paid for
-        scan = await Scan.find_one(Scan.scan_id == scan_id)
-        if not scan.paid_status and not settings.ENVIRONMENT == "development":
-            raise ValueError("You have not paid for this scan")
-
         # Send the PDF via email to the user and the address in settings.py
         await send_pdf_email(user.email, str(final_pdf_path), scan_id)
         await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)
-
+        logger.info(f"PDF generated for scan ID: {scan_id}")
     except HTTPException:
         raise
     except Exception as e:
@@ -196,4 +197,4 @@ def combine_pdfs(report_pdf_path):
 def cleanup_temporary_files(report_pdf_path, final_pdf_path):
     os.remove(report_pdf_path)
     # Uncomment the following line if you want to remove the final PDF after sending
-    # os.remove(final_pdf_path)
+    os.remove(final_pdf_path)

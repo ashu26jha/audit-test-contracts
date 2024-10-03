@@ -6,7 +6,7 @@ from common import logger
 from fastapi import HTTPException
 
 # Define the path to the profiles directory
-PROFILES_DIR = os.path.join(os.path.dirname(__file__), "profiles_data")
+PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "profiles_data")
 
 
 # Enum for profile names
@@ -53,4 +53,4 @@ def load_profile(profile_name: Profiles):
     except json.JSONDecodeError as exc:
         message = f"Profile file for {profile_name} is not a valid JSON file."
         logger.error(message)
-        raise HTTPException(status_code=500, detail=message) from exc
+        raise HTTPException(status_code=500, detail="Internal Server Error") from exc
