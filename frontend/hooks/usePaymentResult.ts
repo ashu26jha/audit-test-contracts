@@ -5,11 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { sendPdfReport } from "@/services/api";
 
+import { useFetchScanHistory } from "./useFetchScanHistory";
+
 type PaymentStatus = "success" | "failed" | "processing" | null;
 
 export const usePaymentResult = () => {
   const { token, loading } = useAuth();
   const searchParams = useSearchParams();
+  const { refetch } = useFetchScanHistory();
   const [status, setStatus] = useState<PaymentStatus>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const isPdfReportSentRef = useRef(false);
@@ -26,6 +29,7 @@ export const usePaymentResult = () => {
       isPdfReportSentRef.current = true;
 
       try {
+        refetch();
         sendPdfReport(token, scanId);
         setStatus("success");
       } catch (error) {

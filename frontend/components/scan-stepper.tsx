@@ -67,6 +67,10 @@ const ScanStepper: React.FC = () => {
   }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, repositoryURL]);
 
   useEffect(() => {
+    resetStepper();
+  }, [resetStepper]);
+
+  useEffect(() => {
     setIsNextEnabled(isNextStepEnabled());
   }, [isNextStepEnabled, setIsNextEnabled]);
 

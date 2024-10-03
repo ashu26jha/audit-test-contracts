@@ -17,9 +17,11 @@ interface ScanHistoryItem {
   scan_number: string;
   startedAt: string;
   name: string;
-  status: string;
+  status: ScanStatus;
   total_findings: number;
 }
+
+type ScanStatus = "pending" | "in_progress" | "completed" | "failed";
 
 interface Finding {
   Issue: string;
