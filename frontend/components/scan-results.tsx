@@ -24,6 +24,7 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
 
   const isPaid = scanData.scan.paid_status;
   const isCompleted = scanData.scan.status === "completed";
+  const isFailed = scanData.scan.status === "failed";
   console.log("isPaid", isPaid);
 
   const handleSendReportAgain = () => {
@@ -123,10 +124,17 @@ Thank you,
           ))}
         </div>
 
-        {!isCompleted && (
+        {!isCompleted && !isFailed && (
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner size="lg" color="secondary" />
             <p className="mt-4 text-lg">Scan in progress...</p>
+          </div>
+        )}
+
+        {isFailed && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <AlertTriangle size={40} className="text-red-500" />
+            <p className="mt-4 text-lg">Scan failed</p>
           </div>
         )}
 

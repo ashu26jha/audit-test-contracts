@@ -28,9 +28,8 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
 
   useEffect(() => {
     if (scanData) {
-      const isCompleted = scanData.scan.status === "completed";
-      const isPaid = scanData.scan.paid_status;
-      setShouldPoll(!isCompleted || !isPaid);
+      const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
+      setShouldPoll(!isCompleted);
     }
   }, [scanData]);
 

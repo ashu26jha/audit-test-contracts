@@ -30,10 +30,18 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
 
   useEffect(() => {
     if (scanHistory) {
-      const unpaidHistory = scanHistory.filter((scan: ScanHistoryItem) => !scan.paid_status);
-      setScanable(unpaidHistory.length === 0);
+      // Check for unpaid completed scans
+      const hasUnpaidCompletedScans = scanHistory.some(
+        (scan: ScanHistoryItem) => !scan.paid_status && scan.status === "completed",
+      );
 
-      const activeScans = scanHistory.some((scan: ScanHistoryItem) => !scan.paid_status && scan.status !== "completed");
+      // Set scanable to true if there are no unpaid completed scans
+      setScanable(!hasUnpaidCompletedScans);
+
+      // Check for active scans (only in_progress or pending)
+      const activeScans = scanHistory.some(
+        (scan: ScanHistoryItem) => scan.status === "in_progress" || scan.status === "pending",
+      );
       setHasActiveScans(activeScans);
     }
   }, [scanHistory]);
