@@ -20,7 +20,7 @@ const DashboardPage = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [showStepper, setShowStepper] = useState(false);
-  const { scanHistory, isLoading, scanable } = useFetchScanHistory();
+  const { scanHistory, isLoading, scanable, refetch } = useFetchScanHistory();
 
   useEffect(() => {
     if (!user) {
@@ -40,6 +40,8 @@ const DashboardPage = () => {
   const handleScan = () => {
     if (scanable) {
       setShowStepper(true);
+      // Trigger a refetch when starting a new scan
+      refetch();
     } else {
       toast({
         title: "You must pay for previous scans to continue",

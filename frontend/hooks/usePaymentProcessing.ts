@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -9,6 +9,7 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
   const { token } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shouldPoll, setShouldPoll] = useState(true);
 
   const {
     data: scanData,
@@ -20,10 +21,18 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
       if (!token || !scanId) throw new Error("Token or scanId not available");
       return await getPartialScanResults(token, scanId);
     },
-    enabled: !!token && !!scanId,
-    refetchInterval: pollingInterval,
-    refetchIntervalInBackground: true,
+    enabled: !!token && !!scanId && shouldPoll,
+    refetchInterval: shouldPoll ? pollingInterval : false,
+    refetchIntervalInBackground: shouldPoll,
   });
+
+  useEffect(() => {
+    if (scanData) {
+      const isCompleted = scanData.scan.status === "completed";
+      const isPaid = scanData.scan.paid_status;
+      setShouldPoll(!isCompleted || !isPaid);
+    }
+  }, [scanData]);
 
   const handlePayment = useCallback(async () => {
     if (!token || !scanId) return;
