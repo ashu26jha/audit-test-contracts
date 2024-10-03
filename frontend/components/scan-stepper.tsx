@@ -14,6 +14,7 @@ import { BranchSelection } from "./scan-stepper/BranchSelection";
 import { ContractSelection } from "./scan-stepper/ContractSelection";
 import { RepositorySelection } from "./scan-stepper/RepositorySelection";
 import { StepperVisualization } from "./scan-stepper/StepperVisualization";
+import { MAX_TOKENS } from "../config/constants";
 
 const ScanStepper: React.FC = () => {
   const router = useRouter();
@@ -26,6 +27,7 @@ const ScanStepper: React.FC = () => {
     selectedContracts,
     isLoading,
     repositoryURL,
+    tokens,
     setCurrentStep,
     setIsLoading,
     setIsNextEnabled,
@@ -76,6 +78,9 @@ const ScanStepper: React.FC = () => {
 
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
+      if (tokens > MAX_TOKENS) {
+        return;
+      }
       setIsLoading(true);
       try {
         if (token) {

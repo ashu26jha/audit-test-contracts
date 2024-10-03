@@ -10,6 +10,7 @@ class GlobalStats(Document):
     total_unpaid_scans: int = Field(default=0)
     total_failed_scans: int = Field(default=0)
     total_findings: int = Field(default=0)
+    total_lines_of_code: int = Field(default=0)
     last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Settings:
@@ -24,7 +25,7 @@ class GlobalStats(Document):
         return stats
 
     @classmethod
-    async def increment_scan(cls, status: str, paid: bool, findings: int):
+    async def increment_scan(cls, status: str, paid: bool, findings: int, lines_of_code: int):
         stats = await cls.get_or_create()
         stats.total_scans += 1
         if status == "failed":
@@ -34,6 +35,7 @@ class GlobalStats(Document):
         else:
             stats.total_unpaid_scans += 1
         stats.total_findings += findings
+        stats.total_lines_of_code += lines_of_code
         stats.last_updated = datetime.now(timezone.utc)
         await stats.save()
 

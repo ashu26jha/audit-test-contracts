@@ -127,14 +127,6 @@ Handles the callback from GitHub after successful authentication.
 </details>
 
 <details>
-<summary>POST /api/v1/auth/logout</summary>
-
-Logs out the current user.
-
-**Response:** Clears session/JWT token and returns success message.
-</details>
-
-<details>
 <summary>GET /api/v1/auth/me</summary>
 
 Retrieves the current authenticated user's information.
@@ -150,6 +142,14 @@ Retrieves the current authenticated user's information.
   "avatarUrl": "string"
 }
 ```
+</details>
+
+<details>
+<summary>POST /api/v1/auth/logout</summary>
+
+Logs out the current user.
+
+**Response:** Clears session/JWT token and returns success message.
 </details>
 
 ### GitHub Integration Endpoints
@@ -203,6 +203,28 @@ Retrieves information about a specific GitHub repository.
     "repo_full_name": "string",
     "created_at": "Datetime",
     "updated_at": "Datetime"
+  }
+}
+```
+</details>
+
+<details>
+<summary>GET /api/v1/github/validate-repo-url</summary>
+
+Validates the provided GitHub repository URL and checks if the user has access to it.
+
+**Parameters:**
+- `repo_url`: Full URL of the GitHub repository (query parameter)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "repo_name": "string",
+    "owner": "string",
+    "default_branch": "string",
+    "repo_url": "string",
   }
 }
 ```
@@ -412,6 +434,32 @@ Simple health check endpoint to verify API status.
 </details>
 
 <details>
+<summary>GET /api/v1/global-stats</summary>
+
+Retrieves the global statistics for the platform.
+
+**Response:**
+```json
+{
+	"success": "boolean",
+	"data": {
+		"total_scans": "number",
+		"total_paid_scans": "number",
+		"total_unpaid_scans": "number",
+		"total_findings": "number",
+		"total_lines_of_code": "number",
+		"scan_statuses": {
+			"pending": "number",
+			"in_progress": "number",
+			"completed": "number",
+			"failed": "number"
+		}
+	}
+}
+```
+</details>
+
+<details>
 <summary>POST /api/v1/generate-summary</summary>
 
 Generates a summary of smart contracts.
@@ -609,6 +657,25 @@ curl -X POST "http://localhost:8000/test-auth/token" \
   "stripeSessionId": "string",
   "createdAt": "Datetime",
   "updatedAt": "Datetime"
+}
+```
+
+### Global Stats Collection
+
+```json
+{
+  "_id": "ObjectId",
+  "total_scans": "number",
+  "total_paid_scans": "number",
+  "total_unpaid_scans": "number",
+  "total_findings": "number",
+  "total_lines_of_code": "number",
+  "scan_statuses": {
+    "pending": "number",
+    "in_progress": "number",
+    "completed": "number",
+    "failed": "number"
+  }
 }
 ```
 

@@ -1,18 +1,39 @@
+"use client";
 import React from "react";
 
 import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/react";
 import Image from "next/image";
 
+import { MAX_TOKENS } from "../../config/constants";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {
-  const { solidityFiles, contractSearch, setContractSearch, setSelectedContracts } = useScanStepperStore();
+  const {
+    solidityFiles,
+    contractSearch,
+    tokens,
+    setContractSearch,
+    setSelectedContracts,
+    setTokens,
+    selectedContracts,
+  } = useScanStepperStore();
 
   const filteredSolidityFiles = solidityFiles.filter(
     (file) =>
       file.name.toLowerCase().includes(contractSearch.toLowerCase()) ||
       file.path.toLowerCase().includes(contractSearch.toLowerCase()),
   );
+
+  const calculateTotalTokens = () => {
+    return selectedContracts.reduce((acc, path) => {
+      const file = solidityFiles.find((f) => f.path === path);
+      return acc + (file?.token || 0);
+    }, 0);
+  };
+
+  React.useEffect(() => {
+    setTokens(calculateTotalTokens());
+  }, [selectedContracts, solidityFiles]);
 
   return (
     <>
@@ -35,8 +56,9 @@ export const ContractSelection: React.FC = () => {
           onSelectionChange={(selection) => setSelectedContracts(Array.from(selection) as string[])}
         >
           <TableHeader>
-            <TableColumn>NAME</TableColumn>
-            <TableColumn>PATH</TableColumn>
+            <TableColumn>Name</TableColumn>
+            <TableColumn>Lines of Code</TableColumn>
+            <TableColumn>Path</TableColumn>
           </TableHeader>
           <TableBody
             emptyContent={
@@ -49,12 +71,19 @@ export const ContractSelection: React.FC = () => {
             {filteredSolidityFiles.map((file) => (
               <TableRow key={file.path}>
                 <TableCell>{file.name}</TableCell>
+                <TableCell>{file.lineCount}</TableCell>
                 <TableCell>{file.path}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      {tokens > MAX_TOKENS && (
+        <p className="text-[#F871A0] bg-[#F3126033]/10 p-2 rounded-md text-center">
+          Too many contracts selected! Please select a smaller number of contracts.
+        </p>
+      )}
     </>
   );
 };

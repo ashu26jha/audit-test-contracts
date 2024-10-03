@@ -1,0 +1,37 @@
+services:
+  backend:
+    # Build the backend container using the Dockerfile located at ./backend/Dockerfile
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: backend  # Name of the backend container
+    ports:
+      - "8000:8000"  # Expose port 8000 for the backend service
+    networks:
+      - auditor-network  # Connect to the custom app network
+    env_file:
+      - ./backend/.env  # Load environment variables from the .env file
+    volumes:
+      - ./backend:/app/backend  # Mount the backend directory
+      - /app/backend/__pycache__  # Mount the __pycache__ directory
+
+  frontend:
+    # Build the frontend container using the Dockerfile located at ./frontend/Dockerfile.frontend
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile.frontend
+    container_name: frontend  # Name of the frontend container
+    ports:
+      - "3000:3000"  # Expose port 3000 for the frontend service
+    networks:
+      - auditor-network  # Connect to the custom app network
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000  # Use localhost for development
+    volumes:
+      - ./frontend:/app/frontend  # Mount the frontend directory
+      - /app/frontend/node_modules  # Mount the node_modules directory
+
+# Define a custom network so both containers can communicate with each other
+networks:
+  auditor-network:
+    driver: bridge

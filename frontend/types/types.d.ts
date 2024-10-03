@@ -60,4 +60,6 @@ interface File {
   path: string;
   type: string;
   download_url: string;
+  lineCount: number;
+  token: number;
 }
