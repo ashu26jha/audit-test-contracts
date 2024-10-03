@@ -1,6 +1,6 @@
 import "@/styles/globals.css";
 import clsx from "clsx";
-import { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
