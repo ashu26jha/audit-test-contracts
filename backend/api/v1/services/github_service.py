@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import re
 from uuid import uuid4
@@ -93,7 +94,7 @@ class GitHubService:
         response.raise_for_status()
 
         tree = response.json()["tree"]
-        return [
+        files = [
             {
                 "name": item["path"].split("/")[-1],
                 "path": item["path"],
@@ -103,6 +104,15 @@ class GitHubService:
             for item in tree
             if item["type"] == "blob" and item["path"].endswith(".sol")
         ]
+
+        tasks = [self.get_file_content(access_token, owner, repo, file["path"]) for file in files]
+        file_contents = await asyncio.gather(*tasks)
+
+        for file, file_content in zip(files, file_contents):
+            file["token"] = int(len(file_content) / 4)
+            file["lineCount"] = len(file_content.split("\n"))
+
+        return files
 
     async def get_file_content(self, access_token: str, owner: str, repo: str, path: str) -> str:
         """

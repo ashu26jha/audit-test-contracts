@@ -105,7 +105,17 @@ const DashboardPage = () => {
                         </div>
                         <div className="flex items-center">
                           <Calendar size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">Scanned Date: {new Date(scan.startedAt).toLocaleString()}</span>
+                          <span className="text-sm">
+                            Scanned Date:{" "}
+                            {new Date(scan.startedAt + "Z").toLocaleString(navigator.language, {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                            })}
+                          </span>
                         </div>
                         <div className="flex items-center">
                           <AlertTriangle size={16} className="mr-2 text-gray-400" />
