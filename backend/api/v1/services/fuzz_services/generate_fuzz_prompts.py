@@ -1,10 +1,12 @@
-import asyncio
 from pathlib import Path
 from typing import List
-from api.v1.prompts.fuzzer_prompts import FUZZER_PROMPT
-from api.v1.documentation.fuzz_testing import FUZZ_TESTING
+
 from api.v1.documentation.fuzz_examples import FUZZ_EXAMPLES
+from api.v1.documentation.fuzz_testing import FUZZ_TESTING
 from api.v1.utils.project_helpers import get_project_structure
+from config.prompts.fuzzer_prompts import FUZZER_PROMPT
+
+
 def read_file(path: str) -> str:
     """
     Reads the content of a file.
@@ -15,8 +17,9 @@ def read_file(path: str) -> str:
     Returns:
         str: The content of the file.
     """
-    with open(path, 'r') as file:
+    with open(path, "r") as file:
         return file.read()
+
 
 async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str]) -> str:
     """
@@ -45,5 +48,5 @@ async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str]) -
         contract_code=all_contract_codes,
         docs=FUZZ_TESTING,
         fuzz_examples=FUZZ_EXAMPLES,
-        project_structure=project_structure
+        project_structure=project_structure,
     )
