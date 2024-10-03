@@ -14,6 +14,7 @@ async def get_global_stats():
         "total_paid_scans": stats.total_paid_scans,
         "total_unpaid_scans": stats.total_unpaid_scans,
         "total_findings": stats.total_findings,
+        "total_lines_of_code": stats.total_lines_of_code,
         "scan_statuses": {
             "pending": await Scan.find(Scan.status == "pending").count(),
             "in_progress": await Scan.find(Scan.status == "in_progress").count(),

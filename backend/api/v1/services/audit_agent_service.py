@@ -75,7 +75,7 @@ async def initiate_scan(
         await scan_history_service.store_scan_result(initial_scan_result)
 
         # Increment global stats (unpaid by default)
-        await GlobalStats.increment_scan(status="pending", paid=False, findings=0)
+        await GlobalStats.increment_scan(status="pending", paid=False, findings=0, lines_of_code=0)
 
         # Fetch the commit hash using GitHub API
         try:
@@ -86,7 +86,9 @@ async def initiate_scan(
             # Update scan status to 'failed'
             await scan_history_service.update_scan_status(scan_id, "failed")
             # Update global stats for failed scan
-            await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+            await GlobalStats.increment_scan(
+                status="failed", paid=False, findings=0, lines_of_code=0
+            )
             # Update the scan result to reflect the failure
             failed_scan_result = ScanResult(
                 scan_id=scan_id,
@@ -133,7 +135,7 @@ async def initiate_scan(
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
         # Update global stats for failed scan
-        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0, lines_of_code=0)
 
         # Update scan status to 'failed' if scan exists
         try:
@@ -193,10 +195,14 @@ async def perform_audit_agent_background(
         # Update scan status to 'completed' and include total_findings
         await scan_history_service.update_scan_status(scan_uuid, "completed", total_findings)
 
-        # Update global stats with findings
+        # Update global stats with findings and lines of code
         scan = await scan_history_service.get_scan(scan_uuid)
+        total_lines = scan.linesOfCode.get("total_lines", 0) if scan.linesOfCode else 0
         await GlobalStats.increment_scan(
-            status="completed", paid=scan.paid_status, findings=total_findings
+            status="completed",
+            paid=scan.paid_status,
+            findings=total_findings,
+            lines_of_code=total_lines,
         )
 
         logger.info(f"Completed audit scan with ID: {scan_uuid}")
@@ -205,7 +211,7 @@ async def perform_audit_agent_background(
         logger.exception(f"Error in audit scan {scan_uuid}: {str(e)}")
         await scan_history_service.update_scan_status(scan_uuid, "failed")
         # Update global stats for failed scan
-        await GlobalStats.increment_scan(status="failed", paid=False, findings=0)
+        await GlobalStats.increment_scan(status="failed", paid=False, findings=0, lines_of_code=0)
         # Update the existing scan result to reflect the failure
         scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = "An error occurred during the audit scan."
