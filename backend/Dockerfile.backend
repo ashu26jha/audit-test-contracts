@@ -1,11 +1,16 @@
-# Use the official Python image from the Docker Hub
-FROM python:3.12
+# Use a specific Python version instead of the latest
+FROM python:3.12.0-slim
+
+# Install git and other necessary dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /app/backend
 
 # Copy the requirements.txt file into the container
-COPY ./requirements.txt .
+COPY requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -17,7 +22,7 @@ RUN playwright install-deps
 # Copy the rest of your application code into the container
 COPY . .
 
-# Expose the port that Streamlit will run on
+# Expose the port that your backend will run on
 EXPOSE 8000
 
 # Command to run your application

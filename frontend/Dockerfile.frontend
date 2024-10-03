@@ -1,20 +1,17 @@
-# Use the Node.js 18 LTS version as the base image
-FROM node:18-lts
+# Use a specific Node.js version instead of the LTS tag
+FROM node:18.19.0-slim
 
 # Set the working directory inside the container
-WORKDIR /app
+WORKDIR /app/frontend
 
 # Copy package.json and package-lock.json into the working directory
-COPY package*.json ./
+COPY frontend/package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the application files into the working directory
-COPY . .
-
-# Set environment variable
-ENV NEXT_PUBLIC_API_URL
+# Copy the frontend application files into the working directory
+COPY frontend .
 
 # Expose the default Next.js port
 EXPOSE 3000
