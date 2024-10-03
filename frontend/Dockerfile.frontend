@@ -1,0 +1,23 @@
+# Use the Node.js 18 LTS version as the base image
+FROM node:18-lts
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json into the working directory
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application files into the working directory
+COPY . .
+
+# Set environment variable
+ENV NEXT_PUBLIC_API_URL
+
+# Expose the default Next.js port
+EXPOSE 3000
+
+# Command to run the development server
+CMD ["npm", "run", "dev"]
