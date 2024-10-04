@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useCallback, useEffect } from "react";
 
 import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/react";
 import Image from "next/image";
@@ -24,16 +24,16 @@ export const ContractSelection: React.FC = () => {
       file.path.toLowerCase().includes(contractSearch.toLowerCase()),
   );
 
-  const calculateTotalTokens = () => {
+  const calculateTotalTokens = useCallback(() => {
     return selectedContracts.reduce((acc, path) => {
       const file = solidityFiles.find((f) => f.path === path);
       return acc + (file?.token || 0);
     }, 0);
-  };
-
-  React.useEffect(() => {
-    setTokens(calculateTotalTokens());
   }, [selectedContracts, solidityFiles]);
+
+  useEffect(() => {
+    setTokens(calculateTotalTokens());
+  }, [calculateTotalTokens, setTokens]);
 
   return (
     <>

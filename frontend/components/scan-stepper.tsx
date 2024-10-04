@@ -85,7 +85,6 @@ const ScanStepper: React.FC = () => {
       try {
         if (token) {
           const response = await initiateScanProcess(token);
-          console.log("Scan initiated:", response);
           router.push(`/scan-results/${response.data.scan_id}`);
         }
       } catch (error) {

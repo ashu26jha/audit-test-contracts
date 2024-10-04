@@ -27,17 +27,23 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
   const isFailed = scanData.scan.status === "failed";
   console.log("isPaid", isPaid);
 
-  const handleSendReportAgain = () => {
-    console.log("send report again");
+  const handleSendReportAgain = async () => {
     if (!token) {
       console.error("No token found");
       return;
     }
-    sendPdfReport(token, scanData.scan_id);
-    toast({
-      title: "Report sent",
-      status: "success",
-    });
+    const res = await sendPdfReport(token, scanData.scan_id);
+    if (res.success) {
+      toast({
+        title: "Report sent",
+        status: "success",
+      });
+    } else {
+      toast({
+        title: res.message,
+        status: "error",
+      });
+    }
   };
 
   const handleSendFeedback = () => {
