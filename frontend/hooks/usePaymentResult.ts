@@ -44,7 +44,7 @@ export const usePaymentResult = () => {
       // If the status is neither success nor error, set it to failed
       setStatus("failed");
     }
-  }, [searchParams, token, isProcessing, loading]);
+  }, [searchParams, token, isProcessing, loading, refetch]);
 
   useEffect(() => {
     handlePaymentResult();

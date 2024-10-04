@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import markdown
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import get_full_scan_result
@@ -15,6 +16,10 @@ from common.pdf_generation import (
 from common.validate import validate_scan_paid, validate_user_scan_access
 from config import settings
 from fastapi import HTTPException
+from markdown.extensions.attr_list import AttrListExtension
+from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.nl2br import Nl2BrExtension
+from markdown.extensions.sane_lists import SaneListExtension
 from PyPDF2 import PdfReader, PdfWriter
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -106,6 +111,17 @@ async def create_report_html(report_data):
     template_path = TEMPLATE_DIR / "report_template.html"
     html_content = read_html(template_path)
 
+    # Convert markdown summary to HTML with code highlighting and better list handling
+    summary_html = markdown.markdown(
+        report_data["summary"],
+        extensions=[
+            CodeHiliteExtension(linenums=False),
+            SaneListExtension(),
+            Nl2BrExtension(),
+            AttrListExtension(),
+        ],
+    )
+
     # Use a single placeholder replacement
     html_content = html_content.replace("<!--organization-->", str(report_data["organization"]))
     html_content = html_content.replace("<!--scanId-->", str(report_data["scan_number"]))
@@ -119,7 +135,9 @@ async def create_report_html(report_data):
         "<!--Contracts_Scanned-->", str(len(report_data["contract_files"]))
     )
     html_content = html_content.replace("<!--LoC-->", str(report_data["total_lines_of_code"]))
-    html_content = html_content.replace("<!--summary-->", str(report_data["summary"]))
+
+    # Replace the summary placeholder with just the content, not wrapped in another div
+    html_content = html_content.replace("<!--summary-->", summary_html)
 
     contract_files_html = create_contract_files_html(report_data["contract_files"])
     html_content = html_content.replace("<!--contracts_files-->", contract_files_html)

@@ -131,12 +131,21 @@ export const createCheckoutSession = async (token: string, scanId: string) => {
 };
 
 export const sendPdfReport = async (token: string, scanId: string) => {
-  const response = await api.get(`/api/v1/generate-pdf/${scanId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
+  try {
+    const response = await api.get(`/api/v1/generate-pdf/${scanId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      if (error.response.status === 429) {
+        return { success: false, message: "Too many requests. Please try again later." };
+      }
+    }
+    return { success: false, message: (error as Error).message };
+  }
 };
 
 export default api;
