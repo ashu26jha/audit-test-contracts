@@ -91,7 +91,7 @@ contract SimpleDapp {
 }
 ```
 
-Example 2: 
+Example 2:
 ```solidity
 // SPDX-License-Identifier: MIT
 

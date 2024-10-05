@@ -134,4 +134,4 @@ To make sure fuzzer includes in the same run a `slate` value derived from a `yay
 
 Following image shows how fuzzer generates values with and without fixtures being declared:
 ![Fuzzer](../images/fuzzer.png)
-""" 
+"""

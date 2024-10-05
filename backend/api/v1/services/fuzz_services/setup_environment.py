@@ -1,26 +1,27 @@
-import asyncio
 import os
-import tempfile
 import shutil
-from typing import Tuple
+import tempfile
 from pathlib import Path
+from typing import Tuple
+
 from api.v1.utils.forge_helpers import (
     copy_solidity_files,
+    preprocess_solidity_files,
     run_command,
     update_foundry_config,
-    preprocess_solidity_files,
 )
 from api.v1.utils.project_helpers import (
-    detect_project_structure,
-    parse_dependencies,
-    install_dependencies,
-    generate_and_write_remappings,
-    detect_and_install_solc_version,
-    compile_project,
     clone_repository,
+    compile_project,
+    detect_and_install_solc_version,
+    detect_project_structure,
+    generate_and_write_remappings,
+    install_dependencies,
+    parse_dependencies,
 )
-from pydantic import HttpUrl
 from common import logger
+from pydantic import HttpUrl
+
 
 async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str, str]:
     """
@@ -36,7 +37,6 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
     """
 
     tmpdirname = tempfile.mkdtemp(prefix="fuzz_project_")
-
 
     try:
         project_dir = tmpdirname
@@ -57,7 +57,7 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
         solc_version = detect_and_install_solc_version(repo_dir)
 
         print(repo_dir)
-        if project_type == 'brownie':
+        if project_type == "brownie":
             raise NotImplementedError(f"{project_type} is currently not implemented")
 
         # TODO: Fix hardhat project setup
@@ -68,13 +68,16 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
             os.makedirs(foundry_project_dir, exist_ok=True)
             logger.info(f"Created directory: {foundry_project_dir}")
 
-            await run_command(["forge", "init", "--template", "DanielBoye/foundry-template"], foundry_project_dir)
-            
+            await run_command(
+                ["forge", "init", "--template", "DanielBoye/foundry-template"],
+                foundry_project_dir,
+            )
+
             foundry_src_dir = os.path.join(foundry_project_dir, "src")
             copy_solidity_files(repo_dir, foundry_src_dir, project_type)
 
             preprocess_solidity_files(foundry_project_dir)
-            
+
             # Remove Counter.sol from src directory
             counter_sol_path = os.path.join(foundry_project_dir, "src", "Counter.sol")
             if os.path.exists(counter_sol_path):
@@ -82,22 +85,26 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
                 logger.info(f"Removed {counter_sol_path}")
 
             # Remove Counter.s.sol from script directory
-            counter_s_sol_path = os.path.join(foundry_project_dir, "script", "Counter.s.sol")
+            counter_s_sol_path = os.path.join(
+                foundry_project_dir, "script", "Counter.s.sol"
+            )
             if os.path.exists(counter_s_sol_path):
                 os.remove(counter_s_sol_path)
                 logger.info(f"Removed {counter_s_sol_path}")
 
             # Remove Counter.t.sol from test directory
-            counter_t_sol_path = os.path.join(foundry_project_dir, "test", "Counter.t.sol")
+            counter_t_sol_path = os.path.join(
+                foundry_project_dir, "test", "Counter.t.sol"
+            )
             if os.path.exists(counter_t_sol_path):
                 os.remove(counter_t_sol_path)
                 logger.info(f"Removed {counter_t_sol_path}")
-            
+
             # Now use the project_helpers functions to set up the project
             dependencies = parse_dependencies(repo_dir, project_type)
             print(dependencies)
             await install_dependencies(foundry_project_dir, dependencies, project_type)
-            remappings = await generate_and_write_remappings(foundry_project_dir)
+            await generate_and_write_remappings(foundry_project_dir)
             update_foundry_config(foundry_project_dir, solc_version)
             await compile_project(foundry_project_dir, solc_version)
 

@@ -1,13 +1,17 @@
 import json
 import os
 import re
-import subprocess
-from typing import Dict, List, Optional, Tuple
 import shutil
-import toml
-from api.v1.utils.forge_helpers import find_contract_folders
-from api.v1.utils.forge_helpers import run_command, write_remappings
+import subprocess
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import toml
+from api.v1.utils.forge_helpers import (
+    find_contract_folders,
+    run_command,
+    write_remappings,
+)
 from common import logger
 
 FOUNDRY_CONFIG = "foundry.toml"
@@ -131,10 +135,12 @@ def find_solidity_version(temp_dir: str) -> str:
                     logger.warning(f"No Solidity version found in {file_path}")
     logger.error("No Solidity version found in any file")
     return "0.8.27"  # Use the same default version as in detect_and_install_solc_version
+
+
 async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = None) -> str:
     """
     Clones a GitHub repository into a specified temporary directory.
-    
+
     This function uses the `git clone` command to clone a repository from GitHub into a temporary directory.
     If an OAuth token is provided, it is used for authentication to clone private repositories.
 
@@ -173,6 +179,7 @@ async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = 
     logger.info("Repository cloned successfully")
     return repo_dir
 
+
 def run_command_sync(
     command: List[str], cwd: str, env: Dict[str, str] = None
 ) -> Tuple[int, str, str]:
@@ -185,6 +192,7 @@ def run_command_sync(
     )
     stdout, stderr = process.communicate()
     return process.returncode, stdout.decode(), stderr.decode()
+
 
 async def install_dependencies(
     temp_dir: str, dependencies: Dict[str, str], project_type: str
@@ -244,7 +252,6 @@ async def install_dependencies(
     logger.info("Dependencies installed successfully")
 
 
-
 async def generate_and_write_remappings(temp_dir: str) -> List[str]:
     logger.info("Generating remappings...")
     remappings = []
@@ -281,6 +288,7 @@ async def generate_and_write_remappings(temp_dir: str) -> List[str]:
     logger.info("Remappings written successfully")
 
     return remappings
+
 
 def detect_and_install_solc_version(temp_dir: str) -> str:
     solc_version = find_solidity_version(temp_dir)
@@ -323,19 +331,6 @@ async def compile_project(temp_dir: str, solc_version: str) -> None:
         raise ValueError(f"Forge compilation failed: {stderr}")
     logger.info("Forge compilation successful")
 
-
-def run_command_sync(
-    command: List[str], cwd: str, env: Dict[str, str] = None
-) -> Tuple[int, str, str]:
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    stdout, stderr = process.communicate()
-    return process.returncode, stdout.decode(), stderr.decode()
 
 def get_project_structure(root_dir: str, contract_folders: List[str], level: int = 0) -> str:
     """

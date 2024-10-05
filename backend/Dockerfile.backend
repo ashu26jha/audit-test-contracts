@@ -1,10 +1,22 @@
 # Use a specific Python version instead of the latest
 FROM python:3.12.0-slim
 
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install git and other necessary dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
     git \
+    build-essential \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Foundry
+RUN curl -L https://foundry.paradigm.xyz | bash && \
+    /root/.foundry/bin/foundryup
+ENV PATH="/root/.foundry/bin:${PATH}"
+
 
 # Set the working directory in the container
 WORKDIR /app/backend
@@ -14,6 +26,12 @@ COPY requirements.txt .
 
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Slither
+RUN pip install slither-analyzer toml
+
+# Install solc-select
+RUN pip3 install solc-select
 
 # Install playwright
 RUN playwright install 

@@ -7,16 +7,16 @@ from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
     context_scan,
+    fuzzer,
     generate_pdf,
     generate_summary,
     github,
     health_check,
     scan_history,
     scan_results,
+    static_analyzer,
     stats,
     test_auth,
-    static_analyzer,
-    fuzzer,
 )
 from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
 from api.v1.models.github import GitHubRepo

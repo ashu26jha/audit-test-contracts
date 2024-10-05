@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
+
 @router.post("/fuzzer", response_model=FuzzerResponse)
 async def execute_fuzzer(request: FuzzerRequest):
     try:

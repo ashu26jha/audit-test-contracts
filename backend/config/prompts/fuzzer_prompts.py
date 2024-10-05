@@ -21,7 +21,7 @@ Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that:
 5. Uses appropriate Foundry assertions to check contract behavior
 6. Imports the contracts as the name provided
 
-Read the documentation for Foundry fuzzing: 
+Read the documentation for Foundry fuzzing:
 {docs}
 
 And here are examples of how a test is written
@@ -37,7 +37,7 @@ List of vulnerabilities:
 6. Unrestricted delegatecall
 7. Unrestricted call
 8. Unrestricted transfer
-9. Unrestricted approve 
+9. Unrestricted approve
 10. Unrestricted mint
 11. Unrestricted burn
 12. Unrestricted withdraw

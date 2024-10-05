@@ -1,6 +1,7 @@
 import asyncio
 import shutil
 
+
 async def cleanup_environment(project_dir: str) -> None:
     """
     Cleans up the environment by deleting the temporary project directory.

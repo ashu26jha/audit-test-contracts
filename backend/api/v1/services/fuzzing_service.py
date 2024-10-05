@@ -1,17 +1,20 @@
-from typing import Dict, Union, Optional
-from config.settings import SUPPORTED_MODELS, LLM_MODEL_FUZZER
-from common.send_prompt_to_llm import send_prompt_to_llm_async
-from common.profiles import Profiles
-from api.v1.services.fuzz_services.setup_environment import setup_environment
-from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
-from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
-from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
-from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
-from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
-from api.v1.services.fuzz_services.cleanup_environment import cleanup_environment
-from common import logger
+from typing import Dict, Optional, Union
 
-async def run_fuzzer(github_url: str, oauth_token: Optional[str] = None) -> Dict[str, Union[Optional[str], str]]:
+from api.v1.services.fuzz_services.cleanup_environment import cleanup_environment
+from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
+from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
+from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
+from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
+from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
+from api.v1.services.fuzz_services.setup_environment import setup_environment
+from common import logger
+from common.send_prompt_to_llm import send_prompt_to_llm_async
+from config.settings import LLM_MODEL_FUZZER
+
+
+async def run_fuzzer(
+    github_url: str, oauth_token: Optional[str] = None
+) -> Dict[str, Union[Optional[str], str]]:
     """
     Executes the fuzzing process on a specified GitHub repository.
 
@@ -26,10 +29,12 @@ async def run_fuzzer(github_url: str, oauth_token: Optional[str] = None) -> Dict
         Dict[str, Union[Optional[str], str]]: A dictionary containing the fuzz test, fuzz results, analysis, and any error encountered.
     """
     model = LLM_MODEL_FUZZER
-    
+
     try:
         # 1. Setup the fuzzing environment
-        project_dir, contract_folders, project_type, project_path = await setup_environment(github_url, oauth_token)
+        project_dir, contract_folders, project_type, project_path = await setup_environment(
+            github_url, oauth_token
+        )
         logger.info(f"Project type: {project_type}")
 
         # 2. Generate fuzz prompts
@@ -52,7 +57,7 @@ async def run_fuzzer(github_url: str, oauth_token: Optional[str] = None) -> Dict
         logger.info("Running fuzz test")
         fuzz_results = await run_fuzz_file(project_dir)
         logger.info(f"Fuzz results: {fuzz_results}")
-        
+
         # 7. Cleanup environment
         logger.info("Cleaning up environment")
         await cleanup_environment(project_path)
@@ -70,7 +75,7 @@ async def run_fuzzer(github_url: str, oauth_token: Optional[str] = None) -> Dict
             "fuzz_test": fuzz_test,
             "fuzz_results": fuzz_results,
             "analysis": report_response,
-            "error": None
+            "error": None,
         }
 
         return report_json
@@ -79,5 +84,5 @@ async def run_fuzzer(github_url: str, oauth_token: Optional[str] = None) -> Dict
             "fuzz_test": None,
             "fuzz_results": None,
             "analysis": None,
-            "error": str(e)
+            "error": str(e),
         }

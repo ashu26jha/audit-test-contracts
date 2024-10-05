@@ -1,6 +1,5 @@
 import asyncio
-import subprocess
-from typing import Dict, Union
+
 
 async def run_fuzz_file(project_dir: str) -> str:
     """
@@ -14,16 +13,18 @@ async def run_fuzz_file(project_dir: str) -> str:
     """
     try:
         process = await asyncio.create_subprocess_exec(
-            "forge", "test", "-vvvv",
+            "forge",
+            "test",
+            "-vvvv",
             cwd=project_dir,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        
+
         output = stdout.decode() if stdout else ""
         error = stderr.decode() if stderr else ""
-        
+
         return output if output else error
     except Exception as e:
         print(f"Error running fuzz test: {str(e)}")

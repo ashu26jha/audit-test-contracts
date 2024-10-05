@@ -1,7 +1,8 @@
-import os
 from pathlib import Path
 from typing import List
+
 from common import logger
+
 
 async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: List[str]) -> None:
     """
