@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import List
+from api.v1.utils.project_helpers import compile_project
 
 from common import logger
 
-
-async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: List[str]) -> None:
+async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: List[str], solc_version: str) -> None:
     """
     Saves the fuzz test to the test directory of the project.
 
@@ -28,6 +28,9 @@ async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: Lis
 
         with open(test_file_path, "w") as f:
             f.write(fuzz_test)
+            
+        await compile_project(project_dir, solc_version)
+
     except IOError as e:
         logger.error(f"Error saving fuzz test: {str(e)}")
         raise

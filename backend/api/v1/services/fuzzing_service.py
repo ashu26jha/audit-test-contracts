@@ -60,7 +60,14 @@ async def run_fuzzer(
 
         # 6. Save fuzz test
         logger.info("Saving fuzz test")
-        await save_fuzz_test(fuzz_test, project_dir, contract_folders)
+        try:
+            await save_fuzz_test(fuzz_test, project_dir, contract_folders, solc_version)
+        except Exception as e:
+            logger.error(f"Failed to save fuzz test: {str(e)}. Regenerating fuzz prompts and retrying.")
+            fuzz_prompts = await generate_fuzz_prompts(project_dir, contract_folders, slither_output)
+            fuzz_response = await send_prompt_to_llm_async(model, fuzz_prompts)
+            fuzz_test = extract_fuzz_test(fuzz_response)
+            await save_fuzz_test(fuzz_test, project_dir, contract_folders, solc_version)
 
         # 7. Run fuzz test
         logger.info("Running fuzz test")
