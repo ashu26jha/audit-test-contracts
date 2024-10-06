@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Union
+from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult  # Import SetupResult
 
 from api.v1.services.fuzz_services.cleanup_environment import cleanup_environment
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
@@ -11,7 +12,6 @@ from api.v1.utils.slither_helpers import run_slither
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_FUZZER
-from api.v1.schemas.fuzzer_schema import FuzzTestResult
 
 async def run_fuzzer(
     github_url: str, oauth_token: Optional[str] = None
@@ -33,10 +33,14 @@ async def run_fuzzer(
 
     try:
         # 1. Setup the fuzzing environment
-        project_dir, contract_folders, project_type, project_path = await setup_environment(
-            github_url, oauth_token
-        )
-        logger.info(f"Project type: {project_type}")
+        setup_result: SetupResult = await setup_environment(github_url, oauth_token)
+        logger.info(f"Project type: {setup_result.project_type}")
+        
+        # Update project_dir to be from setup_result
+        project_dir = setup_result.project_dir
+        contract_folders = setup_result.contract_folders
+        solc_version = setup_result.solc_version
+        project_path = setup_result.project_path
         
         # 2. Run Slither analysis
         logger.info("Running Slither")
