@@ -7,19 +7,20 @@ from api.v1.services.fuzz_services.generate_report_prompt import generate_report
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
 from api.v1.services.fuzz_services.setup_environment import setup_environment
+from api.v1.utils.slither_helpers import run_slither
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_FUZZER
-
+from api.v1.schemas.fuzzer_schema import FuzzTestResult
 
 async def run_fuzzer(
     github_url: str, oauth_token: Optional[str] = None
 ) -> Dict[str, Union[Optional[str], str]]:
     """
-    Executes the fuzzing process on a specified GitHub repository.
+    Executes the fuzzing process on a specified GitHub repository using Slither for context.
 
-    This function sets up the environment, generates fuzzing prompts, sends them to a language model,
-    extracts and saves the fuzz test, runs the fuzz test, and generates a report based on the results.
+    This function sets up the environment, runs Slither analysis to gather context, generates fuzzing prompts incorporating Slither output,
+    sends the prompts to a language model, extracts and saves the fuzz test, runs the fuzz test, generates a report based on the results, and converts the report to JSON.
 
     Args:
         github_url (str): The GitHub repository URL.
@@ -36,53 +37,61 @@ async def run_fuzzer(
             github_url, oauth_token
         )
         logger.info(f"Project type: {project_type}")
+        
+        # 2. Run Slither analysis
+        logger.info("Running Slither")
+        slither_output = await run_slither(project_dir)
 
-        # 2. Generate fuzz prompts
+        # 3. Generate fuzz prompts (with slither output)
         logger.info("Generating fuzz prompts")
-        fuzz_prompts = await generate_fuzz_prompts(project_dir, contract_folders)
+        fuzz_prompts = await generate_fuzz_prompts(project_dir, contract_folders, slither_output)
 
-        # 3. Send fuzz prompts to LLM
+        # 4. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
         fuzz_response = await send_prompt_to_llm_async(model, fuzz_prompts)
 
-        # 4. Extract fuzz test
+        # 5. Extract fuzz test
         logger.info("Extracting fuzz test")
         fuzz_test = extract_fuzz_test(fuzz_response)
 
-        # 5. Save fuzz test
+        # 6. Save fuzz test
         logger.info("Saving fuzz test")
         await save_fuzz_test(fuzz_test, project_dir, contract_folders)
 
-        # 6. Run fuzz test
+        # 7. Run fuzz test
         logger.info("Running fuzz test")
         fuzz_results = await run_fuzz_file(project_dir)
         logger.info(f"Fuzz results: {fuzz_results}")
 
-        # 7. Cleanup environment
+        # 8. Cleanup environment
         logger.info("Cleaning up environment")
         await cleanup_environment(project_path)
 
-        # 8. Generate report prompt
+        # 9. Generate report prompt
         logger.info("Generating report prompt")
         report_prompt = await generate_report_prompt(fuzz_test, fuzz_results)
 
-        # 9. Send report prompt to LLM
+        # 10. Send report prompt to LLM
         logger.info("Sending report prompt to LLM")
         report_response = await send_prompt_to_llm_async(model, report_prompt)
 
-        # 10. Convert the report to JSON
-        report_json = {
-            "fuzz_test": fuzz_test,
-            "fuzz_results": fuzz_results,
-            "analysis": report_response,
+        # 11. Convert the report to JSON
+        report_json = FuzzTestResult(
+            fuzz_test=fuzz_test,
+            fuzz_results=fuzz_results,
+            analysis=report_response,
+        )
+
+        return {
+            "message": "Fuzzing completed successfully.",
+            "status": "Success",
+            "data": report_json,
             "error": None,
         }
-
-        return report_json
     except Exception as e:
         return {
-            "fuzz_test": None,
-            "fuzz_results": None,
-            "analysis": None,
+            "message": "An error occurred during the fuzzing process.",
+            "status": "Error",
+            "data": None,
             "error": str(e),
         }

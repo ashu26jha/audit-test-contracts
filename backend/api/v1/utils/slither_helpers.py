@@ -60,17 +60,13 @@ def transform_slither_output(slither_output: Dict[str, Any]) -> Dict[str, Any]:
         "severity_counts": severity_counts,
     }
 
-
 async def run_slither(
-    temp_dir: str, remappings: List[str], solc_version: str
+    temp_dir: str
 ) -> List[Dict[str, Any]]:
     logger.info("Running Slither...")
 
     if not await check_slither_installation():
         raise ValueError("Slither is not installed or not working correctly")
-
-    env = dict(os.environ, SLITHER_SOLC_REMAPS=",".join(remappings))
-    env["SOLC_VERSION"] = solc_version
 
     src_dir = os.path.join(temp_dir, "src")
     if not os.path.exists(src_dir):
@@ -89,8 +85,10 @@ async def run_slither(
         "--exclude-dependencies",
         "--filter-paths",
         "lib|src/test|src/mock",
+        "--exclude",
+        "naming-convention,solc-version,similar-names", # Exclude irrelevant findings
     ]
-    returncode, stdout, stderr = await run_command(slither_command, temp_dir, env=env)
+    returncode, stdout, stderr = await run_command(slither_command, temp_dir)
 
     # Check if the slither_output.json file exists
     if not os.path.exists(output_file):

@@ -47,6 +47,8 @@ List of vulnerabilities:
 16. Unrestricted mintFrom
 17. Unrestricted burnFrom
 
+We have already ran slither on the code that you are about to analyze and we got these results back. Take those into account and check if you can exploit some vulnerabilites related to them
+{slither_output}
 """
 
 REPORT_PROMPT = """

@@ -21,14 +21,15 @@ def read_file(path: str) -> str:
         return file.read()
 
 
-async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str]) -> str:
+async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str], slither_output: str) -> str:
     """
     Generates the fuzzing prompt for the given project directory by reading all Solidity contract files
-    in the specified contract folders and formatting them with the provided documentation and examples.
+    in the specified contract folders and formatting them with the provided documentation, examples, and Slither output.
 
     Args:
         project_dir (str): The project directory containing the Solidity contract files.
         contract_folders (List[str]): List of folders containing the contract files.
+        slither_output (str): The output from Slither analysis.
 
     Returns:
         str: The generated fuzzing prompt.
@@ -49,4 +50,5 @@ async def generate_fuzz_prompts(project_dir: str, contract_folders: List[str]) -
         docs=FUZZ_TESTING,
         fuzz_examples=FUZZ_EXAMPLES,
         project_structure=project_structure,
+        slither_output=slither_output,
     )
