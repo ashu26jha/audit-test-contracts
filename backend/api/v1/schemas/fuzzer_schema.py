@@ -2,7 +2,6 @@ from typing import Optional, List
 
 from pydantic import BaseModel, HttpUrl
 
-
 class FuzzerRequest(BaseModel):
     github_url: HttpUrl
     oauth_token: Optional[str] = None
@@ -19,3 +18,10 @@ class FuzzerResponse(BaseModel):
     status: str
     data: Optional[FuzzTestResult] = None
     error: Optional[str] = None
+
+class SetupResult(BaseModel):
+    project_dir: str
+    contract_folders: List[str]
+    project_type: str
+    project_path: str
+    solc_version: str
