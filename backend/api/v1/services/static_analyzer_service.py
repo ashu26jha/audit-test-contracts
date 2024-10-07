@@ -23,7 +23,6 @@ async def run_static_analyzer(
         temp_dir = tempfile.mkdtemp()
         is_local_temp_dir = True
     setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
-    logger.info(f"Project type: {setup_result.project_type}")
 
     # 2. Run Slither
     slither_output = await run_slither(

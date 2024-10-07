@@ -33,6 +33,7 @@ SUPPORTED_MODELS = {
 LLM_MODEL = "gpt-4o-mini"
 LLM_MODEL_SUMMARY = "gpt-4o-mini"
 LLM_MODEL_FUZZER = "gpt-4o-mini"
+LLM_MODEL_DUPLICATES = "gpt-4o-mini"
 
 # List of models that do not support 'system' role
 MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]

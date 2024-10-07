@@ -27,8 +27,11 @@ COPY requirements.txt .
 # Install the Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install toml
+RUN pip install toml
+
 # Install Slither
-RUN pip install slither-analyzer toml
+RUN pip install --no-cache-dir --upgrade slither-analyzer
 
 # Install solc-select
 RUN pip3 install solc-select

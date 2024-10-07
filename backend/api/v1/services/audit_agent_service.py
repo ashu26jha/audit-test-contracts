@@ -17,6 +17,7 @@ from api.v1.services import (
     scan_history_service,
     static_analyzer_service,
 )
+from api.v1.services.fuzz_services import duplicates
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
@@ -26,7 +27,7 @@ from common.validate import (
     validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-from config import settings
+from config.settings import ENVIRONMENT, LLM_MODEL_DUPLICATES
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
@@ -42,7 +43,7 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
-        if settings.ENVIRONMENT == "production":
+        if ENVIRONMENT == "production":
             await validate_no_unpaid_scans(user)
 
         # Fetch repository info
@@ -224,16 +225,17 @@ async def perform_audit_agent_background(
         if slither_result and hasattr(slither_result, "slither_output"):
             total_findings += slither_result.slither_output.total_findings
             slither_findings = slither_result.slither_output.findings
+        combined_findings = context_scan_result + slither_findings
 
-        # Log the Slither findings for debugging
-        logger.debug(f"Slither findings: {len(slither_findings)}")
+        # Attempt to remove duplicates, if any
+        dedup_findings = await duplicates.remove_duplicates(combined_findings, LLM_MODEL_DUPLICATES)
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = summary_result
         scan_result.type = detected_profile
         scan_result.total_findings = total_findings
-        scan_result.findings = context_scan_result + slither_findings
+        scan_result.findings = dedup_findings
         await scan_result.save()
 
         # Update scan status to 'completed' and include total_findings
