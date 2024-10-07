@@ -28,8 +28,8 @@ class SetupResult(BaseModel):
     contract_folders: List[str]
     project_type: str
     project_path: str
-    solc_version: str
-    remappings: List[str]
+    solc_version: Optional[str] = None
+    remappings: Optional[List[str]] = None
 
 class FuzzerRequest(BaseModel):
     github_url: HttpUrl
