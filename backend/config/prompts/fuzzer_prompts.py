@@ -19,12 +19,6 @@ Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that:
 5. Uses appropriate Foundry assertions to check contract behavior
 6. Imports the contracts as the name provided
 
-Refer to the documentation for Foundry fuzzing:
-{docs}
-
-Additionally, here are examples of how a test is structured:
-{fuzz_examples}
-
 When writing the tests, focus on security to identify vulnerabilities and break the contract. Pay attention to the following list of vulnerabilities:
 | Vulnerability                | Description                                                                 | Potential Impact                                                                 |
 |------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------|
