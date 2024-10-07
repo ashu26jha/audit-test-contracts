@@ -2,7 +2,7 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional, Union
 
-from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult
+from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult, Finding, FuzzerResponse
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
 from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
 from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
@@ -20,7 +20,7 @@ async def run_fuzzer(
     oauth_token: Optional[str] = None,
     selected_contracts: List[str] = None,
     setup_result: Optional[SetupResult] = None,
-) -> Dict[str, Union[Optional[str], str]]:
+) -> FuzzerResponse:
     """
     Executes the fuzzing process on a specified GitHub repository using Slither for context.
 
@@ -32,7 +32,7 @@ async def run_fuzzer(
         oauth_token (Optional[str]): The OAuth token for private repositories.
 
     Returns:
-        Dict[str, Union[Optional[str], str]]: A dictionary containing the fuzz test, fuzz results, analysis, and any error encountered.
+        FuzzerResponse: A response model containing the fuzz test, fuzz results, analysis, and any error encountered.
     """
     model = LLM_MODEL_FUZZER
     is_local_temp_dir = False
@@ -92,26 +92,38 @@ async def run_fuzzer(
         report_response = await send_prompt_to_llm_async(model, report_prompt)
 
         # 10. Convert the report to JSON
+        findings_list = [
+            Finding(
+                Issue=finding["Issue"],
+                Severity=finding["Severity"],
+                Contracts=finding["Contracts"],
+                Description=finding["Description"],
+                Recommendation=finding.get("Recommendation"),
+            )
+            for finding in report_response.get("findings", [])
+        ]
+
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
             fuzz_results=fuzz_results,
             analysis=report_response,
+            findings=findings_list,
         )
 
         if is_local_temp_dir:
             logger.info("Cleaning up environment")
             shutil.rmtree(temp_dir)
 
-        return {
-            "message": "Fuzzing completed successfully.",
-            "status": "Success",
-            "data": report_json,
-            "error": None,
-        }
+        return FuzzerResponse(
+            message="Fuzzing completed successfully.",
+            status="Success",
+            data=report_json,
+            error=None,
+        )
     except Exception as e:
-        return {
-            "message": "An error occurred during the fuzzing process.",
-            "status": "Error",
-            "data": None,
-            "error": str(e),
-        }
+        return FuzzerResponse(
+            message="An error occurred during the fuzzing process.",
+            status="Error",
+            data=None,
+            error=str(e),
+        )
