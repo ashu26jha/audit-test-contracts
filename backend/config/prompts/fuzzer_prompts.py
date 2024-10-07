@@ -62,71 +62,20 @@ Fuzz Test:
 Fuzz Test Results:
 {results}
 
-Conduct your analysis in the following structured format:
-
-1. Test Overview
-- Summarize the purpose and scope of the fuzz test in 2-3 sentences.
-- Identify the key components or functions being tested.
-
-2. Invariant Analysis
-- List all invariants that the test is designed to verify.
-- For each invariant, state whether it was maintained or broken during the test.
-- If an invariant was broken, treat this as a potential vulnerability and analyze it in detail.
-
-3. Vulnerability Assessment
-For each broken invariant or potential vulnerability identified, provide the following:
-
-## [Severity] Vulnerability Title
-
-**Broken Invariant**: [Specific invariant violated]
-
-**Affected Component**: [`contract/function`](link)
-
-**Vulnerability Category**: [Reference the relevant vulnerability from the provided list]
-
-**Description**:
-[Detailed explanation of the vulnerability, including:
-    - How the invariant was broken in the fuzz test
-    - The specific conditions that trigger it
-    - Any relevant code snippets or test outputs]
-
-**Impact**:
-[Comprehensive analysis of:
-    - The potential consequences if exploited
-    - How it affects the overall system security
-    - Possible attack vectors]
-
-**Root Cause**:
-[Identify the underlying issue in the code or logic that led to this broken invariant]
-
-**Recommendation**:
-[Provide specific, actionable steps to fix the issue, including:
-    - Code modifications
-    - Additional checks or validations
-    - Changes to the overall architecture if necessary]
-
-**Severity Justification**:
-[Explain why this severity level was assigned, considering factors like:
-    - Ease of exploitation
-    - Potential financial loss
-    - Impact on system integrity]
-
-4. Test Coverage Analysis
-- Evaluate the effectiveness of the fuzz test in identifying broken invariants and potential vulnerabilities.
-- Identify any areas of the contract that may require additional testing or invariant checks.
-
-5. Gas Optimization Opportunities
-- If applicable, highlight any inefficiencies in gas usage revealed by the fuzz test.
-- Relate these to potential vulnerabilities like "Gas Limit and Block Gas Limit" or "Block Gas Limit Dependent Loops".
-
-6. Overall Security Assessment
-- Provide a holistic evaluation of the contract's security based on the broken invariants and potential vulnerabilities identified.
-- Assign an overall risk rating (Low, Medium, High, Critical) and justify your assessment.
-
-7. Recommendations Summary
-- Summarize key recommendations for improving the contract's security and robustness, focusing on fixing broken invariants.
-- Prioritize these recommendations based on their potential impact and ease of implementation.
-- Suggest additional invariants or checks that could be added to the fuzz test to improve vulnerability detection.
+Conduct your analysis in the following structured format. The output should **only** be in a well-formed JSON as follows, without any additional text or explanations:
+```json
+{
+    "findings": [
+        {
+        "Issue": "Short description of the issue",
+        "Severity": "High/Medium/Low/Info/Best Practices",
+        "Contracts": ["ContractName.sol"],
+        "Description": "Detailed description of the issue.",
+        "Recommendation": "Suggestion on how to fix the issue."
+        }
+    ]
+}
+```
 
 Guidelines for Analysis:
 - Treat each broken invariant as a potential vulnerability and analyze it thoroughly.
