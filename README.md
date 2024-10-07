@@ -40,10 +40,16 @@ For specific information about each component, please refer to their respective 
 To get started with Yokai Audit Agent, follow these steps:
 
 1. Clone the repository
-2. Set up the backend (see [Backend README](./backend/README.md))
-3. Set up the frontend (see [Frontend README](./frontend/README.md))
-4. Configure environment variables
-5. Run the application
+2. Configure all environment variables
+3. Start docker compose
+```bash
+docker-compose up --build
+```
+4. Run the application
+
+For more infos, refers the the different READMEs
+- Set up the backend (see [Backend README](./backend/README.md))
+- Set up the frontend (see [Frontend README](./frontend/README.md))
 
 ## Contributing
 

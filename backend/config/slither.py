@@ -3,7 +3,7 @@
 ##################################################
 
 # Confidence levels of detection to include
-CONFIDENCE_LEVELS = ["high", "medium"]
+CONFIDENCE_LEVELS = ["high"]
 
 # Mapping of known packages to their repositories
 PACKAGE_MAPPING = {
