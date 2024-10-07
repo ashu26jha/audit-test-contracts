@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import List
 
-from api.v1.documentation.fuzz_examples import FUZZ_EXAMPLES
-from api.v1.documentation.fuzz_testing import FUZZ_TESTING
 from api.v1.utils.project_helpers import get_project_structure
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT
 
@@ -49,8 +47,6 @@ async def generate_fuzz_prompts(
 
     return FUZZER_PROMPT.format(
         contract_code=all_contract_codes,
-        docs=FUZZ_TESTING,
-        fuzz_examples=FUZZ_EXAMPLES,
         project_structure=project_structure,
         slither_output=slither_output,
     )
