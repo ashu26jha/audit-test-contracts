@@ -17,8 +17,8 @@ from api.v1.services import (
     scan_history_service,
     static_analyzer_service,
 )
-from api.v1.services.fuzz_services import duplicates
 from api.v1.services.github_service import GitHubService
+from api.v1.utils import duplicates
 from common.logger import logger
 from common.profiles import Profiles
 from common.validate import (
