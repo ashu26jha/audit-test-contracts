@@ -32,7 +32,7 @@ async def save_fuzz_test(
         with open(test_file_path, "w") as f:
             f.write(fuzz_test)
 
-        await compile_project(project_dir, solc_version)
+        await compile_project(project_dir)
 
     except IOError as e:
         logger.error(f"Error saving fuzz test: {str(e)}")

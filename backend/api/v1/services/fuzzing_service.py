@@ -1,6 +1,6 @@
 import shutil
 import tempfile
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
@@ -18,7 +18,8 @@ from config.settings import LLM_MODEL_FUZZER
 async def run_fuzzer(
     github_url: str,
     oauth_token: Optional[str] = None,
-    temp_dir: Optional[str] = None,
+    selected_contracts: List[str] = None,
+    setup_result: Optional[SetupResult] = None,
 ) -> Dict[str, Union[Optional[str], str]]:
     """
     Executes the fuzzing process on a specified GitHub repository using Slither for context.
@@ -35,28 +36,26 @@ async def run_fuzzer(
     """
     model = LLM_MODEL_FUZZER
     is_local_temp_dir = False
-    if temp_dir is None:
-        temp_dir = tempfile.mkdtemp()
-        is_local_temp_dir = True
+    temp_dir = setup_result.project_dir if setup_result else tempfile.mkdtemp()
 
     try:
         # 1. Setup the fuzzing environment
-        setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
-        logger.info(f"Project type: {setup_result.project_type}")
+        if setup_result is None:
+            is_local_temp_dir = True
+            setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
 
         # Update project_dir to be from setup_result
-        project_dir = setup_result.project_dir
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
         # project_path = setup_result.project_path
 
         # 2. Run Slither analysis
         logger.info("Running Slither")
-        slither_output = await run_slither(project_dir)
+        slither_output = await run_slither(temp_dir, setup_result.remappings, selected_contracts)
 
         # 3. Generate fuzz prompts (with slither output)
         logger.info("Generating fuzz prompts")
-        fuzz_prompts = await generate_fuzz_prompts(project_dir, contract_folders, slither_output)
+        fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output)
 
         # 4. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
@@ -69,21 +68,19 @@ async def run_fuzzer(
         # 6. Save fuzz test
         logger.info("Saving fuzz test")
         try:
-            await save_fuzz_test(fuzz_test, project_dir, contract_folders, solc_version)
+            await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
         except Exception as e:
             logger.error(
                 f"Failed to save fuzz test: {str(e)}. Regenerating fuzz prompts and retrying."
             )
-            fuzz_prompts = await generate_fuzz_prompts(
-                project_dir, contract_folders, slither_output
-            )
+            fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output)
             fuzz_response = await send_prompt_to_llm_async(model, fuzz_prompts)
             fuzz_test = extract_fuzz_test(fuzz_response)
-            await save_fuzz_test(fuzz_test, project_dir, contract_folders, solc_version)
+            await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
 
         # 7. Run fuzz test
         logger.info("Running fuzz test")
-        fuzz_results = await run_fuzz_file(project_dir)
+        fuzz_results = await run_fuzz_file(temp_dir)
         logger.info(f"Fuzz results: {fuzz_results}")
 
         # 8. Generate report prompt

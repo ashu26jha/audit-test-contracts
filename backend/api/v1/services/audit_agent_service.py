@@ -9,6 +9,7 @@ from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
+from api.v1.schemas.fuzzer_schema import SetupResult
 from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
@@ -21,6 +22,7 @@ from api.v1.services.github_service import GitHubService
 from api.v1.utils import duplicates
 from common.logger import logger
 from common.profiles import Profiles
+from common.setup_environment import setup_environment
 from common.validate import (
     validate_contract_files,
     validate_github_url,
@@ -171,28 +173,32 @@ async def perform_audit_agent_background(
     access_token: str,
     selected_contracts: List[str],
 ):
-    temp_dir = tempfile.mkdtemp()
 
     try:
         logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
+        # Setup environment
+        temp_dir = tempfile.mkdtemp()
+        setup_result: SetupResult = None
+        try:
+            setup_result = await setup_environment(repositoryURL, access_token, temp_dir)
+        except Exception as e:
+            logger.error(f"Failed to set up environment: {str(e)}")
+
         # Update scan status to 'in_progress'
         await scan_history_service.update_scan_status(scan_uuid, "in_progress")
 
-        # Ensure selected_contracts is a list
-        selected_contracts = selected_contracts or []
-
         # Start the static analysis & fuzzer tasks asynchronously
-
-        static_analysis_task = asyncio.create_task(
-            static_analyzer_service.run_static_analyzer(
-                repositoryURL, access_token, selected_contracts, temp_dir
+        if setup_result:
+            static_analysis_task = asyncio.create_task(
+                static_analyzer_service.run_static_analyzer(
+                    repositoryURL, access_token, selected_contracts, setup_result
+                )
             )
-        )
 
-        # fuzzing_task = asyncio.create_task(
-        #     fuzz_service.run_fuzzer(repositoryURL, access_token, temp_dir)
-        # )
+            # fuzzing_task = asyncio.create_task(
+            #     fuzz_service.run_fuzzer(repositoryURL, access_token, selected_contracts, setup_result)
+            # )
 
         # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
@@ -210,25 +216,25 @@ async def perform_audit_agent_background(
             summary_result, flattened_contracts, detected_profile
         )
 
-        # Wait for static analysis to complete, with error handling
-        try:
-            # # Wait for both tasks to complete
-            # await asyncio.gather(static_analysis_task, fuzzing_task)
-            slither_result = await static_analysis_task
-        except Exception as e:
-            logger.error(f"Error in static analysis for scan {scan_uuid}: {str(e)}")
-            slither_result = None
+        if setup_result:
+            # Wait for static analysis to complete, with error handling
+            try:
+                # Wait for all tasks to complete
+                # await asyncio.gather(static_analysis_task, fuzzing_task)
+                slither_result = await static_analysis_task
+            except Exception as e:
+                logger.error(f"Error in static analysis for scan {scan_uuid}: {str(e)}")
+                slither_result = None
 
         # Combine findings, accounting for possible None slither_result
-        total_findings = len(context_scan_result)
         slither_findings = []
         if slither_result and hasattr(slither_result, "slither_output"):
-            total_findings += slither_result.slither_output.total_findings
             slither_findings = slither_result.slither_output.findings
         combined_findings = context_scan_result + slither_findings
 
         # Attempt to remove duplicates, if any
         dedup_findings = await duplicates.remove_duplicates(combined_findings, LLM_MODEL_DUPLICATES)
+        total_findings = len(dedup_findings)
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_uuid)

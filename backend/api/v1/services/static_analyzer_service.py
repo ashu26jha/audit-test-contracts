@@ -13,16 +13,17 @@ async def run_static_analyzer(
     github_url: str,
     oauth_token: str = None,
     selected_contracts: List[str] = None,
-    temp_dir: Optional[str] = None,
+    setup_result: Optional[SetupResult] = None,
 ) -> StaticAnalyzerResponse:
     logger.info(f"Starting static analysis for repository: {github_url}")
 
     # 1. Setup environment
     is_local_temp_dir = False
-    if temp_dir is None:
-        temp_dir = tempfile.mkdtemp()
+    temp_dir = setup_result.project_dir if setup_result else tempfile.mkdtemp()
+
+    if setup_result is None:
         is_local_temp_dir = True
-    setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
+        setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
 
     # 2. Run Slither
     slither_output = await run_slither(
