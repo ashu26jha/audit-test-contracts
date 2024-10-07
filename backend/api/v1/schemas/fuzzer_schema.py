@@ -2,12 +2,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, HttpUrl, Field
 
-
-class FuzzerRequest(BaseModel):
-    github_url: HttpUrl
-    oauth_token: Optional[str] = None
-
-
 class Finding(BaseModel):
     Issue: str = Field(..., description="A short description of the vulnerability or issue")
     Severity: str = Field(..., description="Severity level of the issue")
@@ -36,3 +30,9 @@ class SetupResult(BaseModel):
     project_path: str
     solc_version: str
     remappings: List[str]
+
+class FuzzerRequest(BaseModel):
+    github_url: HttpUrl
+    oauth_token: Optional[str] = None
+    selected_contracts: List[str]
+    setup_result: Optional[SetupResult] = None
