@@ -83,18 +83,21 @@ def preprocess_solidity_files(temp_dir: str) -> None:
     logger.info("Preprocessing completed.")
 
 
-def update_foundry_config(temp_dir: str, solc_version: str) -> None:
-    logger.info("Updating foundry.toml with the correct Solidity version...")
-    config_path = os.path.join(temp_dir, "foundry.toml")
-    if os.path.exists(config_path):
-        with open(config_path, "r") as f:
-            config = toml.load(f)
-        config["profile"] = config.get("profile", {})
-        config["profile"]["default"] = config["profile"].get("default", {})
-        config["profile"]["default"]["solc_version"] = solc_version
-        with open(config_path, "w") as f:
-            toml.dump(config, f)
-        logger.info(f"Foundry configuration updated with solc_version = {solc_version}")
-    else:
-        logger.error(f"foundry.toml not found in {temp_dir}")
-        raise FileNotFoundError("foundry.toml not found")
+def update_foundry_config(temp_dir: str) -> None:
+    logger.info("Updating foundry.toml to use 'auto' Solc version...")
+    foundry_toml_path = os.path.join(temp_dir, "foundry.toml")
+    if not os.path.exists(foundry_toml_path):
+        raise FileNotFoundError("foundry.toml not found in the project directory.")
+
+    with open(foundry_toml_path, "r") as f:
+        config = toml.load(f)
+
+    # Ensure the default profile exists
+    config.setdefault("profile", {})
+    config["profile"].setdefault("default", {})
+
+    # Set 'solc' to 'auto' instead of 'solc_version'
+    config["profile"]["default"]["auto_detect_solc"] = True
+
+    with open(foundry_toml_path, "w") as f:
+        toml.dump(config, f)

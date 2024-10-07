@@ -4,6 +4,11 @@ import tempfile
 from pathlib import Path
 from typing import Tuple
 
+from api.v1.utils.dependencies import (
+    generate_and_write_remappings,
+    install_dependencies,
+    parse_dependencies,
+)
 from api.v1.utils.forge_helpers import (
     copy_solidity_files,
     preprocess_solidity_files,
@@ -13,12 +18,9 @@ from api.v1.utils.forge_helpers import (
 from api.v1.utils.project_helpers import (
     clone_repository,
     compile_project,
-    detect_and_install_solc_version,
     detect_project_structure,
-    generate_and_write_remappings,
-    install_dependencies,
-    parse_dependencies,
 )
+from api.v1.utils.solc_version import detect_and_install_solc_versions
 from common import logger
 from pydantic import HttpUrl
 
@@ -54,7 +56,7 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
         #         logger.info(os.path.join(root, file))
 
         project_type, contract_folders = detect_project_structure(repo_dir)
-        solc_version = detect_and_install_solc_version(repo_dir)
+        solc_version = detect_and_install_solc_versions(repo_dir)
 
         print(repo_dir)
         if project_type == "brownie":
@@ -102,9 +104,11 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
 
             # Now use the project_helpers functions to set up the project
             dependencies = parse_dependencies(repo_dir, project_type)
-            print(dependencies)
-            await install_dependencies(foundry_project_dir, dependencies, project_type)
-            await generate_and_write_remappings(foundry_project_dir)
+            logger.info(f"DEPENDENCIES: {dependencies}")
+            custom_remappings = await install_dependencies(
+                foundry_project_dir, dependencies, project_type
+            )
+            await generate_and_write_remappings(foundry_project_dir, custom_remappings)
             update_foundry_config(foundry_project_dir, solc_version)
             await compile_project(foundry_project_dir, solc_version)
 
@@ -112,7 +116,7 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
             logger.info("Hardhat set up correctly")
 
         # Run "forge build" as a sanity check at the end
-        await compile_project(repo_dir, solc_version)
+        await compile_project(repo_dir)
 
         project_type, contract_folders = detect_project_structure(repo_dir)
 

@@ -6,16 +6,19 @@ from typing import Any, Dict, List
 from api.v1.utils.forge_helpers import run_command
 from common import logger
 from common.slither_detectors import SLITHER_DETECTOR_MAP
+from config.slither import CONFIDENCE_LEVELS
 
 
 def extract_contract_from_lines(lines: str) -> str:
     match = re.search(r"src/(.+?)\.sol", lines)
     if match:
-        return f"{match.group(1)}.sol"
+        return match.group(1) + ".sol"
     return ""
 
 
-def transform_slither_output(slither_output: Dict[str, Any]) -> Dict[str, Any]:
+def transform_slither_output(
+    slither_output: Dict[str, Any], selected_contracts: List[str]
+) -> Dict[str, Any]:
     transformed_results = []
     severity_counts = {
         "High": 0,
@@ -28,6 +31,12 @@ def transform_slither_output(slither_output: Dict[str, Any]) -> Dict[str, Any]:
 
     if "results" in slither_output and "detectors" in slither_output["results"]:
         for detector in slither_output["results"]["detectors"]:
+            confidence = detector.get("confidence", "").lower()
+
+            # Filter findings based on confidence level
+            if confidence.lower() not in CONFIDENCE_LEVELS:
+                continue
+
             severity = detector.get("impact", "")
             lines = detector.get("first_markdown_element", "")
 
@@ -36,50 +45,71 @@ def transform_slither_output(slither_output: Dict[str, Any]) -> Dict[str, Any]:
 
             # Use the SLITHER_DETECTOR_MAP with fallback to original issue
             original_issue = detector.get("check", "")
-            mapped_issue = SLITHER_DETECTOR_MAP.get(original_issue, original_issue)
+            mapped_issue = SLITHER_DETECTOR_MAP.get(original_issue, {})
+
+            # Get the title and description from the mapped issue
+            issue_title = mapped_issue.get("title", original_issue)
+            custom_description = mapped_issue.get("description", "")
+
+            # Combine custom description with Slither's description
+            full_description = f"{custom_description}\n\n{detector.get('description', '')}"
 
             transformed_result = {
-                "Issue": mapped_issue,
-                "OriginalIssue": original_issue,  # Keep the original issue for reference
+                "Issue": issue_title,
+                "OriginalIssue": original_issue,
                 "Severity": severity,
                 "Confidence": detector.get("confidence", ""),
                 "Contracts": contracts,
-                "Description": detector.get("description", ""),
+                "Description": full_description,
                 "Lines": lines,
             }
             transformed_results.append(transformed_result)
 
-            # Update severity counts
-            if severity in severity_counts:
-                severity_counts[severity] += 1
-            total_findings += 1
+    # Filter results based on selected_contracts
+    if selected_contracts:
+        filtered_results = [
+            result
+            for result in transformed_results
+            if any(
+                contract.lower() in selected.lower()
+                for contract in result["Contracts"]
+                for selected in selected_contracts
+            )
+        ]
+    else:
+        filtered_results = transformed_results
+
+    # Count severities and total findings after filtering
+    for result in filtered_results:
+        severity = result["Severity"]
+        if severity in severity_counts:
+            severity_counts[severity] += 1
+        total_findings += 1
 
     return {
-        "findings": transformed_results,
+        "findings": filtered_results,
         "total_findings": total_findings,
         "severity_counts": severity_counts,
     }
 
 
 async def run_slither(
-    temp_dir: str, remappings: List[str], solc_version: str
-) -> List[Dict[str, Any]]:
+    temp_dir: str, remappings: List[str], selected_contracts: List[str]
+) -> Dict[str, Any]:
     logger.info("Running Slither...")
 
     if not await check_slither_installation():
         raise ValueError("Slither is not installed or not working correctly")
 
-    env = dict(os.environ, SLITHER_SOLC_REMAPS=",".join(remappings))
-    env["SOLC_VERSION"] = solc_version
+    env = os.environ.copy()
+    env["SLITHER_SOLC_REMAPS"] = ",".join(remappings)
+    env["SOLC_ALLOW_PATHS"] = temp_dir
 
     src_dir = os.path.join(temp_dir, "src")
     if not os.path.exists(src_dir):
         raise ValueError(f"src directory not found in {temp_dir}")
 
-    # Absolute path for the output file
     output_file = os.path.join(temp_dir, "slither_output.json")
-
-    logger.info(f"Output file: {output_file}")
 
     slither_command = [
         "slither",
@@ -89,37 +119,39 @@ async def run_slither(
         "--exclude-dependencies",
         "--filter-paths",
         "lib|src/test|src/mock",
+        "--exclude",
+        "naming-convention,solc-version,similar-names",
     ]
+
     returncode, stdout, stderr = await run_command(slither_command, temp_dir, env=env)
 
-    # Check if the slither_output.json file exists
     if not os.path.exists(output_file):
         logger.error("Slither output file not found.")
         logger.error(f"Return code: {returncode}")
-        logger.error(f"Stdout: {stdout}")
         logger.error(f"Stderr: {stderr}")
-        logger.error(f"Contents of temp directory: {os.listdir(temp_dir)}")
         raise ValueError(f"Slither analysis failed: {stderr}")
 
-    # Read and parse the JSON output from Slither
     try:
         with open(output_file, "r") as f:
             slither_output = json.load(f)
 
-        contract_count = len(slither_output.get("contracts", []))
-        logger.info(f"Slither analyzed {contract_count} contracts")
-
-        # Transform the Slither output
-        transformed_output = transform_slither_output(slither_output)
+        transformed_output = transform_slither_output(slither_output, selected_contracts)
+        contract_count = count_unique_contracts(transformed_output)
+        logger.info(f"Slither analyzed {contract_count} unique contracts")
 
         return transformed_output
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse Slither output: {e}")
-        # Log the contents of the output file for debugging
-        with open(output_file, "r") as f:
-            slither_output_content = f.read()
-            logger.error(f"Contents of slither_output.json:\n{slither_output_content}")
         raise ValueError("Failed to parse Slither output")
+
+
+def count_unique_contracts(slither_output: Dict[str, Any]) -> int:
+    contracts_set = set()
+    if "findings" in slither_output:
+        for finding in slither_output["findings"]:
+            if "Contracts" in finding:
+                contracts_set.update(finding["Contracts"])
+    return len(contracts_set)
 
 
 async def check_slither_installation():

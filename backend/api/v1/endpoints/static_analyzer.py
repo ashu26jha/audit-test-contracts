@@ -13,10 +13,8 @@ async def analyze_repository(request: static_analyzer_schema.StaticAnalyzerReque
         )
         return result
     except ValueError as e:
-        # Handle known errors
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Handle unexpected errors
         raise HTTPException(
             status_code=500,
             detail=f"An unexpected error occurred during the analysis process: {str(e)}",

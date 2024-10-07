@@ -1,4 +1,6 @@
+import asyncio
 from datetime import datetime, timezone
+from typing import List
 from uuid import UUID
 
 from api.v1.models.global_stats import GlobalStats
@@ -11,6 +13,7 @@ from api.v1.services import (
     generate_summary_service,
     lines_of_code_service,
     scan_history_service,
+    static_analyzer_service,
 )
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
@@ -128,6 +131,9 @@ async def initiate_scan(
             perform_audit_agent_background,
             scan_id,
             flattened_contracts,
+            request.repositoryURL,
+            user.accessToken,
+            request.contractFiles,
         )
 
     except HTTPException:
@@ -158,12 +164,25 @@ async def initiate_scan(
 async def perform_audit_agent_background(
     scan_uuid: UUID,
     flattened_contracts: str,
+    repositoryURL: str,
+    access_token: str,
+    selected_contracts: List[str],
 ):
     try:
         logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
         # Update scan status to 'in_progress'
         await scan_history_service.update_scan_status(scan_uuid, "in_progress")
+
+        # Ensure selected_contracts is a list
+        selected_contracts = selected_contracts or []
+
+        # Start the static analysis task asynchronously
+        static_analysis_task = asyncio.create_task(
+            static_analyzer_service.clone_and_analyze_repo(
+                repositoryURL, access_token, selected_contracts
+            )
+        )
 
         # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
@@ -181,15 +200,29 @@ async def perform_audit_agent_background(
             summary_result, flattened_contracts, detected_profile
         )
 
-        # Calculate total findings
+        # Wait for static analysis to complete, with error handling
+        try:
+            slither_result = await static_analysis_task
+        except Exception as e:
+            logger.error(f"Error in static analysis for scan {scan_uuid}: {str(e)}")
+            slither_result = None
+
+        # Combine findings, accounting for possible None slither_result
         total_findings = len(context_scan_result)
+        slither_findings = []
+        if slither_result and hasattr(slither_result, "slither_output"):
+            total_findings += slither_result.slither_output.total_findings
+            slither_findings = slither_result.slither_output.findings
+
+        # Log the Slither findings for debugging
+        logger.debug(f"Slither findings: {len(slither_findings)}")
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = summary_result
         scan_result.type = detected_profile
         scan_result.total_findings = total_findings
-        scan_result.findings = context_scan_result
+        scan_result.findings = context_scan_result + slither_findings
         await scan_result.save()
 
         # Update scan status to 'completed' and include total_findings
