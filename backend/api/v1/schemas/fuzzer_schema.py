@@ -34,5 +34,5 @@ class SetupResult(BaseModel):
 class FuzzerRequest(BaseModel):
     github_url: HttpUrl
     oauth_token: Optional[str] = None
-    selected_contracts: List[str]
+    selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
