@@ -25,8 +25,11 @@ COPY . .
 # Expose the port that your backend will run on
 EXPOSE 8000
 
-# Install Redis
-RUN apt-get update && apt-get install -y redis-server
+# Install Redis and Doppler
+RUN sudo apt-get update && sudo apt-get install -y apt-transport-https ca-certificates curl gnupg
+RUN curl -sLf --retry 3 --tlsv1.2 --proto "=https" 'https://packages.doppler.com/public/cli/gpg.DE2A7741A397C129.key' | sudo gpg --dearmor -o /usr/share/keyrings/doppler-archive-keyring.gpg
+RUN echo "deb [signed-by=/usr/share/keyrings/doppler-archive-keyring.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main" | sudo tee /etc/apt/sources.list.d/doppler-cli.list
+RUN sudo apt-get update && sudo apt-get install -y redis-server doppler
 
 # Start Redis server before your application
-CMD redis-server --daemonize yes && redis-cli ping && python3 main.py
+CMD redis-server --daemonize yes && redis-cli ping && doppler run -- python3 main.py
