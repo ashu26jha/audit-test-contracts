@@ -1,4 +1,6 @@
 import asyncio
+import shutil
+import tempfile
 from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
@@ -168,6 +170,8 @@ async def perform_audit_agent_background(
     access_token: str,
     selected_contracts: List[str],
 ):
+    temp_dir = tempfile.mkdtemp()
+
     try:
         logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
@@ -177,12 +181,17 @@ async def perform_audit_agent_background(
         # Ensure selected_contracts is a list
         selected_contracts = selected_contracts or []
 
-        # Start the static analysis task asynchronously
+        # Start the static analysis & fuzzer tasks asynchronously
+
         static_analysis_task = asyncio.create_task(
-            static_analyzer_service.clone_and_analyze_repo(
-                repositoryURL, access_token, selected_contracts
+            static_analyzer_service.run_static_analyzer(
+                repositoryURL, access_token, selected_contracts, temp_dir
             )
         )
+
+        # fuzzing_task = asyncio.create_task(
+        #     fuzz_service.run_fuzzer(repositoryURL, access_token, temp_dir)
+        # )
 
         # Generate Summary and detect profile
         summary_result, detected_type = await generate_summary_service.generate_summary(
@@ -202,6 +211,8 @@ async def perform_audit_agent_background(
 
         # Wait for static analysis to complete, with error handling
         try:
+            # # Wait for both tasks to complete
+            # await asyncio.gather(static_analysis_task, fuzzing_task)
             slither_result = await static_analysis_task
         except Exception as e:
             logger.error(f"Error in static analysis for scan {scan_uuid}: {str(e)}")
@@ -252,3 +263,5 @@ async def perform_audit_agent_background(
         scan_result.total_findings = 0
         scan_result.findings = []
         await scan_result.save()
+    finally:
+        shutil.rmtree(temp_dir)

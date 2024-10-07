@@ -1,16 +1,19 @@
 import os
 import re
-import subprocess
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional
 
+from api.v1.utils.forge_helpers import run_command_sync
 from common import logger
 from packaging import version
 
 
-def detect_and_install_solc_versions(temp_dir: str) -> None:
+def detect_and_install_solc_versions(temp_dir: str) -> str:
     versions = find_solidity_versions(temp_dir)
     for solc_version in versions:
         install_solc_version(solc_version)
+
+    # Return the latest (highest) version
+    return max(versions, key=lambda v: version.parse(v))
 
 
 def install_solc_version(version: str) -> None:
@@ -91,17 +94,3 @@ def find_solidity_versions(temp_dir: str) -> List[str]:
             "No Solidity version found in src/ or contracts/. Using default version 0.8.27"
         )
         return ["0.8.27"]
-
-
-def run_command_sync(
-    command: List[str], cwd: str, env: Dict[str, str] = None
-) -> Tuple[int, str, str]:
-    process = subprocess.Popen(
-        command,
-        cwd=cwd,
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    stdout, stderr = process.communicate()
-    return process.returncode, stdout.decode(), stderr.decode()

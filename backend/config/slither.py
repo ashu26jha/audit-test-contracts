@@ -14,3 +14,20 @@ PACKAGE_MAPPING = {
     "solmate": "rari-capital/solmate",
     # Add more known packages here if needed
 }
+
+
+##################################################
+#               FRAMEWORKS CONFIG
+##################################################
+
+SOLIDITY_EXTENSION = ".sol"
+POSSIBLE_CONTRACT_FOLDERS = ["contracts", "src"]
+
+FOUNDRY_CONFIG = "foundry.toml"
+HARDHAT_CONFIGS = [
+    "hardhat.config.js",
+    "hardhat.config.ts",
+    "hardhat.config.cjs",
+    "hardhat.config.mjs",
+]
+BROWNIE_CONFIGS = ["brownie-config.yaml", "brownie-config.json"]

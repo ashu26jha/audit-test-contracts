@@ -8,7 +8,7 @@ router = APIRouter()
 @router.post("/static-analyzer", response_model=static_analyzer_schema.StaticAnalyzerResponse)
 async def analyze_repository(request: static_analyzer_schema.StaticAnalyzerRequest):
     try:
-        result = await static_analyzer_service.clone_and_analyze_repo(
+        result = await static_analyzer_service.run_static_analyzer(
             request.github_url, request.oauth_token
         )
         return result

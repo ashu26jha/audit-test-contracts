@@ -27,3 +27,4 @@ class SetupResult(BaseModel):
     project_type: str
     project_path: str
     solc_version: str
+    remappings: List[str]

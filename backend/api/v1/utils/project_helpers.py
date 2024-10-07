@@ -4,15 +4,7 @@ from typing import List, Tuple
 
 from api.v1.utils.forge_helpers import find_contract_folders, run_command
 from common import logger
-
-FOUNDRY_CONFIG = "foundry.toml"
-HARDHAT_CONFIGS = [
-    "hardhat.config.js",
-    "hardhat.config.ts",
-    "hardhat.config.cjs",
-    "hardhat.config.mjs",
-]
-BROWNIE_CONFIGS = ["brownie-config.yaml", "brownie-config.json"]
+from config.slither import BROWNIE_CONFIGS, FOUNDRY_CONFIG, HARDHAT_CONFIGS
 
 
 def detect_project_structure(repo_dir: str) -> Tuple[str, List[str], bool]:

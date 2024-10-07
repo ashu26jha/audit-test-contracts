@@ -2,14 +2,12 @@ import asyncio
 import os
 import re
 import shutil
+import subprocess
 from typing import Dict, List, Tuple
 
 import toml
 from common import logger
-
-SOLIDITY_EXTENSION = ".sol"
-FOUNDRY_CONFIG = "foundry.toml"
-POSSIBLE_CONTRACT_FOLDERS = ["contracts", "src"]
+from config.slither import POSSIBLE_CONTRACT_FOLDERS, SOLIDITY_EXTENSION
 
 
 def find_contract_folders(repo_dir: str) -> List[str]:
@@ -25,6 +23,18 @@ def find_contract_folders(repo_dir: str) -> List[str]:
             contract_folders.append(os.path.relpath(root, repo_dir))
 
     return list(set(contract_folders))
+
+
+def clean_unused_files(temp_dir):
+    for folder in ["src", "script", "test"]:
+        folder_path = os.path.join(temp_dir, folder)
+        if os.path.exists(folder_path):
+            for item in os.listdir(folder_path):
+                item_path = os.path.join(folder_path, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
 
 
 def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
@@ -60,6 +70,20 @@ async def run_command(
         stderr=asyncio.subprocess.PIPE,
     )
     stdout, stderr = await process.communicate()
+    return process.returncode, stdout.decode(), stderr.decode()
+
+
+def run_command_sync(
+    command: List[str], cwd: str, env: Dict[str, str] = None
+) -> Tuple[int, str, str]:
+    process = subprocess.Popen(
+        command,
+        cwd=cwd,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout, stderr = process.communicate()
     return process.returncode, stdout.decode(), stderr.decode()
 
 

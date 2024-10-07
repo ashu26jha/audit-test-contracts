@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 from typing import Dict, Optional, Union
 
 from api.v1.schemas.fuzzer_schema import (  # Import SetupResult
@@ -18,7 +20,9 @@ from config.settings import LLM_MODEL_FUZZER
 
 
 async def run_fuzzer(
-    github_url: str, oauth_token: Optional[str] = None
+    github_url: str,
+    oauth_token: Optional[str] = None,
+    temp_dir: Optional[str] = None,
 ) -> Dict[str, Union[Optional[str], str]]:
     """
     Executes the fuzzing process on a specified GitHub repository using Slither for context.
@@ -34,10 +38,14 @@ async def run_fuzzer(
         Dict[str, Union[Optional[str], str]]: A dictionary containing the fuzz test, fuzz results, analysis, and any error encountered.
     """
     model = LLM_MODEL_FUZZER
+    is_local_temp_dir = False
+    if temp_dir is None:
+        temp_dir = tempfile.mkdtemp()
+        is_local_temp_dir = True
 
     try:
         # 1. Setup the fuzzing environment
-        setup_result: SetupResult = await setup_environment(github_url, oauth_token)
+        setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
         logger.info(f"Project type: {setup_result.project_type}")
 
         # Update project_dir to be from setup_result
@@ -100,6 +108,9 @@ async def run_fuzzer(
             fuzz_results=fuzz_results,
             analysis=report_response,
         )
+
+        if is_local_temp_dir:
+            shutil.rmtree(temp_dir)
 
         return {
             "message": "Fuzzing completed successfully.",
