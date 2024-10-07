@@ -2,8 +2,8 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Tuple
 
+from api.v1.schemas.fuzzer_schema import SetupResult  # Import the new SetupResult class
 from api.v1.utils.dependencies import (
     generate_and_write_remappings,
     install_dependencies,
@@ -25,7 +25,7 @@ from common import logger
 from pydantic import HttpUrl
 
 
-async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str, str]:
+async def setup_environment(github_url: HttpUrl, oauth_token: str) -> SetupResult:
     """
     Sets up the environment by creating a temporary directory, cloning the repository,
     initializing a Foundry project, and adding the contract to the src directory.
@@ -35,7 +35,7 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
         oauth_token (str): The OAuth token for private repositories.
 
     Returns:
-        Tuple[str, str]: The project directory and contract name.
+        SetupResult: An instance containing project directory, contract folders, project type, project path, and solc version.
     """
 
     tmpdirname = tempfile.mkdtemp(prefix="fuzz_project_")
@@ -120,7 +120,13 @@ async def setup_environment(github_url: HttpUrl, oauth_token: str) -> Tuple[str,
 
         project_type, contract_folders = detect_project_structure(repo_dir)
 
-        return repo_dir, contract_folders, project_type, project_path
+        return SetupResult(
+            project_dir=repo_dir,
+            contract_folders=contract_folders,
+            project_type=project_type,
+            project_path=str(project_path),
+            solc_version=solc_version,
+        )
 
     except Exception as e:
         logger.error(f"Error setting up environment: {str(e)}")

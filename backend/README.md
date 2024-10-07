@@ -20,7 +20,7 @@
 
 This is the backend component of the Yokai Audit Agent, providing the core functionality for smart contract auditing, GitHub integration, and user management.
 
-## Getting StartedV
+## Getting Started
 
 ### Prerequisites
 

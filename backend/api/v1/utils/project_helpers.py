@@ -26,10 +26,14 @@ def detect_project_structure(repo_dir: str) -> Tuple[str, List[str], bool]:
         for config in config_files:
             if os.path.exists(os.path.join(repo_dir, config)):
                 contract_folders = find_contract_folders(repo_dir)
+                # Filter out any 'lib/' folders
+                contract_folders = [folder for folder in contract_folders if "lib/" not in folder]
                 return project_type, contract_folders
 
     # If no specific config is found, assume it's a generic solidity project
     contract_folders = find_contract_folders(repo_dir)
+    # Filter out any 'lib/' folders
+    contract_folders = [folder for folder in contract_folders if "lib/" not in folder]
     return "generic", contract_folders
 
 

@@ -1,14 +1,12 @@
-# TODO: Improve this prompt
+# TODO: Improve this prompt with using this as reference: https://github.com/serial-coder/solidity-security-by-example
 
 FUZZER_PROMPT = """
-Act as a top 0.0001% ex-FAANG alumnus from Waterloo who interned at the most prestigious and high-design startups in Silicon Valley. You are now a Senior Technical Fuzzing Founder, helping small teams progress from 0 to 1 quickly.
-
-Your job and responsibility is to create world-class Smart Contract fuzzing suites in Foundry to uncover and prevent Critical vulnerabilities that would otherwise risk the loss of millions of dollars. This is done through invariant testing in foundry.
+You are a highly skilled smart contract fuzzing expert. Your objective is to create a comprehensive fuzz testing suite for the provided Solidity contracts using Foundry. This suite should be designed to uncover critical vulnerabilities that could lead to significant financial losses.
 
 Here is the project structure:
 {project_structure}
 
-Here are all of the contracts:
+Below are the Solidity contracts to be tested:
 ```solidity
 {contract_code}
 ```
@@ -21,45 +19,48 @@ Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that:
 5. Uses appropriate Foundry assertions to check contract behavior
 6. Imports the contracts as the name provided
 
-Read the documentation for Foundry fuzzing:
+Refer to the documentation for Foundry fuzzing:
 {docs}
 
-And here are examples of how a test is written
+Additionally, here are examples of how a test is structured:
 {fuzz_examples}
 
-You should write the test with security in mind to try and find vulnerabilities and break the contract. Heres a list of vulnerabilities you should look for:
-List of vulnerabilities:
-1. Reentrancy
-2. Front-running
-3. Unrestricted access
-4. Integer overflow/underflow
-5. Uninitialized storage pointers
-6. Unrestricted delegatecall
-7. Unrestricted call
-8. Unrestricted transfer
-9. Unrestricted approve
-10. Unrestricted mint
-11. Unrestricted burn
-12. Unrestricted withdraw
-13. Unrestricted deposit
-14. Unrestricted transferFrom
-15. Unrestricted approveFrom
-16. Unrestricted mintFrom
-17. Unrestricted burnFrom
+When writing the tests, focus on security to identify vulnerabilities and break the contract. Pay attention to the following list of vulnerabilities:
+| Vulnerability                | Description                                                                 | Potential Impact                                                                 |
+|------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| Reentrancy Attacks           | Occurs when a function makes an external call to another untrusted contract | Can lead to unauthorized withdrawals and significant financial losses           |
+| Integer Overflow/Underflow   | Happens when arithmetic operations exceed the maximum or minimum size       | Can cause incorrect calculations and potential exploitation                     |
+| Oracle Manipulation          | Involves tampering with the data provided by oracles                         | Can lead to incorrect contract behavior and financial manipulation              |
+| Hidden Backdoors             | Malicious code intentionally hidden within the contract                     | Can allow unauthorized access and control over the contract                     |
+| Timestamp Dependence         | Relies on block timestamps for critical logic                               | Can be manipulated by miners to alter contract behavior                         |
+| Frontrunning                 | Exploits the ability to see pending transactions before they are confirmed  | Can lead to unfair advantages and financial losses                              |
+| Unchecked Return Values      | Fails to check the return value of low-level calls                          | Can result in unexpected behavior and security vulnerabilities                  |
+| Denial of Service (DoS)      | Prevents the contract from functioning properly                             | Can disrupt contract operations and availability                                |
+| Access Control Issues        | Improper implementation of access controls                                  | Can lead to unauthorized actions and security breaches                          |
+| Uninitialized Storage Pointers | Uses uninitialized storage pointers                                        | Can lead to unexpected behavior and security vulnerabilities                    |
+| Delegatecall Injection       | Uses delegatecall to execute code in the context of another contract        | Can lead to code execution vulnerabilities and unauthorized actions             |
+| Short Address Attack         | Exploits the way Ethereum handles addresses                                 | Can lead to incorrect parameter parsing and potential exploitation              |
+| Signature Replay Attacks     | Reuses a valid signature in a different context                             | Can lead to unauthorized transactions and security breaches                     |
+| Block Gas Limit Vulnerability| Relies on block gas limits for critical logic                               | Can be manipulated to disrupt contract operations                               |
+| Force Sending Ether          | Forces a contract to receive Ether without triggering fallback functions    | Can lead to unexpected behavior and security vulnerabilities                    |
+| Incorrect Inheritance Order  | Incorrectly orders contract inheritance                                     | Can lead to unexpected behavior and security vulnerabilities                    |
+| Floating Pragma              | Uses a floating pragma for compiler version                                 | Can lead to compatibility issues and potential vulnerabilities                  |
+| Unprotected Selfdestruct     | Allows anyone to call the selfdestruct function                              | Can lead to the destruction of the contract and loss of funds                   |
+| External Contract Referencing| References external contracts without proper validation                     | Can lead to unexpected behavior and security vulnerabilities                    |
+| Improper Error Handling      | Fails to handle errors properly                                             | Can lead to unexpected behavior and security vulnerabilities                    |
 
+We have already run Slither on the code you are about to analyze, and the results are as follows. Take these findings into account and check if you can exploit any vulnerabilities related to them:
+{slither_output}
 """
 
 REPORT_PROMPT = """
-You are an expert smart contract auditor specializing in Foundry fuzz testing analysis. Your task is to perform a thorough, insightful analysis of the provided fuzz test and its results, with a focus on identifying broken invariants and their implications for potential vulnerabilities. Remember that errors encountered during fuzz testing often indicate broken invariants and potential vulnerabilities, not compiler errors.
+You are an expert smart contract auditor specializing in Foundry fuzz testing analysis. Your task is to conduct a thorough analysis of the provided fuzz test and its results, focusing on identifying broken invariants and their implications for potential vulnerabilities. Remember that errors encountered during fuzz testing often indicate broken invariants and potential vulnerabilities, rather than compiler errors.
 
 Fuzz Test:
 {fuzz_test}
 
 Fuzz Test Results:
 {results}
-
-Comprehensive List of Smart Contract Vulnerabilities:
-[The list of 29 vulnerabilities as provided earlier]
 
 Conduct your analysis in the following structured format:
 
