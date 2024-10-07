@@ -53,7 +53,13 @@ export const ContractSelection: React.FC = () => {
         <Table
           aria-label="Solidity files table"
           selectionMode="multiple"
-          onSelectionChange={(selection) => setSelectedContracts(Array.from(selection) as string[])}
+          onSelectionChange={(selection) => {
+            if (selection === "all") {
+              setSelectedContracts(filteredSolidityFiles.map((file) => file.path));
+            } else {
+              setSelectedContracts(Array.from(selection) as string[]);
+            }
+          }}
         >
           <TableHeader>
             <TableColumn>Name</TableColumn>

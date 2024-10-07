@@ -86,3 +86,10 @@ EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
 ##################################################
 
 REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+##################################################
+#                   RETRIES
+##################################################
+
+MAX_RETRIES = 3
+DELAY = 2
