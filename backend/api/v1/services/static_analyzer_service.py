@@ -4,9 +4,9 @@ from typing import List, Optional
 
 from api.v1.schemas.fuzzer_schema import SetupResult
 from api.v1.schemas.static_analyzer_schema import SlitherOutput, StaticAnalyzerResponse
-from api.v1.services.fuzz_services.setup_environment import setup_environment
 from api.v1.utils.slither_helpers import run_slither
 from common import logger
+from common.setup_environment import setup_environment
 
 
 async def run_static_analyzer(

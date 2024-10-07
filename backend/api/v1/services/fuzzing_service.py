@@ -2,20 +2,16 @@ import shutil
 import tempfile
 from typing import Dict, Optional, Union
 
-from api.v1.schemas.fuzzer_schema import (  # Import SetupResult
-    FuzzTestResult,
-    SetupResult,
-)
-from api.v1.services.fuzz_services.cleanup_environment import cleanup_environment
+from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
 from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
 from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
-from api.v1.services.fuzz_services.setup_environment import setup_environment
 from api.v1.utils.slither_helpers import run_slither
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
+from common.setup_environment import setup_environment
 from config.settings import LLM_MODEL_FUZZER
 
 
@@ -52,7 +48,7 @@ async def run_fuzzer(
         project_dir = setup_result.project_dir
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
-        project_path = setup_result.project_path
+        # project_path = setup_result.project_path
 
         # 2. Run Slither analysis
         logger.info("Running Slither")
@@ -90,19 +86,15 @@ async def run_fuzzer(
         fuzz_results = await run_fuzz_file(project_dir)
         logger.info(f"Fuzz results: {fuzz_results}")
 
-        # 8. Cleanup environment
-        logger.info("Cleaning up environment")
-        await cleanup_environment(project_path)
-
-        # 9. Generate report prompt
+        # 8. Generate report prompt
         logger.info("Generating report prompt")
         report_prompt = await generate_report_prompt(fuzz_test, fuzz_results)
 
-        # 10. Send report prompt to LLM
+        # 9. Send report prompt to LLM
         logger.info("Sending report prompt to LLM")
         report_response = await send_prompt_to_llm_async(model, report_prompt)
 
-        # 11. Convert the report to JSON
+        # 10. Convert the report to JSON
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
             fuzz_results=fuzz_results,
@@ -110,6 +102,7 @@ async def run_fuzzer(
         )
 
         if is_local_temp_dir:
+            logger.info("Cleaning up environment")
             shutil.rmtree(temp_dir)
 
         return {
