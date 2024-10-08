@@ -91,7 +91,7 @@ async def run_fuzzer(
         
         # 8. Generate report prompt
         logger.info("Generating report prompt")
-        report_prompt = await generate_report_prompt(fuzz_test, fuzz_results)
+        report_prompt = await generate_report_prompt(fuzz_test, fuzz_results, contract_folders)
 
         # 9. Send report prompt to LLM
         logger.info("Sending report prompt to LLM")
