@@ -1,6 +1,6 @@
 # TODO: Improve this prompt with using this as reference: https://github.com/serial-coder/solidity-security-by-example
 
-FUZZER_PROMPT = """
+FUZZER_PROMPT_WITH_TEST = """
 You are a highly skilled smart contract fuzzing expert. Your objective is to create a comprehensive fuzz testing suite for the provided Solidity contracts using Foundry. This suite should be designed to uncover critical vulnerabilities that could lead to significant financial losses.
 Make sure to include all the needed parameters for every function call and contracts creation. Generate test parameters when needed. I must be able to run the test without any issues or additional changes.
 
@@ -24,6 +24,32 @@ Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that wi
 Look at the already existing test files and leverage the way they import contracts and setting up the environment, but only include functions that will test and fuzz the vulnerabilities.
 
 You do not need to import vm to use it in the test cases.
+
+Base your vulnerabilities on the following list of the output we got from slither:
+{slither_output}
+"""
+
+FUZZER_PROMPT_WITHOUT_TEST = """
+You are a highly skilled smart contract fuzzing expert. Your objective is to create a comprehensive fuzz testing suite for the provided Solidity contracts using Foundry. This suite should be designed to uncover critical vulnerabilities that could lead to significant financial losses.
+Make sure to include all the needed parameters for every function call and contracts creation. Generate test parameters when needed. I must be able to run the test without any issues or additional changes.
+
+Here is the project structure:
+{project_structure}
+
+In the test case, import the contracts as the name and path provided here. 
+
+Below are the Solidity contracts that you will be testing:
+```solidity
+{contract_code}
+```
+Make it use the Foundry testing library and import it as 'forge-std/Test.sol'.
+
+Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that will test the contracts for any vulnerabilities. 
+
+You do not need to import vm to use it in the test cases.
+
+Base your vulnerabilities on the following list of the output we got from slither:
+{slither_output}
 """
 
 REPORT_PROMPT = """
@@ -61,4 +87,9 @@ Guidelines for Analysis:
 - Analyze not just what the test reveals, but also what it might be missing, especially in relation to the comprehensive list of vulnerabilities provided.
 
 Your analysis should be comprehensive, insightful, and actionable, providing valuable guidance for improving the security and efficiency of the smart contract. Focus on how broken invariants relate to potential vulnerabilities and provide clear, specific recommendations for addressing these issues. Only issues regarding the code, and the result of the fuzz test. You can not find errors in the test case
+"""
+
+SYSTEM_PROMPT_FUZZ_TEST = """You are a highly skilled smart contract auditor. Your goal is to find vulnerabilities in the following Solidity code with making a fuzz test. You will be given the code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts.
+
+The output should **only** be in a Foundry Forge test file format, without any additional text or explanations.
 """

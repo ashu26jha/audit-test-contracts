@@ -17,10 +17,12 @@ from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_pr
 from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
+from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import LLM_MODEL_BEST
-
+from common.profiles import Profiles
+from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
 
 async def run_fuzzer(
     github_url: str,
@@ -45,7 +47,14 @@ async def run_fuzzer(
     model = LLM_MODEL_BEST
     is_local_temp_dir = False
     temp_dir = setup_result.project_dir if setup_result else tempfile.mkdtemp()
-
+    
+    # TODO: Different profiles for different fuzzing techniques?
+    # for now both stateless and statefull (invariant) are in the same profile
+    detected_profile = Profiles.FUZZING
+    print(detected_profile)
+    # Determine if system prompt should be used
+    system_prompt = SYSTEM_PROMPT_FUZZ_TEST
+    
     try:
         # 1. Setup the fuzzing environment
         if setup_result is None:
@@ -62,11 +71,12 @@ async def run_fuzzer(
 
         # 3. Generate fuzz prompts (with slither output)
         logger.info("Generating fuzz prompts")
-        fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output)
+        fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output, detected_profile)
 
         # 4. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
-        fuzz_response = await send_prompt_to_llm_async(model, fuzz_prompts)
+        fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
+        print(fuzz_response)
 
         # 5. Extract fuzz test
         logger.info("Extracting fuzz test")

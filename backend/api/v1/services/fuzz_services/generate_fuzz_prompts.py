@@ -3,7 +3,11 @@ from typing import List
 
 from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
-from config.prompts.fuzzer_prompts import FUZZER_PROMPT
+from common.profiles import Profiles
+from config.prompts.fuzzer_prompts import (
+    FUZZER_PROMPT_WITH_TEST,
+    FUZZER_PROMPT_WITHOUT_TEST,
+)
 
 
 def read_file(path: str) -> str:
@@ -21,7 +25,7 @@ def read_file(path: str) -> str:
 
 
 async def generate_fuzz_prompts(
-    project_dir: str, contract_folders: List[str], slither_output: SlitherOutput
+    project_dir: str, contract_folders: List[str], slither_output: SlitherOutput, detected_profile: Profiles
 ) -> str:
     """
     Generates the fuzzing prompt for the given project directory by reading all Solidity contract files
@@ -38,7 +42,11 @@ async def generate_fuzz_prompts(
     all_contract_codes = ""
     existing_test_cases = ""
     findings_str = ""
-    
+
+    # Check if the test folder exists
+    test_folder_path = Path(project_dir) / "test"
+    test_folder_exists = test_folder_path.exists() and test_folder_path.is_dir()
+
     if slither_output is None:
         findings_str = ""
     else:
@@ -63,16 +71,28 @@ async def generate_fuzz_prompts(
                 all_contract_codes += read_file(contract_file) + "\n"
                 
     # Check for existing test files in the test folder
-    test_folder_path = Path(project_dir) / "test"
-    if test_folder_path.exists() and test_folder_path.is_dir():
+    if test_folder_exists:
         for test_file in test_folder_path.rglob("*.t.sol"):
             existing_test_cases += f"// Existing test file: {test_file.relative_to(project_dir)}\n"
             existing_test_cases += read_file(test_file) + "\n"
 
     project_structure = get_project_structure(project_dir, contract_folders)
-    return FUZZER_PROMPT.format(
-        contract_code=all_contract_codes,
-        project_structure=project_structure,
-        slither_output=findings_str,
-        existing_test_cases=existing_test_cases,
-    )
+
+    # Select the appropriate prompt based on the presence of a test folder
+    if test_folder_exists:
+        print("Using FUZZER_PROMPT_WITH_TEST")
+        prompt = FUZZER_PROMPT_WITH_TEST.format(
+            contract_code=all_contract_codes,
+            project_structure=project_structure,
+            slither_output=findings_str,
+            existing_test_cases=existing_test_cases,
+        )
+    else:
+        print("Using FUZZER_PROMPT_WITHOUT_TEST")
+        prompt = FUZZER_PROMPT_WITHOUT_TEST.format(
+            contract_code=all_contract_codes,
+            project_structure=project_structure,
+            slither_output=findings_str,
+        )
+
+    return prompt
