@@ -2,7 +2,7 @@ name: Build and Run application on AWS ECS  Container
 on:
   push:
     branches:
-      - test-test #update this branch if once its fixed
+      - github_action_ci_cd #update this branch if once its fixed
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: code_auditor_images_repository
@@ -26,7 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::762233726430:role/Name_of_Role
+          role-to-assume: arn:aws:iam::762233726430:role/github-ci-cd-code-auditor
           role-session-name: Github
           aws-region: ${{ env.AWS_REGION }}
 
