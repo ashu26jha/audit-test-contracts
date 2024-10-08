@@ -7,45 +7,23 @@ Make sure to include all the needed parameters for every function call and contr
 Here is the project structure:
 {project_structure}
 
-Below are the Solidity contracts to be tested:
+In the test case, import the contracts as the name and path provided here. 
+
+Below are the Solidity contracts that you will be testing:
 ```solidity
 {contract_code}
 ```
 
-Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that:
-1. Imports necessary Foundry testing libraries (use 'forge-std/Test.sol')
-2. Creates a contract named 'FuzzTest' that inherits from 'Test'
-3. Includes a setUp() function to set up all users and deploys the target contract
-4. Implements fuzz test functions that target potential vulnerabilities
-5. Uses appropriate Foundry assertions to check contract behavior
-6. Imports the contracts as the name provided
+Make it use the Foundry testing library and import it as 'forge-std/Test.sol'.
 
-When writing the tests, focus on security to identify vulnerabilities and break the contract. Pay attention to the following list of vulnerabilities:
-| Vulnerability                | Description                                                                 | Potential Impact                                                                 |
-|------------------------------|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| Reentrancy Attacks           | Occurs when a function makes an external call to another untrusted contract | Can lead to unauthorized withdrawals and significant financial losses           |
-| Integer Overflow/Underflow   | Happens when arithmetic operations exceed the maximum or minimum size       | Can cause incorrect calculations and potential exploitation                     |
-| Oracle Manipulation          | Involves tampering with the data provided by oracles                         | Can lead to incorrect contract behavior and financial manipulation              |
-| Hidden Backdoors             | Malicious code intentionally hidden within the contract                     | Can allow unauthorized access and control over the contract                     |
-| Timestamp Dependence         | Relies on block timestamps for critical logic                               | Can be manipulated by miners to alter contract behavior                         |
-| Frontrunning                 | Exploits the ability to see pending transactions before they are confirmed  | Can lead to unfair advantages and financial losses                              |
-| Unchecked Return Values      | Fails to check the return value of low-level calls                          | Can result in unexpected behavior and security vulnerabilities                  |
-| Denial of Service (DoS)      | Prevents the contract from functioning properly                             | Can disrupt contract operations and availability                                |
-| Access Control Issues        | Improper implementation of access controls                                  | Can lead to unauthorized actions and security breaches                          |
-| Uninitialized Storage Pointers | Uses uninitialized storage pointers                                        | Can lead to unexpected behavior and security vulnerabilities                    |
-| Delegatecall Injection       | Uses delegatecall to execute code in the context of another contract        | Can lead to code execution vulnerabilities and unauthorized actions             |
-| Short Address Attack         | Exploits the way Ethereum handles addresses                                 | Can lead to incorrect parameter parsing and potential exploitation              |
-| Signature Replay Attacks     | Reuses a valid signature in a different context                             | Can lead to unauthorized transactions and security breaches                     |
-| Block Gas Limit Vulnerability| Relies on block gas limits for critical logic                               | Can be manipulated to disrupt contract operations                               |
-| Force Sending Ether          | Forces a contract to receive Ether without triggering fallback functions    | Can lead to unexpected behavior and security vulnerabilities                    |
-| Incorrect Inheritance Order  | Incorrectly orders contract inheritance                                     | Can lead to unexpected behavior and security vulnerabilities                    |
-| Floating Pragma              | Uses a floating pragma for compiler version                                 | Can lead to compatibility issues and potential vulnerabilities                  |
-| Unprotected Selfdestruct     | Allows anyone to call the selfdestruct function                              | Can lead to the destruction of the contract and loss of funds                   |
-| External Contract Referencing| References external contracts without proper validation                     | Can lead to unexpected behavior and security vulnerabilities                    |
-| Improper Error Handling      | Fails to handle errors properly                                             | Can lead to unexpected behavior and security vulnerabilities                    |
+Here is the existing test files:
+{existing_test_cases}
 
-We have already run Slither on the code you are about to analyze, and the results are as follows. Take these findings into account and check if you can exploit any vulnerabilities related to them:
-{slither_output}
+Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that will test the contracts for any vulnerabilities. 
+
+Look at the already existing test files and leverage the way they import contracts and setting up the environment, but only include functions that will test and fuzz the vulnerabilities.
+
+You do not need to import vm to use it in the test cases.
 """
 
 REPORT_PROMPT = """
@@ -57,19 +35,20 @@ Fuzz Test:
 Fuzz Test Results:
 {results}
 
+Contract Code:
+{contract_code}
+
 Conduct your analysis in the following structured format. The output should **only** be in a well-formed JSON as follows, without any additional text or explanations:
-```json
-{
+```json	
+
     "findings": [
-        {
-        "Issue": "Short description of the issue",
-        "Severity": "High/Medium/Low/Info/Best Practices",
-        "Contracts": ["ContractName.sol"],
-        "Description": "Detailed description of the issue.",
-        "Recommendation": "Suggestion on how to fix the issue."
-        }
+        
+            "Issue": "Short description of the issue",
+            "Severity": "High/Medium/Low/Info/Best Practices",
+            "Contracts": ["ContractName.sol"],
+            "Description": "Detailed description of the issue.",
+            "Recommendation": "Suggestion on how to fix the issue."
     ]
-}
 ```
 
 Guidelines for Analysis:
