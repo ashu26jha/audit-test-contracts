@@ -5,7 +5,7 @@ FROM node:18.19.0-slim
 WORKDIR /app
 
 # Copy the package.json and package-lock.json into the container
-COPY ./src/package*.json ./
+COPY package*.json ./
 
 # Install the Node.js dependencies
 RUN npm install
