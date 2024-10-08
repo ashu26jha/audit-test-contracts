@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import List, Tuple
 
-from api.v1.utils.forge_helpers import find_contract_folders, run_command
+from api.v1.helpers.forge_helpers import find_contract_folders, run_command
 from common import logger
 from config.slither import BROWNIE_CONFIGS, FOUNDRY_CONFIG, HARDHAT_CONFIGS
 

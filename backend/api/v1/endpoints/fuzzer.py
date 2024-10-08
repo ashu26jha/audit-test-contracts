@@ -12,7 +12,7 @@ async def execute_fuzzer(request: FuzzerRequest):
             request.github_url,
             request.oauth_token,
             request.selected_contracts,
-            request.setup_result
+            request.setup_result,
         )
         return result
     except ValueError as e:

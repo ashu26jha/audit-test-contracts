@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from api.v1.utils.project_helpers import compile_project
+from api.v1.helpers.project_helpers import compile_project
 from common import logger
 
 

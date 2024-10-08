@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from api.v1.utils.project_helpers import get_project_structure
+from api.v1.helpers.project_helpers import get_project_structure
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT
 
 

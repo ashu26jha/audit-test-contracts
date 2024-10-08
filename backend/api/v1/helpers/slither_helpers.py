@@ -3,9 +3,9 @@ import os
 import re
 from typing import Any, Dict, List
 
-from api.v1.utils.forge_helpers import run_command
+from api.v1.helpers.forge_helpers import run_command
+from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
 from common import logger
-from common.slither_detectors import SLITHER_DETECTOR_MAP
 from config.slither import CONFIDENCE_LEVELS
 
 
@@ -96,7 +96,6 @@ def transform_slither_output(
 async def run_slither(
     temp_dir: str, remappings: List[str], selected_contracts: List[str]
 ) -> Dict[str, Any]:
-    logger.info("Running Slither...")
 
     if not await check_slither_installation():
         raise ValueError("Slither is not installed or not working correctly")
@@ -158,7 +157,7 @@ async def check_slither_installation():
     try:
         returncode, stdout, stderr = await run_command(["slither", "--version"], ".")
         if returncode == 0:
-            logger.info(f"Slither version: {stdout.strip()}")
+            logger.info(f"Running Slither version: {stdout.strip()}...")
             return True
         else:
             logger.error(f"Slither not found or error checking version: {stderr}")

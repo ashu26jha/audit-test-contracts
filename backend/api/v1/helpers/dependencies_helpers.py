@@ -5,7 +5,7 @@ import shutil
 from typing import Dict, List
 
 import toml
-from api.v1.utils.forge_helpers import run_command, write_remappings
+from api.v1.helpers.forge_helpers import run_command, write_remappings
 from common import logger
 from config.slither import PACKAGE_MAPPING
 

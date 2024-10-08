@@ -1,6 +1,7 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, HttpUrl, Field
+from pydantic import BaseModel, Field, HttpUrl
+
 
 class Finding(BaseModel):
     Issue: str = Field(..., description="A short description of the vulnerability or issue")
@@ -8,6 +9,7 @@ class Finding(BaseModel):
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
+
 
 class FuzzTestResult(BaseModel):
     fuzz_test: Optional[str] = None
@@ -30,6 +32,7 @@ class SetupResult(BaseModel):
     project_path: str
     solc_version: Optional[str] = None
     remappings: Optional[List[str]] = None
+
 
 class FuzzerRequest(BaseModel):
     github_url: HttpUrl

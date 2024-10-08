@@ -2,6 +2,7 @@
 
 FUZZER_PROMPT = """
 You are a highly skilled smart contract fuzzing expert. Your objective is to create a comprehensive fuzz testing suite for the provided Solidity contracts using Foundry. This suite should be designed to uncover critical vulnerabilities that could lead to significant financial losses.
+Make sure to include all the needed parameters for every function call and contracts creation. Generate test parameters when needed. I must be able to run the test without any issues or additional changes.
 
 Here is the project structure:
 {project_structure}

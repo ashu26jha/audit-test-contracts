@@ -2,7 +2,7 @@ import os
 import re
 from typing import List, Optional
 
-from api.v1.utils.forge_helpers import run_command_sync
+from api.v1.helpers.forge_helpers import run_command_sync
 from common import logger
 from packaging import version
 
@@ -69,7 +69,6 @@ def parse_solidity_version(file_path: str) -> Optional[str]:
 
 
 def find_solidity_versions(temp_dir: str) -> List[str]:
-    logger.info(f"Searching for Solidity versions in {temp_dir}")
     versions = set()
     search_dirs = [
         os.path.join(temp_dir, d)

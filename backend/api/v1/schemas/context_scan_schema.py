@@ -12,6 +12,10 @@ class Finding(BaseModel):
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
 
 
+class FindingList(BaseModel):
+    findings: List[Finding]
+
+
 class ContextScanRequest(BaseModel):
     summary: Optional[str] = Field(None, description="An optional summary of the context")
     contracts: str = Field(..., description="Flattened smart contracts content")

@@ -1,25 +1,25 @@
 import os
 from pathlib import Path
 
-from api.v1.schemas.fuzzer_schema import SetupResult
-from api.v1.utils.dependencies_helpers import (
+from api.v1.helpers.dependencies_helpers import (
     generate_and_write_remappings,
     install_dependencies,
     parse_dependencies,
 )
-from api.v1.utils.forge_helpers import (
+from api.v1.helpers.forge_helpers import (
     clean_unused_files,
     copy_solidity_files,
     preprocess_solidity_files,
     run_command,
     update_foundry_config,
 )
-from api.v1.utils.project_helpers import (
+from api.v1.helpers.project_helpers import (
     clone_repository,
     compile_project,
     detect_project_structure,
 )
-from api.v1.utils.solc_helpers import detect_and_install_solc_versions
+from api.v1.helpers.solc_helpers import detect_and_install_solc_versions
+from api.v1.schemas.fuzzer_schema import SetupResult
 from common import logger
 from pydantic import HttpUrl
 

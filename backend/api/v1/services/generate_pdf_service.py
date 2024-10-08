@@ -2,17 +2,17 @@ import os
 from pathlib import Path
 
 import markdown
-from api.v1.models.user import User
-from api.v1.services.scan_history_service import get_scan
-from api.v1.services.scan_results_service import get_full_scan_result
-from common import logger
-from common.email_utils import send_pdf_email
-from common.pdf_generation import (
+from api.v1.helpers.pdf_generation_helpers import (
     create_finding_section,
     extract_organization_name,
     html_to_pdf,
     read_html,
 )
+from api.v1.models.user import User
+from api.v1.services.scan_history_service import get_scan
+from api.v1.services.scan_results_service import get_full_scan_result
+from common import logger
+from common.email_utils import send_pdf_email
 from common.validate import validate_scan_paid, validate_user_scan_access
 from config import settings
 from fastapi import HTTPException

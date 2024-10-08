@@ -2,11 +2,12 @@ import shutil
 import tempfile
 from typing import List, Optional
 
+from api.v1.helpers.improve_slither_findings_helpers import improve_slither_findings
+from api.v1.helpers.setup_environment_helpers import setup_environment
+from api.v1.helpers.slither_helpers import run_slither
 from api.v1.schemas.fuzzer_schema import SetupResult
 from api.v1.schemas.static_analyzer_schema import SlitherOutput, StaticAnalyzerResponse
-from api.v1.utils.slither_helpers import run_slither
 from common import logger
-from common.setup_environment import setup_environment
 
 
 async def run_static_analyzer(
@@ -15,7 +16,6 @@ async def run_static_analyzer(
     selected_contracts: List[str] = None,
     setup_result: Optional[SetupResult] = None,
 ) -> StaticAnalyzerResponse:
-    logger.info(f"Starting static analysis for repository: {github_url}")
 
     # 1. Setup environment
     is_local_temp_dir = False
@@ -30,6 +30,16 @@ async def run_static_analyzer(
         setup_result.project_dir, setup_result.remappings, selected_contracts
     )
 
+    # 3. Improve Slither descriptions
+    if slither_output and "findings" in slither_output and len(slither_output["findings"]) > 0:
+        logger.info(
+            f"Improving Slither descriptions for {len(slither_output['findings'])} findings..."
+        )
+
+        improved_findings = await improve_slither_findings(slither_output["findings"])
+        slither_output["findings"] = improved_findings
+
+    # 4. Remove temporary directory if created locally
     if is_local_temp_dir:
         shutil.rmtree(temp_dir)
 

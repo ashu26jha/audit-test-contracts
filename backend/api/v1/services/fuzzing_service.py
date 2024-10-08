@@ -1,18 +1,23 @@
 import shutil
 import tempfile
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
-from api.v1.schemas.fuzzer_schema import FuzzTestResult, SetupResult, Finding, FuzzerResponse
+from api.v1.helpers.setup_environment_helpers import setup_environment
+from api.v1.helpers.slither_helpers import run_slither
+from api.v1.schemas.fuzzer_schema import (
+    Finding,
+    FuzzerResponse,
+    FuzzTestResult,
+    SetupResult,
+)
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
 from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
 from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
-from api.v1.utils.slither_helpers import run_slither
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
-from common.setup_environment import setup_environment
-from config.settings import LLM_MODEL_FUZZER
+from config.settings import LLM_MODEL_BEST
 
 
 async def run_fuzzer(
@@ -34,7 +39,7 @@ async def run_fuzzer(
     Returns:
         FuzzerResponse: A response model containing the fuzz test, fuzz results, analysis, and any error encountered.
     """
-    model = LLM_MODEL_FUZZER
+    model = LLM_MODEL_BEST
     is_local_temp_dir = False
     temp_dir = setup_result.project_dir if setup_result else tempfile.mkdtemp()
 

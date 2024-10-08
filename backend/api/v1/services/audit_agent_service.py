@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import List
 from uuid import UUID
 
+from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -19,17 +20,16 @@ from api.v1.services import (
     static_analyzer_service,
 )
 from api.v1.services.github_service import GitHubService
-from api.v1.utils import duplicates
+from common import duplicates
 from common.logger import logger
 from common.profiles import Profiles
-from common.setup_environment import setup_environment
 from common.validate import (
     validate_contract_files,
     validate_github_url,
     validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-from config.settings import ENVIRONMENT, LLM_MODEL_DUPLICATES
+from config.settings import ENVIRONMENT
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
@@ -230,10 +230,12 @@ async def perform_audit_agent_background(
         slither_findings = []
         if slither_result and hasattr(slither_result, "slither_output"):
             slither_findings = slither_result.slither_output.findings
+
         combined_findings = context_scan_result + slither_findings
 
         # Attempt to remove duplicates, if any
-        dedup_findings = await duplicates.remove_duplicates(combined_findings, LLM_MODEL_DUPLICATES)
+        logger.info(f"Removing duplicates from {len(combined_findings)} findings...")
+        dedup_findings = await duplicates.remove_duplicates(combined_findings)
         total_findings = len(dedup_findings)
 
         # Update the existing scan result
@@ -272,4 +274,5 @@ async def perform_audit_agent_background(
         scan_result.findings = []
         await scan_result.save()
     finally:
+        logger.info(f"Cleaning up temporary directory: {temp_dir}")
         shutil.rmtree(temp_dir)
