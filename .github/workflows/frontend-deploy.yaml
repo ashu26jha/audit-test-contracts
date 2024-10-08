@@ -36,7 +36,7 @@ jobs:
         run: sudo apt-get install -y apache2-utils
 
       - name: Create htpasswd file
-        run: htpasswd -bc .htpasswd yokai-agent ${{ secrets.APPLICATION_PASSWORD }}
+        run: htpasswd -bc ./frontend/.htpasswd yokai-agent ${{ secrets.APPLICATION_PASSWORD }}
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
