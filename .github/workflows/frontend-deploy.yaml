@@ -2,7 +2,7 @@ name: Build and Run application on AWS ECS  Container
 on:
   push:
     branches:
-      - github_action_ci_cd #update this branch if once its fixed
+      - main #update this branch if once its fixed
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: code_auditor_images_repository
