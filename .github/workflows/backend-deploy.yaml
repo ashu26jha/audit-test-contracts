@@ -71,6 +71,7 @@ jobs:
           image: ${{ env.IMAGE_URI }}
 
       - name: Deploy Amazon ECS task definition
+        if: github.ref == 'refs/heads/main'
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
