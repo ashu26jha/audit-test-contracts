@@ -45,6 +45,12 @@ jobs:
             sudo apt-get install -y docker-compose
           fi
 
+      - name: Install Apache2-utils (for htpasswd)
+        run: sudo apt-get install -y apache2-utils
+
+      - name: Create htpasswd file
+        run: htpasswd -bc .htpasswd yokai-agent ${{ secrets.APPLICATION_PASSWORD }}
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -54,7 +60,7 @@ jobs:
         run: |
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-          docker buildx build --platform=linux/amd64 -f ./dockerfile.nginx -t $IMAGE_URI .
+          docker buildx build --platform=linux/amd64 -f ./frontend/dockerfile.nginx -t $IMAGE_URI .
           docker push $IMAGE_URI
 
       - name: Download task definition
