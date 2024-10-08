@@ -51,8 +51,8 @@ async def run_fuzzer(
     # TODO: Different profiles for different fuzzing techniques?
     # for now both stateless and statefull (invariant) are in the same profile
     detected_profile = Profiles.FUZZING
-    print(detected_profile)
-    # Determine if system prompt should be used
+
+    # Determine if system prompt should be used (right now it's always used)
     system_prompt = SYSTEM_PROMPT_FUZZ_TEST
     
     try:
@@ -68,10 +68,12 @@ async def run_fuzzer(
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
         temp_dir = setup_result.project_dir
+        print(temp_dir)
+        project_type = setup_result.project_type
 
         # 3. Generate fuzz prompts (with slither output)
         logger.info("Generating fuzz prompts")
-        fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output, detected_profile)
+        fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output, detected_profile, project_type)
 
         # 4. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
@@ -90,8 +92,8 @@ async def run_fuzzer(
             logger.error(
                 f"Failed to save fuzz test: {str(e)}. Regenerating fuzz prompts and retrying."
             )
-            fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output)
-            fuzz_response = await send_prompt_to_llm_async(model, fuzz_prompts)
+            fuzz_prompts = await generate_fuzz_prompts(temp_dir, contract_folders, slither_output, detected_profile, project_type)
+            fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
             fuzz_test = extract_fuzz_test(fuzz_response)
             await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
 
@@ -133,7 +135,7 @@ async def run_fuzzer(
 
         if is_local_temp_dir:
             logger.info("Cleaning up environment")
-            shutil.rmtree(temp_dir)
+            # shutil.rmtree(temp_dir)
 
         return FuzzerResponse(
             message="Fuzzing completed successfully.",
