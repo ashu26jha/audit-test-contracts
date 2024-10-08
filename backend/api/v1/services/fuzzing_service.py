@@ -47,12 +47,15 @@ async def run_fuzzer(
         # 1. Setup the fuzzing environment
         if setup_result is None:
             is_local_temp_dir = True
-            setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
+            try: 
+                setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
+            except Exception as e:
+                logger.error(f"Failed to set up environment: {str(e)}")
 
         # Update project_dir to be from setup_result
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
-        # project_path = setup_result.project_path
+        temp_dir = setup_result.project_dir
 
         # 2. Run Slither analysis
         logger.info("Running Slither")
