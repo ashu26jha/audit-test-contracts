@@ -88,8 +88,7 @@ async def run_fuzzer(
         # 7. Run fuzz test
         logger.info("Running fuzz test")
         fuzz_results = await run_fuzz_file(temp_dir)
-        logger.info(f"Fuzz results: {fuzz_results}")
-
+        
         # 8. Generate report prompt
         logger.info("Generating report prompt")
         report_prompt = await generate_report_prompt(fuzz_test, fuzz_results)
