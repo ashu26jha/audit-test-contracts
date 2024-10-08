@@ -32,15 +32,6 @@ jobs:
             sudo apt-get install -y docker-compose
           fi
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        env:
-          # ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          # ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker buildx build --platform=linux/amd64 -f ./backend/Dockerfile.backend ./backend
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -54,11 +45,21 @@ jobs:
         with:
           mask-password: "true"
 
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker buildx build --platform=linux/amd64 -f ./backend/Dockerfile.backend ./backend
+          docker push $IMAGE_URI
 
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.TASK_NAME }} --query taskDefinition > task-definition.json
-
       
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
