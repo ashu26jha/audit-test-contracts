@@ -43,6 +43,8 @@ async def run_static_analyzer(
     if is_local_temp_dir:
         shutil.rmtree(temp_dir)
 
+    logger.info(f"Slither completed successfully with {len(slither_output['findings'])} findings.")
+
     return StaticAnalyzerResponse(
         message="Repository analyzed successfully.",
         status="Success",

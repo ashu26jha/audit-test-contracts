@@ -104,22 +104,18 @@ async def run_slither(
     env["SLITHER_SOLC_REMAPS"] = ",".join(remappings)
     env["SOLC_ALLOW_PATHS"] = temp_dir
 
-    src_dir = os.path.join(temp_dir, "src")
-    if not os.path.exists(src_dir):
-        raise ValueError(f"src directory not found in {temp_dir}")
-
     output_file = os.path.join(temp_dir, "slither_output.json")
 
     slither_command = [
         "slither",
-        src_dir,
+        temp_dir,
         "--json",
         output_file,
         "--exclude-dependencies",
         "--filter-paths",
         "lib|src/test|src/mock",
         "--exclude",
-        "naming-convention,solc-version,similar-names",
+        "assembly,low-level-calls,naming-convention,solc-version,similar-names",
     ]
 
     returncode, stdout, stderr = await run_command(slither_command, temp_dir, env=env)
@@ -127,7 +123,7 @@ async def run_slither(
     if not os.path.exists(output_file):
         logger.error("Slither output file not found.")
         logger.error(f"Return code: {returncode}")
-        logger.error(f"Stderr: {stderr}")
+        # logger.error(f"Stderr: {stderr}")
         raise ValueError(f"Slither analysis failed: {stderr}")
 
     try:
@@ -136,7 +132,12 @@ async def run_slither(
 
         transformed_output = transform_slither_output(slither_output, selected_contracts)
         contract_count = count_unique_contracts(transformed_output)
-        logger.info(f"Slither analyzed {contract_count} unique contracts")
+        if selected_contracts and len(selected_contracts) > 0:
+            logger.info(
+                f"Slither found issues in {contract_count} out of {len(selected_contracts)} contracts."
+            )
+        else:
+            logger.info(f"Slither found issues in {contract_count} contracts.")
 
         return transformed_output
     except json.JSONDecodeError as e:

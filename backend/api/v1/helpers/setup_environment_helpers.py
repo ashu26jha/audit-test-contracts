@@ -3,6 +3,7 @@ from pathlib import Path
 
 from api.v1.helpers.dependencies_helpers import (
     generate_and_write_remappings,
+    generate_remappings_with_foundry,
     install_dependencies,
     parse_dependencies,
 )
@@ -12,6 +13,7 @@ from api.v1.helpers.forge_helpers import (
     preprocess_solidity_files,
     run_command,
     update_foundry_config,
+    write_remappings,
 )
 from api.v1.helpers.project_helpers import (
     clone_repository,
@@ -68,17 +70,27 @@ async def setup_environment(
             copy_solidity_files(repo_dir, foundry_src_dir, project_type)
             preprocess_solidity_files(temp_dir)
 
-            # Now use the project_helpers functions to set up the project
+            # Now use the modified functions
             dependencies = parse_dependencies(repo_dir, project_type)
-            logger.info(f"DEPENDENCIES: {dependencies}")
+            logger.info(f"Dependencies to install: {dependencies}")
 
-            # Install dependencies and track remappings
+            # Install dependencies
             custom_remappings = await install_dependencies(
                 temp_dir, dependencies, project_type
             )
-            remappings = await generate_and_write_remappings(
-                temp_dir, custom_remappings
-            )
+
+            # Attempt to generate remappings using Foundry
+            try:
+                remappings = await generate_remappings_with_foundry(temp_dir)
+                logger.info("Remappings generated successfully using Foundry")
+            except Exception as e:
+                logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
+                logger.info("Falling back to manual remapping generation.")
+
+                # Fallback to manual remapping
+                remappings = await generate_and_write_remappings(
+                    temp_dir, custom_remappings
+                )
 
             # Detect and install all required Solidity versions
             solc_version = detect_and_install_solc_versions(repo_dir)
@@ -90,7 +102,20 @@ async def setup_environment(
             logger.info("Hardhat set up correctly")
 
         # Run "forge build" as a sanity check at the end
-        await compile_project(repo_dir)
+        try:
+            await compile_project(repo_dir)
+        except Exception:
+            # logger.error(f"Compilation failed with error: {str(e)}")
+            logger.info("Retrying compilation with manual remappings...")
+
+            # Generate and use manual remappings only
+            remappings = await generate_and_write_remappings(
+                temp_dir, custom_remappings
+            )
+            await write_remappings(temp_dir, remappings)
+
+            # Retry compilation
+            await compile_project(repo_dir)
 
         return SetupResult(
             project_dir=repo_dir,
