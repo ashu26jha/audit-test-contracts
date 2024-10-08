@@ -8,7 +8,7 @@ env:
   ECR_REPOSITORY: code_auditor_images_repository
   ECS_SERVICE: code-auditor-frontend-app
   ECS_CLUSTER: code-auditor-ecs-cluster
-  CONTAINER_NAME: code_auditor_frontend
+  CONTAINER_NAME: code-auditor-frontend
   TASK_NAME: code-auditor-frontend-app
 
 permissions:

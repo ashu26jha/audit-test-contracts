@@ -8,7 +8,7 @@ env:
   ECR_REPOSITORY: code_auditor_images_repository
   ECS_SERVICE: code-auditor-backend-app
   ECS_CLUSTER: code-auditor-ecs-cluster
-  CONTAINER_NAME: code_auditor_backend
+  CONTAINER_NAME: code-auditor-backend
   TASK_NAME: code-auditor-backend-app
 
 permissions:
@@ -60,7 +60,7 @@ jobs:
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.TASK_NAME }} --query taskDefinition > task-definition.json
-          
+
       - name: Log task definition
         run: cat task-definition.json  # Log the task definition for debugging 
       
