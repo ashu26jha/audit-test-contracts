@@ -54,7 +54,7 @@ jobs:
         run: |
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-          docker buildx build --platform=linux/amd64 -f ./backend/dockerfile.nginx -t $IMAGE_URI .
+          docker buildx build --platform=linux/amd64 -f ./backend/Dockerfile.backend -t $IMAGE_URI .
           docker push $IMAGE_URI
 
       - name: Download task definition
