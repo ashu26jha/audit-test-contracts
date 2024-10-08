@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 jobs:
-  deploy-agent:
+  code-auditor-frontend-deploy:
     runs-on: ubuntu-latest
 
     steps:
