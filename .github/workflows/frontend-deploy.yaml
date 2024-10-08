@@ -32,6 +32,12 @@ jobs:
             sudo apt-get install -y docker-compose
           fi
 
+      - name: Install Apache2-utils (for htpasswd)
+        run: sudo apt-get install -y apache2-utils
+
+      - name: Create htpasswd file
+        run: htpasswd -bc .htpasswd yokai-agent ${{ secrets.APPLICATION_PASSWORD }}
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -53,12 +59,6 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: "true"
-
-      - name: Install Apache2-utils (for htpasswd)
-        run: sudo apt-get install -y apache2-utils
-
-      - name: Create htpasswd file
-        run: htpasswd -bc .htpasswd yokai-agent ${{ secrets.APPLICATION_PASSWORD }}
 
       - name: Download task definition
         run: |
