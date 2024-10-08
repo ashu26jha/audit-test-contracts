@@ -23,10 +23,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          # ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          # ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker buildx build --platform=linux/amd64 -f ./frontend/Dockerfile.nginx ./frontend
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::762233726430:role/role-devops
+          role-to-assume: arn:aws:iam::762233726430:role/github-ci-cd-code-auditor
           role-session-name: Github
           aws-region: ${{ env.AWS_REGION }}
 
