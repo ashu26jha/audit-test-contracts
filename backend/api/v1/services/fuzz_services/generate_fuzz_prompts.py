@@ -35,18 +35,28 @@ async def generate_fuzz_prompts(
         str: The generated fuzzing prompt.
     """
     all_contract_codes = ""
-
+    existing_test_cases = ""
+    if slither_output is None:
+        slither_output = ""
+        
     for folder in contract_folders:
         folder_path = Path(project_dir) / folder
         for contract_file in folder_path.rglob("*.sol"):
             if "lib" not in contract_file.parts:
                 all_contract_codes += f"// {contract_file.relative_to(project_dir)}\n"
                 all_contract_codes += read_file(contract_file) + "\n"
+                
+    # Check for existing test files in the test folder
+    test_folder_path = Path(project_dir) / "test"
+    if test_folder_path.exists() and test_folder_path.is_dir():
+        for test_file in test_folder_path.rglob("*.t.sol"):
+            existing_test_cases += f"// Existing test file: {test_file.relative_to(project_dir)}\n"
+            existing_test_cases += read_file(test_file) + "\n"
 
     project_structure = get_project_structure(project_dir, contract_folders)
-
     return FUZZER_PROMPT.format(
         contract_code=all_contract_codes,
         project_structure=project_structure,
         slither_output=slither_output,
+        existing_test_cases=existing_test_cases,
     )
