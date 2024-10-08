@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.helpers.slither_helpers import run_slither
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from api.v1.schemas.fuzzer_schema import (
     Finding,
     FuzzerResponse,
@@ -26,6 +27,7 @@ async def run_fuzzer(
     oauth_token: Optional[str] = None,
     selected_contracts: List[str] = None,
     setup_result: Optional[SetupResult] = None,
+    slither_output: Optional[SlitherOutput] = None,
 ) -> FuzzerResponse:
     """
     Executes the fuzzing process on a specified GitHub repository using Slither for context.
@@ -57,10 +59,6 @@ async def run_fuzzer(
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
         temp_dir = setup_result.project_dir
-
-        # 2. Run Slither analysis
-        logger.info("Running Slither")
-        slither_output = await run_slither(temp_dir, setup_result.remappings, selected_contracts)
 
         # 3. Generate fuzz prompts (with slither output)
         logger.info("Generating fuzz prompts")

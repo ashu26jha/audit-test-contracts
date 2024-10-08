@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
-
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
 
 class Finding(BaseModel):
     Issue: str = Field(..., description="A short description of the vulnerability or issue")
@@ -39,3 +39,4 @@ class FuzzerRequest(BaseModel):
     oauth_token: Optional[str] = None
     selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
+    slither_output: Optional[SlitherOutput] = None
