@@ -22,6 +22,7 @@ async def remove_duplicates(vulns: List[Dict]) -> List[Dict]:
 
     # Prepare the prompt
     prompt = DUPLICATE_PROMPT.format(vulnerabilities=vulns)
+    logger.info(f"Removing duplicates from {len(vulns)} findings...")
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:

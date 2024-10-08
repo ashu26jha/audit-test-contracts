@@ -2,7 +2,7 @@ import asyncio
 import shutil
 import tempfile
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from api.v1.helpers.setup_environment_helpers import setup_environment
@@ -14,6 +14,7 @@ from api.v1.schemas.fuzzer_schema import SetupResult
 from api.v1.services import (
     context_scan_service,
     flatten_contracts_service,
+    fuzzing_service,
     generate_summary_service,
     lines_of_code_service,
     scan_history_service,
@@ -145,7 +146,6 @@ async def initiate_scan(
         raise
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
-        # Update global stats for failed scan
         await GlobalStats.increment_scan(status="failed", paid=False, findings=0, lines_of_code=0)
 
         # Update scan status to 'failed' if scan exists
@@ -173,68 +173,116 @@ async def perform_audit_agent_background(
     access_token: str,
     selected_contracts: List[str],
 ):
+    logger.info(f"Starting background audit scan with ID: {scan_uuid}")
+
+    temp_dir = tempfile.mkdtemp()
+    setup_result: Optional[SetupResult] = None
 
     try:
-        logger.info(f"Starting background audit scan with ID: {scan_uuid}")
+        # Update scan status to 'in_progress'
+        await scan_history_service.update_scan_status(scan_uuid, "in_progress")
 
-        # Setup environment
-        temp_dir = tempfile.mkdtemp()
-        setup_result: SetupResult = None
+        # Attempt to set up the environment
         try:
             setup_result = await setup_environment(repositoryURL, access_token, temp_dir)
         except Exception as e:
             logger.error(f"Failed to set up environment: {str(e)}")
 
-        # Update scan status to 'in_progress'
-        await scan_history_service.update_scan_status(scan_uuid, "in_progress")
+        # Start summary generation task
+        summary_task = asyncio.create_task(
+            generate_summary_service.generate_summary(flattened_contracts)
+        )
 
-        # Start the static analysis & fuzzer tasks asynchronously
+        # If setup_result is available, start static analysis and fuzzing tasks
+        static_analysis_task = None
+        fuzzing_task = None
         if setup_result:
             static_analysis_task = asyncio.create_task(
                 static_analyzer_service.run_static_analyzer(
-                    repositoryURL, access_token, selected_contracts, setup_result
+                    repositoryURL,
+                    access_token,
+                    selected_contracts,
+                    setup_result,
                 )
             )
+            fuzzing_task = asyncio.create_task(
+                fuzzing_service.run_fuzzer(
+                    repositoryURL,
+                    access_token,
+                    selected_contracts,
+                    setup_result,
+                )
+            )
+        else:
+            logger.warning("Skipping static analysis and fuzzing due to setup failure.")
 
-            # fuzzing_task = asyncio.create_task(
-            #     fuzz_service.run_fuzzer(repositoryURL, access_token, selected_contracts, setup_result)
-            # )
+        # Await summary result to proceed with context scan
+        try:
+            summary_result, detected_type = await summary_task
+        except Exception:
+            summary_result = "Summary generation failed."
+            detected_type = Profiles.NONE
 
-        # Generate Summary and detect profile
-        summary_result, detected_type = await generate_summary_service.generate_summary(
-            flattened_contracts
-        )
-
+        # Detect profile
         detected_profile = (
             Profiles[detected_type.upper()]
             if detected_type.upper() in Profiles.__members__
             else Profiles.DEFAULT
         )
 
-        # Perform Context Scan
-        context_scan_result = await context_scan_service.perform_context_scan(
-            summary_result, flattened_contracts, detected_profile
+        # Start context scan task
+        context_scan_task = asyncio.create_task(
+            context_scan_service.perform_context_scan(
+                summary_result, flattened_contracts, detected_profile
+            )
         )
 
-        if setup_result:
-            # Wait for static analysis to complete, with error handling
-            try:
-                # Wait for all tasks to complete
-                # await asyncio.gather(static_analysis_task, fuzzing_task)
-                slither_result = await static_analysis_task
-            except Exception as e:
-                logger.error(f"Error in static analysis for scan {scan_uuid}: {str(e)}")
-                slither_result = None
+        # Gather tasks to await
+        tasks_to_await = [context_scan_task]
+        if static_analysis_task:
+            tasks_to_await.append(static_analysis_task)
+        if fuzzing_task:
+            tasks_to_await.append(fuzzing_task)
 
-        # Combine findings, accounting for possible None slither_result
-        slither_findings = []
-        if slither_result and hasattr(slither_result, "slither_output"):
-            slither_findings = slither_result.slither_output.findings
+        # Await all tasks concurrently, handling exceptions individually
+        results = await asyncio.gather(*tasks_to_await, return_exceptions=True)
 
-        combined_findings = context_scan_result + slither_findings
+        # Initialize findings list
+        combined_findings = []
 
-        # Attempt to remove duplicates, if any
-        logger.info(f"Removing duplicates from {len(combined_findings)} findings...")
+        # Process results
+        # Index for results list
+        result_index = 0
+
+        # Handle context scan result
+        context_scan_result = results[result_index]
+        result_index += 1
+        if isinstance(context_scan_result, Exception):
+            logger.error(f"Context scan failed: {context_scan_result}")
+            context_scan_result = []
+        combined_findings.extend(context_scan_result)
+
+        # Handle static analysis result
+        if static_analysis_task:
+            static_analysis_result = results[result_index]
+            result_index += 1
+            if isinstance(static_analysis_result, Exception):
+                logger.error(f"Static analysis failed: {static_analysis_result}")
+            else:
+                slither_findings = getattr(static_analysis_result.slither_output, "findings", [])
+                combined_findings.extend(slither_findings)
+
+        # Handle fuzzing result
+        if fuzzing_task:
+            fuzzing_result = results[result_index]
+            result_index += 1
+            if isinstance(fuzzing_result, Exception):
+                logger.error(f"Fuzzing failed: {fuzzing_result}")
+            else:
+                fuzzing_findings = getattr(fuzzing_result.data, "findings", [])
+                combined_findings.extend(fuzzing_findings)
+
+        # Remove duplicates from combined findings
         dedup_findings = await duplicates.remove_duplicates(combined_findings)
         total_findings = len(dedup_findings)
 
@@ -249,7 +297,7 @@ async def perform_audit_agent_background(
         # Update scan status to 'completed' and include total_findings
         await scan_history_service.update_scan_status(scan_uuid, "completed", total_findings)
 
-        # Update global stats with findings and lines of code
+        # Update global stats
         scan = await scan_history_service.get_scan(scan_uuid)
         total_lines = scan.linesOfCode.get("total_lines", 0) if scan.linesOfCode else 0
         await GlobalStats.increment_scan(
@@ -264,9 +312,7 @@ async def perform_audit_agent_background(
     except Exception as e:
         logger.exception(f"Error in audit scan {scan_uuid}: {str(e)}")
         await scan_history_service.update_scan_status(scan_uuid, "failed")
-        # Update global stats for failed scan
         await GlobalStats.increment_scan(status="failed", paid=False, findings=0, lines_of_code=0)
-        # Update the existing scan result to reflect the failure
         scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = "An error occurred during the audit scan."
         scan_result.type = Profiles.NONE
