@@ -26,7 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::762233726430:role/github-ci-cd-code-auditor
+          role-to-assume: arn:aws:iam::762233726430:role/role-devops
           role-session-name: Github
           aws-region: ${{ env.AWS_REGION }}
 
