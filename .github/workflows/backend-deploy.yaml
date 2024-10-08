@@ -60,6 +60,9 @@ jobs:
       - name: Download task definition
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.TASK_NAME }} --query taskDefinition > task-definition.json
+          
+      - name: Log task definition
+        run: cat task-definition.json  # Log the task definition for debugging 
       
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
