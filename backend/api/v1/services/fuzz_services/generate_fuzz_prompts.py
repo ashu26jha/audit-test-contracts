@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List
 
 from api.v1.helpers.project_helpers import get_project_structure
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT
 
 
@@ -20,7 +21,7 @@ def read_file(path: str) -> str:
 
 
 async def generate_fuzz_prompts(
-    project_dir: str, contract_folders: List[str], slither_output: str
+    project_dir: str, contract_folders: List[str], slither_output: SlitherOutput
 ) -> str:
     """
     Generates the fuzzing prompt for the given project directory by reading all Solidity contract files
@@ -29,16 +30,31 @@ async def generate_fuzz_prompts(
     Args:
         project_dir (str): The project directory containing the Solidity contract files.
         contract_folders (List[str]): List of folders containing the contract files.
-        slither_output (str): The output from Slither analysis.
+        slither_output (SlitherOutput): The output from Slither analysis.
 
     Returns:
         str: The generated fuzzing prompt.
     """
     all_contract_codes = ""
     existing_test_cases = ""
+    findings_str = ""
+    
     if slither_output is None:
-        slither_output = ""
+        findings_str = ""
+    else:
+        # Access findings from slither_output
+        findings = slither_output.findings
         
+        # Process findings and convert them to a string format
+        for finding in findings:
+            findings_str += f"Issue: {finding.Issue}\n"
+            findings_str += f"Original Issue: {finding.OriginalIssue}\n"
+            findings_str += f"Severity: {finding.Severity}\n"
+            findings_str += f"Confidence: {finding.Confidence}\n"
+            findings_str += f"Contracts: {', '.join(finding.Contracts)}\n"
+            findings_str += f"Description: {finding.Description}\n"
+            findings_str += f"Lines: {finding.Lines}\n\n"
+
     for folder in contract_folders:
         folder_path = Path(project_dir) / folder
         for contract_file in folder_path.rglob("*.sol"):
@@ -57,6 +73,6 @@ async def generate_fuzz_prompts(
     return FUZZER_PROMPT.format(
         contract_code=all_contract_codes,
         project_structure=project_structure,
-        slither_output=slither_output,
+        slither_output=findings_str,
         existing_test_cases=existing_test_cases,
     )
