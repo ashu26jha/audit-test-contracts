@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+import json
 from typing import List, Optional
 
 from api.v1.helpers.setup_environment_helpers import setup_environment
@@ -98,6 +99,11 @@ async def run_fuzzer(
         # 9. Send report prompt to LLM
         logger.info("Sending report prompt to LLM")
         report_response = await send_prompt_to_llm_async(model, report_prompt)
+        
+        # Strip the ```json from the report_response and convert it to JSON data
+        report_response = report_response.strip("```json").strip("```")
+        report_response_json = json.loads(report_response)
+        print(report_response_json)
 
         # 10. Convert the report to JSON
         findings_list = [
@@ -108,13 +114,13 @@ async def run_fuzzer(
                 Description=finding["Description"],
                 Recommendation=finding.get("Recommendation"),
             )
-            for finding in report_response.get("findings", [])
+            for finding in report_response_json.get("findings", [])
         ]
 
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
             fuzz_results=fuzz_results,
-            analysis=report_response,
+            analysis=json.dumps(report_response_json),
             findings=findings_list,
         )
 
