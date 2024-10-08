@@ -18,6 +18,7 @@ class Profiles(Enum):
     IDENTITY = "identity"
     NFT = "nft"
     UTILITY = "utility"
+    FUZZING = "fuzzing"
 
 
 # Function to load a profile from a file
@@ -34,6 +35,7 @@ def load_profile(profile_name: Profiles):
         Profiles.IDENTITY: "profile_identity.json",
         Profiles.NFT: "profile_nft.json",
         Profiles.UTILITY: "profile_utility.json",
+        Profiles.FUZZING: "profile_fuzzing.json",
     }
 
     # Get the profile file path
