@@ -1,4 +1,5 @@
 import asyncio
+from common import logger  # Ensure logger is imported
 
 
 async def run_fuzz_file(project_dir: str) -> str:
@@ -27,5 +28,5 @@ async def run_fuzz_file(project_dir: str) -> str:
 
         return output if output else error
     except Exception as e:
-        print(f"Error running fuzz test: {str(e)}")
+        logger.error(f"Error running fuzz test: {str(e)}")
         return str(e)
