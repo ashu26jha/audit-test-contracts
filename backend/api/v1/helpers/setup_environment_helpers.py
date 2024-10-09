@@ -41,6 +41,10 @@ async def setup_environment(
         SetupResult: An instance containing project directory, contract folders, project type, project path, and solc version.
     """
 
+    contract_folders = None
+    solc_version = None
+    remappings = None
+
     try:
         project_path = Path(temp_dir)
         github_url_str = str(github_url)

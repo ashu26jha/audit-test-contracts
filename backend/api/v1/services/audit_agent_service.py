@@ -205,12 +205,15 @@ async def perform_audit_agent_background(
                     setup_result,
                 )
             )
+            static_analysis_result = await static_analysis_task  # Await and unpack the result
+            slither_output = static_analysis_result.slither_output
             fuzzing_task = asyncio.create_task(
                 fuzzing_service.run_fuzzer(
                     repositoryURL,
                     access_token,
                     selected_contracts,
                     setup_result,
+                    slither_output,
                 )
             )
         else:

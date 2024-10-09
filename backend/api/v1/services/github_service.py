@@ -105,7 +105,9 @@ class GitHubService:
             if item["type"] == "blob" and item["path"].endswith(".sol")
         ]
 
-        tasks = [self.get_file_content(access_token, owner, repo, file["path"]) for file in files]
+        tasks = [
+            self.get_file_content(access_token, owner, repo, file["path"], branch) for file in files
+        ]
         file_contents = await asyncio.gather(*tasks)
 
         for file, file_content in zip(files, file_contents):
@@ -114,7 +116,9 @@ class GitHubService:
 
         return files
 
-    async def get_file_content(self, access_token: str, owner: str, repo: str, path: str) -> str:
+    async def get_file_content(
+        self, access_token: str, owner: str, repo: str, path: str, branch: str
+    ) -> str:
         """
         Fetch the content of a specific file in a repository.
         """
@@ -124,12 +128,16 @@ class GitHubService:
         }
 
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
+        params = {"ref": branch}
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(url, headers=headers, params=params)
 
         if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to fetch file content from GitHub")
+            raise HTTPException(
+                status_code=response.status_code,
+                detail=f"Failed to fetch file content from GitHub: {response.text}",
+            )
 
         content_data = response.json()
         if content_data.get("encoding") == "base64":
@@ -225,7 +233,11 @@ class GitHubService:
             logger.warning(f"No repositories found for {owner_type} {owner}")
 
         repositories = [
-            {"name": repo["name"], "updatedAt": repo["updated_at"], "private": repo["private"]}
+            {
+                "name": repo["name"],
+                "updatedAt": repo["updated_at"],
+                "private": repo["private"],
+            }
             for repo in all_repos
         ]
 

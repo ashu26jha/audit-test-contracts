@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from api.v1.helpers.forge_helpers import run_command
 from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
@@ -94,15 +94,19 @@ def transform_slither_output(
 
 
 async def run_slither(
-    temp_dir: str, remappings: List[str], selected_contracts: List[str]
+    temp_dir: str,
+    remappings: Optional[List[str]] = None,
+    selected_contracts: List[str] = [],
 ) -> Dict[str, Any]:
 
     if not await check_slither_installation():
         raise ValueError("Slither is not installed or not working correctly")
 
     env = os.environ.copy()
-    env["SLITHER_SOLC_REMAPS"] = ",".join(remappings)
     env["SOLC_ALLOW_PATHS"] = temp_dir
+
+    if remappings:
+        env["SLITHER_SOLC_REMAPS"] = ",".join(remappings)
 
     output_file = os.path.join(temp_dir, "slither_output.json")
 

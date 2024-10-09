@@ -1,5 +1,6 @@
 from typing import List, Optional
 
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from pydantic import BaseModel, Field, HttpUrl
 
 
@@ -39,3 +40,4 @@ class FuzzerRequest(BaseModel):
     oauth_token: Optional[str] = None
     selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
+    slither_output: Optional[SlitherOutput] = None

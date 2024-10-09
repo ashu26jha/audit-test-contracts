@@ -5,6 +5,6 @@ from fastapi import APIRouter, Depends
 router = APIRouter()
 
 
-@router.get("/health-check", response_model=SuccessResponse)
+@router.get("/health-check", dependencies=[Depends(get_api_key)], response_model=SuccessResponse)
 async def health_check():
     return SuccessResponse(data={"details": "All systems operational"})
