@@ -1,17 +1,20 @@
 # Use the Node.js 18 LTS version as the base image
-FROM node:18-lts
+FROM node:18.19.0-slim
 
 # Set the working directory inside the container
 WORKDIR /app
 
 # Copy the package.json and package-lock.json into the container
-COPY ./src/package*.json ./
+COPY package*.json ./
 
 # Install the Node.js dependencies
 RUN npm install
 
 # Copy the rest of your application code into the container
-COPY ./src .
+COPY . .
+
+# Build the Next.js application
+RUN npm run build
 
 # Install Nginx and necessary packages for basic authentication
 RUN apt-get update && apt-get install -y nginx apache2-utils && rm -rf /var/lib/apt/lists/*
