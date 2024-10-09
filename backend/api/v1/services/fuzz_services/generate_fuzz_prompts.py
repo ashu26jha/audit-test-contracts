@@ -70,7 +70,6 @@ async def generate_fuzz_prompts(
 
     if project_type == "hardhat":
         contract_folders = ["contracts"]
-    print("contract_folders", contract_folders)
 
     # Convert project_dir to a Path object and add 'src' to it since it is now a Foundry project
     project_dir_path = Path(project_dir) / "src"

@@ -69,7 +69,6 @@ async def run_fuzzer(
         contract_folders = setup_result.contract_folders
         solc_version = setup_result.solc_version
         temp_dir = setup_result.project_dir
-        print(temp_dir)
         project_type = setup_result.project_type
 
         # 3. Generate fuzz prompts (with slither output)
@@ -81,7 +80,6 @@ async def run_fuzzer(
         # 4. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
         fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
-        print(fuzz_response)
 
         # 5. Extract fuzz test
         logger.info("Extracting fuzz test")
