@@ -32,7 +32,7 @@ class StripeSessionService:
                     "price_data": {
                         "currency": "usd",
                         "product_data": {"name": "Payment for Audit Agent full report."},
-                        "unit_amount": 2000,
+                        "unit_amount": 0,
                     },
                     "quantity": 1,
                 }
