@@ -119,9 +119,7 @@ async def run_fuzzer(
         report_response = await send_prompt_to_llm_async(model, report_prompt)
 
         # Strip the ```json from the report_response and convert it to JSON data
-        report_response = report_response.strip("```json").strip("```")
-        report_response_json = json.loads(report_response)
-        print(report_response_json)
+        report_response_json = json.loads(report_response.strip("```json").strip("```"))
 
         # 10. Convert the report to JSON
         findings_list = [
