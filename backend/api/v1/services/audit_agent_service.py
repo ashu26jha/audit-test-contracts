@@ -18,6 +18,7 @@ from common.profiles import Profiles
 from common.validate import (
     validate_contract_files,
     validate_github_url,
+    validate_no_in_progress_scans,
     validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
@@ -37,6 +38,7 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
+        await validate_no_in_progress_scans(user)
         if settings.ENVIRONMENT == "production":
             await validate_no_unpaid_scans(user)
 

@@ -32,6 +32,17 @@ async def validate_no_unpaid_scans(user: User):
         await validate_scan_paid(scan.id)
 
 
+async def validate_no_in_progress_scans(user: User):
+    """Validate that the user has no in-progress or pending scans."""
+    scans = await get_scan_history_for_user(user)
+    for scan in scans:
+        if scan.status in ["in_progress", "pending"]:
+            raise HTTPException(
+                status_code=400,
+                detail="You have an ongoing scan. Please wait for it to complete before starting a new one.",
+            )
+
+
 def validate_user_has_github_token(user: User):
     """Validate if the user has a GitHub access token on file."""
     if not user.accessToken:
