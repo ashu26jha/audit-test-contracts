@@ -105,8 +105,10 @@ class GitHubService:
             if item["type"] == "blob" and item["path"].endswith(".sol")
         ]
 
-        tasks = [self.get_file_content(access_token, owner, repo, file["path"]) for file in files]
-        file_contents = await asyncio.gather(*tasks)
+        tasks = [
+            self.get_file_content(access_token, owner, repo, file["path"], branch) for file in files
+        ]
+        file_contents = await asyncio.gather(*tasks, return_exceptions=True)
 
         for file, file_content in zip(files, file_contents):
             file["token"] = int(len(file_content) / 4)
@@ -114,10 +116,13 @@ class GitHubService:
 
         return files
 
-    async def get_file_content(self, access_token: str, owner: str, repo: str, path: str) -> str:
+    async def get_file_content(
+        self, access_token: str, owner: str, repo: str, path: str, branch: str
+    ) -> str:
         """
         Fetch the content of a specific file in a repository.
         """
+        params = {"ref": branch}
         headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github.v3+json",
@@ -126,7 +131,7 @@ class GitHubService:
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
+            response = await client.get(url, headers=headers, params=params)
 
         if response.status_code != 200:
             raise HTTPException(status_code=400, detail="Failed to fetch file content from GitHub")
