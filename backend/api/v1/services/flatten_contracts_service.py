@@ -11,6 +11,7 @@ async def flatten_contracts(
     repository_url: str,
     contract_files: List[str],
     access_token: str,
+    branch: str = "main",
 ):
     """
     Clones the repository and retrieves the specified contract files, flattening them into a single string.
@@ -23,9 +24,9 @@ async def flatten_contracts(
                 repository_url_with_auth = repository_url.replace(
                     "https://", f"https://{access_token}@"
                 )
-                clone_cmd = ["git", "clone", repository_url_with_auth, temp_dir]
+                clone_cmd = ["git", "clone", "-b", branch, repository_url_with_auth, temp_dir]
             else:
-                clone_cmd = ["git", "clone", repository_url, temp_dir]
+                clone_cmd = ["git", "clone", "-b", branch, repository_url, temp_dir]
 
             subprocess.run(clone_cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
