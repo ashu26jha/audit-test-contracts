@@ -108,7 +108,7 @@ class GitHubService:
         tasks = [
             self.get_file_content(access_token, owner, repo, file["path"], branch) for file in files
         ]
-        file_contents = await asyncio.gather(*tasks)
+        file_contents = await asyncio.gather(*tasks, return_exceptions=True)
 
         for file, file_content in zip(files, file_contents):
             file["token"] = int(len(file_content) / 4)
@@ -122,6 +122,7 @@ class GitHubService:
         """
         Fetch the content of a specific file in a repository.
         """
+        params = {"ref": branch}
         headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github.v3+json",

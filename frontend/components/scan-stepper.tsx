@@ -133,7 +133,7 @@ const ScanStepper: React.FC = () => {
         </div>
       </CardHeader>
 
-      <main className="flex-grow p-8">
+      <main className="flex-grow p-8 overflow-y-auto">
         <StepperVisualization />
 
         <div className="max-w-2xl mx-auto mt-4 flex flex-col gap-4">
