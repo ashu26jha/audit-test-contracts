@@ -5,8 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-FRONTEND_URL: str = os.getenv("FRONTEND_URL")
-BASE_URL: str = os.getenv("BASE_URL")
+# FRONTEND_URL: str = os.getenv("FRONTEND_URL")
+FRONTEND_URL: str = "https://app.auditagent.nethermind.io"
+# BASE_URL: str = os.getenv("BASE_URL")
+BASE_URL: str = "https://api.auditagent.nethermind.io"
 ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY")
 
 ##################################################
