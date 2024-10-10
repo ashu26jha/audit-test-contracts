@@ -38,6 +38,7 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
+        print(f"Request: 111111111")
         await validate_no_in_progress_scans(user)
         if settings.ENVIRONMENT == "production":
             await validate_no_unpaid_scans(user)
@@ -46,7 +47,7 @@ async def initiate_scan(
         repo_info = await github_service.fetch_github_repo_info(
             user.accessToken, request.repositoryURL
         )
-
+        print(f"Repo info: {repo_info}")
         # Get the next scan_id for this user
         scan_number = await Scan.get_next_scan_number(str(user.id))
         print(f"Scan number: {scan_number}")
