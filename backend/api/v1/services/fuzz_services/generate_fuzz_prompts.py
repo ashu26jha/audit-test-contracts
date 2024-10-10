@@ -31,6 +31,7 @@ async def generate_fuzz_prompts(
     slither_output: SlitherOutput,
     detected_profile: Profiles,
     project_type: str,
+    invariants: List[dict],
 ) -> str:
     """
     Generates the fuzzing prompt for the given project directory by reading all Solidity contract files
@@ -88,6 +89,12 @@ async def generate_fuzz_prompts(
 
     project_structure = get_project_structure(project_dir, contract_folders)
 
+    # Convert invariants to a string format for the prompt
+    invariants_str = "\n".join(
+        f"- {invariant['description']} (Function: {invariant['function']}, Condition: {invariant['condition']})"
+        for invariant in invariants
+    )
+
     # Select the appropriate prompt based on the presence of a test folder
     if test_folder_exists and project_type == "foundry":
         logger.info("Using FUZZER_PROMPT_WITH_TEST")
@@ -96,6 +103,7 @@ async def generate_fuzz_prompts(
             project_structure=project_structure,
             slither_output=findings_str,
             existing_test_cases=existing_test_cases,
+            invariants=invariants_str,
         )
     else:
         logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")
@@ -103,6 +111,7 @@ async def generate_fuzz_prompts(
             contract_code=all_contract_codes,
             project_structure=project_structure,
             slither_output=findings_str,
+            invariants=invariants_str,
         )
 
     return prompt
