@@ -1,4 +1,5 @@
 import json
+import shutil
 import tempfile
 from typing import List, Optional
 
@@ -16,6 +17,8 @@ from api.v1.services.fuzz_services.generate_report_prompt import generate_report
 from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
+from api.v1.services.fuzz_services.generate_invariants import generate_invariants
+from api.v1.services.fuzz_services.extract_invariants import extract_invariants
 from common import logger
 from common.profiles import Profiles
 from common.send_prompt_to_llm import send_prompt_to_llm_async
@@ -71,21 +74,39 @@ async def run_fuzzer(
         temp_dir = setup_result.project_dir
         project_type = setup_result.project_type
 
-        # 3. Generate fuzz prompts (with slither output)
+        # 3. Generate invarants (with slither output)
         logger.info("Generating fuzz prompts")
-        fuzz_prompts = await generate_fuzz_prompts(
+        invariant_prompt = await generate_invariants(
             temp_dir, contract_folders, slither_output, detected_profile, project_type
         )
+        
+        # 4. Send invarants to LLM
+        logger.info("Sending invarants to LLM")
+        invariant_response = await send_prompt_to_llm_async(model, invariant_prompt)
 
-        # 4. Send fuzz prompts to LLM
+        # 5. Extract invarants
+        logger.info("Extracting invarants")
+        invariants = extract_invariants(invariant_response)
+        
+        # 6. Generate fuzz prompts
+        fuzz_prompts = await generate_fuzz_prompts(
+            temp_dir,
+            contract_folders,
+            slither_output,
+            detected_profile,
+            project_type,
+            invariants,
+        )
+        
+        # 7. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
         fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
 
-        # 5. Extract fuzz test
+        # 8. Extract fuzz test
         logger.info("Extracting fuzz test")
         fuzz_test = extract_fuzz_test(fuzz_response)
 
-        # 6. Save fuzz test
+        # 9. Save fuzz test
         logger.info("Saving fuzz test")
         try:
             await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
@@ -104,22 +125,22 @@ async def run_fuzzer(
             fuzz_test = extract_fuzz_test(fuzz_response)
             await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
 
-        # 7. Run fuzz test
+        # 10. Run fuzz test
         logger.info("Running fuzz test")
         fuzz_results = await run_fuzz_file(temp_dir)
 
-        # 8. Generate report prompt
+        # 11. Generate report prompt
         logger.info("Generating report prompt")
         report_prompt = await generate_report_prompt(fuzz_test, fuzz_results, contract_folders)
 
-        # 9. Send report prompt to LLM
+        # 12. Send report prompt to LLM
         logger.info("Sending report prompt to LLM")
         report_response = await send_prompt_to_llm_async(model, report_prompt)
 
         # Strip the ```json from the report_response and convert it to JSON data
         report_response_json = json.loads(report_response.strip("```json").strip("```"))
 
-        # 10. Convert the report to JSON
+        # 13. Convert the report to JSON
         findings_list = [
             Finding(
                 Issue=finding["Issue"],
@@ -140,7 +161,7 @@ async def run_fuzzer(
 
         if is_local_temp_dir:
             logger.info("Cleaning up environment")
-            # shutil.rmtree(temp_dir)
+            shutil.rmtree(temp_dir)
 
         return FuzzerResponse(
             message="Fuzzing completed successfully.",
