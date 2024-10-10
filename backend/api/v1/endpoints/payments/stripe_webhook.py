@@ -15,7 +15,10 @@ async def stripe_webhook(request: Request):
         event = await StripeWebhookService.handle_webhook(payload, sig_header)
 
         # Update payment status in DB
-        if event["type"] == "invoice.payment_succeeded" or event["type"] == "checkout.session.completed":
+        if (
+            event["type"] == "invoice.payment_succeeded"
+            or event["type"] == "checkout.session.completed"
+        ):
             await StripeWebhookService.update_payment_status(event)
 
         return SuccessResponse(data="Webhook processed successfully")
@@ -24,5 +27,4 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
         logger.error(f"Error processing webhook: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Internal server error") from e
+        raise HTTPException(status_code=500, detail="Internal server error") from e

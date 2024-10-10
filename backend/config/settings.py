@@ -30,8 +30,9 @@ SUPPORTED_MODELS = {
 }
 
 # Default LLM models
-LLM_MODEL = "gpt-4o-mini"
-LLM_MODEL_SUMMARY = "gpt-4o-2024-08-06"
+LLM_MODEL_CHEAP = "gpt-4o-mini"
+LLM_MODEL_MEDIUM = "gpt-4o-2024-08-06"
+LLM_MODEL_BEST = "o1-preview"
 
 # List of models that do not support 'system' role
 MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]
