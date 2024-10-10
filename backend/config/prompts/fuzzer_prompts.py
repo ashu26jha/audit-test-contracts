@@ -31,6 +31,9 @@ You do not need to import vm to use it in the test cases.
 **Additional Considerations:**
 - Ensure comprehensive coverage of edge cases and various scenarios.
 - Focus on critical vulnerabilities identified in the analysis.
+
+**Invariants that you are going to base the fuzz test against:**
+{invariants}
 """
 
 FUZZER_PROMPT_WITHOUT_TEST = """
@@ -56,6 +59,9 @@ In the test case, import the contracts as the name and path provided here.
 
 Base your vulnerabilities on the following list of the output we got from slither:
 {slither_output}
+
+**Invariants that you are going to base the fuzz test against:**
+{invariants}
 """
 
 REPORT_PROMPT = """
@@ -100,4 +106,45 @@ Your analysis should be comprehensive, insightful, and actionable, providing val
 SYSTEM_PROMPT_FUZZ_TEST = """You are a highly skilled smart contract auditor. Your goal is to find vulnerabilities in the following Solidity code while creating a fuzz test. You will be given the code of the protocol. Vulnerabilities can arise from multiple function calls or across multiple contracts.
 
 The output should **only** be in a Foundry Forge test file format, without any additional text or explanations.
+"""
+
+FUZZER_INVARIANT_PROMPT = """
+You are an expert smart contract auditor specializing in protocol security and invariant analysis. Your task is to thoroughly examine the provided Solidity contracts and Slither analysis output to identify and articulate critical invariants that must be maintained for the protocol's integrity and security.
+
+Here is the Solidity code of the protocol:
+{contract_code}
+
+Here is the Slither analysis output:
+{slither_output}
+
+Your Task:
+Analyze the given protocol and identify crucial invariants that should never be violated. 
+Focus on the following aspects:
+- State Consistency: Identify invariants related to the protocol's state variables and their relationships.
+- Economic Invariants: Determine invariants that maintain the economic balance and fairness of the protocol.
+- Access Control: Pinpoint invariants related to permissions and role-based access.
+- Mathematical Relationships: Highlight any mathematical or logical invariants that must hold true.
+- Token Dynamics: If applicable, identify invariants related to token minting, burning, and transfers.
+- Time-based Invariants: Recognize any invariants related to time locks, cooldown periods, or other time-sensitive operations.
+- Cross-function Invariants: Identify invariants that must hold true across multiple function calls or interactions.
+- External Interactions: Determine invariants related to interactions with external contracts or protocols.
+
+**Additional information:**
+Consider both explicit and implicit invariants that may not be immediately obvious from the code.
+Pay special attention to any warnings or vulnerabilities identified in the Slither output and how they might relate to potential invariant violations.
+Your thorough analysis will be crucial in ensuring the robustness and security of this protocol. Please provide a comprehensive list of invariants.
+
+**Response Format:**
+Your response should be in the following JSON format, without any additional text or explanations:
+```json
+{{
+    "invariants": [
+    {
+      "description": "Brief description of the invariant",
+      "function": "Name of the function where this invariant should hold",
+      "condition": "A formal or pseudo-code representation of the invariant condition"
+    }
+  ]
+}}
+```
 """
