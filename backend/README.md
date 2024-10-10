@@ -63,15 +63,10 @@ cd backend
 uvicorn main:app --reload
 ```
 
-To launch a production server:
-```bash
-fastapi run
-```
-
-To launch a server with Docker:
+To launch a local development server with Docker:
 ```bash
 cd backend
-docker build -t audit-agent-backend -f Dockerfile.backend .
+docker build -t audit-agent-backend -f Dockerfile.backend.dev .
 ```
 
 then run the following command to run the server:

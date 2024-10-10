@@ -15,14 +15,14 @@ from api.v1.services import (
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
-from common.validate import (
+from common.validate import (  # validate_no_unpaid_scans,
     validate_contract_files,
     validate_github_url,
     validate_no_in_progress_scans,
-    validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-from config import settings
+
+# from config import settings
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
@@ -38,7 +38,6 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
-        print(f"Request: 111111111")
         await validate_no_in_progress_scans(user)
         # if settings.ENVIRONMENT == "production":
         #     await validate_no_unpaid_scans(user)
@@ -47,10 +46,8 @@ async def initiate_scan(
         repo_info = await github_service.fetch_github_repo_info(
             user.accessToken, request.repositoryURL
         )
-        print(f"Repo info: {repo_info}")
         # Get the next scan_id for this user
         scan_number = await Scan.get_next_scan_number(str(user.id))
-        print(f"Scan number: {scan_number}")
 
         # Create and store the new scan with initial status 'pending'
         branch_name = request.branchName if request.branchName else "main"
@@ -65,9 +62,7 @@ async def initiate_scan(
             repositoryName=repo_info.repo_name,
             branchName=branch_name,
         )
-        print(f"New scan: {new_scan}")
         await scan_history_service.store_scan(new_scan)
-        print(f"Scan stored: {new_scan}")
 
         # Create and store an initial empty scan result
         initial_scan_result = ScanResult(
@@ -78,19 +73,16 @@ async def initiate_scan(
             total_findings=0,
             findings=[],
         )
-        print(f"Initial scan result: {initial_scan_result}")
         await scan_history_service.store_scan_result(initial_scan_result)
-        print(f"Scan result stored: {initial_scan_result}")
+
         # Increment global stats (unpaid by default)
         await GlobalStats.increment_scan(status="pending", paid=False, findings=0, lines_of_code=0)
-        print("Global stats incremented")
 
         # Fetch the commit hash using GitHub API
         try:
             commit_hash = await github_service.get_commit_hash(
                 user.accessToken, request.repositoryURL, branch_name
             )
-            print(f"Commit hash: {commit_hash}")
         except HTTPException as e:
             # Update scan status to 'failed'
             await scan_history_service.update_scan_status(scan_id, "failed")
@@ -160,10 +152,8 @@ async def initiate_scan(
             )
             await scan_history_service.store_scan_result(failed_scan_result)
         except Exception:
-            logger.warning(
-                f"Scan {scan_id} not found when updating status to 'failed'")
-        raise HTTPException(
-            status_code=500, detail="Failed to initiate audit scan")
+            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
@@ -208,8 +198,7 @@ async def perform_audit_agent_background(
 
         # Update global stats with findings and lines of code
         scan = await scan_history_service.get_scan(scan_uuid)
-        total_lines = scan.linesOfCode.get(
-            "total_lines", 0) if scan.linesOfCode else 0
+        total_lines = scan.linesOfCode.get("total_lines", 0) if scan.linesOfCode else 0
         await GlobalStats.increment_scan(
             status="completed",
             paid=scan.paid_status,

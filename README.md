@@ -45,6 +45,11 @@ To get started with Yokai Audit Agent, follow these steps:
 4. Configure environment variables
 5. Run the application
 
+To run both the backend and frontend locally via docker-compose, run the following command:
+```bash
+docker-compose up --build
+```
+
 ## Contributing
 
 We welcome contributions to Yokai Audit Agent. Please read our contributing guidelines before submitting pull requests.
