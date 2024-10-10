@@ -22,6 +22,7 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
     # Create the email message
     msg = MIMEMultipart()
     msg["From"] = smtp_username
+    msg["Cc"] = settings.CC_EMAIL
     msg["To"] = to_email
     msg["Subject"] = f"Scan Results - Scan ID: {scan_id}"
 

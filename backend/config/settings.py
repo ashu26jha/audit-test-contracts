@@ -93,3 +93,9 @@ REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 MAX_RETRIES = 3
 DELAY = 2
+
+##################################################
+#                   EMAIL
+##################################################
+
+CC_EMAIL = "kirill.balakhonov@nethermind.io"
