@@ -40,8 +40,8 @@ async def initiate_scan(
         validate_contract_files(request.contractFiles)
         print(f"Request: 111111111")
         await validate_no_in_progress_scans(user)
-        if settings.ENVIRONMENT == "production":
-            await validate_no_unpaid_scans(user)
+        # if settings.ENVIRONMENT == "production":
+        #     await validate_no_unpaid_scans(user)
 
         # Fetch repository info
         repo_info = await github_service.fetch_github_repo_info(
