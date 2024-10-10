@@ -14,7 +14,6 @@ from common.pdf_generation import (
     read_html,
 )
 from common.validate import validate_scan_paid, validate_user_scan_access
-from config import settings
 from fastapi import HTTPException
 from markdown.extensions.attr_list import AttrListExtension
 from markdown.extensions.codehilite import CodeHiliteExtension
@@ -63,7 +62,6 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
 
         # Send the PDF via email to the user and the address in settings.py
         await send_pdf_email(user.email, str(final_pdf_path), scan_id)
-        await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)
         logger.info(f"PDF generated for scan ID: {scan_id}")

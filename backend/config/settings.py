@@ -79,7 +79,7 @@ SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = os.getenv("SMTP_PORT", 587)
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+CC_EMAIL = os.getenv("CC_EMAIL")
 
 ##################################################
 #                   REDIS
@@ -93,9 +93,3 @@ REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 MAX_RETRIES = 3
 DELAY = 2
-
-##################################################
-#                   EMAIL
-##################################################
-
-CC_EMAIL = "kirill.balakhonov@nethermind.io"
