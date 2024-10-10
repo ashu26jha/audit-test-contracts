@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from api.v1.schemas.generate_summary_schema import SummaryResponse
 from api.v1.services import generate_summary_service
-from config.settings import LLM_MODEL_SUMMARY
+from config.settings import LLM_MODEL_MEDIUM
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from main import app
@@ -33,7 +33,7 @@ async def test_generate_summary_success(mock_send_prompt_to_llm_async):
 
     mock_send_prompt_to_llm_async.assert_awaited_once()
     called_args = mock_send_prompt_to_llm_async.call_args[0]
-    assert called_args[0] == LLM_MODEL_SUMMARY
+    assert called_args[0] == LLM_MODEL_MEDIUM
     assert isinstance(called_args[1], str)
 
     # Test the API response format

@@ -133,7 +133,9 @@ Thank you,
         {!isCompleted && !isFailed && (
           <div className="flex flex-col items-center justify-center h-full">
             <Spinner size="lg" color="secondary" />
-            <p className="mt-4 text-lg">Scan in progress...</p>
+            <p className="mt-4 text-lg">
+              Please wait a few minutes while your scan is being processed, you can close this page.
+            </p>
           </div>
         )}
 
@@ -158,9 +160,6 @@ Thank you,
               </div>
               <h3 className="text-lg font-semibold mb-2">{finding.Issue}</h3>
               <p className="text-sm text-gray-300 mb-2">{finding.Description}</p>
-              <p className="text-sm text-gray-300 mb-2">
-                <strong>Recommendation:</strong> {finding.Recommendation}
-              </p>
             </CardBody>
           </Card>
         ))}

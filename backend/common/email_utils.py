@@ -15,13 +15,16 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
     """
     # Email configuration
     smtp_server = settings.SMTP_SERVER
-    smtp_port = settings.SMTP_PORT  # or the appropriate port for your SMTP server
+    smtp_port = settings.SMTP_PORT
     smtp_username = settings.SMTP_USERNAME
     smtp_password = settings.SMTP_PASSWORD
+    cc_email = settings.CC_EMAIL if settings.CC_EMAIL else None
 
     # Create the email message
     msg = MIMEMultipart()
     msg["From"] = smtp_username
+    if cc_email is not None:
+        msg["Cc"] = cc_email
     msg["To"] = to_email
     msg["Subject"] = f"Scan Results - Scan ID: {scan_id}"
 

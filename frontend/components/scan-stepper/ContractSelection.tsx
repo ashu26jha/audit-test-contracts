@@ -51,6 +51,7 @@ export const ContractSelection: React.FC = () => {
 
       <div className="overflow-auto max-h-60">
         <Table
+          color="secondary"
           aria-label="Solidity files table"
           selectionMode="multiple"
           onSelectionChange={(selection) => {

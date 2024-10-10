@@ -10,7 +10,7 @@ from config.prompts.context_scan_prompts import (
     CONTEXT_PROMPT_WITHOUT_SUMMARY,
     SYSTEM_PROMPT,
 )
-from config.settings import DELAY, LLM_MODEL, MAX_RETRIES
+from config.settings import DELAY, LLM_MODEL_BEST, MAX_RETRIES
 from fastapi import HTTPException
 
 
@@ -35,7 +35,11 @@ async def perform_context_scan(
             try:
                 message_history = load_profile(Profiles.DEFAULT)
                 llm_response: Optional[ContextScanResponse] = await send_prompt_to_llm_async(
-                    LLM_MODEL, prompt, system_prompt, message_history, ContextScanResponse
+                    LLM_MODEL_BEST,
+                    prompt,
+                    system_prompt,
+                    message_history,
+                    ContextScanResponse,
                 )
 
                 if not llm_response or not isinstance(llm_response, ContextScanResponse):
