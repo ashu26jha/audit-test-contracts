@@ -49,6 +49,7 @@ async def initiate_scan(
 
         # Get the next scan_id for this user
         scan_number = await Scan.get_next_scan_number(str(user.id))
+        print(f"Scan number: {scan_number}")
 
         # Create and store the new scan with initial status 'pending'
         branch_name = request.branchName if request.branchName else "main"
@@ -63,7 +64,9 @@ async def initiate_scan(
             repositoryName=repo_info.repo_name,
             branchName=branch_name,
         )
+        print(f"New scan: {new_scan}")
         await scan_history_service.store_scan(new_scan)
+        print(f"Scan stored: {new_scan}")
 
         # Create and store an initial empty scan result
         initial_scan_result = ScanResult(
@@ -74,16 +77,19 @@ async def initiate_scan(
             total_findings=0,
             findings=[],
         )
+        print(f"Initial scan result: {initial_scan_result}")
         await scan_history_service.store_scan_result(initial_scan_result)
-
+        print(f"Scan result stored: {initial_scan_result}")
         # Increment global stats (unpaid by default)
         await GlobalStats.increment_scan(status="pending", paid=False, findings=0, lines_of_code=0)
+        print("Global stats incremented")
 
         # Fetch the commit hash using GitHub API
         try:
             commit_hash = await github_service.get_commit_hash(
                 user.accessToken, request.repositoryURL, branch_name
             )
+            print(f"Commit hash: {commit_hash}")
         except HTTPException as e:
             # Update scan status to 'failed'
             await scan_history_service.update_scan_status(scan_id, "failed")
@@ -153,8 +159,10 @@ async def initiate_scan(
             )
             await scan_history_service.store_scan_result(failed_scan_result)
         except Exception:
-            logger.warning(f"Scan {scan_id} not found when updating status to 'failed'")
-        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
+            logger.warning(
+                f"Scan {scan_id} not found when updating status to 'failed'")
+        raise HTTPException(
+            status_code=500, detail="Failed to initiate audit scan")
 
 
 async def perform_audit_agent_background(
@@ -199,7 +207,8 @@ async def perform_audit_agent_background(
 
         # Update global stats with findings and lines of code
         scan = await scan_history_service.get_scan(scan_uuid)
-        total_lines = scan.linesOfCode.get("total_lines", 0) if scan.linesOfCode else 0
+        total_lines = scan.linesOfCode.get(
+            "total_lines", 0) if scan.linesOfCode else 0
         await GlobalStats.increment_scan(
             status="completed",
             paid=scan.paid_status,
