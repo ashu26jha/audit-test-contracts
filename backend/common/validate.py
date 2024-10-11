@@ -20,7 +20,7 @@ async def validate_user_scan_access(scan_id: UUID, current_user: User):
 async def validate_scan_paid(scan_id: UUID):
     """Validate that a specific scan has been paid for."""
     scan = await get_scan(scan_id)
-    if not scan.paid_status:
+    if not scan.paid_status and scan.status != "failed":
         raise HTTPException(status_code=400, detail="This scan has not been paid for yet.")
 
 
