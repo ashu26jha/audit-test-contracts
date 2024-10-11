@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import anthropic
 import openai
+from fastapi import HTTPException
+
 from common import logger
 from config.settings import ANTHROPIC_API_KEY, OPENAI_API_KEY
-from fastapi import HTTPException
 
 # Check for required API keys
 if not OPENAI_API_KEY:

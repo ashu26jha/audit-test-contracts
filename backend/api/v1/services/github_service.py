@@ -4,11 +4,12 @@ import re
 from uuid import uuid4
 
 import httpx
+from fastapi import HTTPException
+
 from api.v1.models.github import GitHubRepo
 from api.v1.schemas.github_schema import GitHubRepoCreate, GitHubRepoResponse
 from common import logger
 from config import settings
-from fastapi import HTTPException
 
 
 class GitHubService:

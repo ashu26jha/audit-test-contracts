@@ -3,10 +3,11 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
-from api.v1.schemas.context_scan_schema import Finding
 from beanie import Document, Indexed
-from common.profiles import Profiles
 from pydantic import ConfigDict, Field
+
+from api.v1.schemas.context_scan_schema import Finding
+from common.profiles import Profiles
 
 
 class Scan(Document):

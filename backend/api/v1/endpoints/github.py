@@ -1,9 +1,10 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from api.v1.models.user import User
 from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services.auth_service import get_current_user
 from api.v1.services.github_service import GitHubService
 from common import logger
-from fastapi import APIRouter, Depends, HTTPException, Query
 
 router = APIRouter()
 github_service = GitHubService()

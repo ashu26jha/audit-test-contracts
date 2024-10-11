@@ -1,11 +1,12 @@
 from uuid import uuid4
 
+from fastapi import APIRouter, BackgroundTasks, Depends, status
+
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
 from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services import audit_agent_service
 from api.v1.services.auth_service import get_current_user
-from fastapi import APIRouter, BackgroundTasks, Depends, status
 
 router = APIRouter()
 

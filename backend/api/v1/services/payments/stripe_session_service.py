@@ -1,12 +1,13 @@
 from uuid import UUID
 
 import stripe
+from fastapi import HTTPException
+
 from api.v1.models.payment import Payment
 from api.v1.models.user import User
 from common.logger import logger
 from common.validate import validate_user_scan_access
 from config.settings import FRONTEND_URL, STRIPE_API_KEY
-from fastapi import HTTPException
 
 stripe.api_key = STRIPE_API_KEY
 if not STRIPE_API_KEY:

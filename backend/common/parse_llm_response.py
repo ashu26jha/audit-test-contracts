@@ -2,9 +2,10 @@ import json
 import re
 from typing import Optional, Type, TypeVar, Union
 
-from common import logger
 from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
+
+from common import logger
 
 T = TypeVar("T", bound=BaseModel)
 

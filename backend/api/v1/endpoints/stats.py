@@ -1,7 +1,8 @@
+from fastapi import APIRouter, Depends
+
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan
 from api.v1.services.auth_service import get_api_key
-from fastapi import APIRouter, Depends
 
 router = APIRouter()
 

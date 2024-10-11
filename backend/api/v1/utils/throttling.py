@@ -1,9 +1,10 @@
 from functools import wraps
 
 import redis
+from fastapi import HTTPException
+
 from common import logger
 from config import settings
-from fastapi import HTTPException
 
 redis_client = redis.from_url(settings.REDIS_URL)
 

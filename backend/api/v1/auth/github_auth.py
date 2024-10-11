@@ -1,13 +1,14 @@
 import httpx
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from starlette.requests import Request
+
 from api.v1.models.user import User
 from api.v1.schemas.user_schema import UserResponse
 from api.v1.services.auth_service import create_access_token, get_current_user
 from api.v1.services.github_service import GitHubService
 from config import settings
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from starlette.requests import Request
 
 router = APIRouter()
 

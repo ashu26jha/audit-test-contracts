@@ -1,15 +1,16 @@
 from typing import List, Optional, Type, TypeVar
 
+from fastapi import HTTPException
+from langfuse.decorators import langfuse_context
+from openai import AsyncOpenAI, OpenAIError
+from pydantic import BaseModel
+
 from common import logger
 from common.llm_clients import CLAUDE_CLIENT
 
 # Import the helper function
 from common.parse_llm_response import parse_model_response
 from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
-from fastapi import HTTPException
-from langfuse.decorators import langfuse_context
-from openai import AsyncOpenAI, OpenAIError
-from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 

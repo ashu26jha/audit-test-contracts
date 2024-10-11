@@ -2,8 +2,9 @@ import json
 import os
 from enum import Enum
 
-from common import logger
 from fastapi import HTTPException
+
+from common import logger
 
 # Define the path to the profiles directory
 PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "profiles_data")

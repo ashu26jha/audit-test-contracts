@@ -2,9 +2,10 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import UUID
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
-from pydantic import BaseModel, ConfigDict, Field
 
 
 class ScanResponse(BaseModel):

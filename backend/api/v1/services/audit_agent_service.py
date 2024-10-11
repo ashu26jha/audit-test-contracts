@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
+from fastapi import BackgroundTasks, HTTPException
+
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -23,7 +25,6 @@ from common.validate import (
     validate_user_has_github_token,
 )
 from config import settings
-from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
 

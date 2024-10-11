@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
-from api.v1.models.user import User
 from bson import ObjectId
+
+from api.v1.models.user import User
 
 
 async def create_test_user(username: str) -> User:

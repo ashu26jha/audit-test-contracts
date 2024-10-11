@@ -3,6 +3,14 @@ from contextlib import asynccontextmanager
 
 import certifi
 import uvicorn
+from beanie import init_beanie
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from motor.motor_asyncio import AsyncIOMotorClient
+
 from api.v1.auth import github_auth
 from api.v1.endpoints import (
     audit_agent,
@@ -22,7 +30,6 @@ from api.v1.models.global_stats import GlobalStats
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
-from beanie import init_beanie
 from common import logger
 from common.error_handling import (
     general_exception_handler,
@@ -30,12 +37,6 @@ from common.error_handling import (
     validation_exception_handler,
 )
 from config import settings
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.openapi.utils import get_openapi
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from motor.motor_asyncio import AsyncIOMotorClient
 
 
 @asynccontextmanager

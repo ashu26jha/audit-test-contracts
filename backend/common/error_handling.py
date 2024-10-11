@@ -1,7 +1,8 @@
-from api.v1.schemas.api_response_schema import ErrorResponse
 from fastapi import HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+
+from api.v1.schemas.api_response_schema import ErrorResponse
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):

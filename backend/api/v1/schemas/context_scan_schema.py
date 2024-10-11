@@ -1,7 +1,8 @@
 from typing import List, Optional
 
-from common.profiles import Profiles
 from pydantic import BaseModel, Field
+
+from common.profiles import Profiles
 
 
 class Finding(BaseModel):

@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 
 import markdown
+from fastapi import HTTPException
+from markdown.extensions.attr_list import AttrListExtension
+from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.nl2br import Nl2BrExtension
+from markdown.extensions.sane_lists import SaneListExtension
+from PyPDF2 import PdfReader, PdfWriter
+
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan
 from api.v1.services.scan_results_service import get_full_scan_result
@@ -14,12 +21,6 @@ from common.pdf_generation import (
     read_html,
 )
 from common.validate import validate_scan_paid, validate_user_scan_access
-from fastapi import HTTPException
-from markdown.extensions.attr_list import AttrListExtension
-from markdown.extensions.codehilite import CodeHiliteExtension
-from markdown.extensions.nl2br import Nl2BrExtension
-from markdown.extensions.sane_lists import SaneListExtension
-from PyPDF2 import PdfReader, PdfWriter
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 TEMPLATE_DIR = BASE_DIR / "config" / "template"

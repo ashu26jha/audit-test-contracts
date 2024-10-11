@@ -2,9 +2,10 @@ import re
 from typing import List
 from uuid import UUID
 
+from fastapi import HTTPException
+
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan, get_scan_history_for_user
-from fastapi import HTTPException
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
