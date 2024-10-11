@@ -15,14 +15,14 @@ from api.v1.services import (
 from api.v1.services.github_service import GitHubService
 from common.logger import logger
 from common.profiles import Profiles
-from common.validate import (  # validate_no_unpaid_scans,
+from common.validate import (
     validate_contract_files,
     validate_github_url,
     validate_no_in_progress_scans,
+    validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-
-# from config import settings
+from config import settings
 from fastapi import BackgroundTasks, HTTPException
 
 github_service = GitHubService()
@@ -39,8 +39,8 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
         await validate_no_in_progress_scans(user)
-        # if settings.ENVIRONMENT == "production":
-        #     await validate_no_unpaid_scans(user)
+        if settings.ENVIRONMENT == "production":
+            await validate_no_unpaid_scans(user)
 
         # Fetch repository info
         repo_info = await github_service.fetch_github_repo_info(

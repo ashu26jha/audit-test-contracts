@@ -28,8 +28,8 @@ async def validate_no_unpaid_scans(user: User):
     """Validate that the user has no unpaid scans."""
     scans = await get_scan_history_for_user(user)
     for scan in scans:
-        await validate_user_scan_access(scan.id, user)
-        await validate_scan_paid(scan.id)
+        await validate_user_scan_access(scan.scan_id, user)
+        await validate_scan_paid(scan.scan_id)
 
 
 async def validate_no_in_progress_scans(user: User):
