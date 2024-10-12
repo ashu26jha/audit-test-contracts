@@ -1,9 +1,10 @@
 import io
 from typing import Dict
 
-from common import logger
 from fastapi import HTTPException
 from pygount import SourceAnalysis
+
+from common import logger
 
 
 async def count_lines_of_code(flattened_contracts: str) -> Dict[str, int]:

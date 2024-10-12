@@ -1,6 +1,7 @@
+from fastapi import APIRouter, HTTPException
+
 from api.v1.schemas import static_analyzer_schema
 from api.v1.services import static_analyzer_service
-from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 

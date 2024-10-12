@@ -5,9 +5,7 @@ from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from common import logger
 from common.profiles import Profiles
-from config.prompts.fuzzer_prompts import (
-    FUZZER_INVARIANT_PROMPT,
-)
+from config.prompts.fuzzer_prompts import FUZZER_INVARIANT_PROMPT
 
 
 def read_file(path: str) -> str:
@@ -49,6 +47,7 @@ async def generate_invariants(
     # Check if the test folder exists
     test_folder_path = Path(project_dir) / "test"
     test_folder_exists = test_folder_path.exists() and test_folder_path.is_dir()
+    logger.info(f"Test folder exists: {test_folder_exists}")
 
     if slither_output is None:
         findings_str = ""

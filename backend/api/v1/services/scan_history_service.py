@@ -2,10 +2,11 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from fastapi import HTTPException
+
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
-from fastapi import HTTPException
 
 
 async def store_scan(scan: Scan):

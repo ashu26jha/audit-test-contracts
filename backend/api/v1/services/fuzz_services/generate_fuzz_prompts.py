@@ -5,10 +5,7 @@ from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from common import logger
 from common.profiles import Profiles
-from config.prompts.fuzzer_prompts import (
-    FUZZER_PROMPT_WITH_TEST,
-    FUZZER_PROMPT_WITHOUT_TEST,
-)
+from config.prompts.fuzzer_prompts import FUZZER_PROMPT_WITH_TEST, FUZZER_PROMPT_WITHOUT_TEST
 
 
 def read_file(path: str) -> str:

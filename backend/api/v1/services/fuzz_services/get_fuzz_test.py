@@ -1,11 +1,12 @@
 import asyncio
 from typing import Optional
 
+from fastapi import HTTPException
+
 from common import logger
 from common.profiles import Profiles, load_profile
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.settings import DELAY, LLM_MODEL_BEST, MAX_RETRIES
-from fastapi import HTTPException
 
 
 async def get_fuzz_test(prompt: str, system_prompt: str, detected_profile: Profiles) -> str:

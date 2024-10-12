@@ -2,9 +2,10 @@ import re
 from typing import List
 from uuid import UUID
 
+from fastapi import HTTPException
+
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan, get_scan_history_for_user
-from fastapi import HTTPException
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
@@ -20,7 +21,7 @@ async def validate_user_scan_access(scan_id: UUID, current_user: User):
 async def validate_scan_paid(scan_id: UUID):
     """Validate that a specific scan has been paid for."""
     scan = await get_scan(scan_id)
-    if not scan.paid_status:
+    if not scan.paid_status and scan.status != "failed":
         raise HTTPException(status_code=400, detail="This scan has not been paid for yet.")
 
 
@@ -28,8 +29,19 @@ async def validate_no_unpaid_scans(user: User):
     """Validate that the user has no unpaid scans."""
     scans = await get_scan_history_for_user(user)
     for scan in scans:
-        await validate_user_scan_access(scan.id, user)
-        await validate_scan_paid(scan.id)
+        await validate_user_scan_access(scan.scan_id, user)
+        await validate_scan_paid(scan.scan_id)
+
+
+async def validate_no_in_progress_scans(user: User):
+    """Validate that the user has no in-progress or pending scans."""
+    scans = await get_scan_history_for_user(user)
+    for scan in scans:
+        if scan.status in ["in_progress", "pending"]:
+            raise HTTPException(
+                status_code=400,
+                detail="You have an ongoing scan. Please wait for it to complete before starting a new one.",
+            )
 
 
 def validate_user_has_github_token(user: User):

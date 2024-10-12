@@ -1,7 +1,8 @@
+from fastapi import APIRouter, HTTPException, Request
+
 from api.v1.schemas.api_response_schema import SuccessResponse
 from api.v1.services.payments.stripe_webhook_service import StripeWebhookService
 from common import logger
-from fastapi import APIRouter, HTTPException, Request
 
 router = APIRouter()
 
@@ -15,7 +16,10 @@ async def stripe_webhook(request: Request):
         event = await StripeWebhookService.handle_webhook(payload, sig_header)
 
         # Update payment status in DB
-        if event["type"] == "checkout.session.completed":
+        if (
+            event["type"] == "invoice.payment_succeeded"
+            or event["type"] == "checkout.session.completed"
+        ):
             await StripeWebhookService.update_payment_status(event)
 
         return SuccessResponse(data="Webhook processed successfully")

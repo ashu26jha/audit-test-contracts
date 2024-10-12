@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 
 import markdown
+from fastapi import HTTPException
+from markdown.extensions.attr_list import AttrListExtension
+from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.nl2br import Nl2BrExtension
+from markdown.extensions.sane_lists import SaneListExtension
+from PyPDF2 import PdfReader, PdfWriter
+
 from api.v1.helpers.pdf_generation_helpers import (
     create_finding_section,
     extract_organization_name,
@@ -14,13 +21,6 @@ from api.v1.services.scan_results_service import get_full_scan_result
 from common import logger
 from common.email_utils import send_pdf_email
 from common.validate import validate_scan_paid, validate_user_scan_access
-from config import settings
-from fastapi import HTTPException
-from markdown.extensions.attr_list import AttrListExtension
-from markdown.extensions.codehilite import CodeHiliteExtension
-from markdown.extensions.nl2br import Nl2BrExtension
-from markdown.extensions.sane_lists import SaneListExtension
-from PyPDF2 import PdfReader, PdfWriter
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 TEMPLATE_DIR = BASE_DIR / "config" / "template"
@@ -63,7 +63,6 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
 
         # Send the PDF via email to the user and the address in settings.py
         await send_pdf_email(user.email, str(final_pdf_path), scan_id)
-        await send_pdf_email(settings.EMAIL_ADDRESS, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)
         logger.info(f"PDF generated for scan ID: {scan_id}")

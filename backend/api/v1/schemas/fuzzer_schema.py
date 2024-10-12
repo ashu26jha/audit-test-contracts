@@ -1,7 +1,8 @@
 from typing import List, Optional
 
-from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from pydantic import BaseModel, Field, HttpUrl
+
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
 
 
 class Finding(BaseModel):

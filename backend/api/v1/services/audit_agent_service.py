@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from fastapi import BackgroundTasks, HTTPException
+
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.models.global_stats import GlobalStats
 from api.v1.models.scan import Scan, ScanResult
@@ -27,11 +29,11 @@ from common.profiles import Profiles
 from common.validate import (
     validate_contract_files,
     validate_github_url,
+    validate_no_in_progress_scans,
     validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-from config.settings import ENVIRONMENT
-from fastapi import BackgroundTasks, HTTPException
+from config import settings
 
 github_service = GitHubService()
 
@@ -46,14 +48,14 @@ async def initiate_scan(
         validate_user_has_github_token(user)
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
-        if ENVIRONMENT == "production":
+        await validate_no_in_progress_scans(user)
+        if settings.ENVIRONMENT == "production":
             await validate_no_unpaid_scans(user)
 
         # Fetch repository info
         repo_info = await github_service.fetch_github_repo_info(
             user.accessToken, request.repositoryURL
         )
-
         # Get the next scan_id for this user
         scan_number = await Scan.get_next_scan_number(str(user.id))
 

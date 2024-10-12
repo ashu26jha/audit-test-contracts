@@ -3,8 +3,9 @@ import subprocess
 import tempfile
 from typing import List
 
-from common import logger
 from fastapi import HTTPException
+
+from common import logger
 
 
 async def flatten_contracts(

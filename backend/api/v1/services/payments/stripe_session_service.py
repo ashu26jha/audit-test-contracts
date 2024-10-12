@@ -1,12 +1,13 @@
 from uuid import UUID
 
 import stripe
+from fastapi import HTTPException
+
 from api.v1.models.payment import Payment
 from api.v1.models.user import User
 from common.logger import logger
 from common.validate import validate_user_scan_access
 from config.settings import FRONTEND_URL, STRIPE_API_KEY
-from fastapi import HTTPException
 
 stripe.api_key = STRIPE_API_KEY
 if not STRIPE_API_KEY:
@@ -21,8 +22,9 @@ class StripeSessionService:
         # Check if the scan exists and belongs to the user
         await validate_user_scan_access(UUID(scan_id), user)
 
-        user_id = str(User.id)
+        user_id = str(user.id)
         user_email = user.email
+        unit_amount = 2000  # $20.00
 
         checkout_session = stripe.checkout.Session.create(
             billing_address_collection="auto",
@@ -32,12 +34,13 @@ class StripeSessionService:
                     "price_data": {
                         "currency": "usd",
                         "product_data": {"name": "Payment for Audit Agent full report."},
-                        "unit_amount": 2000,
+                        "unit_amount": unit_amount,
                     },
                     "quantity": 1,
                 }
             ],
             mode="payment",
+            allow_promotion_codes=True,
             success_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=success&scan_id={scan_id}",
             cancel_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=error&scan_id={scan_id}",
             metadata={
@@ -47,28 +50,21 @@ class StripeSessionService:
         )
 
         # Store the session ID
-        await StripeSessionService.store_session_id(scan_id, checkout_session.id, user_id)
+        await StripeSessionService.store_session_id(
+            scan_id, checkout_session.id, user_id, unit_amount
+        )
 
         return checkout_session
 
     @staticmethod
-    async def store_session_id(scan_id: str, session_id: str, user_id: str):
+    async def store_session_id(scan_id: str, session_id: str, user_id: str, amount: int):
         payment = Payment(
             event_id="",
             user_id=user_id,
             scan_id=scan_id,
-            amount=0,
+            amount=amount / 100,  # Convert cents to dollars
             currency="usd",
             status="pending",
             stripeSessionId=session_id,
         )
         await payment.create()
-
-    @staticmethod
-    async def verify_session_id(session_id: str) -> bool:
-        payment = await Payment.find_one(Payment.stripeSessionId == session_id)
-        return payment is not None
-
-    @staticmethod
-    async def retrieve_session(session_id: str):
-        return stripe.checkout.Session.retrieve(session_id)

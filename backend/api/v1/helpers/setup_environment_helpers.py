@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from pydantic import HttpUrl
+
 from api.v1.helpers.dependencies_helpers import (
     generate_and_write_remappings,
     generate_remappings_with_foundry,
@@ -23,7 +25,6 @@ from api.v1.helpers.project_helpers import (
 from api.v1.helpers.solc_helpers import detect_and_install_solc_versions
 from api.v1.schemas.fuzzer_schema import SetupResult
 from common import logger
-from pydantic import HttpUrl
 
 
 async def setup_environment(

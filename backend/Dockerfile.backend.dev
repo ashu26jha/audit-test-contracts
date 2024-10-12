@@ -1,0 +1,32 @@
+# Use a specific Python version instead of the latest
+FROM python:3.12.0-slim
+
+# Install git and other necessary dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory in the container
+WORKDIR /app/backend
+
+# Copy the requirements.txt file into the container
+COPY requirements.txt .
+
+# Install the Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install playwright
+RUN playwright install 
+RUN playwright install-deps 
+
+# Copy the rest of your application code into the container
+COPY . .
+
+# Expose the port that your backend will run on
+EXPOSE 8000
+
+# Install Redis
+RUN apt-get update && apt-get install -y redis-server
+
+# Start Redis server before your application
+CMD redis-server --daemonize yes && redis-cli ping && python3 main.py

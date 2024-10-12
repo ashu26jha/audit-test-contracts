@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect } from "react";
 
 import { Button, Card, CardHeader } from "@nextui-org/react";
+import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { STEPS } from "@/data/steps";
+import { useToast } from "@/hooks/useToast";
 
 import { Loading } from "./Loading";
 import { useAuth } from "../contexts/AuthContext";
@@ -18,6 +20,7 @@ import { MAX_TOKENS } from "../config/constants";
 
 const ScanStepper: React.FC = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const { token } = useAuth();
   const {
     currentStep,
@@ -90,6 +93,13 @@ const ScanStepper: React.FC = () => {
       } catch (error) {
         console.error("Error initiating scan:", error);
         setIsLoading(false);
+        toast({
+          title:
+            ((error as AxiosError).response?.data as { message?: string })?.message ??
+            "An error occurred while initiating the scan.",
+          status: "error",
+          duration: 3000,
+        });
       }
     } else {
       setCurrentStep(currentStep + 1);

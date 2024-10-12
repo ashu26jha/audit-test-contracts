@@ -1,12 +1,13 @@
 from datetime import timedelta
 
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
+
 from api.v1.models.user import User
 from api.v1.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from api.v1.services.auth_service import create_access_token
 from api.v1.services.test_auth_service import create_test_user
 from config import settings
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
 
 router = APIRouter()
 

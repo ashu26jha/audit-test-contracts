@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 
 import stripe
+
 from api.v1.models.payment import Payment, PaymentStatus
 from api.v1.services.scan_history_service import update_scan_paid_status
 from common.logger import logger

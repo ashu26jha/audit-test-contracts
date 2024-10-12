@@ -2,9 +2,10 @@ import os
 import re
 from typing import List, Optional
 
+from packaging import version
+
 from api.v1.helpers.forge_helpers import run_command_sync
 from common import logger
-from packaging import version
 
 
 def detect_and_install_solc_versions(temp_dir: str) -> str:

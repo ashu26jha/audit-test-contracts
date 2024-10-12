@@ -1,6 +1,7 @@
+from fastapi import APIRouter, HTTPException
+
 from api.v1.schemas.fuzzer_schema import FuzzerRequest, FuzzerResponse
 from api.v1.services.fuzzing_service import run_fuzzer
-from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 

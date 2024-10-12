@@ -1,6 +1,8 @@
 import asyncio
 from typing import List, Optional
 
+from fastapi import HTTPException
+
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
 from common.logger import logger
 from common.profiles import Profiles, load_profile
@@ -11,7 +13,6 @@ from config.prompts.context_scan_prompts import (
     SYSTEM_PROMPT,
 )
 from config.settings import DELAY, LLM_MODEL_BEST, MAX_RETRIES
-from fastapi import HTTPException
 
 
 async def perform_context_scan(

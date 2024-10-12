@@ -4,21 +4,16 @@ import tempfile
 from typing import List, Optional
 
 from api.v1.helpers.setup_environment_helpers import setup_environment
-from api.v1.schemas.fuzzer_schema import (
-    Finding,
-    FuzzerResponse,
-    FuzzTestResult,
-    SetupResult,
-)
+from api.v1.schemas.fuzzer_schema import Finding, FuzzerResponse, FuzzTestResult, SetupResult
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
+from api.v1.services.fuzz_services.extract_invariants import extract_invariants
 from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
+from api.v1.services.fuzz_services.generate_invariants import generate_invariants
 from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
 from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
 from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
-from api.v1.services.fuzz_services.generate_invariants import generate_invariants
-from api.v1.services.fuzz_services.extract_invariants import extract_invariants
 from common import logger
 from common.profiles import Profiles
 from common.send_prompt_to_llm import send_prompt_to_llm_async
@@ -79,7 +74,7 @@ async def run_fuzzer(
         invariant_prompt = await generate_invariants(
             temp_dir, contract_folders, slither_output, detected_profile, project_type
         )
-        
+
         # 4. Send invarants to LLM
         logger.info("Sending invarants to LLM")
         invariant_response = await send_prompt_to_llm_async(model, invariant_prompt)
@@ -87,7 +82,7 @@ async def run_fuzzer(
         # 5. Extract invarants
         logger.info("Extracting invarants")
         invariants = extract_invariants(invariant_response)
-        
+
         # 6. Generate fuzz prompts
         fuzz_prompts = await generate_fuzz_prompts(
             temp_dir,
@@ -97,7 +92,7 @@ async def run_fuzzer(
             project_type,
             invariants,
         )
-        
+
         # 7. Send fuzz prompts to LLM
         logger.info("Sending fuzz prompts to LLM")
         fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)

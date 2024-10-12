@@ -118,7 +118,7 @@ Here is the Slither analysis output:
 {slither_output}
 
 Your Task:
-Analyze the given protocol and identify crucial invariants that should never be violated. 
+Analyze the given protocol and identify crucial invariants that should never be violated.
 Focus on the following aspects:
 - State Consistency: Identify invariants related to the protocol's state variables and their relationships.
 - Economic Invariants: Determine invariants that maintain the economic balance and fairness of the protocol.

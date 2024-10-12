@@ -6,6 +6,7 @@ import subprocess
 from typing import Dict, List, Tuple
 
 import toml
+
 from common import logger
 from config.slither import POSSIBLE_CONTRACT_FOLDERS, SOLIDITY_EXTENSION
 
