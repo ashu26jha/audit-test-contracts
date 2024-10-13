@@ -1,10 +1,18 @@
 # Use a specific Python version instead of the latest
 FROM python:3.12.0-slim
 
-# Install git and other necessary dependencies
+# Install git, curl, and other necessary dependencies
 RUN apt-get update && apt-get install -y \
     git \
+    curl \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Stripe CLI
+RUN curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | tee /usr/share/keyrings/stripe.gpg > /dev/null && \
+    echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | tee -a /etc/apt/sources.list.d/stripe.list && \
+    apt-get update && apt-get install -y stripe && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
 WORKDIR /app/backend
@@ -28,5 +36,8 @@ EXPOSE 8000
 # Install Redis
 RUN apt-get update && apt-get install -y redis-server
 
-# Start Redis server before your application
-CMD redis-server --daemonize yes && redis-cli ping && python3 main.py
+# Start Redis server and run both the backend and Stripe webhook listener
+CMD redis-server --daemonize yes && \
+    redis-cli ping && \
+    (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && \
+    python3 main.py
