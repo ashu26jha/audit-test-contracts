@@ -15,7 +15,7 @@ async def generate_invariants(
     project_structure: str,
     flattened_contracts: str,
     slither_output: Optional[SlitherOutput] = None,
-) -> str:
+) -> InvariantsList:
     """
     Generates invariants for fuzz testing based on the provided project structure, flattened contracts,
     and optional Slither analysis output. The function formats the input data into a prompt for the LLM

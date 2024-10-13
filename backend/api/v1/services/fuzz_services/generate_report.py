@@ -26,18 +26,16 @@ async def generate_report(
     """
     logger.info("Generating fuzzing report...")
 
-    try:
-        # Generate prompt
-        report_prompt = REPORT_PROMPT.format(
-            fuzz_test=fuzz_test, results=fuzz_results, contract_code=contract_folders
-        )
+    # Generate prompt
+    report_prompt = REPORT_PROMPT.format(
+        fuzz_test=fuzz_test, results=fuzz_results, contract_code=contract_folders
+    )
 
-        # Send prompt to LLM
-        report_response = await send_prompt_to_llm_async(LLM_MODEL_MEDIUM, report_prompt)
+    # Send prompt to LLM
+    report_response = await send_prompt_to_llm_async(LLM_MODEL_MEDIUM, report_prompt)
 
-        # Parse LLM response
-        report = parse_model_response(report_response, FindingList)
+    # Parse LLM response
+    report = parse_model_response(report_response, FindingList)
 
-        return report
-    except Exception as e:
-        logger.error(f"Error generating report: {str(e)}")
+    logger.info(f"Report generated with {len(report.findings)} findings.")
+    return report

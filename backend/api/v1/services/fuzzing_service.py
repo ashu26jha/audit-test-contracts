@@ -37,6 +37,7 @@ async def run_fuzzer(
     # TODO: Determine if system prompt should be used (right now it's always used)
     system_prompt = SYSTEM_PROMPT_FUZZ_TEST
 
+    temp_dir = ""
     try:
         # 1. Setup the fuzzing environment (Handle standalone service)
         if setup_result is None:
@@ -46,8 +47,10 @@ async def run_fuzzer(
                 setup_result: SetupResult = await setup_environment(
                     github_url, temp_dir, oauth_token
                 )
+                logger.info("Environment setup successfully.")
             except Exception as e:
                 logger.error(f"Failed to set up environment: {str(e)}")
+                raise
 
         # Update project_dir to be from setup_result
         temp_dir = setup_result.project_dir
@@ -72,7 +75,7 @@ async def run_fuzzer(
         # 2. Update Foundry configuration
         update_foundry_config(temp_dir)
 
-        # 3. Generate the invarants
+        # 3. Generate the invariants
         invariants = await generate_invariants(
             detected_profile,
             project_structure,
@@ -92,7 +95,7 @@ async def run_fuzzer(
         )
 
         # 5. Send the fuzz tests prompt to LLM for fuzz tests generation
-        fuzz_test = await get_fuzz_test(
+        fuzz_test, compilation_error = await get_fuzz_test(
             fuzz_prompts,
             system_prompt,
             detected_profile,
@@ -102,8 +105,21 @@ async def run_fuzzer(
             str(invariants.invariants),
         )
 
+        if compilation_error:
+            raise Exception(
+                f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}"
+            )
+
         # 6. Run fuzz test
         fuzz_results = await run_fuzz_file(temp_dir)
+
+        # Check if there were compilation errors
+        if (
+            "compilation error" in fuzz_results.lower()
+            and "no files changed" not in fuzz_results.lower()
+        ):
+            logger.error("Compilation error detected during fuzz test execution.")
+            raise Exception(f"Compilation error occurred: {fuzz_results}")
 
         # 7. Generate report from tests
         report = await generate_report(fuzz_test, fuzz_results, contract_folders)
@@ -111,14 +127,12 @@ async def run_fuzzer(
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
             fuzz_results=fuzz_results,
-            findings=report.findings,
+            findings=report.findings if report and report.findings else [],
         )
 
-        if is_local_temp_dir:
-            logger.info("Cleaning up environment")
-            shutil.rmtree(temp_dir)
-
-        logger.info(f"Fuzzing completed successfully with {len(report.findings)} findings.")
+        logger.info(
+            f"Fuzzing completed successfully with {len(report.findings) if report and report.findings else 0} findings."
+        )
 
         return FuzzerResponse(
             message="Fuzzing completed successfully.",
@@ -127,9 +141,18 @@ async def run_fuzzer(
             error=None,
         )
     except Exception as e:
+        logger.error(f"An error occurred during the fuzzing process: {str(e)}")
         return FuzzerResponse(
             message="An error occurred during the fuzzing process.",
             status="Error",
             data=None,
             error=str(e),
         )
+    finally:
+        if is_local_temp_dir and temp_dir and Path(temp_dir).exists():
+            try:
+                logger.info(f"Cleaning up temporary directory at {temp_dir}.")
+                shutil.rmtree(temp_dir)
+                logger.info("Environment cleanup completed.")
+            except Exception as cleanup_error:
+                logger.error(f"Error during cleanup: {str(cleanup_error)}")

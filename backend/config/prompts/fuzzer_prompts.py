@@ -170,16 +170,16 @@ Your analysis should be comprehensive, insightful, and actionable, providing val
 """
 
 FUZZ_TEST_VALIDATION_PROMPT = """
-You are an expert Solidity developer and auditor. Your task is to review and validate the following Foundry fuzz test. Ensure that:
-
-1. The test will compile without issues.
-2. All imports are correct and necessary. In doubt, define the interface.
-3. All parameters are correctly set. All functions are called with the correct parameters.
-4. The test covers all provided invariants effectively.
-5. There are no syntax errors or logical inconsistencies.
-6. The test follows Foundry best practices for fuzz testing.
+You are an expert in testing Solidity contracts to prevent vulnerabilities. Your task is to review, fix if needed and validate the following Foundry fuzz tests file. Ensure that:
+  1. The test will compile without issues, and without any adjustments.
+  2. All imports are correct and necessary. In doubt, define the interface in the test file to prevent compiler errors.
+  3. All parameters are correctly set. All functions are called with the correct parameters. In doubt, initialize some parameters with dummy values.
+  4. The test covers all provided invariants effectively and handle most of the edge cases.
+  5. There are no syntax errors or logical inconsistencies.
+  6. The test follows Foundry best practices for fuzz testing.
 
 If you find any issues or potential improvements, provide the corrected version of the entire test. If the test is already optimal, simply return it as is.
+Leverage the compilation error to fix the tests when provided.
 
 **Here's the fuzz test to review:**
 ```solidity

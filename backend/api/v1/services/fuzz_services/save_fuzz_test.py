@@ -22,17 +22,14 @@ async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: Lis
     logger.info("Saving fuzz test...")
 
     try:
-        # Check if 'test' folder is in contract_folders
-        if "test" not in contract_folders:
-            test_dir = Path(project_dir) / "test"
-            test_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            test_dir = Path(project_dir) / "test"
-
+        test_dir = Path(project_dir) / "test"
+        test_dir.mkdir(parents=True, exist_ok=True)
         test_file_path = test_dir / "Test.t.sol"
 
         with open(test_file_path, "w") as f:
             f.write(fuzz_test)
+
+        logger.info(f"Fuzz test saved successfully at {test_file_path}.")
 
     except IOError as e:
         logger.error(f"Error saving fuzz test: {str(e)}")

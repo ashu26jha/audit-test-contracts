@@ -55,16 +55,24 @@ async def generate_fuzz_prompt(
         for test_file in test_folder_path.rglob("*.t.sol"):
             existing_test_cases += f"// Existing test file: {test_file.relative_to(project_dir)}\n"
             existing_test_cases += read_file(test_file) + "\n"
+        logger.info(
+            f"Found {len(existing_test_cases.split('// Existing test file:')) - 1} existing test cases."
+        )
+    else:
+        logger.info("No existing test cases found.")
+
+    # Format invariants as a string list
+    invariants_formatted = "\n".join(f"- {invariant}" for invariant in invariants.invariants)
 
     # Select the appropriate prompt based on the presence of a test folder
-    if test_folder_exists and project_type == "foundry":
+    if test_folder_exists and project_type.lower() == "foundry":
         logger.info("Using FUZZER_PROMPT_WITH_TEST")
         prompt = FUZZER_PROMPT_WITH_TEST.format(
             project_structure=project_structure,
             contract_code=flattened_contracts,
             existing_test_cases=existing_test_cases,
             slither_output=findings,
-            invariants=invariants,
+            invariants=invariants_formatted,
         )
     else:
         logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")
@@ -72,7 +80,7 @@ async def generate_fuzz_prompt(
             project_structure=project_structure,
             contract_code=flattened_contracts,
             slither_output=findings,
-            invariants=invariants,
+            invariants=invariants_formatted,
         )
 
     return prompt
