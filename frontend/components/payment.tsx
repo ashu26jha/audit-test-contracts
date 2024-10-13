@@ -4,12 +4,16 @@ import { Button, Card } from "@nextui-org/react";
 import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { AA_EMAIL } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
+
 interface PaymentProps {
   status: "success" | "failed";
   onRetry: () => void;
 }
 
 const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
+  const { user } = useAuth();
   const router = useRouter();
 
   return (
@@ -25,7 +29,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           <p className="text-gray-400 mb-6">
             You will receive the full vulnerabilities report shortly on the following email:
             <br />
-            <span className="text-white">auditagent@nethermind.io</span>
+            <span className="text-white">{user?.email}</span>
           </p>
         ) : (
           <p className="text-gray-400 mb-6">We did not receive your payment, please try again!</p>
@@ -45,7 +49,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           </div>
         )}
       </Card>
-      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at auditagent@nethermind.io</p>
+      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at {AA_EMAIL}</p>
     </div>
   );
 };
