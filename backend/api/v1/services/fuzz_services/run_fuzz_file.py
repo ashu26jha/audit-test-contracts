@@ -1,33 +1,36 @@
-import asyncio
-
-from common import logger  # Ensure logger is imported
+from api.v1.helpers.forge_helpers import run_command
+from common import logger
 
 
 async def run_fuzz_file(project_dir: str) -> str:
     """
-    Runs the fuzz test using Foundry in the specified project directory.
+    Executes the fuzz test using Foundry in the specified project directory.
+    The function constructs the command to run the fuzz tests and captures
+    the output, including any errors that may occur during execution.
 
     Args:
         project_dir (str): The directory where the Foundry project is located.
 
     Returns:
-        str: The output of the fuzz test or an error message.
+        str: The output of the fuzz test execution, which may include success messages
+             or error details if the execution fails.
     """
+    logger.info("Running fuzz tests...")
+
     try:
-        process = await asyncio.create_subprocess_exec(
-            "forge",
-            "test",
-            "-vvvv",
-            cwd=project_dir,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await process.communicate()
+        command = ["forge", "test", "-vvvv"]
+        returncode, stdout, stderr = await run_command(command, cwd=project_dir)
 
-        output = stdout.decode() if stdout else ""
-        error = stderr.decode() if stderr else ""
+        # Combine stdout and stderr for full output
+        full_output = stdout + stderr
 
-        return output if output else error
+        if returncode == 0:
+            logger.info("Fuzz test completed successfully")
+            return full_output
+        else:
+            logger.warning(f"Forge test completed with non-zero exit code: {returncode}")
+            logger.warning(full_output)
+            return full_output
     except Exception as e:
         logger.error(f"Error running fuzz test: {str(e)}")
         return str(e)

@@ -125,7 +125,7 @@ async def run_slither(
     returncode, stdout, stderr = await run_command(slither_command, temp_dir, env=env)
 
     if not os.path.exists(output_file):
-        logger.error("Slither output file not found.")
+        logger.error("Slither output file not found")
         logger.error(f"Return code: {returncode}")
         # logger.error(f"Stderr: {stderr}")
         raise ValueError(f"Slither analysis failed: {stderr}")

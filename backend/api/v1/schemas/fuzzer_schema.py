@@ -2,21 +2,13 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from api.v1.schemas.context_scan_schema import Finding
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
-
-
-class Finding(BaseModel):
-    Issue: str = Field(..., description="A short description of the vulnerability or issue")
-    Severity: str = Field(..., description="Severity level of the issue")
-    Contracts: List[str] = Field(..., description="List of affected contract names")
-    Description: str = Field(..., description="Detailed description of the issue")
-    Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
 
 
 class FuzzTestResult(BaseModel):
     fuzz_test: Optional[str] = None
     fuzz_results: Optional[str] = None
-    analysis: Optional[str] = None
     findings: List[Finding] = Field(..., description="The result of the fuzz test")
 
 
@@ -29,7 +21,7 @@ class FuzzerResponse(BaseModel):
 
 class SetupResult(BaseModel):
     project_dir: str
-    contract_folders: List[str]
+    contract_folders: Optional[List[str]] = None
     project_type: str
     project_path: str
     solc_version: Optional[str] = None
@@ -42,3 +34,13 @@ class FuzzerRequest(BaseModel):
     selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
     slither_output: Optional[SlitherOutput] = None
+
+
+class InvariantResponse(BaseModel):
+    description: str = Field(..., description="The description of the invariants")
+    function: str = Field(..., description="The function name of the invariant")
+    condition: str = Field(..., description="The condition of the invariant")
+
+
+class InvariantsList(BaseModel):
+    invariants: List[InvariantResponse]

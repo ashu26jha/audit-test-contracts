@@ -142,6 +142,7 @@ async def initiate_scan(
             request.repositoryURL,
             user.accessToken,
             request.contractFiles,
+            branch_name,
         )
 
     except HTTPException:
@@ -174,6 +175,7 @@ async def perform_audit_agent_background(
     repositoryURL: str,
     access_token: str,
     selected_contracts: List[str],
+    branch_name: str,
 ):
     logger.info(f"Starting background audit scan with ID: {scan_uuid}")
 
@@ -186,7 +188,11 @@ async def perform_audit_agent_background(
 
         # Attempt to set up the environment
         try:
-            setup_result = await setup_environment(repositoryURL, access_token, temp_dir)
+            setup_result = await setup_environment(
+                repositoryURL,
+                temp_dir,
+                access_token,
+            )
         except Exception as e:
             logger.error(f"Failed to set up environment: {str(e)}")
 
@@ -215,6 +221,7 @@ async def perform_audit_agent_background(
                     repositoryURL,
                     access_token,
                     selected_contracts,
+                    flattened_contracts,
                     setup_result,
                     slither_output,
                 )

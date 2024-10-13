@@ -1,0 +1,78 @@
+from pathlib import Path
+from typing import Optional
+
+from api.v1.helpers.forge_helpers import read_file
+from api.v1.schemas.fuzzer_schema import InvariantsList
+from api.v1.schemas.static_analyzer_schema import SlitherOutput
+from common import logger
+from common.profiles import Profiles
+from config.prompts.fuzzer_prompts import FUZZER_PROMPT_WITH_TEST, FUZZER_PROMPT_WITHOUT_TEST
+
+
+async def generate_fuzz_prompt(
+    project_dir: str,
+    detected_profile: Profiles,
+    project_type: str,
+    project_structure: str,
+    flattened_contracts: str,
+    invariants: InvariantsList,
+    slither_output: Optional[SlitherOutput] = None,
+) -> str:
+    """
+    Generates a fuzzing prompt for the specified project directory by formatting the provided
+    Solidity contract files, project structure, invariants, and optional Slither analysis output.
+    The function checks for existing test cases and selects the appropriate prompt template based
+    on the presence of a test folder.
+
+    Args:
+        project_dir (str): The project directory containing the Solidity contract files.
+        detected_profile (Profiles): The detected profile, if any, used for context in generation.
+        project_type (str): The type of the project (e.g., "foundry").
+        project_structure (str): The structure of the project, detailing the organization of contracts.
+        flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
+        invariants (InvariantsList): The invariants to be included in the prompt.
+        slither_output (Optional[SlitherOutput]): The output from Slither analysis, containing findings about the contracts.
+
+    Returns:
+        str: The generated fuzzing prompt formatted for the LLM.
+    """
+    logger.info("Generating fuzz tests suite prompt...")
+
+    existing_test_cases = ""
+
+    if slither_output is not None:
+        findings = slither_output.findings
+    else:
+        findings = "No Slither output provided."
+
+    # Check if the test folder exists
+    test_folder_path = Path(project_dir) / "test"
+    test_folder_exists = test_folder_path.exists() and test_folder_path.is_dir()
+    logger.info(f"Test folder exists: {test_folder_exists}")
+
+    # Check for existing test files in the test folder
+    if test_folder_exists:
+        for test_file in test_folder_path.rglob("*.t.sol"):
+            existing_test_cases += f"// Existing test file: {test_file.relative_to(project_dir)}\n"
+            existing_test_cases += read_file(test_file) + "\n"
+
+    # Select the appropriate prompt based on the presence of a test folder
+    if test_folder_exists and project_type == "foundry":
+        logger.info("Using FUZZER_PROMPT_WITH_TEST")
+        prompt = FUZZER_PROMPT_WITH_TEST.format(
+            project_structure=project_structure,
+            contract_code=flattened_contracts,
+            existing_test_cases=existing_test_cases,
+            slither_output=findings,
+            invariants=invariants,
+        )
+    else:
+        logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")
+        prompt = FUZZER_PROMPT_WITHOUT_TEST.format(
+            project_structure=project_structure,
+            contract_code=flattened_contracts,
+            slither_output=findings,
+            invariants=invariants,
+        )
+
+    return prompt

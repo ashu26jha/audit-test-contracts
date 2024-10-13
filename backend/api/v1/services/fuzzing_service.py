@@ -1,162 +1,124 @@
-import json
 import shutil
 import tempfile
+from pathlib import Path
 from typing import List, Optional
 
+from api.v1.helpers.forge_helpers import read_file, update_foundry_config
+from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.helpers.setup_environment_helpers import setup_environment
-from api.v1.schemas.fuzzer_schema import Finding, FuzzerResponse, FuzzTestResult, SetupResult
+from api.v1.schemas.fuzzer_schema import FuzzerResponse, FuzzTestResult, SetupResult
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
-from api.v1.services.fuzz_services.extract_fuzz_test import extract_fuzz_test
-from api.v1.services.fuzz_services.extract_invariants import extract_invariants
-from api.v1.services.fuzz_services.generate_fuzz_prompts import generate_fuzz_prompts
+from api.v1.services.fuzz_services.generate_fuzz_prompt import generate_fuzz_prompt
 from api.v1.services.fuzz_services.generate_invariants import generate_invariants
-from api.v1.services.fuzz_services.generate_report_prompt import generate_report_prompt
+from api.v1.services.fuzz_services.generate_report import generate_report
 from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
-from api.v1.services.fuzz_services.save_fuzz_test import save_fuzz_test
 from common import logger
 from common.profiles import Profiles
-from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
-from config.settings import LLM_MODEL_BEST
 
 
+# TODO: filter findings by selected contracts
 async def run_fuzzer(
     github_url: str,
     oauth_token: Optional[str] = None,
-    selected_contracts: List[str] = None,
+    selected_contracts: Optional[List[str]] = None,
+    flattened_contracts: Optional[str] = None,
     setup_result: Optional[SetupResult] = None,
     slither_output: Optional[SlitherOutput] = None,
 ) -> FuzzerResponse:
-    """
-    Executes the fuzzing process on a specified GitHub repository using Slither for context.
 
-    This function sets up the environment, runs Slither analysis to gather context, generates fuzzing prompts incorporating Slither output,
-    sends the prompts to a language model, extracts and saves the fuzz test, runs the fuzz test, generates a report based on the results, and converts the report to JSON.
-
-    Args:
-        github_url (str): The GitHub repository URL.
-        oauth_token (Optional[str]): The OAuth token for private repositories.
-
-    Returns:
-        FuzzerResponse: A response model containing the fuzz test, fuzz results, analysis, and any error encountered.
-    """
-    model = LLM_MODEL_BEST
     is_local_temp_dir = False
-    temp_dir = setup_result.project_dir if setup_result else tempfile.mkdtemp()
 
     # TODO: Different profiles for different fuzzing techniques?
     # for now both stateless and statefull (invariant) are in the same profile
     detected_profile = Profiles.FUZZING
 
-    # Determine if system prompt should be used (right now it's always used)
+    # TODO: Determine if system prompt should be used (right now it's always used)
     system_prompt = SYSTEM_PROMPT_FUZZ_TEST
 
     try:
-        # 1. Setup the fuzzing environment
+        # 1. Setup the fuzzing environment (Handle standalone service)
         if setup_result is None:
+            temp_dir = tempfile.mkdtemp()
             is_local_temp_dir = True
             try:
                 setup_result: SetupResult = await setup_environment(
-                    github_url, oauth_token, temp_dir
+                    github_url, temp_dir, oauth_token
                 )
             except Exception as e:
                 logger.error(f"Failed to set up environment: {str(e)}")
 
         # Update project_dir to be from setup_result
-        contract_folders = setup_result.contract_folders
-        solc_version = setup_result.solc_version
         temp_dir = setup_result.project_dir
+        contract_folders = setup_result.contract_folders
+        project_path = setup_result.project_path
         project_type = setup_result.project_type
+        project_structure = get_project_structure(temp_dir, contract_folders)
 
-        # 3. Generate invarants (with slither output)
-        logger.info("Generating fuzz prompts")
-        invariant_prompt = await generate_invariants(
-            temp_dir, contract_folders, slither_output, detected_profile, project_type
+        # When called as a standalone service, flattened_contracts is not provided
+        # TODO: limit tokens size? Remove interfaces?
+        if flattened_contracts is None:
+            project_dir_path = Path(project_path) / "src"
+
+            all_contract_codes = ""
+            for contract_file in project_dir_path.rglob("*.sol"):
+                if "lib" not in contract_file.parts:
+                    all_contract_codes += f"// {contract_file.relative_to(project_dir_path)}\n"
+                    all_contract_codes += read_file(contract_file) + "\n"
+
+            flattened_contracts = all_contract_codes
+
+        # 2. Update Foundry configuration
+        update_foundry_config(temp_dir)
+
+        # 3. Generate the invarants
+        invariants = await generate_invariants(
+            detected_profile,
+            project_structure,
+            flattened_contracts,
+            slither_output,
         )
 
-        # 4. Send invarants to LLM
-        logger.info("Sending invarants to LLM")
-        invariant_response = await send_prompt_to_llm_async(model, invariant_prompt)
+        # 4. Generate the fuzz tests prompt
+        fuzz_prompts = await generate_fuzz_prompt(
+            project_dir=temp_dir,
+            detected_profile=detected_profile,
+            project_type=project_type,
+            project_structure=project_structure,
+            flattened_contracts=flattened_contracts,
+            invariants=invariants,
+            slither_output=slither_output,
+        )
 
-        # 5. Extract invarants
-        logger.info("Extracting invarants")
-        invariants = extract_invariants(invariant_response)
-
-        # 6. Generate fuzz prompts
-        fuzz_prompts = await generate_fuzz_prompts(
+        # 5. Send the fuzz tests prompt to LLM for fuzz tests generation
+        fuzz_test = await get_fuzz_test(
+            fuzz_prompts,
+            system_prompt,
+            detected_profile,
             temp_dir,
             contract_folders,
-            slither_output,
-            detected_profile,
-            project_type,
-            invariants,
+            project_structure,
+            str(invariants.invariants),
         )
 
-        # 7. Send fuzz prompts to LLM
-        logger.info("Sending fuzz prompts to LLM")
-        fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
-
-        # 8. Extract fuzz test
-        logger.info("Extracting fuzz test")
-        fuzz_test = extract_fuzz_test(fuzz_response)
-
-        # 9. Save fuzz test
-        logger.info("Saving fuzz test")
-        try:
-            await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
-        except Exception as e:
-            logger.error(
-                f"Failed to save fuzz test: {str(e)}. Regenerating fuzz prompts and retrying."
-            )
-            fuzz_prompts = await generate_fuzz_prompts(
-                temp_dir,
-                contract_folders,
-                slither_output,
-                detected_profile,
-                project_type,
-            )
-            fuzz_response = await get_fuzz_test(fuzz_prompts, system_prompt, detected_profile)
-            fuzz_test = extract_fuzz_test(fuzz_response)
-            await save_fuzz_test(fuzz_test, temp_dir, contract_folders, solc_version)
-
-        # 10. Run fuzz test
-        logger.info("Running fuzz test")
+        # 6. Run fuzz test
         fuzz_results = await run_fuzz_file(temp_dir)
 
-        # 11. Generate report prompt
-        logger.info("Generating report prompt")
-        report_prompt = await generate_report_prompt(fuzz_test, fuzz_results, contract_folders)
-
-        # 12. Send report prompt to LLM
-        logger.info("Sending report prompt to LLM")
-        report_response = await send_prompt_to_llm_async(model, report_prompt)
-
-        # Strip the ```json from the report_response and convert it to JSON data
-        report_response_json = json.loads(report_response.strip("```json").strip("```"))
-
-        # 13. Convert the report to JSON
-        findings_list = [
-            Finding(
-                Issue=finding["Issue"],
-                Severity=finding["Severity"],
-                Contracts=finding["Contracts"],
-                Description=finding["Description"],
-                Recommendation=finding.get("Recommendation"),
-            )
-            for finding in report_response_json.get("findings", [])
-        ]
+        # 7. Generate report from tests
+        report = await generate_report(fuzz_test, fuzz_results, contract_folders)
 
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
             fuzz_results=fuzz_results,
-            analysis=json.dumps(report_response_json),
-            findings=findings_list,
+            findings=report.findings,
         )
 
         if is_local_temp_dir:
             logger.info("Cleaning up environment")
             shutil.rmtree(temp_dir)
+
+        logger.info(f"Fuzzing completed successfully with {len(report.findings)} findings.")
 
         return FuzzerResponse(
             message="Fuzzing completed successfully.",

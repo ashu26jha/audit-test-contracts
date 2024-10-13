@@ -101,7 +101,7 @@ async def install_dependencies(
         # Get GitHub repo and lib folder name from PACKAGE_MAPPING
         mapping = PACKAGE_MAPPING.get(package_name)
         if not mapping:
-            logger.warning(f"No mapping found for package '{package_name}'. Skipping.")
+            logger.warning(f"No mapping found for package '{package_name}'. Skipping")
             continue
         repo = mapping["github"]
         lib_folder = mapping.get("lib_folder", repo.split("/")[-1])

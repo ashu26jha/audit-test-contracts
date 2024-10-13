@@ -23,7 +23,7 @@ async def run_static_analyzer(
 
     if setup_result is None:
         is_local_temp_dir = True
-        setup_result: SetupResult = await setup_environment(github_url, oauth_token, temp_dir)
+        setup_result: SetupResult = await setup_environment(github_url, temp_dir, oauth_token)
 
     # 2. Run Slither
     slither_output = await run_slither(

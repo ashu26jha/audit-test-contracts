@@ -162,3 +162,30 @@ def remove_control_characters(json_content: str) -> str:
     json_content = json_content.strip()
 
     return json_content
+
+
+def extract_code_from_response(content: str, language: str = "solidity") -> str:
+    """
+    Extracts the Solidity fuzz test from the LLM response.
+
+    Args:
+        content (str): The raw content returned by the LLM.
+        language (str): The programming language to extract (default is "solidity").
+
+    Returns:
+        str: The extracted Solidity fuzz test code.
+    """
+
+    # Use regex to find the Solidity code block
+    code_match = re.search(rf"```{language}(.*?)```", content, re.DOTALL)
+
+    if code_match:
+        # Extract the Solidity code and remove any leading/trailing whitespace
+        fuzz_test = code_match.group(1).strip()
+
+        # Remove any remaining "```" if present
+        fuzz_test = fuzz_test.replace("```", "")
+
+        return fuzz_test
+    else:
+        raise ValueError("No Solidity fuzz test found in the LLM response.")

@@ -1,8 +1,8 @@
-import asyncio
 from typing import List, Optional
 
 from fastapi import HTTPException
 
+from api.v1.helpers.retry_helper import retry_async_operation
 from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
 from common.logger import logger
 from common.profiles import Profiles, load_profile
@@ -12,7 +12,7 @@ from config.prompts.context_scan_prompts import (
     CONTEXT_PROMPT_WITHOUT_SUMMARY,
     SYSTEM_PROMPT,
 )
-from config.settings import DELAY, LLM_MODEL_BEST, MAX_RETRIES
+from config.settings import LLM_MODEL_BEST
 
 
 async def perform_context_scan(
@@ -32,33 +32,22 @@ async def perform_context_scan(
     )
 
     try:
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                message_history = load_profile(Profiles.DEFAULT)
-                llm_response: Optional[ContextScanResponse] = await send_prompt_to_llm_async(
-                    LLM_MODEL_BEST,
-                    prompt,
-                    system_prompt,
-                    message_history,
-                    ContextScanResponse,
-                )
+        message_history = load_profile(Profiles.DEFAULT)
+        llm_response: Optional[ContextScanResponse] = await retry_async_operation(
+            send_prompt_to_llm_async,
+            LLM_MODEL_BEST,
+            prompt,
+            system_prompt,
+            message_history,
+            ContextScanResponse,
+        )
 
-                if not llm_response or not isinstance(llm_response, ContextScanResponse):
-                    logger.warning("LLM response was empty or invalid")
-                    raise HTTPException(status_code=500, detail="Internal Server Error")
+        if not llm_response or not isinstance(llm_response, ContextScanResponse):
+            logger.warning("LLM response was empty or invalid")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
-                return llm_response.findings
+        return llm_response.findings
 
-            except Exception as e:
-                if attempt < MAX_RETRIES:
-                    logger.warning(f"Attempt {attempt} failed. Retrying in {DELAY} seconds...")
-                    await asyncio.sleep(DELAY)
-                else:
-                    logger.exception(f"All {MAX_RETRIES} attempts failed. Error: {str(e)}")
-                    raise HTTPException(status_code=500, detail="Internal Server Error")
-
-    except HTTPException:
-        raise
     except Exception as e:
         logger.exception(f"Unexpected Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

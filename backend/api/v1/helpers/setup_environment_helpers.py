@@ -28,7 +28,7 @@ from common import logger
 
 
 async def setup_environment(
-    github_url: HttpUrl, oauth_token: str = None, temp_dir: str = None
+    github_url: HttpUrl, temp_dir: str, oauth_token: str = None
 ) -> SetupResult:
     """
     Sets up the environment by creating a temporary directory, cloning the repository,
@@ -53,7 +53,6 @@ async def setup_environment(
 
         # Detect project structure
         project_type, contract_folders = detect_project_structure(repo_dir)
-        logger.info(f"Project type: {project_type}")
 
         if project_type == "brownie":
             raise NotImplementedError(f"{project_type} is currently not implemented")
@@ -106,7 +105,13 @@ async def setup_environment(
             repo_dir = temp_dir
             logger.info("Hardhat set up correctly")
 
-        # Run "forge build" as a sanity check at the end
+        elif project_type == "foundry":
+            # Run Forge install
+            project_path = repo_dir
+            await run_command(["forge", "install"], temp_dir)
+            logger.info("Foundry set up correctly")
+
+            # Run "forge build" as a sanity check at the end
         try:
             await compile_project(repo_dir)
         except Exception:

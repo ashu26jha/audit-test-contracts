@@ -105,11 +105,11 @@ def preprocess_solidity_files(temp_dir: str) -> None:
                 )
                 with open(file_path, "w") as f:
                     f.write(content)
-    logger.info("Preprocessing completed.")
+    logger.info("Preprocessing completed")
 
 
 def update_foundry_config(temp_dir: str) -> None:
-    logger.info("Updating foundry.toml to use 'auto' Solc version...")
+    logger.info("Updating foundry.toml configuration...")
     foundry_toml_path = os.path.join(temp_dir, "foundry.toml")
     if not os.path.exists(foundry_toml_path):
         raise FileNotFoundError("foundry.toml not found in the project directory.")
@@ -124,5 +124,27 @@ def update_foundry_config(temp_dir: str) -> None:
     # Set 'solc' to 'auto' instead of 'solc_version'
     config["profile"]["default"]["auto_detect_solc"] = True
 
+    # Set PROPTEST_MAX_SHRINK_ITERS
+    config["profile"]["default"]["fuzz"] = {
+        "max_test_rejects": 65536,
+        "max_shrink_iters": 1000,
+    }
+
     with open(foundry_toml_path, "w") as f:
         toml.dump(config, f)
+
+    logger.info("foundry.toml updated successfully.")
+
+
+def read_file(path: str) -> str:
+    """
+    Reads the content of a file.
+
+    Args:
+        path (str): The file path.
+
+    Returns:
+        str: The content of the file.
+    """
+    with open(path, "r") as file:
+        return file.read()

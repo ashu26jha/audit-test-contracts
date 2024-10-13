@@ -1,88 +1,56 @@
-from pathlib import Path
-from typing import List
+from typing import Optional
 
-from api.v1.helpers.project_helpers import get_project_structure
+from api.v1.schemas.fuzzer_schema import InvariantsList
 from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from common import logger
+from common.parse_llm_response import parse_model_response
 from common.profiles import Profiles
+from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.fuzzer_prompts import FUZZER_INVARIANT_PROMPT
-
-
-def read_file(path: str) -> str:
-    """
-    Reads the content of a file.
-
-    Args:
-        path (str): The file path.
-
-    Returns:
-        str: The content of the file.
-    """
-    with open(path, "r") as file:
-        return file.read()
+from config.settings import LLM_MODEL_MEDIUM
 
 
 async def generate_invariants(
-    project_dir: str,
-    contract_folders: List[str],
-    slither_output: SlitherOutput,
     detected_profile: Profiles,
-    project_type: str,
+    project_structure: str,
+    flattened_contracts: str,
+    slither_output: Optional[SlitherOutput] = None,
 ) -> str:
     """
-    Generates the fuzzing prompt for the given project directory by reading all Solidity contract files
-    in the specified contract folders and formatting them with the provided documentation, examples, and Slither output.
+    Generates invariants for fuzz testing based on the provided project structure, flattened contracts,
+    and optional Slither analysis output. The function formats the input data into a prompt for the LLM
+    and retrieves the generated invariants.
 
     Args:
-        project_dir (str): The project directory containing the Solidity contract files.
-        contract_folders (List[str]): List of folders containing the contract files.
-        slither_output (SlitherOutput): The output from Slither analysis.
+        detected_profile (Profiles): The detected profile, if any, used for context in generation.
+        project_structure (str): The structure of the project, detailing the organization of contracts.
+        flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
+        slither_output (Optional[SlitherOutput]): The output from Slither analysis, containing findings about the contracts.
 
     Returns:
-        str: The generated fuzzing prompt.
+        InvariantsList: The generated invariants parsed from the LLM's response.
     """
-    all_contract_codes = ""
-    findings_str = ""
+    logger.info("Generating invariants with LLM...")
 
-    # Check if the test folder exists
-    test_folder_path = Path(project_dir) / "test"
-    test_folder_exists = test_folder_path.exists() and test_folder_path.is_dir()
-    logger.info(f"Test folder exists: {test_folder_exists}")
+    model = LLM_MODEL_MEDIUM
 
-    if slither_output is None:
-        findings_str = ""
-    else:
-        # Access findings from slither_output
+    if slither_output is not None:
         findings = slither_output.findings
+    else:
+        findings = "No Slither output provided."
 
-        # Process findings and convert them to a string format
-        for finding in findings:
-            findings_str += f"Issue: {finding.Issue}\n"
-            findings_str += f"Severity: {finding.Severity}\n"
-            findings_str += f"Contracts: {', '.join(finding.Contracts)}\n"
-            findings_str += f"Description: {finding.Description}\n\n"
-
-    if project_type == "hardhat":
-        contract_folders = ["contracts"]
-
-    # Convert project_dir to a Path object and add 'src' to it since it is now a Foundry project
-    project_dir_path = Path(project_dir) / "src"
-
-    for folder in contract_folders:
-        folder_path = project_dir_path / folder
-        for contract_file in folder_path.rglob("*.sol"):
-            if "lib" not in contract_file.parts:
-                all_contract_codes += f"// src/{contract_file.relative_to(project_dir_path)}\n"
-                all_contract_codes += read_file(contract_file) + "\n"
-
-    project_structure = get_project_structure(project_dir, contract_folders)
-
-    # Use the FUZZER_INVARIANT_PROMPT for generating invariants
-    logger.info("Using FUZZER_INVARIANT_PROMPT")
-    prompt = FUZZER_INVARIANT_PROMPT.format(
-        contract_code=all_contract_codes,
+    # Generate the invariant prompt
+    invariant_prompt = FUZZER_INVARIANT_PROMPT.format(
         project_structure=project_structure,
-        slither_output=findings_str,
+        contract_code=flattened_contracts,
+        slither_output=findings,
     )
 
-    return prompt
+    # Send the invariant prompt to the LLM
+    invariant_response = await send_prompt_to_llm_async(model, invariant_prompt)
+
+    # Parse LLM response
+    invariants = parse_model_response(invariant_response, InvariantsList)
+
+    logger.info(f"{len(invariants.invariants)} invariants generated")
+    return invariants

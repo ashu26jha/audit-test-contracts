@@ -66,7 +66,7 @@ async def improve_slither_findings(vulns: List[Dict]) -> List[Dict]:
             logger.info(f"Retrying in {DELAY} seconds...")
             await asyncio.sleep(DELAY)
         else:
-            logger.warning("Max retries reached. Returning original vulnerabilities.")
+            logger.warning("Max retries reached. Returning original vulnerabilities")
             return vulns
 
     return vulns
