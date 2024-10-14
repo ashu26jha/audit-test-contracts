@@ -213,9 +213,6 @@ async def perform_audit_agent_background(
                     setup_result,
                 )
             )
-            # Wait for static analysis to complete before starting fuzzing
-            static_analysis_result = await static_analysis_task
-            slither_output = static_analysis_result.slither_output
             fuzzing_task = asyncio.create_task(
                 fuzzing_service.run_fuzzer(
                     repositoryURL,
@@ -223,7 +220,6 @@ async def perform_audit_agent_background(
                     selected_contracts,
                     flattened_contracts,
                     setup_result,
-                    slither_output,
                 )
             )
         else:
@@ -252,6 +248,8 @@ async def perform_audit_agent_background(
 
         # Gather tasks to await
         tasks_to_await = [context_scan_task]
+        if static_analysis_task:
+            tasks_to_await.append(static_analysis_task)
         if fuzzing_task:
             tasks_to_await.append(fuzzing_task)
 
@@ -275,6 +273,8 @@ async def perform_audit_agent_background(
 
         # Handle static analysis result
         if static_analysis_task:
+            static_analysis_result = results[result_index]
+            result_index += 1
             if isinstance(static_analysis_result, Exception):
                 logger.error(f"Static analysis failed: {static_analysis_result}")
             else:

@@ -9,7 +9,7 @@ The output should **only** be in a Foundry Forge test file format, without any a
 """
 
 FUZZER_INVARIANT_PROMPT = """
-You are an expert smart contract auditor specializing in protocol security and invariant analysis. Your task is to thoroughly examine the provided Solidity contracts and Slither analysis output to identify and articulate critical invariants that must be maintained for the protocol's integrity and security.
+You are an expert smart contract auditor specializing in protocol security and invariant analysis. Your task is to thoroughly examine the provided Solidity contracts to identify and articulate critical invariants that must be maintained for the protocol's integrity and security. Your thorough analysis will be crucial in ensuring the robustness and security of this protocol.
 
 **Here is the project structure:**
 {project_structure}
@@ -19,28 +19,20 @@ You are an expert smart contract auditor specializing in protocol security and i
 {contract_code}
 ```
 
-**Here is the Slither analysis output, if any:**
-```json
-{slither_output}
-```
-
 **Your Task:**
-Analyze the given protocol and identify crucial invariants that should never be violated.
-Focus on the following aspects:
-- State Consistency: Identify invariants related to the protocol's state variables and their relationships.
-- Economic Invariants: Determine invariants that maintain the economic balance and fairness of the protocol.
-- Access Control: Pinpoint invariants related to permissions and role-based access.
-- Mathematical Relationships: Highlight any mathematical or logical invariants that must hold true.
-- Token Dynamics: If applicable, identify invariants related to token minting, burning, and transfers.
-- Time-based Invariants: Recognize any invariants related to time locks, cooldown periods, or other time-sensitive operations.
-- Cross-function Invariants: Identify invariants that must hold true across multiple function calls or interactions.
-- External Interactions: Determine invariants related to interactions with external contracts or protocols.
+Analyze the given protocol and identify crucial invariants that should never be violated, then provide a comprehensive list of the invariants found following the response format. Focus on the following aspects:
+  - State Consistency: Identify invariants related to the protocol's state variables and their relationships.
+  - Economic Invariants: Determine invariants that maintain the economic balance and fairness of the protocol.
+  - Access Control: Pinpoint invariants related to permissions and role-based access.
+  - Mathematical Relationships: Highlight any mathematical or logical invariants that must hold true.
+  - Token Dynamics: If applicable, identify invariants related to token minting, burning, and transfers.
+  - Time-based Invariants: Recognize any invariants related to time locks, cooldown periods, or other time-sensitive operations.
+  - Cross-function Invariants: Identify invariants that must hold true across multiple function calls or interactions.
+  - External Interactions: Determine invariants related to interactions with external contracts or protocols.
 
 **Additional information:**
 - Consider both explicit and implicit invariants that may not be immediately obvious from the code.
-- Slither output will not always be available. Leverage it when provided by paying special attention to any warnings or vulnerabilities identified and how they might relate to potential invariant violations.
-
-Your thorough analysis will be crucial in ensuring the robustness and security of this protocol. Please provide a comprehensive list of invariants.
+- You can generate up to 10 invariants. So focus on the most important ones.
 
 **Response Format:**
 Your response should be in the following JSON format, without any additional text or explanations:
@@ -70,25 +62,19 @@ Do not include any imports that are not part of the Foundry testing library or m
 {contract_code}
 ```
 
-**Here is the existing test files:**
+**Invariants to be fuzzed:**
+{invariants}
+
+**Existing test files:**
 {existing_test_cases}
 
-Your task is to generate a Foundry fuzz test file named 'FuzzTest.t.sol' that will test the contracts for any vulnerabilities based on the invariants provided.
-Look at the already existing test files and leverage the way they import contracts and set up the environment, but only include functions that will test and fuzz the vulnerabilities.
-You do not need to import vm to use it in the test cases.
-
-**When provided, leverage the following Slither output to better target potential vulnerabilities and generate more specific test cases:**
-{slither_output}
+**Your task:**
+Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Leverage the already existing test files for contract imports and environment setup. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios.
 
 **Additional Considerations:**
-- You are only allowed to inherit from contracts that already use those imports. If you do, make sure to add the import lines at the top of the test. Define interfaces as needed otherwise.
-- Ensure comprehensive coverage of edge cases and various scenarios.
-- Focus on critical vulnerabilities identified in the analysis.
 - Make it use the Foundry testing library and import it as 'forge-std/Test.sol'.
-- In the test case, import the contracts as the name and path provided here.
-
-**Invariants that you are going to base the fuzz test against:**
-{invariants}
+- Do not import `vm` to use in the test cases.
+- Only inherit from contracts that already use those imports in the provided solidity code, or the remappings. And when you do, make sure to add the import lines at the top of the test. Otherwise, define interfaces as needed. In doubt, define the interface in the test file.
 
 Make sure that you return your response inside the following triple backticks:
 ```solidity
@@ -109,20 +95,16 @@ Do not include any imports that are not part of the Foundry testing library or m
 {contract_code}
 ```
 
+**Invariants to be fuzzed:**
+{invariants}
+
+**Your task:**
+Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios.
+
 **Additional Considerations:**
 - Make it use the Foundry testing library and import it as 'forge-std/Test.sol'.
-- You are only allowed to inherit from contracts that already use those imports. If you do, make sure to add the import lines at the top of the test. Define interfaces as needed otherwise.
-- In the test case, import the contracts as the name and path provided here.
-- Generate a Foundry fuzz test file named 'FuzzTest.t.sol' that will contain all the tests to check the contracts for any vulnerabilities.
 - Do not import vm to use it in the test cases.
-- If provided, leverage the Slither's output to better target the potential vulnerabilities and generate more specific test cases.
-- Ensure comprehensive coverage of edge cases and various scenarios.
-
-**When provided, leverage the following Slither output to better target potential vulnerabilities and generate more specific test cases:**
-{slither_output}
-
-**Invariants that you are going to base the fuzz test against:**
-{invariants}
+- Only inherit from contracts that already use those imports in the provided solidity code, or the remappings. And when you do, make sure to add the import lines at the top of the test. Otherwise, define interfaces as needed. In doubt, define the interface in the test file.
 
 Make sure that you return your response inside the following triple backticks:
 ```solidity

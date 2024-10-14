@@ -17,7 +17,6 @@ from api.v1.helpers.project_helpers import (
     compile_project,
     detect_project_structure,
 )
-from api.v1.helpers.solc_helpers import detect_and_install_solc_versions
 from api.v1.schemas.fuzzer_schema import SetupResult
 from common import logger
 
@@ -38,7 +37,6 @@ async def setup_environment(
     """
 
     contract_folders = None
-    solc_version = None
     remappings = None
 
     try:
@@ -82,8 +80,10 @@ async def setup_environment(
                 logger.info("Installing NPM dependencies...")
                 returncode, stdout, stderr = await run_command(["npm", "install"], temp_dir)
                 if returncode != 0:
-                    if 'ERESOLVE' in stderr:
-                        logger.warning("NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps.")
+                    if "ERESOLVE" in stderr:
+                        logger.warning(
+                            "NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps."
+                        )
                         returncode, stdout, stderr = await run_command(
                             ["npm", "install", "--legacy-peer-deps"], temp_dir
                         )
@@ -110,9 +110,6 @@ async def setup_environment(
                 logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
                 # Optionally, handle fallback or raise an error
 
-            # Detect and install all required Solidity versions
-            solc_version = detect_and_install_solc_versions(temp_dir)
-
             repo_dir = temp_dir
             logger.info("Hardhat set up correctly")
 
@@ -136,7 +133,6 @@ async def setup_environment(
             contract_folders=contract_folders,
             project_type=project_type,
             project_path=str(project_path),
-            solc_version=solc_version,
             remappings=remappings,
         )
 

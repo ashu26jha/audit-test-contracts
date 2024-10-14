@@ -3,7 +3,6 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 from api.v1.schemas.context_scan_schema import Finding
-from api.v1.schemas.static_analyzer_schema import SlitherOutput
 
 
 class FuzzTestResult(BaseModel):
@@ -24,7 +23,6 @@ class SetupResult(BaseModel):
     contract_folders: Optional[List[str]] = None
     project_type: str
     project_path: str
-    solc_version: Optional[str] = None
     remappings: Optional[List[str]] = None
 
 
@@ -33,7 +31,6 @@ class FuzzerRequest(BaseModel):
     oauth_token: Optional[str] = None
     selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
-    slither_output: Optional[SlitherOutput] = None
 
 
 class InvariantResponse(BaseModel):

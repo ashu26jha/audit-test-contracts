@@ -7,7 +7,6 @@ from api.v1.helpers.forge_helpers import read_file
 from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.schemas.fuzzer_schema import FuzzerResponse, FuzzTestResult, SetupResult
-from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from api.v1.services.fuzz_services.generate_fuzz_prompt import generate_fuzz_prompt
 from api.v1.services.fuzz_services.generate_invariants import generate_invariants
 from api.v1.services.fuzz_services.generate_report import generate_report
@@ -25,7 +24,6 @@ async def run_fuzzer(
     selected_contracts: Optional[List[str]] = None,
     flattened_contracts: Optional[str] = None,
     setup_result: Optional[SetupResult] = None,
-    slither_output: Optional[SlitherOutput] = None,
 ) -> FuzzerResponse:
 
     is_local_temp_dir = False
@@ -80,7 +78,6 @@ async def run_fuzzer(
             detected_profile,
             project_structure,
             flattened_contracts,
-            slither_output,
         )
 
         # 4. Generate the fuzz tests prompt
@@ -91,7 +88,6 @@ async def run_fuzzer(
             project_structure=project_structure,
             flattened_contracts=flattened_contracts,
             invariants=invariants,
-            slither_output=slither_output,
         )
 
         # 5. Send the fuzz tests prompt to LLM for fuzz tests generation

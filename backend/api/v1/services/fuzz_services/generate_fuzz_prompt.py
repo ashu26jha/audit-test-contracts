@@ -1,9 +1,7 @@
 from pathlib import Path
-from typing import Optional
 
 from api.v1.helpers.forge_helpers import read_file
 from api.v1.schemas.fuzzer_schema import InvariantsList
-from api.v1.schemas.static_analyzer_schema import SlitherOutput
 from common import logger
 from common.profiles import Profiles
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT_WITH_TEST, FUZZER_PROMPT_WITHOUT_TEST
@@ -16,7 +14,6 @@ async def generate_fuzz_prompt(
     project_structure: str,
     flattened_contracts: str,
     invariants: InvariantsList,
-    slither_output: Optional[SlitherOutput] = None,
 ) -> str:
     """
     Generates a fuzzing prompt for the specified project directory by formatting the provided
@@ -31,7 +28,6 @@ async def generate_fuzz_prompt(
         project_structure (str): The structure of the project, detailing the organization of contracts.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
         invariants (InvariantsList): The invariants to be included in the prompt.
-        slither_output (Optional[SlitherOutput]): The output from Slither analysis, containing findings about the contracts.
 
     Returns:
         str: The generated fuzzing prompt formatted for the LLM.
@@ -39,11 +35,6 @@ async def generate_fuzz_prompt(
     logger.info("Generating fuzz tests suite prompt...")
 
     existing_test_cases = ""
-
-    if slither_output is not None:
-        findings = slither_output.findings
-    else:
-        findings = "No Slither output provided."
 
     # Check if the test folder exists
     test_folder_path = Path(project_dir) / "test"
@@ -71,7 +62,6 @@ async def generate_fuzz_prompt(
             project_structure=project_structure,
             contract_code=flattened_contracts,
             existing_test_cases=existing_test_cases,
-            slither_output=findings,
             invariants=invariants_formatted,
         )
     else:
@@ -79,7 +69,6 @@ async def generate_fuzz_prompt(
         prompt = FUZZER_PROMPT_WITHOUT_TEST.format(
             project_structure=project_structure,
             contract_code=flattened_contracts,
-            slither_output=findings,
             invariants=invariants_formatted,
         )
 
