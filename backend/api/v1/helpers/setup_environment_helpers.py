@@ -1,21 +1,16 @@
 import os
+import shutil
 from pathlib import Path
 
 from pydantic import HttpUrl
 
-from api.v1.helpers.dependencies_helpers import (
-    generate_and_write_remappings,
-    generate_remappings_with_foundry,
-    install_dependencies,
-    parse_dependencies,
-)
+from api.v1.helpers.dependencies_helpers import generate_remappings_with_foundry
 from api.v1.helpers.forge_helpers import (
     clean_unused_files,
     copy_solidity_files,
     preprocess_solidity_files,
     run_command,
     update_foundry_config,
-    write_remappings,
 )
 from api.v1.helpers.project_helpers import (
     clone_repository,
@@ -74,33 +69,49 @@ async def setup_environment(
             copy_solidity_files(repo_dir, foundry_src_dir, project_type)
             preprocess_solidity_files(temp_dir)
 
-            # Now use the modified functions
-            dependencies = parse_dependencies(repo_dir, project_type)
-            logger.info(f"Dependencies to install: {dependencies}")
+            # Copy package.json and package-lock.json from Hardhat project to Foundry project
+            for file_name in ["package.json", "package-lock.json"]:
+                src_file = os.path.join(repo_dir, file_name)
+                dst_file = os.path.join(temp_dir, file_name)
+                if os.path.exists(src_file):
+                    shutil.copy2(src_file, dst_file)
+                    logger.info(f"Copied {file_name} to Foundry project.")
 
-            # Install dependencies
-            custom_remappings = await install_dependencies(
-                temp_dir, dependencies, project_type
-            )
+            # Install NPM dependencies in the Foundry project
+            try:
+                logger.info("Installing NPM dependencies...")
+                returncode, stdout, stderr = await run_command(["npm", "install"], temp_dir)
+                if returncode != 0:
+                    if 'ERESOLVE' in stderr:
+                        logger.warning("NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps.")
+                        returncode, stdout, stderr = await run_command(
+                            ["npm", "install", "--legacy-peer-deps"], temp_dir
+                        )
+                        if returncode != 0:
+                            logger.error(f"NPM install failed: {stderr}")
+                            raise ValueError(f"NPM install failed: {stderr}")
+                    else:
+                        logger.error(f"NPM install failed: {stderr}")
+                        raise ValueError(f"NPM install failed: {stderr}")
+                else:
+                    logger.info("NPM dependencies installed successfully.")
+            except Exception as e:
+                logger.error(f"Error installing NPM dependencies: {str(e)}")
+                raise
 
-            # Attempt to generate remappings using Foundry
+            # Update foundry.toml to use 'auto' solc version and include 'node_modules' in libs
+            update_foundry_config(temp_dir)
+
+            # Generate remappings using Foundry
             try:
                 remappings = await generate_remappings_with_foundry(temp_dir)
                 logger.info("Remappings generated successfully using Foundry")
             except Exception as e:
                 logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
-                logger.info("Falling back to manual remapping generation.")
-
-                # Fallback to manual remapping
-                remappings = await generate_and_write_remappings(
-                    temp_dir, custom_remappings
-                )
+                # Optionally, handle fallback or raise an error
 
             # Detect and install all required Solidity versions
-            solc_version = detect_and_install_solc_versions(repo_dir)
-
-            # Update foundry.toml to use 'auto' solc version
-            update_foundry_config(temp_dir)
+            solc_version = detect_and_install_solc_versions(temp_dir)
 
             repo_dir = temp_dir
             logger.info("Hardhat set up correctly")
@@ -112,20 +123,13 @@ async def setup_environment(
             logger.info("Foundry set up correctly")
 
             # Run "forge build" as a sanity check at the end
+
+        # Compile the project
         try:
             await compile_project(repo_dir)
-        except Exception:
-            # logger.error(f"Compilation failed with error: {str(e)}")
-            logger.info("Retrying compilation with manual remappings...")
-
-            # Generate and use manual remappings only
-            remappings = await generate_and_write_remappings(
-                temp_dir, custom_remappings
-            )
-            await write_remappings(temp_dir, remappings)
-
-            # Retry compilation
-            await compile_project(repo_dir)
+        except Exception as e:
+            logger.error(f"Compilation failed with error: {str(e)}")
+            raise
 
         return SetupResult(
             project_dir=repo_dir,

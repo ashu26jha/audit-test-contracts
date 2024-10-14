@@ -3,7 +3,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from api.v1.helpers.forge_helpers import read_file, update_foundry_config
+from api.v1.helpers.forge_helpers import read_file
 from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.schemas.fuzzer_schema import FuzzerResponse, FuzzTestResult, SetupResult
@@ -73,7 +73,7 @@ async def run_fuzzer(
             flattened_contracts = all_contract_codes
 
         # 2. Update Foundry configuration
-        update_foundry_config(temp_dir)
+        # update_foundry_config(temp_dir)
 
         # 3. Generate the invariants
         invariants = await generate_invariants(

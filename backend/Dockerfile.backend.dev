@@ -11,6 +11,13 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     libssl-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and npm
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Foundry

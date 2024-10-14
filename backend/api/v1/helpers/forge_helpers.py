@@ -208,6 +208,14 @@ def update_foundry_config(temp_dir: str) -> None:
     # Set 'solc' to 'auto' instead of 'solc_version'
     config["profile"]["default"]["auto_detect_solc"] = True
 
+    # Add 'node_modules' to the 'libs' array
+    libs = config["profile"]["default"].get("libs", [])
+    if "lib" not in libs:
+        libs.append("lib")
+    if "node_modules" not in libs:
+        libs.append("node_modules")
+    config["profile"]["default"]["libs"] = libs
+
     # Set PROPTEST_MAX_SHRINK_ITERS
     # config["profile"]["default"]["fuzz"] = {
     #     "max_test_rejects": 65536,
