@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Loading } from "@/components/Loading";
 
 import ScanStepper from "../../components/scan-stepper";
-import ScanInfoModal from "../../components/ScanInfoModal"; // Import the new modal component
+import ScanInfoModal from "../../components/ScanInfoModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { useFetchScanHistory } from "../../hooks/useFetchScanHistory";
 import { useToast } from "../../hooks/useToast";
