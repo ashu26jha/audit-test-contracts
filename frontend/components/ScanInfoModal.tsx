@@ -21,14 +21,7 @@ const ScanInfoModal: React.FC = () => {
   };
 
   return (
-    <Modal
-      size="xl"
-      backdrop="blur"
-      isOpen={isOpen}
-      onClose={handleClose} // Use onClose instead of onOpenChange
-      isDismissable={false}
-      hideCloseButton
-    >
+    <Modal size="xl" backdrop="blur" isOpen={isOpen} onClose={handleClose} isDismissable={false} hideCloseButton>
       <ModalContent className="bg-[#000000]">
         <ModalHeader className="flex flex-col gap-1 bg-[#000000] text-white">
           Important Information Before You Begin
