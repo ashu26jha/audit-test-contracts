@@ -41,8 +41,7 @@ from config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    client = AsyncIOMotorClient(
-        settings.MONGODB_URL, tlsCAFile=certifi.where())
+    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     if settings.ENVIRONMENT == "development":
         db = client.audit_agent_dev
     elif settings.ENVIRONMENT == "staging":
