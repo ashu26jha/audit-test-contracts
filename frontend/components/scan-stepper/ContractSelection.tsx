@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useEffect } from "react";
 
-import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@nextui-org/react";
+import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from "@nextui-org/react";
 import Image from "next/image";
 
 import { MAX_TOKENS } from "../../config/constants";
@@ -16,6 +16,7 @@ export const ContractSelection: React.FC = () => {
     setSelectedContracts,
     setTokens,
     selectedContracts,
+    isSolidityFilesLoading,
   } = useScanStepperStore();
 
   const filteredSolidityFiles = solidityFiles.filter(
@@ -68,6 +69,8 @@ export const ContractSelection: React.FC = () => {
             <TableColumn>Path</TableColumn>
           </TableHeader>
           <TableBody
+            isLoading={isSolidityFilesLoading}
+            loadingContent={<Spinner />}
             emptyContent={
               <div className="flex flex-col items-center">
                 <Image src="/empty_contract.svg" alt="No contracts found" width={100} height={100} className="mt-8" />

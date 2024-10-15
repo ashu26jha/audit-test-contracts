@@ -63,10 +63,13 @@ export const useScanStepper = () => {
   const fetchSolidityFiles = useCallback(
     async (token: string, owner: Owner, repo: Repository, branch: string) => {
       try {
+        useScanStepperStore.getState().setIsSolidityFilesLoading(true);
         const files = await getRepositoryContents(token, owner.login, repo.name, branch);
         setSolidityFiles(files);
       } catch (error) {
         console.error("Error fetching Solidity files:", error);
+      } finally {
+        useScanStepperStore.getState().setIsSolidityFilesLoading(false);
       }
     },
     [setSolidityFiles],
