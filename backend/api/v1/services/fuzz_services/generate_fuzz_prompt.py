@@ -4,6 +4,12 @@ from api.v1.helpers.forge_helpers import read_file
 from api.v1.schemas.fuzzer_schema import InvariantsList
 from common import logger
 from common.profiles import Profiles
+from config.forge_docs import (
+    FORGE_STD_ASSERTIONS,
+    FORGE_STD_CHEATS,
+    FORGE_STD_ERRORS,
+    FORGE_STD_FEATURES,
+)
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT_WITH_TEST, FUZZER_PROMPT_WITHOUT_TEST
 
 
@@ -66,6 +72,10 @@ async def generate_fuzz_prompt(
             contract_code=flattened_contracts,
             existing_test_cases=existing_test_cases,
             invariants=invariants_formatted,
+            forge_std_assertions=FORGE_STD_ASSERTIONS,
+            forge_std_cheats=FORGE_STD_CHEATS,
+            forge_std_errors=FORGE_STD_ERRORS,
+            forge_std_features=FORGE_STD_FEATURES,
         )
     else:
         logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")
@@ -74,6 +84,10 @@ async def generate_fuzz_prompt(
             remappings=remappings,
             contract_code=flattened_contracts,
             invariants=invariants_formatted,
+            forge_std_assertions=FORGE_STD_ASSERTIONS,
+            forge_std_cheats=FORGE_STD_CHEATS,
+            forge_std_errors=FORGE_STD_ERRORS,
+            forge_std_features=FORGE_STD_FEATURES,
         )
 
     return prompt

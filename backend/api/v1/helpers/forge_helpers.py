@@ -197,11 +197,19 @@ def update_foundry_config(temp_dir: str) -> None:
         libs.append("node_modules")
     config["profile"]["default"]["libs"] = libs
 
-    # Set PROPTEST_MAX_SHRINK_ITERS
-    # config["profile"]["default"]["fuzz"] = {
-    #     "max_test_rejects": 65536,
-    #     "max_shrink_iters": 1000,
-    # }
+    # Add fuzz settings
+    config["profile"]["default"]["fuzz"] = {
+        "runs": 1000,
+        "max_test_rejects": 65536,
+        "seed": "0x1",
+        "dictionary_weight": 40,
+        "include_storage": True,
+        "include_push_bytes": True,
+        "extra_output": ["storageLayout", "metadata"],
+    }
+
+    # Add invariant settings
+    config["profile"]["default"]["invariant"] = {"runs": 256, "depth": 32, "fail_on_revert": True}
 
     with open(foundry_toml_path, "w") as f:
         toml.dump(config, f)

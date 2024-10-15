@@ -71,8 +71,22 @@ Make sure to include all the correct paths, contract names, and the needed param
 **Existing test files:**
 {existing_test_cases}
 
+**Forge Standard Library Reference:**
+
+Assertions:
+{forge_std_assertions}
+
+Cheat Codes:
+{forge_std_cheats}
+
+Common Errors:
+{forge_std_errors}
+
+Additional Features:
+{forge_std_features}
+
 **Your task:**
-Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Leverage the existing test files for contract imports and environment setup. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios.
+Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Leverage the existing test files for contract imports and environment setup. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios. Make use of the Forge Standard Library features, assertions, and cheat codes where appropriate to create robust and effective fuzz tests.
 
 **Additional Considerations:**
 - Use the Foundry testing library and import it as `forge-std/Test.sol`.
@@ -121,9 +135,23 @@ Leverage the project structure, remappings, and imports in the Solidity code to 
 **Invariants to be fuzzed:**
 {invariants}
 
+**Forge Standard Library Reference:**
+
+Assertions:
+{forge_std_assertions}
+
+Cheat Codes:
+{forge_std_cheats}
+
+Common Errors:
+{forge_std_errors}
+
+Additional Features:
+{forge_std_features}
+
 **Your task:**
 
-Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios.
+Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios. Make use of the Forge Standard Library features, assertions, and cheat codes where appropriate to create robust and effective fuzz tests.
 
 **Additional Considerations:**
 
@@ -142,13 +170,16 @@ The test suite here
 REPORT_PROMPT = """
 You are an expert smart contract auditor specializing in Foundry fuzz testing analysis. Your task is to conduct a thorough analysis of the provided fuzz test and its results, focusing on identifying broken invariants and their implications for potential vulnerabilities. Remember that errors encountered during fuzz testing often indicate broken invariants and potential vulnerabilities, rather than compiler errors.
 
-Fuzz Test:
+**Invariants tested:**
+{invariants}
+
+**Fuzz Test:**
 {fuzz_test}
 
-Fuzz Test Results:
+**Fuzz Test Results:**
 {results}
 
-Contract Code:
+**Contract Code:**
 {contract_code}
 
 Conduct your analysis in the following structured format. The output should **only** be in a well-formed JSON as follows, without any additional text or explanations:
@@ -170,12 +201,12 @@ Conduct your analysis in the following structured format. The output should **on
 - Treat each broken invariant as a potential vulnerability and analyze it thoroughly.
 - Be extremely thorough and analytical in your approach.
 - Use technical language appropriate for smart contract auditing.
-- Support your findings with specific references to the test results or contract code.
+- Support your findings with specific references to the test results or contract code. Ideally, include the test case with the broken invariant in proper markdown format.
 - If no invariants were broken, provide a detailed explanation of why the contract appears secure based on this test, while also discussing potential blind spots in the fuzz testing approach.
 - Consider potential interactions between different parts of the contract that might lead to broken invariants not immediately obvious from the test.
 - Analyze not just what the test reveals, but also what it might be missing, especially in relation to the comprehensive list of vulnerabilities provided.
 
-Your analysis should be comprehensive, insightful, and actionable, providing valuable guidance for improving the security and efficiency of the smart contract. Focus on how broken invariants relate to potential vulnerabilities and provide clear, specific recommendations for addressing these issues. Only issues regarding the code, and the result of the fuzz test. You cannot find errors in the test case.
+Your analysis should be comprehensive, insightful, and actionable, providing valuable guidance for improving the security and efficiency of the smart contract. Focus on how broken invariants relate to potential vulnerabilities and provide clear, specific recommendations for addressing these issues. Only report issues regarding the code, and the result of the fuzz test. Do not report any issues in the test case.
 """
 
 FUZZ_TEST_VALIDATION_PROMPT = """
@@ -187,6 +218,8 @@ You are an expert in testing Solidity contracts to prevent vulnerabilities. Your
 4. The test covers all provided invariants effectively and handles most of the edge cases.
 5. There are no syntax errors or logical inconsistencies.
 6. The test follows Foundry best practices for fuzz testing.
+
+Note: if you see a compilation error in a single function, remove the function from the test file. I would rather have a smaller test file that compiles, than an unusable one.
 
 **Compilation Error Details:**
 If there are compilation errors, focus on fixing them precisely. Below are the error details:

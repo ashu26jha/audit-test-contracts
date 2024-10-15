@@ -116,7 +116,7 @@ async def run_fuzzer(
             raise Exception(f"Compilation error occurred: {fuzz_results}")
 
         # 7. Generate report from tests
-        report = await generate_report(fuzz_test, fuzz_results, flattened_contracts)
+        report = await generate_report(invariants, fuzz_test, fuzz_results, flattened_contracts)
 
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,

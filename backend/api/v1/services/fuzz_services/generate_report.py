@@ -1,6 +1,7 @@
 from typing import List
 
 from api.v1.schemas.context_scan_schema import FindingList
+from api.v1.schemas.fuzzer_schema import InvariantsList
 from common import logger
 from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
@@ -9,7 +10,7 @@ from config.settings import LLM_MODEL_MEDIUM
 
 
 async def generate_report(
-    fuzz_test: str, fuzz_results: str, flattened_contracts: List[str]
+    invariants: InvariantsList, fuzz_test: str, fuzz_results: str, flattened_contracts: List[str]
 ) -> FindingList:
     """
     Generates a report based on the provided fuzz test and its execution results.
@@ -17,6 +18,7 @@ async def generate_report(
     the generated report findings.
 
     Args:
+        invariants (InvariantsList): The invariants to be reported on.
         fuzz_test (str): The content of the fuzz test to be reported on.
         fuzz_results (str): The results of the fuzz test execution, detailing outcomes.
         flattened_contracts: The flattened contracts from the project structure.
@@ -26,9 +28,15 @@ async def generate_report(
     """
     logger.info("Generating fuzzing report...")
 
+    # Format invariants as a string list
+    invariants_formatted = "\n".join(f"- {invariant}" for invariant in invariants.invariants)
+
     # Generate prompt
     report_prompt = REPORT_PROMPT.format(
-        fuzz_test=fuzz_test, results=fuzz_results, contract_code=flattened_contracts
+        invariants=invariants_formatted,
+        fuzz_test=fuzz_test,
+        results=fuzz_results,
+        contract_code=flattened_contracts,
     )
 
     # Send prompt to LLM
