@@ -36,7 +36,7 @@ Scan ID: {scan_id}
 
 The detailed scan results are attached to this email as a PDF file. Please review the document carefully for a comprehensive analysis of the scan.
 
-If you have any questions about the results or need further clarification, please don't hesitate to contact at {cc_email}
+If you have any questions about the results or need further clarification, please don't hesitate to contact us at {cc_email}
 
 We appreciate your trust in our services and look forward to assisting you with any future scanning needs.
 
