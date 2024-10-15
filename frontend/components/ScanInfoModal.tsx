@@ -48,8 +48,7 @@ const ScanInfoModal: React.FC = () => {
             <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
               <p className="text-sm text-white mt-2">Top Finding is Free</p>
               <p className="text-sm text-gray-400 mb-2 mt-2 mr-2">
-                Get the most critical vulnerability for free. Upgrade for $20 to get the full report with detailed
-                insights.
+                Get the most critical vulnerability for free. Pay $20 to get the full report with detailed insights.
               </p>
             </div>
           </div>
