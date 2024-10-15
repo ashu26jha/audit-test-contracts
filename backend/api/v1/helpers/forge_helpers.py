@@ -8,6 +8,7 @@ import toml
 from api.v1.helpers.project_helpers import copy_solidity_files
 from api.v1.helpers.run_command import run_command
 from common import logger
+from config.solidity import FORGE_INIT_COMMAND, FORGE_REMAP_COMMAND
 
 
 async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type: str) -> None:
@@ -21,7 +22,7 @@ async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type:
 
     commands = [
         ["git", "init"],
-        ["forge", "init", "--force", "--no-commit"],
+        FORGE_INIT_COMMAND,
     ]
     for command in commands:
         returncode, stdout, stderr = await run_command(command, temp_dir)
@@ -106,7 +107,7 @@ async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
         List[str]: A list of remapping strings.
     """
     logger.info("Generating remappings with Foundry...")
-    returncode, stdout, stderr = await run_command(["forge", "remappings"], cwd=temp_dir)
+    returncode, stdout, stderr = await run_command(FORGE_REMAP_COMMAND, cwd=temp_dir)
     if returncode != 0:
         # logger.error(f"Failed to generate remappings with Foundry: {stderr}")
         raise ValueError(f"Failed to generate remappings with Foundry: {stderr}")

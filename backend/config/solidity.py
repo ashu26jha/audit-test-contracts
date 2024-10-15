@@ -17,6 +17,17 @@ BROWNIE_CONFIGS = ["brownie-config.yaml", "brownie-config.json", "brownie-config
 
 
 ##################################################
+#                 FORGE COMMANDS
+##################################################
+
+FORGE_INIT_COMMAND = ["forge", "init", "--force", "--no-commit"]
+FORGE_INSTALL_COMMAND = ["forge", "install", "--no-commit"]
+FORGE_REMAP_COMMAND = ["forge", "remappings"]
+FORGE_BUILD_COMMAND = ["forge", "build"]
+FORGE_TEST_COMMAND = ["forge", "test", "-vvvv"]
+
+
+##################################################
 #                   SLITHER
 ##################################################
 

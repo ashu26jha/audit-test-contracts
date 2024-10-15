@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from api.v1.helpers.run_command import run_command
 from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
 from common import logger
-from config.slither import CONFIDENCE_LEVELS
+from config.solidity import CONFIDENCE_LEVELS
 
 
 def extract_contract_from_lines(lines: str) -> str:

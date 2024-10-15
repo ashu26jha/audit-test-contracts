@@ -5,7 +5,13 @@ from typing import List, Tuple
 
 from api.v1.helpers.run_command import run_command
 from common import logger
-from config.slither import BROWNIE_CONFIGS, FOUNDRY_CONFIGS, HARDHAT_CONFIGS, SOLIDITY_EXTENSION
+from config.solidity import (
+    BROWNIE_CONFIGS,
+    FORGE_BUILD_COMMAND,
+    FOUNDRY_CONFIGS,
+    HARDHAT_CONFIGS,
+    SOLIDITY_EXTENSION,
+)
 
 
 def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
@@ -174,7 +180,7 @@ def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
 
 async def compile_project(temp_dir: str) -> None:
     logger.info("Compiling project with Forge...")
-    returncode, stdout, stderr = await run_command(["forge", "build"], temp_dir)
+    returncode, stdout, stderr = await run_command(FORGE_BUILD_COMMAND, temp_dir)
     if returncode != 0:
         logger.error(f"Forge compilation failed. Stdout: {stdout}, Stderr: {stderr}")
         raise ValueError(f"Forge compilation failed: {stderr}")

@@ -1,5 +1,6 @@
 from api.v1.helpers.run_command import run_command
 from common import logger
+from config.solidity import FORGE_TEST_COMMAND
 
 
 async def run_fuzz_file(project_dir: str) -> str:
@@ -18,8 +19,7 @@ async def run_fuzz_file(project_dir: str) -> str:
     logger.info("Running fuzz tests...")
 
     try:
-        command = ["forge", "test", "-vvvv"]
-        returncode, stdout, stderr = await run_command(command, cwd=project_dir)
+        returncode, stdout, stderr = await run_command(FORGE_TEST_COMMAND, cwd=project_dir)
 
         # Combine stdout and stderr for full output
         full_output = stdout + stderr

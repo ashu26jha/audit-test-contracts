@@ -18,6 +18,7 @@ from api.v1.helpers.project_helpers import (
 from api.v1.helpers.run_command import run_command
 from api.v1.schemas.fuzzer_schema import SetupResult
 from common import logger
+from config.solidity import FORGE_INSTALL_COMMAND
 
 
 async def setup_environment(
@@ -81,7 +82,7 @@ async def setup_environment(
 
         elif project_type == "foundry":
             try:
-                await run_command(["forge", "install"], repo_dir)
+                await run_command(FORGE_INSTALL_COMMAND, repo_dir)
                 logger.info("Foundry project dependencies installed.")
             except Exception as e:
                 logger.error(f"Error running forge install: {str(e)}")
