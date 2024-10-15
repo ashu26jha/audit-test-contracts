@@ -20,9 +20,8 @@ class FuzzerResponse(BaseModel):
 
 class SetupResult(BaseModel):
     project_dir: str
-    contract_folders: Optional[List[str]] = None
     project_type: str
-    project_path: str
+    project_structure: str
     remappings: Optional[List[str]] = None
 
 

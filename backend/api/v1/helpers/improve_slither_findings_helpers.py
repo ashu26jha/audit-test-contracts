@@ -6,7 +6,7 @@ from api.v1.schemas.static_analyzer_schema import Severity, TransformedSlitherRe
 from common.logger import logger
 from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
-from config.prompts.improve_slither_prompt import IMPROVE_SLITHER_PROMPT
+from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
 from config.settings import DELAY, LLM_MODEL_MEDIUM, MAX_RETRIES
 
 

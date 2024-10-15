@@ -1,32 +1,97 @@
 import os
+import shutil
 from pathlib import Path
 from typing import List, Tuple
 
-from api.v1.helpers.forge_helpers import find_contract_folders, run_command
+from api.v1.helpers.run_command import run_command
 from common import logger
-from config.slither import BROWNIE_CONFIGS, FOUNDRY_CONFIG, HARDHAT_CONFIGS
+from config.slither import BROWNIE_CONFIGS, FOUNDRY_CONFIGS, HARDHAT_CONFIGS, SOLIDITY_EXTENSION
 
 
-def detect_project_structure(repo_dir: str) -> Tuple[str, List[str], bool]:
-    project_types = [
-        ("foundry", [FOUNDRY_CONFIG]),
-        ("hardhat", HARDHAT_CONFIGS),
-        ("brownie", BROWNIE_CONFIGS),
-    ]
+def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
+    """
+    Detects the project type (Foundry, Hardhat, or Brownie) and gathers contract folders.
 
-    for project_type, config_files in project_types:
-        for config in config_files:
-            if os.path.exists(os.path.join(repo_dir, config)):
-                contract_folders = find_contract_folders(repo_dir)
-                # Filter out any 'lib/' folders
-                contract_folders = [folder for folder in contract_folders if "lib/" not in folder]
-                return project_type, contract_folders
+    Args:
+        repo_dir (str): The directory of the cloned repository.
 
-    # If no specific config is found, assume it's a generic solidity project
-    contract_folders = find_contract_folders(repo_dir)
-    # Filter out any 'lib/' folders
-    contract_folders = [folder for folder in contract_folders if "lib/" not in folder]
-    return "generic", contract_folders
+    Returns:
+        Tuple[str, List[str]]: A tuple containing the project type and a list of contract folder paths.
+    """
+    logger.info("Detecting project type...")
+    repo_path = Path(repo_dir)
+
+    # Initialize project_type
+    project_type = "unknown"
+
+    # Start by detecting Foundry project
+    foundry_config_found = False
+    for config_name in FOUNDRY_CONFIGS:
+        if (repo_path / config_name).exists():
+            foundry_config_found = True
+            logger.info(f"Foundry configuration detected: {config_name}")
+            break
+    if foundry_config_found:
+        project_type = "foundry"
+    else:
+        # Check for Hardhat project
+        hardhat_config_found = False
+        for config_name in HARDHAT_CONFIGS:
+            if (repo_path / config_name).exists():
+                hardhat_config_found = True
+                logger.info(f"Hardhat configuration detected: {config_name}")
+                break
+        if hardhat_config_found:
+            project_type = "hardhat"
+        else:
+            # Check for Brownie project
+            brownie_config_found = False
+            for config_name in BROWNIE_CONFIGS:
+                if (repo_path / config_name).exists():
+                    brownie_config_found = True
+                    logger.info(f"Brownie configuration detected: {config_name}")
+                    break
+            if brownie_config_found:
+                project_type = "brownie"
+            else:
+                # Default to Foundry if no project type detected
+                logger.warning("Project type not detected. Defaulting to Foundry.")
+                project_type = "foundry"
+
+    logger.info(f"Detected project type: {project_type}")
+    return project_type
+
+
+def get_project_structure(project_dir: str) -> str:
+    """
+    Generates a string representation of the project structure.
+
+    Args:
+        project_dir (str): The directory of the project.
+
+    Returns:
+        str: A string representing the project structure.
+    """
+    logger.info("Generating project structure...")
+    project_structure = ""
+    repo_path = Path(project_dir)
+
+    structure_lines = []
+    for root, dirs, files in os.walk(project_dir):
+        # Skip irrelevant directories
+        dirs[:] = [
+            d
+            for d in dirs
+            if d not in ["node_modules", "test", "lib", "scripts", "artifacts", "cache"]
+        ]
+        indent_level = len(Path(root).relative_to(repo_path).parts)
+        indent = "    " * indent_level
+        structure_lines.append(f"{indent}{Path(root).name}/")
+        for file in files:
+            structure_lines.append(f"{indent}    {file}")
+
+    project_structure = "\n".join(structure_lines)
+    return project_structure
 
 
 async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = None) -> str:
@@ -72,6 +137,41 @@ async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = 
     return repo_dir
 
 
+def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
+    """
+    Copies Solidity contract files from the repository to the destination directory.
+
+    Args:
+        repo_dir (str): The source repository directory.
+        dst_dir (str): The destination directory.
+        project_type (str): The type of the project (e.g., "hardhat", "foundry").
+
+    Raises:
+        ValueError: If the expected source folder does not exist in the repository.
+    """
+    src_folder = "contracts" if project_type == "hardhat" else "src"
+    src_dir = os.path.join(repo_dir, src_folder)
+
+    if not os.path.exists(src_dir):
+        # Attempt to check the alternative directory
+        alternative_folder = "src" if project_type == "hardhat" else "contracts"
+        alternative_dir = os.path.join(repo_dir, alternative_folder)
+        if not os.path.exists(alternative_dir):
+            raise ValueError(
+                f"{src_folder} and {alternative_folder} directories not found in {repo_dir}"
+            )
+        src_dir = alternative_dir
+
+    for root, _, files in os.walk(src_dir):
+        for file in files:
+            if file.endswith(SOLIDITY_EXTENSION):
+                src_path = os.path.join(root, file)
+                rel_path = os.path.relpath(src_path, src_dir)
+                dst_path = os.path.join(dst_dir, rel_path)
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                shutil.copy2(src_path, dst_path)
+
+
 async def compile_project(temp_dir: str) -> None:
     logger.info("Compiling project with Forge...")
     returncode, stdout, stderr = await run_command(["forge", "build"], temp_dir)
@@ -79,31 +179,3 @@ async def compile_project(temp_dir: str) -> None:
         logger.error(f"Forge compilation failed. Stdout: {stdout}, Stderr: {stderr}")
         raise ValueError(f"Forge compilation failed: {stderr}")
     logger.info("Project compiled successfully")
-
-
-def get_project_structure(root_dir: str, contract_folders: List[str], level: int = 0) -> str:
-    """
-    Recursively generates a string representation of the project directory structure for specified contract folders.
-
-    Args:
-        root_dir (str): The root directory to start from.
-        contract_folders (List[str]): List of contract folders to include in the structure.
-        level (int): The current depth level for indentation.
-
-    Returns:
-        str: The formatted directory structure.
-    """
-    structure = ""
-    prefix = "    " * level
-    for folder in contract_folders:
-        folder_path = Path(root_dir) / folder
-        if folder_path.is_dir():
-            structure += f"{prefix}{folder}/\n"
-            for item in folder_path.iterdir():
-                if item.is_dir():
-                    structure += f"{prefix}    {item.name}/\n"
-                    structure += get_project_structure(item, contract_folders, level + 2)
-                else:
-                    structure += f"{prefix}    {item.name}\n"
-
-    return structure

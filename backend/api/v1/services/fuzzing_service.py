@@ -1,10 +1,8 @@
-import shutil
 import tempfile
 from pathlib import Path
 from typing import List, Optional
 
 from api.v1.helpers.forge_helpers import read_file
-from api.v1.helpers.project_helpers import get_project_structure
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.schemas.fuzzer_schema import FuzzerResponse, FuzzTestResult, SetupResult
 from api.v1.services.fuzz_services.generate_fuzz_prompt import generate_fuzz_prompt
@@ -50,17 +48,16 @@ async def run_fuzzer(
                 logger.error(f"Failed to set up environment: {str(e)}")
                 raise
 
-        # Update project_dir to be from setup_result
+        # Update variables from setup_result
         temp_dir = setup_result.project_dir
-        contract_folders = setup_result.contract_folders
-        project_path = setup_result.project_path
         project_type = setup_result.project_type
-        project_structure = get_project_structure(temp_dir, contract_folders)
+        project_structure = setup_result.project_structure
+        remappings = setup_result.remappings
 
         # When called as a standalone service, flattened_contracts is not provided
         # TODO: limit tokens size? Remove interfaces?
         if flattened_contracts is None:
-            project_dir_path = Path(project_path) / "src"
+            project_dir_path = Path(temp_dir) / "src"
 
             all_contract_codes = ""
             for contract_file in project_dir_path.rglob("*.sol"):
@@ -86,6 +83,7 @@ async def run_fuzzer(
             detected_profile=detected_profile,
             project_type=project_type,
             project_structure=project_structure,
+            remappings=remappings,
             flattened_contracts=flattened_contracts,
             invariants=invariants,
         )
@@ -96,8 +94,8 @@ async def run_fuzzer(
             system_prompt,
             detected_profile,
             temp_dir,
-            contract_folders,
             project_structure,
+            remappings,
             str(invariants.invariants),
         )
 
@@ -118,7 +116,7 @@ async def run_fuzzer(
             raise Exception(f"Compilation error occurred: {fuzz_results}")
 
         # 7. Generate report from tests
-        report = await generate_report(fuzz_test, fuzz_results, contract_folders)
+        report = await generate_report(fuzz_test, fuzz_results, flattened_contracts)
 
         report_json = FuzzTestResult(
             fuzz_test=fuzz_test,
@@ -148,7 +146,7 @@ async def run_fuzzer(
         if is_local_temp_dir and temp_dir and Path(temp_dir).exists():
             try:
                 logger.info(f"Cleaning up temporary directory at {temp_dir}.")
-                shutil.rmtree(temp_dir)
+                # shutil.rmtree(temp_dir)
                 logger.info("Environment cleanup completed.")
             except Exception as cleanup_error:
                 logger.error(f"Error during cleanup: {str(cleanup_error)}")

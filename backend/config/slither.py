@@ -3,16 +3,17 @@
 ##################################################
 
 SOLIDITY_EXTENSION = ".sol"
-POSSIBLE_CONTRACT_FOLDERS = ["contracts", "src"]
 
-FOUNDRY_CONFIG = "foundry.toml"
+FOUNDRY_CONFIGS = ["foundry.toml", "foundry.config.toml"]
 HARDHAT_CONFIGS = [
     "hardhat.config.js",
     "hardhat.config.ts",
     "hardhat.config.cjs",
     "hardhat.config.mjs",
+    "hardhat.config.json",
+    "hardhat.config.esm.mjs",
 ]
-BROWNIE_CONFIGS = ["brownie-config.yaml", "brownie-config.json"]
+BROWNIE_CONFIGS = ["brownie-config.yaml", "brownie-config.json", "brownie-config.yml"]
 
 
 ##################################################

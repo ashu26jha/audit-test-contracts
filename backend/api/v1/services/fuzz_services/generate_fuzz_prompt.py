@@ -13,6 +13,7 @@ async def generate_fuzz_prompt(
     project_type: str,
     project_structure: str,
     flattened_contracts: str,
+    remappings: str,
     invariants: InvariantsList,
 ) -> str:
     """
@@ -26,6 +27,7 @@ async def generate_fuzz_prompt(
         detected_profile (Profiles): The detected profile, if any, used for context in generation.
         project_type (str): The type of the project (e.g., "foundry").
         project_structure (str): The structure of the project, detailing the organization of contracts.
+        remappings (str): The remappings used in the project.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
         invariants (InvariantsList): The invariants to be included in the prompt.
 
@@ -60,6 +62,7 @@ async def generate_fuzz_prompt(
         logger.info("Using FUZZER_PROMPT_WITH_TEST")
         prompt = FUZZER_PROMPT_WITH_TEST.format(
             project_structure=project_structure,
+            remappings=remappings,
             contract_code=flattened_contracts,
             existing_test_cases=existing_test_cases,
             invariants=invariants_formatted,
@@ -68,6 +71,7 @@ async def generate_fuzz_prompt(
         logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")
         prompt = FUZZER_PROMPT_WITHOUT_TEST.format(
             project_structure=project_structure,
+            remappings=remappings,
             contract_code=flattened_contracts,
             invariants=invariants_formatted,
         )

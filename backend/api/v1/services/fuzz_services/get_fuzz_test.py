@@ -1,3 +1,4 @@
+import re  # Import regex module for parsing errors
 from typing import List, Optional, Tuple
 
 from api.v1.helpers.project_helpers import compile_project
@@ -21,8 +22,8 @@ async def get_fuzz_test(
     system_prompt: str,
     detected_profile: Profiles,
     project_dir: str,
-    contract_folders: List[str],
     project_structure: str,
+    remappings: List[str],
     invariants: str,
 ) -> Tuple[str, Optional[str]]:
     """
@@ -34,8 +35,8 @@ async def get_fuzz_test(
         system_prompt (str): The system prompt for the LLM, providing context for the generation.
         detected_profile (Profiles): The detected profile, if any, used for context in generation.
         project_dir (str): The project directory where the contracts are located.
-        contract_folders (List[str]): The list of folders containing the contract files.
         project_structure (str): The structure of the project, detailing the organization of contracts.
+        remappings (List[str]): The remappings to be used for the fuzz test.
         invariants (str): The invariants to be tested against the generated fuzz test.
 
     Returns:
@@ -55,8 +56,8 @@ async def get_fuzz_test(
             fuzz_test = await validate_and_compile_fuzz_test(
                 fuzz_test,
                 project_dir,
-                contract_folders,
                 project_structure,
+                remappings,
                 invariants,
             )
             logger.info("Fuzz test generated and compiled successfully.")
@@ -105,8 +106,8 @@ async def generate_initial_fuzz_test(
 async def validate_and_compile_fuzz_test(
     fuzz_test: str,
     project_dir: str,
-    contract_folders: List[str],
     project_structure: str,
+    remappings: List[str],
     invariants: str,
 ) -> str:
     """
@@ -115,8 +116,8 @@ async def validate_and_compile_fuzz_test(
     Args:
         fuzz_test (str): The current fuzz test code.
         project_dir (str): The project directory.
-        contract_folders (List[str]): List of contract folders.
         project_structure (str): Structure of the project.
+        remappings (List[str]): Remappings to be used for the fuzz test.
         invariants (str): Invariants to test against.
 
     Returns:
@@ -125,20 +126,19 @@ async def validate_and_compile_fuzz_test(
     Raises:
         CompilationError: If compilation fails after attempting to fix.
     """
+
     # Try to compile the fuzz test
-    compilation_error = await save_and_compile_fuzz_test(fuzz_test, project_dir, contract_folders)
+    compilation_error = await save_and_compile_fuzz_test(fuzz_test, project_dir)
 
     if compilation_error:
         logger.warning(f"Compilation error detected: {compilation_error}")
         logger.info("Attempting to fix and validate the fuzz test.")
         try:
             fixed_fuzz_test = await validate_fuzz_test(
-                fuzz_test, project_structure, invariants, compilation_error
+                fuzz_test, project_structure, invariants, remappings, compilation_error
             )
             # After fixing, attempt to compile again
-            new_compilation_error = await save_and_compile_fuzz_test(
-                fixed_fuzz_test, project_dir, contract_folders
-            )
+            new_compilation_error = await save_and_compile_fuzz_test(fixed_fuzz_test, project_dir)
             if new_compilation_error:
                 logger.error(f"Compilation failed after fix: {new_compilation_error}")
                 raise CompilationError(new_compilation_error)
@@ -156,14 +156,16 @@ async def validate_fuzz_test(
     fuzz_test: str,
     project_structure: str,
     invariants: str,
+    remappings: List[str],
     compilation_error: Optional[str] = None,
 ) -> str:
     model = LLM_MODEL_BEST
     validation_prompt = FUZZ_TEST_VALIDATION_PROMPT.format(
+        compilation_error=(compilation_error if compilation_error else "No compilation errors."),
         fuzz_test=fuzz_test,
         project_structure=project_structure,
         invariants=invariants,
-        compilation_error=(compilation_error if compilation_error else "No compilation errors."),
+        remappings=remappings,
     )
 
     try:
@@ -177,14 +179,36 @@ async def validate_fuzz_test(
         raise
 
 
-async def save_and_compile_fuzz_test(
-    fuzz_test: str, project_dir: str, contract_folders: List[str]
-) -> Optional[str]:
+async def save_and_compile_fuzz_test(fuzz_test: str, project_dir: str) -> Optional[str]:
     try:
-        await save_fuzz_test(fuzz_test, project_dir, contract_folders)
+        await save_fuzz_test(fuzz_test, project_dir)
         await compile_project(project_dir)
         logger.info("Fuzz test compiled successfully.")
         return None  # No compilation error
     except Exception as e:
         logger.exception(f"Error in save_and_compile_fuzz_test: {str(e)}")
-        return str(e)
+        # Extract relevant error information
+        error_message = str(e)
+        parsed_error = parse_compilation_error(error_message)
+        return parsed_error
+
+
+def parse_compilation_error(error_message: str) -> str:
+    """
+    Parses the compilation error message to extract relevant details.
+    """
+    # Example regex to extract error code, file, line number, and message
+    pattern = r"Error \((\d+)\): (.+?)\n\s+--> (.+?):(\d+):(\d+):\n\s+\|\n\s+\d+\s+\|\s+(.*?)\n"
+    matches = re.findall(pattern, error_message, re.MULTILINE)
+    parsed_errors = []
+    for match in matches:
+        error_code, error_description, file_path, line, column, code_line = match
+        parsed_errors.append(
+            f"In file {file_path}, line {line}, column {column}: {error_description}. Code: {code_line.strip()}"
+        )
+
+    if parsed_errors:
+        return "\n".join(parsed_errors)
+    else:
+        # Return the original message if parsing fails
+        return error_message

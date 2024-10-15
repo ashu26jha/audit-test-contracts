@@ -45,6 +45,5 @@ class StaticAnalyzerResponse(BaseModel):
     message: str
     status: str
     project_type: str
-    contract_folders: List[str]
     environment_setup: str
     slither_output: SlitherOutput

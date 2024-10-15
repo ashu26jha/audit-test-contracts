@@ -9,7 +9,7 @@ from config.settings import LLM_MODEL_MEDIUM
 
 
 async def generate_report(
-    fuzz_test: str, fuzz_results: str, contract_folders: List[str]
+    fuzz_test: str, fuzz_results: str, flattened_contracts: List[str]
 ) -> FindingList:
     """
     Generates a report based on the provided fuzz test and its execution results.
@@ -19,7 +19,7 @@ async def generate_report(
     Args:
         fuzz_test (str): The content of the fuzz test to be reported on.
         fuzz_results (str): The results of the fuzz test execution, detailing outcomes.
-        contract_folders (List[str]): The folders containing the contract files relevant to the fuzz test.
+        flattened_contracts: The flattened contracts from the project structure.
 
     Returns:
         FindingList: The generated report findings parsed from the LLM's response.
@@ -28,7 +28,7 @@ async def generate_report(
 
     # Generate prompt
     report_prompt = REPORT_PROMPT.format(
-        fuzz_test=fuzz_test, results=fuzz_results, contract_code=contract_folders
+        fuzz_test=fuzz_test, results=fuzz_results, contract_code=flattened_contracts
     )
 
     # Send prompt to LLM

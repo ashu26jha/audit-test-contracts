@@ -1,38 +1,79 @@
-import asyncio
 import os
 import re
 import shutil
-import subprocess
-from typing import Dict, List, Tuple
+from typing import List
 
 import toml
 
+from api.v1.helpers.project_helpers import copy_solidity_files
+from api.v1.helpers.run_command import run_command
 from common import logger
-from config.slither import POSSIBLE_CONTRACT_FOLDERS, SOLIDITY_EXTENSION
 
 
-def find_contract_folders(repo_dir: str) -> List[str]:
+async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type: str) -> None:
     """
-    Identifies and returns a list of contract folders within the given repository directory.
+    Initializes a Foundry project by creating necessary directories and files.
 
     Args:
-        repo_dir (str): The root directory of the repository.
-
-    Returns:
-        List[str]: A list of relative paths to contract folders.
+        temp_dir (str): The temporary directory path.
     """
-    contract_folders = []
-    possible_folders = POSSIBLE_CONTRACT_FOLDERS.copy()
+    logger.info("Initializing Foundry project for Hardhat...")
 
-    for root, dirs, files in os.walk(repo_dir):
-        for folder in possible_folders:
-            if folder in dirs:
-                contract_folders.append(os.path.relpath(os.path.join(root, folder), repo_dir))
+    commands = [
+        ["git", "init"],
+        ["forge", "init", "--force", "--no-commit"],
+    ]
+    for command in commands:
+        returncode, stdout, stderr = await run_command(command, temp_dir)
+        if returncode != 0:
+            raise ValueError(f"Failed to initialize Foundry project: {stderr}")
 
-        if any(file.endswith(SOLIDITY_EXTENSION) for file in files):
-            contract_folders.append(os.path.relpath(root, repo_dir))
+    clean_unused_files(temp_dir)
 
-    return list(set(contract_folders))
+    foundry_src_dir = os.path.join(temp_dir, "src")
+    copy_solidity_files(repo_dir, foundry_src_dir, project_type)
+    preprocess_solidity_files(temp_dir)
+
+
+async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
+    """
+    Installs NPM dependencies in the specified directory.
+
+    Args:
+        temp_dir (str): The temporary directory where the dependencies should be installed.
+        repo_dir (str): The directory of the Hardhat project.
+    """
+    # Copy package.json and package-lock.json from Hardhat project to Foundry project
+    for file_name in ["package.json", "package-lock.json"]:
+        src_file = os.path.join(repo_dir, file_name)
+        dst_file = os.path.join(temp_dir, file_name)
+        if os.path.exists(src_file):
+            shutil.copy2(src_file, dst_file)
+            logger.info(f"Copied {file_name} to Foundry project.")
+
+    # Install NPM dependencies in the Foundry project
+    try:
+        logger.info("Installing NPM dependencies...")
+        returncode, stdout, stderr = await run_command(["npm", "install"], temp_dir)
+        if returncode != 0:
+            if "ERESOLVE" in stderr:
+                logger.warning(
+                    "NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps."
+                )
+                returncode, stdout, stderr = await run_command(
+                    ["npm", "install", "--legacy-peer-deps"], temp_dir
+                )
+                if returncode != 0:
+                    logger.error(f"NPM install failed: {stderr}")
+                    raise ValueError(f"NPM install failed: {stderr}")
+            else:
+                logger.error(f"NPM install failed: {stderr}")
+                raise ValueError(f"NPM install failed: {stderr}")
+        else:
+            logger.info("NPM dependencies installed successfully.")
+    except Exception as e:
+        logger.error(f"Error installing NPM dependencies: {str(e)}")
+        raise
 
 
 def clean_unused_files(temp_dir: str) -> None:
@@ -54,32 +95,33 @@ def clean_unused_files(temp_dir: str) -> None:
     logger.info("Unused files cleaned up.")
 
 
-def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
+async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
     """
-    Copies Solidity contract files from the repository to the destination directory.
+    Generates remappings using Foundry's 'forge remappings' command and writes them to remappings.txt.
 
     Args:
-        repo_dir (str): The source repository directory.
-        dst_dir (str): The destination directory.
-        project_type (str): The type of the project (e.g., "hardhat", "foundry").
+        temp_dir (str): The temporary directory where the project is located.
 
-    Raises:
-        ValueError: If the expected source folder does not exist in the repository.
+    Returns:
+        List[str]: A list of remapping strings.
     """
-    src_folder = "contracts" if project_type == "hardhat" else "src"
-    src_dir = os.path.join(repo_dir, src_folder)
+    logger.info("Generating remappings with Foundry...")
+    returncode, stdout, stderr = await run_command(["forge", "remappings"], cwd=temp_dir)
+    if returncode != 0:
+        # logger.error(f"Failed to generate remappings with Foundry: {stderr}")
+        raise ValueError(f"Failed to generate remappings with Foundry: {stderr}")
 
-    if not os.path.exists(src_dir):
-        raise ValueError(f"{src_folder} directory not found in {repo_dir}")
+    remappings = stdout.strip().splitlines()
+    if not remappings:
+        raise ValueError("No remappings were generated by Foundry.")
 
-    for root, _, files in os.walk(src_dir):
-        for file in files:
-            if file.endswith(SOLIDITY_EXTENSION):
-                src_path = os.path.join(root, file)
-                rel_path = os.path.relpath(src_path, src_dir)
-                dst_path = os.path.join(dst_dir, rel_path)
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                shutil.copy2(src_path, dst_path)
+    logger.info(f"Remappings generated: {remappings}")
+
+    # Write remappings to file
+    await write_remappings(temp_dir, remappings)
+    logger.info("Remappings written successfully using Foundry")
+
+    return remappings
 
 
 async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
@@ -93,68 +135,6 @@ async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
     remappings_path = os.path.join(temp_dir, "remappings.txt")
     with open(remappings_path, "w") as f:
         f.write("\n".join(remappings))
-
-
-async def run_command(
-    command: List[str], cwd: str, env: Dict[str, str] = None
-) -> Tuple[int, str, str]:
-    """
-    Executes a command asynchronously and captures its output.
-
-    Args:
-        command (List[str]): The command and its arguments to execute.
-        cwd (str): The working directory to run the command in.
-        env (Dict[str, str], optional): Environment variables to set for the command.
-
-    Returns:
-        Tuple[int, str, str]: A tuple containing the return code, stdout, and stderr.
-    """
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *command,
-            cwd=cwd,
-            env=env,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await process.communicate()
-        return process.returncode, stdout.decode(), stderr.decode()
-    except Exception as e:
-        logger.exception(
-            f"Exception occurred while running command '{' '.join(command)}': {str(e)}"
-        )
-        raise
-
-
-def run_command_sync(
-    command: List[str], cwd: str, env: Dict[str, str] = None
-) -> Tuple[int, str, str]:
-    """
-    Executes a command synchronously and captures its output.
-
-    Args:
-        command (List[str]): The command and its arguments to execute.
-        cwd (str): The working directory to run the command in.
-        env (Dict[str, str], optional): Environment variables to set for the command.
-
-    Returns:
-        Tuple[int, str, str]: A tuple containing the return code, stdout, and stderr.
-    """
-    try:
-        process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        stdout, stderr = process.communicate()
-        return process.returncode, stdout.decode(), stderr.decode()
-    except Exception as e:
-        logger.exception(
-            f"Exception occurred while running command '{' '.join(command)}' synchronously: {str(e)}"
-        )
-        raise
 
 
 def preprocess_solidity_files(temp_dir: str) -> None:

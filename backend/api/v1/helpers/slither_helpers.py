@@ -3,7 +3,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
-from api.v1.helpers.forge_helpers import run_command
+from api.v1.helpers.run_command import run_command
 from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
 from common import logger
 from config.slither import CONFIDENCE_LEVELS

@@ -1,10 +1,9 @@
 from pathlib import Path
-from typing import List
 
 from common import logger
 
 
-async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: List[str]) -> None:
+async def save_fuzz_test(fuzz_test: str, project_dir: str) -> None:
     """
     Saves the provided fuzz test content to the test directory of the specified project.
     The function checks if a 'test' folder exists in the project directory and creates it
@@ -13,8 +12,6 @@ async def save_fuzz_test(fuzz_test: str, project_dir: str, contract_folders: Lis
     Args:
         fuzz_test (str): The content of the fuzz test to be saved.
         project_dir (str): The directory of the project where the test folder is located.
-        contract_folders (List[str]): List of contract folders in the project, used to determine
-                                       if the 'test' folder needs to be created.
 
     Raises:
         IOError: If there's an error writing the file to the disk.

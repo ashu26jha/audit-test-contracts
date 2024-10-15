@@ -1,4 +1,4 @@
-from api.v1.helpers.forge_helpers import run_command
+from api.v1.helpers.run_command import run_command
 from common import logger
 
 

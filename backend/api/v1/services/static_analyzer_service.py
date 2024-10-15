@@ -49,7 +49,6 @@ async def run_static_analyzer(
         message="Repository analyzed successfully.",
         status="Success",
         project_type=setup_result.project_type,
-        contract_folders=setup_result.contract_folders,
         environment_setup="Analysis completed successfully",
         slither_output=SlitherOutput(**slither_output),
     )
