@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Loading } from "@/components/Loading";
 
 import ScanStepper from "../../components/scan-stepper";
+import ScanInfoModal from "../../components/ScanInfoModal";
 import { useAuth } from "../../contexts/AuthContext";
 import { useFetchScanHistory } from "../../hooks/useFetchScanHistory";
 import { useToast } from "../../hooks/useToast";
@@ -53,6 +54,8 @@ const DashboardPage = () => {
 
   return (
     <>
+      <ScanInfoModal />
+
       {showStepper ? (
         <ScanStepper />
       ) : (
@@ -65,7 +68,7 @@ const DashboardPage = () => {
                 color="secondary"
                 className="bg-[#8B5CF6] text-white"
                 onClick={() => handleScan()}
-                startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20}></Image>}
+                startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20} />}
               >
                 Scan Code
               </Button>
