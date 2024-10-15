@@ -3,6 +3,7 @@
 import { Link } from "@nextui-org/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+
 import { AA_EMAIL, CONTACT_PAGE_URL, DISCLAIMER_PAGE_URL, TELEGRAM_URL } from "@/config/constants";
 
 export default function Footer() {
