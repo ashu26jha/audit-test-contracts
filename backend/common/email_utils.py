@@ -18,13 +18,10 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
     smtp_port = settings.SMTP_PORT
     smtp_username = settings.SMTP_USERNAME
     smtp_password = settings.SMTP_PASSWORD
-    cc_email = settings.CC_EMAIL if settings.CC_EMAIL else None
 
     # Create the email message
     msg = MIMEMultipart()
     msg["From"] = smtp_username
-    if cc_email is not None:
-        msg["Cc"] = cc_email
     msg["To"] = to_email
     msg["Subject"] = f"Scan Results - Scan ID: {scan_id}"
 
@@ -36,7 +33,7 @@ Scan ID: {scan_id}
 
 The detailed scan results are attached to this email as a PDF file. Please review the document carefully for a comprehensive analysis of the scan.
 
-If you have any questions about the results or need further clarification, please don't hesitate to contact us at {cc_email}
+If you have any questions about the results or need further clarification, don't hesitate to reply to this email.
 
 We appreciate your trust in our services and look forward to assisting you with any future scanning needs.
 

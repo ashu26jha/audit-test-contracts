@@ -17,7 +17,7 @@ export default function Footer() {
         </div>
         <div className="flex gap-4">
           <Link href={DISCLAIMER_PAGE_URL} className="text-[#A1A1AA] hover:underline flex items-center">
-            Disclaimer <Image src="/arrow_to_top_right.svg" alt="arrow" width={16} height={16} className="ml-1" />
+            Terms of Use <Image src="/arrow_to_top_right.svg" alt="arrow" width={16} height={16} className="ml-1" />
           </Link>
           <Link href={CONTACT_PAGE_URL} className="text-[#A1A1AA] hover:underline flex items-center">
             Contact Us <Image src="/arrow_to_top_right.svg" alt="arrow" width={16} height={16} className="ml-1" />
@@ -37,8 +37,18 @@ export default function Footer() {
   return (
     <footer className="w-full flex items-center justify-center py-3">
       <p className="text-sm text-gray-400">
-        By proceeding you agree to our <Link href="https://nethermind.io/terms-of-use">Terms of Use</Link> and{" "}
-        <Link href="https://nethermind.io/privacy-policy" className="mr-1">
+        By proceeding you agree to our{" "}
+        <Link
+          href="https://auditagent.nethermind.io/terms-of-use"
+          className="text-sm text-gray-400 underline hover:text-gray-300"
+        >
+          Terms of Use
+        </Link>{" "}
+        and{" "}
+        <Link
+          href="https://nethermind.io/privacy-policy"
+          className=" text-sm text-gray-400 underline hover:text-gray-300 mr-1"
+        >
           Privacy Policy
         </Link>
         • Copyright © 2024 by Nethermind
