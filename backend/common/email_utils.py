@@ -27,7 +27,7 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
 
     # Email body
     body = f"""
-Thank you for using Audit Agent. We are pleased to provide you with the results of your recent scan.
+Thank you for using AuditAgent. We are pleased to provide you with the results of your recent scan.
 
 Scan ID: {scan_id}
 
