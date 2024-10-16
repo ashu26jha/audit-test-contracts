@@ -122,7 +122,7 @@ const DashboardPage = () => {
                         </div>
                         <div className="flex items-center">
                           <AlertTriangle size={16} className="mr-2 text-gray-400" />
-                          <span className="text-sm">Vulnerabilities Found: {scan.total_findings ?? 1}</span>
+                          <span className="text-sm">Vulnerabilities Found: {scan.total_findings ?? 0}</span>
                         </div>
                         <div className="flex items-center">
                           <FileText size={16} className="mr-2 text-gray-400" />
@@ -140,7 +140,7 @@ const DashboardPage = () => {
                 <p className="text-gray-400 text-center">
                   You haven&apos;t scanned any code yet.
                   <br />
-                  Please select a code file to scan.
+                  Click on the Scan Code button to get started.
                 </p>
               </div>
             )}
