@@ -44,9 +44,15 @@ from config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    if settings.ENVIRONMENT == "development":
+        db = client.audit_agent_dev
+    elif settings.ENVIRONMENT == "staging":
+        db = client.audit_agent_staging
+    else:
+        db = client.audit_agent
     logger.info("Connecting to MongoDB...")
     await init_beanie(
-        database=client.myapp,
+        database=db,
         document_models=[
             User,
             GitHubRepo,

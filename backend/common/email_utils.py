@@ -29,7 +29,19 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
     msg["Subject"] = f"Scan Results - Scan ID: {scan_id}"
 
     # Email body
-    body = f"Please find attached the scan results for Scan ID: {scan_id}"
+    body = f"""
+Thank you for using Audit Agent. We are pleased to provide you with the results of your recent scan.
+
+Scan ID: {scan_id}
+
+The detailed scan results are attached to this email as a PDF file. Please review the document carefully for a comprehensive analysis of the scan.
+
+If you have any questions about the results or need further clarification, please don't hesitate to contact us at {cc_email}
+
+We appreciate your trust in our services and look forward to assisting you with any future scanning needs.
+
+Best regards,
+Audit Agent Team"""
     msg.attach(MIMEText(body, "plain"))
 
     # Check if the file exists
