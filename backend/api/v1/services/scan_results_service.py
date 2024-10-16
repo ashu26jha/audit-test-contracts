@@ -21,9 +21,5 @@ async def get_partial_scan_result(scan_id: UUID) -> ScanResult:
 
 
 def _get_partial_findings(findings: List[Finding]) -> List[Finding]:
-    """Return a subset of findings (10% or up to 3 findings)."""
-    num_findings = len(findings)
-    if num_findings == 0:
-        return []
-    num_partial = min(max(1, num_findings // 10), 3)
-    return findings[:num_partial]
+    """Return only the first finding."""
+    return findings[:1] if findings else []
