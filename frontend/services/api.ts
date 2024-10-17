@@ -10,7 +10,6 @@ const api = axios.create({
 });
 
 export const initiateGithubLogin = () => {
-  console.log("initiateGithubLogin", `${API_URL}/api/v1/auth/github-login`);
   if (typeof window !== "undefined") {
     window.location.href = `${API_URL}/api/v1/auth/github-login`;
   }
@@ -40,7 +39,6 @@ export const getRepositories = async (token: string, owner: string, ownerType: s
       Authorization: `Bearer ${token}`,
     },
   });
-  console.log("getRepositories", response.data);
   return response.data.data;
 };
 

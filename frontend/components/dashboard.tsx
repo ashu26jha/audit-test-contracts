@@ -1,28 +1,83 @@
+"use client";
+
 import React from "react";
 
-import { Button } from "@nextui-org/react";
+import { Button, Divider, Card, CardBody, CardHeader } from "@nextui-org/react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
-const Dashboard: React.FC = () => {
+import ScanCard from "@/components/ScanCard";
+import { useToast } from "@/hooks/useToast";
+
+interface DashboardProps {
+  scanHistory: ScanHistoryItem[];
+  scanable: boolean;
+  refetch: () => void;
+  setShowStepper: (show: boolean) => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, setShowStepper }) => {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const handleScanClick = (scanId: string) => {
+    console.log("handleScanClick called with scanId:", scanId);
+    router.push(`/scan-results/${scanId}`);
+  };
+
+  const handleScan = () => {
+    if (scanable) {
+      setShowStepper(true);
+      // Trigger a refetch when starting a new scan
+      refetch();
+    } else {
+      toast({
+        title: "You must pay for previous scans to continue",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#0E0E0E] text-white p-4">
+    <Card className="h-full">
       {/* Header */}
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-blue-400 text-2xl font-bold">Dashboard</h1>
-        <Button color="primary" className="bg-white text-black">
-          Scan Code
-        </Button>
-      </header>
+      <CardHeader>
+        <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
+          <h2 className="text-l font-light">Dashboard</h2>
+          <Button
+            color="secondary"
+            className="bg-[#8B5CF6] text-white"
+            onClick={() => handleScan()}
+            startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20} />}
+          >
+            Scan Code
+          </Button>
+        </div>
+      </CardHeader>
+      <Divider />
 
       {/* Main content */}
-      <main className="flex flex-col items-center justify-center h-[calc(100vh-100px)]">
-        <div className="w-32 h-32 bg-gray-700 rounded-full mb-4"></div>
-        <p className="text-gray-400 text-center">
-          You don&apos;t have a scanned file yet.
-          <br />
-          Please select a new file to scan
-        </p>
-      </main>
-    </div>
+      <CardBody className="overflow-y-auto">
+        {scanHistory.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {scanHistory.map((scan: ScanHistoryItem, index: number) => (
+              <ScanCard key={index} scan={scan} onClick={handleScanClick} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <Image src="/empty-dashboard.svg" alt="No Code Scanned" width={100} height={100} />
+            <h3 className="text-xl my-4">No Code Scanned</h3>
+            <p className="text-gray-400 text-center">
+              You haven&apos;t scanned any code yet.
+              <br />
+              Click on the Scan Code button to get started.
+            </p>
+          </div>
+        )}
+      </CardBody>
+    </Card>
   );
 };
 
