@@ -57,7 +57,7 @@ const DashboardPage = () => {
       <ScanInfoModal />
 
       {showStepper ? (
-        <ScanStepper />
+        <ScanStepper setShowStepper={setShowStepper} />
       ) : (
         <Card className="h-full">
           {/* Main content */}
