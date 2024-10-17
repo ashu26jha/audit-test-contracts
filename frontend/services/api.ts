@@ -141,7 +141,10 @@ export const sendPdfReport = async (token: string, scanId: string) => {
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       if (error.response.status === 429) {
-        return { success: false, message: "Too many requests. Please try again later." };
+        return {
+          success: false,
+          message: "You have to wait a minute before you can generate a new report. Please try again later.",
+        };
       }
     }
     return { success: false, message: (error as Error).message };

@@ -91,7 +91,7 @@ export const ContractSelection: React.FC = () => {
 
       {tokens > MAX_TOKENS && (
         <p className="text-[#F871A0] bg-[#F3126033]/10 p-2 rounded-md text-center">
-          Too many contracts selected! Please select a smaller number of contracts.
+          Too many contracts selected! Please select fewer contracts to achieve better results.
         </p>
       )}
     </>
