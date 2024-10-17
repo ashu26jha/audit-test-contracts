@@ -9,6 +9,7 @@ from fastapi import BackgroundTasks, HTTPException
 
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.models.global_stats import GlobalStats
+from api.v1.models.payment import Payment, PaymentStatus
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
@@ -137,6 +138,7 @@ async def initiate_scan(
         # Start the background task
         background_tasks.add_task(
             perform_audit_agent_background,
+            user,
             scan_id,
             flattened_contracts,
             request.repositoryURL,
@@ -170,6 +172,7 @@ async def initiate_scan(
 
 
 async def perform_audit_agent_background(
+    user: User,
     scan_uuid: UUID,
     flattened_contracts: str,
     repositoryURL: str,
@@ -294,6 +297,43 @@ async def perform_audit_agent_background(
         # Remove duplicates from combined findings
         dedup_findings = await duplicates.remove_duplicates(combined_findings)
         total_findings = len(dedup_findings)
+
+        # Calculate total findings
+        total_findings = len(context_scan_result) if context_scan_result else 0
+
+        if total_findings <= 1:
+            # Create a Payment entry with amount 0 and status COMPLETED
+            existing_payment = await Payment.find_one(Payment.scan_id == scan_uuid)
+            if not existing_payment:
+                payment = Payment(
+                    scan_id=scan_uuid,
+                    amount=0.0,
+                    currency="USD",
+                    status=PaymentStatus.COMPLETED,
+                    createdAt=datetime.now(timezone.utc),
+                    updatedAt=datetime.now(timezone.utc),
+                    event_id="No payment required",
+                    user_id=str(user.id),
+                    stripeSessionId="No Stripe Session ID",
+                )
+                await payment.save()
+                logger.info(f"Empty Payment record created for scan ID: {scan_uuid}.")
+            else:
+                if existing_payment.status != PaymentStatus.COMPLETED:
+                    existing_payment.status = PaymentStatus.COMPLETED
+                    await existing_payment.save()
+                    logger.info(
+                        f"Existing payment automatically completed for scan ID: {scan_uuid} with {total_findings} findings."
+                    )
+
+            # Update the scan's paid status
+            scan = await scan_history_service.get_scan(scan_uuid)
+            if scan and not scan.paid_status:
+                scan.paid_status = True
+                await scan.save()
+                logger.info(
+                    f"Scan ID: {scan_uuid} marked as paid due to {total_findings} findings."
+                )
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_uuid)

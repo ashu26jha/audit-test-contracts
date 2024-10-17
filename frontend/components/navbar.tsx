@@ -46,9 +46,9 @@ export const Navbar = () => {
     <NextUINavbar
       maxWidth="full"
       position="sticky"
-      className="h-20 px-8 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
+      className="h-20 px-4 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
     >
-      <NavbarBrand as="li" className="gap-3 max-w-fit">
+      <NavbarBrand as="li" className="gap-3 max-w-fit min-w-[130px]">
         <NextLink className="flex justify-start items-center gap-1" href="/">
           <Image src="/logo.svg" alt="logo" width={195} height={150} />
         </NextLink>
@@ -59,7 +59,7 @@ export const Navbar = () => {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <div className="justify-center items-center gap-2 flex cursor-pointer">
-                {user && user.avatarUrl ? ( // Changed to use a single ternary operator
+                {user && user.avatarUrl ? (
                   <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
                 ) : (
                   <></>

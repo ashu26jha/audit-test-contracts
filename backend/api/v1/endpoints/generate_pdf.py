@@ -12,7 +12,7 @@ router = APIRouter()
 
 
 @router.get("/generate-pdf/{scan_id}", response_model=SuccessResponse)
-@throttle(rate_limit_minutes=5)
+@throttle(rate_limit_minutes=1)
 async def generate_pdf(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),

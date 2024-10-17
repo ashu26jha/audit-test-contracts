@@ -22,7 +22,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading) {
-      console.log("user", user);
       if (user && pathname === "/") {
         router.push("/dashboard");
       } else if (!user && !isPublicRoute(pathname) && pathname !== "/") {
