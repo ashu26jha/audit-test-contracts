@@ -137,14 +137,30 @@ Thank you,
     </Card>
   );
 
+  const alreadyPaidMessage = () => {
+    if (hasFindings) {
+      return `You've already paid for this contract report.`;
+    } else if (isNoFinding) {
+      return `This scan was free because we found ${scanData.total_findings} vulnerability.`;
+    } else {
+      return `This scan was free because we only found ${scanData.total_findings} vulnerability.`;
+    }
+  };
+
+  const checkEmailMessage = () => {
+    if (hasFindings) {
+      return `Please check your email for the detailed report of ${scanData.total_findings} vulnerabilities.`;
+    } else {
+      return "Please check your email for the detailed report.";
+    }
+  };
+
   const renderAlreadyPaid = () => (
     <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
       <CardBody className="flex flex-row justify-between items-center space-x-2">
         <div className="flex flex-col pl-5">
-          <strong className="text-sm">You&apos;ve already paid for this contract report.</strong>
-          <p className="text-sm">
-            Please check your email for the detailed report of {scanData.total_findings} vulnerabilities.
-          </p>
+          <strong className="text-sm">{alreadyPaidMessage()}</strong>
+          <p className="text-sm">{checkEmailMessage()}</p>
         </div>
 
         <Button
