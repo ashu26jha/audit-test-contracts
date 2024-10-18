@@ -62,7 +62,6 @@ async def setup_environment(
             # Generate remappings using Foundry
             try:
                 remappings = await generate_remappings_with_foundry(temp_dir)
-                logger.info("Remappings generated successfully using Foundry")
             except Exception as e:
                 logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
                 # Optionally, handle fallback or raise an error
@@ -70,9 +69,7 @@ async def setup_environment(
             # Remove the initial cloned repository to avoid compilation issues and confusion
             if repo_dir != temp_dir:
                 try:
-                    logger.info(f"Removing initial cloned repository at {repo_dir}")
                     shutil.rmtree(repo_dir)
-                    logger.info("Initial cloned repository removed successfully.")
                 except Exception as e:
                     logger.error(f"Failed to remove initial cloned repository: {str(e)}")
 

@@ -24,7 +24,6 @@ def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
     Returns:
         Tuple[str, List[str]]: A tuple containing the project type and a list of contract folder paths.
     """
-    logger.info("Detecting project type...")
     repo_path = Path(repo_dir)
 
     # Initialize project_type
@@ -45,7 +44,6 @@ def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
         for config_name in HARDHAT_CONFIGS:
             if (repo_path / config_name).exists():
                 hardhat_config_found = True
-                logger.info(f"Hardhat configuration detected: {config_name}")
                 break
         if hardhat_config_found:
             project_type = "hardhat"
@@ -139,7 +137,6 @@ async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = 
     if returncode != 0:
         raise ValueError(f"Failed to clone the repository: {stderr}")
 
-    logger.info("Repository cloned successfully")
     return repo_dir
 
 
@@ -179,7 +176,6 @@ def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
 
 
 async def compile_project(temp_dir: str) -> None:
-    logger.info("Compiling project with Forge...")
     returncode, stdout, stderr = await run_command(FORGE_BUILD_COMMAND, temp_dir)
     if returncode != 0:
         logger.error(f"Forge compilation failed. Stdout: {stdout}, Stderr: {stderr}")

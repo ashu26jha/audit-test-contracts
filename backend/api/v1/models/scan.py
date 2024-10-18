@@ -27,6 +27,7 @@ class Scan(Document):
     total_findings: Optional[int] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    detectors: Dict[str, Optional[bool]] = Field(default_factory=dict)
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -54,6 +55,14 @@ class Scan(Document):
                 "paidStatus": False,
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
+                "detectors": {
+                    "context_scan_1": True,
+                    "context_scan_2": True,
+                    "context_scan_3": True,
+                    "context_scan_4": True,
+                    "static_analyzer": True,
+                    "fuzzer": False,
+                },
             }
         },
     )

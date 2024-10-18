@@ -18,8 +18,6 @@ async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type:
     Args:
         temp_dir (str): The temporary directory path.
     """
-    logger.info("Initializing Foundry project for Hardhat...")
-
     commands = [
         ["git", "init"],
         FORGE_INIT_COMMAND,
@@ -50,7 +48,6 @@ async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
         dst_file = os.path.join(temp_dir, file_name)
         if os.path.exists(src_file):
             shutil.copy2(src_file, dst_file)
-            logger.info(f"Copied {file_name} to Foundry project.")
 
     # Install NPM dependencies in the Foundry project
     try:
@@ -93,7 +90,6 @@ def clean_unused_files(temp_dir: str) -> None:
                     os.unlink(item_path)
                 elif os.path.isdir(item_path):
                     shutil.rmtree(item_path)
-    logger.info("Unused files cleaned up.")
 
 
 async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
@@ -106,7 +102,6 @@ async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
     Returns:
         List[str]: A list of remapping strings.
     """
-    logger.info("Generating remappings with Foundry...")
     returncode, stdout, stderr = await run_command(FORGE_REMAP_COMMAND, cwd=temp_dir)
     if returncode != 0:
         # logger.error(f"Failed to generate remappings with Foundry: {stderr}")
@@ -120,8 +115,6 @@ async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
 
     # Write remappings to file
     await write_remappings(temp_dir, remappings)
-    logger.info("Remappings written successfully using Foundry")
-
     return remappings
 
 
@@ -145,7 +138,6 @@ def preprocess_solidity_files(temp_dir: str) -> None:
     Args:
         temp_dir (str): The temporary directory path.
     """
-    logger.info("Preprocessing Solidity files to replace placeholders...")
     src_dir = os.path.join(temp_dir, "src")
     for root, _, files in os.walk(src_dir):
         for file in files:
@@ -161,7 +153,6 @@ def preprocess_solidity_files(temp_dir: str) -> None:
                 )
                 with open(file_path, "w") as f:
                     f.write(content)
-    logger.info("Preprocessing completed")
 
 
 def update_foundry_config(temp_dir: str) -> None:
@@ -213,8 +204,6 @@ def update_foundry_config(temp_dir: str) -> None:
 
     with open(foundry_toml_path, "w") as f:
         toml.dump(config, f)
-
-    logger.info("foundry.toml updated successfully.")
 
 
 def read_file(path: str) -> str:

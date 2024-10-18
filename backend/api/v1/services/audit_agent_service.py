@@ -2,7 +2,7 @@ import asyncio
 import shutil
 import tempfile
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks, HTTPException
@@ -34,7 +34,7 @@ from common.validate import (
     validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
-from config import settings
+from config.settings import ENVIRONMENT, LLM_MODEL_BEST, LLM_MODEL_BEST_2
 
 github_service = GitHubService()
 
@@ -50,7 +50,7 @@ async def initiate_scan(
         validate_github_url(request.repositoryURL)
         validate_contract_files(request.contractFiles)
         await validate_no_in_progress_scans(user)
-        if settings.ENVIRONMENT == "production":
+        if ENVIRONMENT == "production":
             await validate_no_unpaid_scans(user)
 
         # Fetch repository info
@@ -189,6 +189,30 @@ async def perform_audit_agent_background(
         # Update scan status to 'in_progress'
         await scan_history_service.update_scan_status(scan_uuid, "in_progress")
 
+        # Fetch the scan document to update detectors
+        scan = await scan_history_service.get_scan(scan_uuid)
+
+        # Initialize detectors
+        detectors: Dict[str, Optional[bool]] = {}
+
+        # Prepare profiles and models
+        profiles = [Profiles.DEFAULT, Profiles.DEFAULT]
+        models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2]
+
+        # Generate detector names for context scans
+        context_scan_detector_names = []
+        detector_counter = 1
+        for _ in profiles:
+            for _ in models:
+                detector_name = f"context_scan_{detector_counter}"
+                detectors[detector_name] = None  # Initialize as None (not started)
+                context_scan_detector_names.append(detector_name)
+                detector_counter += 1
+
+        # Save initial detectors to scan
+        scan.detectors = detectors
+        await scan.save()
+
         # Attempt to set up the environment
         try:
             setup_result = await setup_environment(
@@ -198,6 +222,16 @@ async def perform_audit_agent_background(
             )
         except Exception as e:
             logger.error(f"Failed to set up environment: {str(e)}")
+            setup_result = None  # Explicitly set to None if setup failed
+
+        # Initialize static analyzer and fuzzer detectors
+        if setup_result:
+            scan.detectors["static_analyzer"] = None  # Not started
+            scan.detectors["fuzzer"] = None  # Not started
+        else:
+            scan.detectors["static_analyzer"] = None  # Not applicable
+            scan.detectors["fuzzer"] = None  # Not applicable
+        await scan.save()
 
         # Start summary generation task
         summary_task = asyncio.create_task(
@@ -228,29 +262,36 @@ async def perform_audit_agent_background(
         else:
             logger.warning("Skipping static analysis and fuzzing due to setup failure.")
 
-        # Await summary result to proceed with context scan
+        # Await summary result to proceed with context scans
         try:
             summary_result, detected_type = await summary_task
         except Exception:
             summary_result = "Summary generation failed."
             detected_type = Profiles.NONE
 
-        # Detect profile
         detected_profile = (
             Profiles[detected_type.upper()]
             if detected_type.upper() in Profiles.__members__
             else Profiles.DEFAULT
         )
 
-        # Start context scan task
-        context_scan_task = asyncio.create_task(
-            context_scan_service.perform_context_scan(
-                summary_result, flattened_contracts, detected_profile
-            )
-        )
+        # Start context scan tasks
+        context_scan_tasks = []
+        task_detector_names = []
+        detector_index = 0
+        for profile in profiles:
+            for model in models:
+                task = asyncio.create_task(
+                    context_scan_service.perform_context_scan(
+                        summary_result, flattened_contracts, profile, model
+                    )
+                )
+                context_scan_tasks.append(task)
+                task_detector_names.append(context_scan_detector_names[detector_index])
+                detector_index += 1
 
         # Gather tasks to await
-        tasks_to_await = [context_scan_task]
+        tasks_to_await = context_scan_tasks
         if static_analysis_task:
             tasks_to_await.append(static_analysis_task)
         if fuzzing_task:
@@ -263,16 +304,20 @@ async def perform_audit_agent_background(
         combined_findings = []
 
         # Process results
-        # Index for results list
         result_index = 0
 
-        # Handle context scan result
-        context_scan_result = results[result_index]
-        result_index += 1
-        if isinstance(context_scan_result, Exception):
-            logger.error(f"Context scan failed: {context_scan_result}")
-            context_scan_result = []
-        combined_findings.extend(context_scan_result)
+        # Handle context scan results
+        for detector_name in task_detector_names:
+            context_scan_result = results[result_index]
+            result_index += 1
+            if isinstance(context_scan_result, Exception):
+                logger.error(f"{detector_name} failed: {context_scan_result}")
+                context_scan_result = []
+                scan.detectors[detector_name] = False  # Update detector status to False (failed)
+            else:
+                combined_findings.extend(context_scan_result)
+                scan.detectors[detector_name] = True  # Update detector status to True (succeeded)
+            await scan.save()
 
         # Handle static analysis result
         if static_analysis_task:
@@ -280,9 +325,12 @@ async def perform_audit_agent_background(
             result_index += 1
             if isinstance(static_analysis_result, Exception):
                 logger.error(f"Static analysis failed: {static_analysis_result}")
+                scan.detectors["static_analyzer"] = False
             else:
                 slither_findings = getattr(static_analysis_result.slither_output, "findings", [])
                 combined_findings.extend(slither_findings)
+                scan.detectors["static_analyzer"] = True
+            await scan.save()
 
         # Handle fuzzing result
         if fuzzing_task:
@@ -290,18 +338,19 @@ async def perform_audit_agent_background(
             result_index += 1
             if isinstance(fuzzing_result, Exception):
                 logger.error(f"Fuzzing failed: {fuzzing_result}")
+                scan.detectors["fuzzer"] = False
             else:
                 fuzzing_findings = getattr(fuzzing_result.data, "findings", [])
                 combined_findings.extend(fuzzing_findings)
+                scan.detectors["fuzzer"] = True
+            await scan.save()
 
         # Remove duplicates from combined findings
         dedup_findings = await duplicates.remove_duplicates(combined_findings)
-        total_findings = len(dedup_findings)
+        total_findings_after_dedup = len(dedup_findings)
 
-        # Calculate total findings
-        total_findings = len(context_scan_result) if context_scan_result else 0
-
-        if total_findings <= 1:
+        # Proceed with handling payments and updating scan results
+        if total_findings_after_dedup <= 1:
             # Create a Payment entry with amount 0 and status COMPLETED
             existing_payment = await Payment.find_one(Payment.scan_id == scan_uuid)
             if not existing_payment:
@@ -323,7 +372,7 @@ async def perform_audit_agent_background(
                     existing_payment.status = PaymentStatus.COMPLETED
                     await existing_payment.save()
                     logger.info(
-                        f"Existing payment automatically completed for scan ID: {scan_uuid} with {total_findings} findings."
+                        f"Existing payment automatically completed for scan ID: {scan_uuid} with {total_findings_after_dedup} findings."
                     )
 
             # Update the scan's paid status
@@ -332,19 +381,21 @@ async def perform_audit_agent_background(
                 scan.paid_status = True
                 await scan.save()
                 logger.info(
-                    f"Scan ID: {scan_uuid} marked as paid due to {total_findings} findings."
+                    f"Scan ID: {scan_uuid} marked as paid due to {total_findings_after_dedup} findings."
                 )
 
         # Update the existing scan result
         scan_result = await scan_history_service.get_scan_result(scan_uuid)
         scan_result.summary = summary_result
         scan_result.type = detected_profile
-        scan_result.total_findings = total_findings
+        scan_result.total_findings = total_findings_after_dedup
         scan_result.findings = dedup_findings
         await scan_result.save()
 
         # Update scan status to 'completed' and include total_findings
-        await scan_history_service.update_scan_status(scan_uuid, "completed", total_findings)
+        await scan_history_service.update_scan_status(
+            scan_uuid, "completed", total_findings_after_dedup
+        )
 
         # Update global stats
         scan = await scan_history_service.get_scan(scan_uuid)
@@ -352,7 +403,7 @@ async def perform_audit_agent_background(
         await GlobalStats.increment_scan(
             status="completed",
             paid=scan.paid_status,
-            findings=total_findings,
+            findings=total_findings_after_dedup,
             lines_of_code=total_lines,
         )
 
@@ -368,6 +419,9 @@ async def perform_audit_agent_background(
         scan_result.total_findings = 0
         scan_result.findings = []
         await scan_result.save()
+        # Update scan detectors if the entire scan failed
+        scan.detectors = {key: False for key in scan.detectors.keys()}
+        await scan.save()
     finally:
         logger.info(f"Cleaning up temporary directory: {temp_dir}")
         shutil.rmtree(temp_dir)

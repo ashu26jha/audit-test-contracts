@@ -36,6 +36,8 @@ async def remove_duplicates(vulns: List[Dict]) -> List[Dict]:
         if not isinstance(parsed_response, FindingList):
             raise ValueError("Parsed response is not a FindingList")
 
+        logger.info(f"Total findings after duplicate removal: {len(parsed_response.findings)}")
+
         return parsed_response.findings
 
     except Exception as e:

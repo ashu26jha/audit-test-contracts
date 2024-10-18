@@ -33,7 +33,7 @@ SUPPORTED_MODELS = {
 LLM_MODEL_CHEAP = os.getenv("LLM_MODEL_CHEAP", "gpt-4o-mini")
 LLM_MODEL_MEDIUM = os.getenv("LLM_MODEL_MEDIUM", "gpt-4o-2024-08-06")
 LLM_MODEL_BEST = os.getenv("LLM_MODEL_BEST", "o1-preview")
-
+LLM_MODEL_BEST_2 = os.getenv("LLM_MODEL_BEST_2", "o1-mini")
 # List of models that do not support 'system' role
 MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]
 

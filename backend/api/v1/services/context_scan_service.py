@@ -16,7 +16,10 @@ from config.settings import LLM_MODEL_BEST
 
 
 async def perform_context_scan(
-    summary: Optional[str], contracts: str, profile: Profiles = Profiles.NONE
+    summary: Optional[str],
+    contracts: str,
+    profile: Profiles = Profiles.NONE,
+    model: str = LLM_MODEL_BEST,
 ) -> List[Finding]:
     """
     Performs a context scan using an LLM and returns structured findings as a list.
@@ -35,7 +38,7 @@ async def perform_context_scan(
         message_history = load_profile(Profiles.DEFAULT)
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
             send_prompt_to_llm_async,
-            LLM_MODEL_BEST,
+            model,
             prompt,
             system_prompt,
             message_history,
@@ -45,6 +48,8 @@ async def perform_context_scan(
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
             logger.warning("LLM response was empty or invalid")
             raise HTTPException(status_code=500, detail="Internal Server Error")
+
+        logger.info(f"Context scan completed successfully with {model}")
 
         return llm_response.findings
 

@@ -14,6 +14,7 @@ PROFILES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config"
 class Profiles(Enum):
     NONE = "none"
     DEFAULT = "default"
+    DEFAULT_2 = "default_2"
     DAO = "dao"
     DEFI = "defi"
     IDENTITY = "identity"
@@ -31,6 +32,7 @@ def load_profile(profile_name: Profiles):
     # Map profile enums to file names
     profile_file_map = {
         Profiles.DEFAULT: "profile_default.json",
+        Profiles.DEFAULT_2: "profile_default_2.json",
         Profiles.DAO: "profile_dao.json",
         Profiles.DEFI: "profile_defi.json",
         Profiles.IDENTITY: "profile_identity.json",
