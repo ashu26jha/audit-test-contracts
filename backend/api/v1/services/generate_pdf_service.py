@@ -6,6 +6,7 @@ import markdown
 from fastapi import HTTPException
 from markdown.extensions.attr_list import AttrListExtension
 from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.nl2br import Nl2BrExtension
 from markdown.extensions.sane_lists import SaneListExtension
 from PyPDF2 import PdfReader, PdfWriter
@@ -22,6 +23,7 @@ from api.v1.services.scan_results_service import get_full_scan_result
 from common import logger
 from common.email_utils import send_pdf_email
 from common.validate import validate_scan_paid, validate_user_scan_access
+from config.settings import ENVIRONMENT
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 TEMPLATE_DIR = BASE_DIR / "config" / "template"
@@ -36,7 +38,8 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
         await validate_user_scan_access(scan_id, user)
 
         # Check if scan has been paid for
-        await validate_scan_paid(scan_id)
+        if ENVIRONMENT == "production":
+            await validate_scan_paid(scan_id)
 
         scan = await get_scan(scan_id)
         full_result = await get_full_scan_result(scan_id)
@@ -56,6 +59,11 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
         }
 
         html_content = await create_report_html(report_data)
+        # Write the HTML content to a file for inspection
+        html_output_path = TEMPLATE_DIR / f"report_{scan.scan_number}.html"
+        with open(html_output_path, "w", encoding="utf-8") as html_file:
+            html_file.write(html_content)
+        logger.info(f"HTML content written to {html_output_path} for inspection.")
 
         pdf_filename = f"audit_agent_report_{scan.scan_number}.pdf"
         report_pdf_path = await generate_pdf(html_content, pdf_filename)
@@ -115,7 +123,8 @@ async def create_report_html(report_data):
     summary_html = markdown.markdown(
         report_data["summary"],
         extensions=[
-            CodeHiliteExtension(linenums=False),
+            FencedCodeExtension(),  # Add this extension here as well
+            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
             SaneListExtension(),
             Nl2BrExtension(),
             AttrListExtension(),

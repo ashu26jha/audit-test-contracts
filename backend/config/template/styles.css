@@ -196,6 +196,28 @@ body {
   color: var(--color-primary);
 }
 
+/* Ensure that headings inside issue titles are styled properly */
+.finding-issue h1,
+.finding-issue h2,
+.finding-issue h3,
+.finding-issue h4,
+.finding-issue h5,
+.finding-issue h6 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Style inline code within the issue title */
+.finding-issue code {
+  background-color: var(--color-background);
+  color: #d6336c;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 95%;
+}
+
 .finding-description {
   padding: 10px;
 }
@@ -212,24 +234,35 @@ body {
   padding: 2px 4px;
   border-radius: 4px;
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
-  font-size: 95%; /* Slightly smaller font size */
+  font-size: 90%;
 }
 
 /* Styles for code blocks */
 .description-text pre {
   background-color: var(--color-background);
-  padding: 10px;
+  padding: 15px; /* Increase padding inside the code block */
   border-radius: 6px;
+  margin: 20px 0; /* Add margin above and below the code block */
+  border: 1px solid #e1e1e8;
   overflow-x: auto;
   font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: 95%;
-  line-height: 1.4;
+  line-height: 1.6; /* Slightly increase line height for readability */
 }
 
 .description-text pre code {
   background-color: transparent;
   padding: 0;
   color: inherit;
+}
+
+.description-text code {
+  background-color: #f5f5f5;
+  color: #c7254e;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-size: 90%;
 }
 
 .severity-chip {
@@ -269,10 +302,68 @@ body {
   gap: 3px;
 }
 
-/* MARKDOWN Syntax Highlighting */
-pre {
+/* Add styles for syntax highlighting */
+
+pre code.language-solidity {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+/* Include Pygments styles for syntax highlighting */
+code {
+  font-family: monospace;
+  color: #c7254e;
+  font-size: 85%;
   line-height: 125%;
 }
+
+/* Inline code specific */
+p code {
+  background-color: #f5f5f5;
+  border: 1px solid #e1e1e8;
+  padding: 2px 4px;
+  border-radius: 3px;
+  white-space: nowrap; /* Ensure inline code doesn't wrap */
+  display: inline; /* Inline display */
+}
+
+/* Block code (inside <pre><code>) */
+pre code {
+  background-color: #f5f5f5;
+  border: 1px solid #e1e1e8;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 0.9em;
+  overflow-x: auto; /* Allow horizontal scrolling for block code */
+  display: block;
+  word-wrap: normal;
+  white-space: pre; /* For proper block code display */
+  line-height: 125%;
+}
+
+/* Block-level <pre> tag */
+pre {
+  background-color: #f5f5f5;
+  border: 1px solid #e1e1e8;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  line-height: 125%;
+  font-family: "Courier New", Courier, monospace;
+  white-space: pre-wrap; /* Allows code to wrap within the block */
+  word-wrap: break-word; /* Break words if necessary to wrap */
+  overflow-wrap: break-word; /* Ensures long strings like URLs break */
+  overflow-x: auto; /* Horizontal scroll if needed (optional) */
+}
+
+/* Highlighted code (for specific elements with highlight class) */
+.highlight {
+  background-color: #f0f0f0;
+  border-left: 3px solid #ccc;
+  padding-left: 10px;
+}
+
 td.linenos .normal {
   color: inherit;
   background-color: transparent;

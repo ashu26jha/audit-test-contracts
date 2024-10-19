@@ -2,7 +2,11 @@ from urllib.parse import urlparse
 
 import bleach
 import markdown
+from markdown.extensions.attr_list import AttrListExtension
 from markdown.extensions.codehilite import CodeHiliteExtension
+from markdown.extensions.fenced_code import FencedCodeExtension
+from markdown.extensions.nl2br import Nl2BrExtension
+from markdown.extensions.sane_lists import SaneListExtension
 from playwright.async_api import async_playwright
 
 
@@ -33,9 +37,27 @@ def create_finding_section(
         f"""<span class="file-name">{file}</span>""" for file in contract_files
     )
 
-    # Convert markdown description to HTML with code highlighting
+    # Convert markdown description to HTML with code highlighting and fenced code handling
     description_html = markdown.markdown(
-        description, extensions=[CodeHiliteExtension(linenums=False)]
+        description,
+        extensions=[
+            FencedCodeExtension(),
+            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
+            SaneListExtension(),
+            Nl2BrExtension(),
+            AttrListExtension(),
+        ],
+    )
+
+    # Convert markdown issue title to HTML
+    issue_title_html = markdown.markdown(
+        issue_title,
+        extensions=[
+            FencedCodeExtension(),
+            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
+            Nl2BrExtension(),
+            AttrListExtension(),
+        ],
     )
 
     # Sanitize the HTML output
@@ -45,24 +67,35 @@ def create_finding_section(
             "pre",
             "code",
             "span",
+            "div",
             "h1",
             "h2",
             "h3",
             "h4",
             "h5",
             "h6",
+            "ul",
+            "ol",
+            "li",
+            "em",  # Allow emphasis tag
+            "strong",  # Allow strong tag
+            "table",
+            "tr",
+            "td",
+            "th",
         }
     )
     allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES.copy()
     allowed_attributes.update(
         {
-            "code": ["class"],
-            "span": ["class"],
-            "pre": ["class"],
+            "*": ["class", "style"],  # Allow class and style on all tags
         }
     )
     description_html = bleach.clean(
         description_html, tags=allowed_tags, attributes=allowed_attributes
+    )
+    issue_title_html = bleach.clean(
+        issue_title_html, tags=allowed_tags, attributes=allowed_attributes
     )
 
     return f"""
@@ -94,7 +127,7 @@ def create_finding_section(
 
       <div class="finding-content">
         <span class="finding-issue">
-          <span> {issue_title} </span>
+          {issue_title_html}
         </span>
         <div class="severity-chip">
           <img src="public/{risk_level}.svg" />
