@@ -38,7 +38,7 @@ If you have any questions about the results or need further clarification, don't
 We appreciate your trust in our services and look forward to assisting you with any future scanning needs.
 
 Best regards,
-Audit Agent Team"""
+AuditAgent Team"""
     msg.attach(MIMEText(body, "plain"))
 
     # Check if the file exists
