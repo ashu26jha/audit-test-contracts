@@ -34,7 +34,7 @@ const LoginPage = () => {
       <Card className="max-w-[420px] p-5">
         <CardBody className="py-10">
           <div className="flex flex-col items-center">
-            <Image src="/nethermind_logo.svg" alt="Audit Agent Logo" width={100} height={100} className="mb-5" />
+            <Image src="/nethermind_logo.svg" alt="AuditAgent Logo" width={100} height={100} className="mb-5" />
             <p className="text-sm text-center mb-5">Login to Explore</p>
             <p className="text-sm text-center mb-5">Please continue with your GitHub account</p>
             <Button
