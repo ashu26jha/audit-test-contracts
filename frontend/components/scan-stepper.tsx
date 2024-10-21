@@ -18,7 +18,11 @@ import { RepositorySelection } from "./scan-stepper/RepositorySelection";
 import { StepperVisualization } from "./scan-stepper/StepperVisualization";
 import { MAX_TOKENS } from "../config/constants";
 
-const ScanStepper: React.FC = () => {
+interface ScanStepperProps {
+  setShowStepper: (show: boolean) => void;
+}
+
+const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
   const router = useRouter();
   const { toast } = useToast();
   const { token } = useAuth();
@@ -109,6 +113,7 @@ const ScanStepper: React.FC = () => {
   const handleBack = () => {
     if (currentStep === 1) {
       resetStepper();
+      setShowStepper(false);
     }
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -128,7 +133,7 @@ const ScanStepper: React.FC = () => {
           Dashboard <div className="mx-2">/</div> <div className="text-white">Scan Code</div>
         </div>
         <div>
-          <Button className="mr-2" onClick={handleBack} disabled={currentStep === 1}>
+          <Button className="mr-2" onClick={handleBack}>
             Go Back
           </Button>
           <Button

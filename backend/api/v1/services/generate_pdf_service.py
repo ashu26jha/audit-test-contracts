@@ -1,3 +1,4 @@
+import html
 import os
 from pathlib import Path
 
@@ -148,7 +149,9 @@ async def create_report_html(report_data):
 
 
 def create_contract_files_html(contract_files):
-    return "".join(f"""<span class="file-name">{contract}</span>""" for contract in contract_files)
+    return "".join(
+        f"""<span class="file-name">{html.escape(contract)}</span>""" for contract in contract_files
+    )
 
 
 def create_findings_html(findings):
