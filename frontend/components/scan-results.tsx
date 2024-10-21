@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@nextui-org/react";
-import { AlertTriangle, FileText, Code, Hash, Info } from "lucide-react";
+import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,10 +22,11 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
   const { token } = useAuth();
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
-  const isPaid = scanData.scan.paid_status;
   const isCompleted = scanData.scan.status === "completed";
   const isFailed = scanData.scan.status === "failed";
-  console.log("isPaid", isPaid);
+  const isPaid = isCompleted && scanData.scan.paid_status;
+  const isNoFinding = isCompleted && scanData.total_findings === 0;
+  const hasFindings = isCompleted && scanData.total_findings > 1;
 
   const handleSendReportAgain = async () => {
     if (!token) {
@@ -64,7 +65,7 @@ Thank you,
     {
       icon: <AlertTriangle size={22} />,
       label: "Vulnerabilities Found",
-      value: scanData.total_findings ?? 1,
+      value: scanData.total_findings ?? 0,
     },
     {
       icon: <FileText size={22} />,
@@ -79,11 +80,98 @@ Thank you,
     { icon: <Hash size={22} />, label: "Scan ID", value: scanData.scan_number },
   ];
 
-  // function getOrganizationName(scanData: any) {
-  //   const organizationId = scanData.scan.repositoryURL;
-  //   const organizationName = organizationId.split("/")[3];
-  //   return organizationName;
-  // }
+  const renderFailed = () => (
+    <ScanStateMessage icon={<AlertTriangle size={40} className="text-red-500" />} message="Scan failed" />
+  );
+
+  const renderInProgress = () => (
+    <ScanStateMessage
+      icon={<Spinner size="lg" color="secondary" />}
+      message="Please wait a few minutes while your scan is being processed. You can close this page."
+    />
+  );
+
+  const renderNoFindings = () => (
+    <ScanStateMessage
+      icon={<CheckCircle size={40} className="text-green-500" />}
+      message="Congratulations! No vulnerabilities found."
+    />
+  );
+
+  const renderFindings = () => (
+    <div>
+      {scanData.findings.map((finding: Finding, index: number) => (
+        <Card key={index} className="bg-[#222222] mb-6">
+          <CardBody>
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle size={16} className="text-red-500" />
+                <span className="text-sm">
+                  Finding {index + 1} of {scanData.total_findings ?? 1}
+                </span>
+              </div>
+              <div className="text-sm text-gray-400">{finding.Contracts.join(", ")}</div>
+            </div>
+            <h3 className="text-lg font-semibold mb-2">{finding.Issue}</h3>
+            <p className="text-sm text-gray-300 mb-2">{finding.Description}</p>
+          </CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderPaymentCard = () => (
+    <Card className="absolute bottom-5 left-0 right-0 bg-[#F2EAFA] flex justify-between items-center p-2">
+      <CardBody className="flex flex-row justify-between items-center space-x-2">
+        <div className="flex flex-col pl-5">
+          <strong className="text-sm text-black">Only partial findings are shown.</strong>
+          <p className="text-sm text-black">
+            Unlock full access to a detailed report of {scanData.total_findings} vulnerabilities.
+          </p>
+        </div>
+
+        <Button color="secondary" className="bg-[#8B5CF6] hover:bg-[#7C3AED]" onPress={handlePayment}>
+          Pay $20 via Stripe
+        </Button>
+      </CardBody>
+    </Card>
+  );
+
+  const alreadyPaidMessage = () => {
+    if (hasFindings) {
+      return `You've already paid for this contract report.`;
+    } else if (isNoFinding) {
+      return `This scan was free because we found ${scanData.total_findings} vulnerability.`;
+    } else {
+      return `This scan was free because we only found ${scanData.total_findings} vulnerability.`;
+    }
+  };
+
+  const checkEmailMessage = () => {
+    if (hasFindings) {
+      return `Please check your email for the detailed report of ${scanData.total_findings} vulnerabilities.`;
+    } else {
+      return "Please check your email for the detailed report.";
+    }
+  };
+
+  const renderAlreadyPaid = () => (
+    <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
+      <CardBody className="flex flex-row justify-between items-center space-x-2">
+        <div className="flex flex-col pl-5">
+          <strong className="text-sm">{alreadyPaidMessage()}</strong>
+          <p className="text-sm">{checkEmailMessage()}</p>
+        </div>
+
+        <Button
+          endContent={<Image src="/feedback.svg" width={20} height={20} alt="feedback" />}
+          onPress={handleSendFeedback}
+        >
+          Send Feedback
+        </Button>
+      </CardBody>
+    </Card>
+  );
 
   return (
     <Card className="h-full relative">
@@ -103,8 +191,8 @@ Thank you,
                 <Button
                   size="sm"
                   className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
-                  startContent={<Image src="/mail.svg" width={20} height={20} alt="mail" />}
-                  onPress={() => handleSendReportAgain()}
+                  startContent={<Image src="/mail.svg" width={20} height={20} alt="Send Email" />}
+                  onPress={handleSendReportAgain}
                 >
                   Send Report Again
                 </Button>
@@ -115,7 +203,7 @@ Thank you,
       </CardHeader>
       <Divider />
 
-      <main className="flex-grow p-8">
+      <main className="h-full p-8">
         <div className="grid grid-cols-4 gap-4 mb-6">
           {scanStats.map((stat, index) => (
             <Card key={index} className="bg-[#222222]">
@@ -130,79 +218,17 @@ Thank you,
           ))}
         </div>
 
-        {!isCompleted && !isFailed && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <Spinner size="lg" color="secondary" />
-            <p className="mt-4 text-lg">
-              Please wait a few minutes while your scan is being processed, you can close this page.
-            </p>
-          </div>
+        {isFailed && renderFailed()}
+        {!isCompleted && !isFailed && renderInProgress()}
+        {isNoFinding && renderNoFindings()}
+        {!isNoFinding && renderFindings()}
+        {!isPaid && hasFindings && (
+          <>
+            <BluredFindings />
+            {renderPaymentCard()}
+          </>
         )}
-
-        {isFailed && (
-          <div className="flex flex-col items-center justify-center h-full">
-            <AlertTriangle size={40} className="text-red-500" />
-            <p className="mt-4 text-lg">Scan failed</p>
-          </div>
-        )}
-
-        {scanData.findings.map((finding: Finding, index: number) => (
-          <Card key={index} className="bg-[#222222] mb-6">
-            <CardBody>
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center space-x-2">
-                  <AlertTriangle size={16} className="text-red-500" />
-                  <span className="text-sm">
-                    Finding {index + 1} of {scanData.total_findings ?? scanData.findings.length}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-400">{finding.Contracts.join(", ")}</div>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">{finding.Issue}</h3>
-              <p className="text-sm text-gray-300 mb-2">{finding.Description}</p>
-            </CardBody>
-          </Card>
-        ))}
-
-        {/* If it is not paid show the blured findings */}
-        {isCompleted && !isPaid && <BluredFindings />}
-
-        {isCompleted && !isPaid && (
-          <Card className="absolute bottom-5 left-0 right-0 bg-[#F2EAFA] flex justify-between items-center p-2">
-            <CardBody className="flex flex-row justify-between items-center space-x-2">
-              <div className="flex flex-col pl-5">
-                <strong className="text-sm text-black">Only partial findings are shown.</strong>
-                <p className="text-sm text-black">
-                  Unlock full access to detailed report of {scanData.total_findings} vulnerabilities.
-                </p>
-              </div>
-
-              <Button color="secondary" className="bg-[#8B5CF6] hover:bg-[#7C3AED]" onPress={handlePayment}>
-                Pay $20 via stripe
-              </Button>
-            </CardBody>
-          </Card>
-        )}
-
-        {isCompleted && isPaid && (
-          <Card className="absolute bottom-5 left-8 right-8 flex justify-between items-center p-2 bg-[#222222]">
-            <CardBody className="flex flex-row justify-between items-center space-x-2">
-              <div className="flex flex-col pl-5">
-                <strong className="text-sm">You&apos;ve already paid for this contract report.</strong>
-                <p className="text-sm">
-                  Please check your email for the detailed report of {scanData.total_findings} vulnerabilities.
-                </p>
-              </div>
-
-              <Button
-                endContent={<Image src="/feedback.svg" width={20} height={20} alt="feedback" />}
-                onPress={handleSendFeedback}
-              >
-                Send Feedback
-              </Button>
-            </CardBody>
-          </Card>
-        )}
+        {isPaid && renderAlreadyPaid()}
       </main>
 
       <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
@@ -211,3 +237,17 @@ Thank you,
 };
 
 export default ScanResults;
+
+interface ScanStateMessageProps {
+  icon: React.ReactNode;
+  message: string;
+}
+
+const ScanStateMessage: React.FC<ScanStateMessageProps> = ({ icon, message }) => (
+  <div className="h-[calc(100%-6rem)]">
+    <div className="flex flex-col items-center justify-center h-full">
+      {icon}
+      <p className="mt-4 text-lg">{message}</p>
+    </div>
+  </div>
+);

@@ -9,7 +9,7 @@ from config import settings
 redis_client = redis.from_url(settings.REDIS_URL)
 
 
-def throttle(rate_limit_minutes: int = 5):
+def throttle(rate_limit_minutes: int = 1):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):

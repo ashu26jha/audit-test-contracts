@@ -10,7 +10,6 @@ const api = axios.create({
 });
 
 export const initiateGithubLogin = () => {
-  console.log("initiateGithubLogin", `${API_URL}/api/v1/auth/github-login`);
   if (typeof window !== "undefined") {
     window.location.href = `${API_URL}/api/v1/auth/github-login`;
   }
@@ -40,7 +39,6 @@ export const getRepositories = async (token: string, owner: string, ownerType: s
       Authorization: `Bearer ${token}`,
     },
   });
-  console.log("getRepositories", response.data);
   return response.data.data;
 };
 
@@ -141,7 +139,10 @@ export const sendPdfReport = async (token: string, scanId: string) => {
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       if (error.response.status === 429) {
-        return { success: false, message: "Too many requests. Please try again later." };
+        return {
+          success: false,
+          message: "You have to wait a minute before you can generate a new report. Please try again later.",
+        };
       }
     }
     return { success: false, message: (error as Error).message };
