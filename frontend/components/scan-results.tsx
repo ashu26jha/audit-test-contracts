@@ -131,7 +131,7 @@ Thank you,
         </div>
 
         <Button color="secondary" className="bg-[#8B5CF6] hover:bg-[#7C3AED]" onPress={handlePayment}>
-          Pay $20 via Stripe
+          Pay <s>$100</s> $20 via Stripe
         </Button>
       </CardBody>
     </Card>
