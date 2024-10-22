@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import clsx from "clsx";
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
@@ -28,6 +29,28 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  <Script
+    id="matomo-tracking"
+    strategy="afterInteractive"
+    dangerouslySetInnerHTML={{
+      __html: `
+      var _paq = window._paq = window._paq || [];
+      /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+      _paq.push(['trackPageView']);
+      _paq.push(['enableLinkTracking']);
+      (function () {
+        var u = "https://nethermind.matomo.cloud/";
+        _paq.push(['setTrackerUrl', u + 'matomo.php']);
+        _paq.push(['setSiteId', '5']);
+        var d = document, g = d.createElement('script'), s = d.getElementsByTagName('script')[0];
+        g.async = true;
+        g.src = 'https://cdn.matomo.cloud/nethermind.matomo.cloud/matomo.js';
+        s.parentNode.insertBefore(g, s);
+      })();
+    `,
+    }}
+  />;
+
   return (
     <html suppressHydrationWarning lang="en">
       <head />
