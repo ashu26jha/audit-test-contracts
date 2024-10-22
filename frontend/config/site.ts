@@ -1,9 +1,9 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Audit Agent",
+  name: "AuditAgent",
   description:
-    "Audit Agent - An intelligent AI-powered tool for conducting comprehensive audits and assessments across various domains, streamlining the audit process with advanced analytics and reporting capabilities.",
+    "AuditAgent - An intelligent AI-powered tool for conducting comprehensive audits and assessments across various domains, streamlining the audit process with advanced analytics and reporting capabilities.",
   navItems: [
     {
       label: "Home",
