@@ -64,6 +64,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
+        {/* TODO: Integrate with above script, currently better to have it separate */}
+        <Script
+          id="tag-manager"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              var _mtm = window._mtm = window._mtm || [];
+              _mtm.push({ 'mtm.startTime': (new Date().getTime()), 'event': 'mtm.Start' });
+              (function() {
+                var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+                g.async=true; g.src='https://cdn.matomo.cloud/nethermind.matomo.cloud/container_VPsOumJZ.js'; s.parentNode.insertBefore(g,s);
+              })();
+            `,
+          }}
+        />
       </body>
     </html>
   );
