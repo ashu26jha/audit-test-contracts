@@ -9,8 +9,6 @@ import { useRouter } from "next/navigation";
 import ScanCard from "@/components/ScanCard";
 import { useToast } from "@/hooks/useToast";
 
-declare let _paq: any;
-
 interface DashboardProps {
   scanHistory: ScanHistoryItem[];
   scanable: boolean;
@@ -29,8 +27,9 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
 
   const handleScan = () => {
     if (scanable) {
-      if (_paq != undefined) {
-        _paq.push(["trackEvent", "Repository", "Selection"]);
+      if (typeof window !== "undefined" && window._mtm != undefined) {
+        console.log("Tracking event: Repository Selection");
+        window._mtm.push({ event: "repository-selection" });
       }
       setShowStepper(true);
       // Trigger a refetch when starting a new scan
@@ -53,7 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
           <Button
             color="secondary"
             className="bg-[#8B5CF6] text-white"
-            onClick={() => handleScan()}
+            onClick={handleScan}
             startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20} />}
           >
             Scan Code

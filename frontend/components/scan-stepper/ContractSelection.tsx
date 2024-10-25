@@ -37,7 +37,7 @@ export const ContractSelection: React.FC = () => {
   }, [calculateTotalTokens, setTokens]);
 
   return (
-    <>
+    <div id="contract-selection" className="contract-selection">
       <div className="mb-4">
         <Input
           aria-label="Search contracts"
@@ -94,6 +94,6 @@ export const ContractSelection: React.FC = () => {
           Too many contracts selected! Please select fewer contracts to achieve better results.
         </p>
       )}
-    </>
+    </div>
   );
 };

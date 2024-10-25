@@ -18,8 +18,6 @@ import { RepositorySelection } from "./scan-stepper/RepositorySelection";
 import { StepperVisualization } from "./scan-stepper/StepperVisualization";
 import { MAX_TOKENS } from "../config/constants";
 
-declare let _paq: any;
-
 interface ScanStepperProps {
   setShowStepper: (show: boolean) => void;
 }
@@ -87,8 +85,8 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
 
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
-      if (_paq != undefined) {
-        _paq.push(["trackEvent", "Scan", "Started"]);
+      if (typeof window !== "undefined" && window._mtm != undefined) {
+        window._mtm.push({ event: "scan-started" });
       }
       if (tokens > MAX_TOKENS) {
         return;
@@ -111,11 +109,13 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
         });
       }
     } else {
-      if (_paq != undefined) {
+      if (typeof window !== "undefined" && window._mtm != undefined) {
         if (currentStep === 1) {
-          _paq.push(["trackEvent", "Branch", "Selection"]);
+          console.log("Tracking event: Branch Selection");
+          window._mtm.push({ event: "branch-selection" });
         } else if (currentStep === 2) {
-          _paq.push(["trackEvent", "Contract", "Selection"]);
+          console.log("Tracking event: Contract Selection");
+          window._mtm.push({ event: "contract-selection" });
         }
       }
       setCurrentStep(currentStep + 1);
@@ -128,15 +128,6 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       setShowStepper(false);
     }
     if (currentStep > 1) {
-      if (_paq != undefined) {
-        if (currentStep === 1) {
-          _paq.push(["trackEvent", "Back", "Dashboard"]);
-        } else if (currentStep === 2) {
-          _paq.push(["trackEvent", "Back", "Repository"]);
-        } else if (currentStep === 3) {
-          _paq.push(["trackEvent", "Back", "Branch"]);
-        }
-      }
       setCurrentStep(currentStep - 1);
     }
 
