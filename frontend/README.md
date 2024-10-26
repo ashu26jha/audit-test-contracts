@@ -13,7 +13,7 @@
 
 ## Introduction
 
-Agent Audit UI is the frontend component of the Yokai Audit Agent, a powerful tool designed for smart contract auditing and security analysis. This user interface provides an intuitive and efficient way for developers and auditors to interact with the Yokai Audit Agent's core functionality.
+AgentAudit UI is the frontend component of the Yokai AuditAgent, a powerful tool designed for smart contract auditing and security analysis. This user interface provides an intuitive and efficient way for developers and auditors to interact with the Yokai AuditAgent's core functionality.
 
 Key features of the Agent Audit UI include:
 
@@ -24,7 +24,7 @@ Key features of the Agent Audit UI include:
 5. Customizable audit parameters and settings
 6. Secure user authentication and project management
 
-The Agent Audit UI is built with modern web technologies to ensure a responsive, accessible, and performant experience across devices. It serves as the primary interface for users to leverage the advanced capabilities of the Yokai Audit Agent, streamlining the process of identifying and addressing potential vulnerabilities in smart contract code.
+The Agent Audit UI is built with modern web technologies to ensure a responsive, accessible, and performant experience across devices. It serves as the primary interface for users to leverage the advanced capabilities of the Yokai AuditAgent, streamlining the process of identifying and addressing potential vulnerabilities in smart contract code.
 
 ## Technologies Used
 

@@ -61,7 +61,7 @@ export const RepositorySelection: React.FC = () => {
   };
 
   return (
-    <>
+    <div id="repository-selection" className="repository-selection">
       <Select
         variant="bordered"
         label="Git Organization"
@@ -141,6 +141,6 @@ export const RepositorySelection: React.FC = () => {
         isInvalid={isInvalidURL}
         errorMessage={isInvalidURL ? "Invalid GitHub URL" : ""}
       />
-    </>
+    </div>
   );
 };
