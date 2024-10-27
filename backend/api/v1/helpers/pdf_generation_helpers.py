@@ -1,3 +1,5 @@
+from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlparse
 
 import bleach
@@ -8,6 +10,8 @@ from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.nl2br import Nl2BrExtension
 from markdown.extensions.sane_lists import SaneListExtension
 from playwright.async_api import async_playwright
+
+from common import logger
 
 
 def extract_organization_name(url):
@@ -37,30 +41,7 @@ def create_finding_section(
         f"""<span class="file-name">{file}</span>""" for file in contract_files
     )
 
-    # Convert markdown description to HTML with code highlighting and fenced code handling
-    description_html = markdown.markdown(
-        description,
-        extensions=[
-            FencedCodeExtension(),
-            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
-            SaneListExtension(),
-            Nl2BrExtension(),
-            AttrListExtension(),
-        ],
-    )
-
-    # Convert markdown issue title to HTML
-    issue_title_html = markdown.markdown(
-        issue_title,
-        extensions=[
-            FencedCodeExtension(),
-            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
-            Nl2BrExtension(),
-            AttrListExtension(),
-        ],
-    )
-
-    # Sanitize the HTML output
+    # Update allowed tags to include 'br'
     allowed_tags = bleach.ALLOWED_TAGS.union(
         {
             "p",
@@ -77,28 +58,59 @@ def create_finding_section(
             "ul",
             "ol",
             "li",
-            "em",  # Allow emphasis tag
-            "strong",  # Allow strong tag
+            "em",
+            "strong",
             "table",
             "tr",
             "td",
             "th",
+            "br",  # Add br tag to allowed tags
         }
     )
     allowed_attributes = bleach.sanitizer.ALLOWED_ATTRIBUTES.copy()
-    allowed_attributes.update(
-        {
-            "*": ["class", "style"],  # Allow class and style on all tags
-        }
-    )
-    description_html = bleach.clean(
-        description_html, tags=allowed_tags, attributes=allowed_attributes
-    )
-    issue_title_html = bleach.clean(
-        issue_title_html, tags=allowed_tags, attributes=allowed_attributes
+
+    # Convert markdown description to HTML with code highlighting and fenced code handling
+    description_html = markdown.markdown(
+        description,
+        extensions=[
+            FencedCodeExtension(),
+            CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
+            SaneListExtension(),
+            Nl2BrExtension(),
+            AttrListExtension(),
+        ],
     )
 
-    return f"""
+    # Clean the HTML while preserving allowed tags
+    description_html = bleach.clean(
+        description_html,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        strip=True,  # Strip invalid tags instead of escaping
+    )
+
+    # Same for issue title
+    issue_title_html = markdown.markdown(
+        issue_title,
+        extensions=[
+            FencedCodeExtension(),
+            CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
+            Nl2BrExtension(),
+            AttrListExtension(),
+        ],
+    )
+    issue_title_html = bleach.clean(
+        issue_title_html,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        strip=True,
+    )
+
+    # Add the custom class to all paragraphs in the issue title
+    issue_title_html = issue_title_html.replace("<p>", '<p class="finding-issue-text">')
+
+    # Store the final HTML content
+    final_html = f"""
     <div class="findings-section">
       <div class="finding-header">
         <div class="info-row">
@@ -144,16 +156,53 @@ def create_finding_section(
     </div>
     """
 
+    # Save HTML content for debugging
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+    debug_dir = BASE_DIR / "config" / "template" / "debug"
+
+    # Create debug directory if it doesn't exist
+    debug_dir.mkdir(exist_ok=True)
+
+    # Create a timestamp for the filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    debug_file = debug_dir / f"finding_{index}_{timestamp}.html"
+
+    # Write the HTML content with proper HTML structure
+    debug_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Finding {index} Debug</title>
+        <link href="../styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        {final_html}
+    </body>
+    </html>
+    """
+
+    try:
+        with open(debug_file, "w", encoding="utf-8") as f:
+            f.write(debug_html)
+        logger.info(f"Debug HTML saved to {debug_file}")
+    except Exception as e:
+        logger.error(f"Failed to save debug HTML: {str(e)}")
+
+    return final_html
+
 
 async def html_to_pdf(html_file, pdf_file):
     async with async_playwright() as p:
         browser = await p.chromium.launch()
         page = await browser.new_page()
 
-        await page.goto(f"file://{html_file}")
+        # Set viewport width larger to accommodate code
+        await page.set_viewport_size({"width": 1200, "height": 800})
 
+        await page.goto(f"file://{html_file}")
         await page.wait_for_load_state("networkidle")
-        # Optionally wait for a short time to ensure page is fully rendered
+
+        # Ensure styles are loaded
         await page.wait_for_timeout(1000)
 
         pdf_options = {
@@ -162,6 +211,7 @@ async def html_to_pdf(html_file, pdf_file):
             "print_background": True,
             "display_header_footer": False,
             "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
+            "prefer_css_page_size": True,
         }
 
         await page.pdf(**pdf_options)

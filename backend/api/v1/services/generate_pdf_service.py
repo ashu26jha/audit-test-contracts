@@ -124,7 +124,7 @@ async def create_report_html(report_data):
         report_data["summary"],
         extensions=[
             FencedCodeExtension(),  # Add this extension here as well
-            CodeHiliteExtension(linenums=False, css_class="highlight", pygments_style="default"),
+            CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
             SaneListExtension(),
             Nl2BrExtension(),
             AttrListExtension(),
