@@ -83,6 +83,7 @@ class ScanResult(Document):
     type: Optional[Profiles]
     total_findings: int = Field(default=0)
     findings: List[Finding] = Field(default_factory=list)
+    findings_before_removal: Optional[List[Finding]] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -98,6 +99,15 @@ class ScanResult(Document):
                 "type": "DEFAULT",
                 "total_findings": 1,
                 "findings": [
+                    {
+                        "Issue": "Reentrancy Vulnerability",
+                        "Severity": "High",
+                        "Contracts": ["MyContract.sol"],
+                        "Description": "Potential reentrancy in function withdraw().",
+                        "Recommendation": "Use mutex or check-effects-interactions pattern.",
+                    }
+                ],
+                "findings_before_removal": [
                     {
                         "Issue": "Reentrancy Vulnerability",
                         "Severity": "High",

@@ -196,17 +196,22 @@ async def perform_audit_agent_background(
         detectors: Dict[str, Optional[bool]] = {}
 
         # Prepare profiles and models
-        profiles = [Profiles.DEFAULT, Profiles.DEFAULT]
+        profiles = [Profiles.DEFAULT, Profiles.DEFAULT_2]
         models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2]
 
         # Generate detector names for context scans
         context_scan_detector_names = []
         detector_counter = 1
-        for _ in profiles:
-            for _ in models:
+        context_scan_configs = []  # Add this line
+        for profile in profiles:
+            for model in models:
                 detector_name = f"context_scan_{detector_counter}"
-                detectors[detector_name] = None  # Initialize as None (not started)
+                detectors[detector_name] = None
                 context_scan_detector_names.append(detector_name)
+                # Store configuration for each scan
+                context_scan_configs.append(
+                    {"detector_name": detector_name, "profile": profile, "model": model}
+                )
                 detector_counter += 1
 
         # Save initial detectors to scan
@@ -222,15 +227,15 @@ async def perform_audit_agent_background(
             )
         except Exception as e:
             logger.error(f"Failed to set up environment: {str(e)}")
-            setup_result = None  # Explicitly set to None if setup failed
+            setup_result = None
 
         # Initialize static analyzer and fuzzer detectors
         if setup_result:
             scan.detectors["static_analyzer"] = None  # Not started
             scan.detectors["fuzzer"] = None  # Not started
         else:
-            scan.detectors["static_analyzer"] = None  # Not applicable
-            scan.detectors["fuzzer"] = None  # Not applicable
+            scan.detectors["static_analyzer"] = None  # Not started
+            scan.detectors["fuzzer"] = None  # Not started
         await scan.save()
 
         # Start summary generation task
@@ -270,9 +275,7 @@ async def perform_audit_agent_background(
             detected_type = Profiles.NONE
 
         detected_profile = (
-            Profiles[detected_type.upper()]
-            if detected_type.upper() in Profiles.__members__
-            else Profiles.DEFAULT
+            detected_type if isinstance(detected_type, Profiles) else Profiles.DEFAULT
         )
 
         # Start context scan tasks
@@ -281,42 +284,52 @@ async def perform_audit_agent_background(
         detector_index = 0
         for profile in profiles:
             for model in models:
+                # Add timeout to context scan tasks
                 task = asyncio.create_task(
-                    context_scan_service.perform_context_scan(
-                        summary_result, flattened_contracts, profile, model
+                    asyncio.wait_for(
+                        context_scan_service.perform_context_scan(
+                            summary_result, flattened_contracts, profile, model
+                        ),
+                        timeout=480,  # 8 minutes timeout
                     )
                 )
                 context_scan_tasks.append(task)
                 task_detector_names.append(context_scan_detector_names[detector_index])
                 detector_index += 1
 
-        # Gather tasks to await
+        # Gather tasks to await with timeout handling
         tasks_to_await = context_scan_tasks
         if static_analysis_task:
             tasks_to_await.append(static_analysis_task)
         if fuzzing_task:
             tasks_to_await.append(fuzzing_task)
 
-        # Await all tasks concurrently, handling exceptions individually
+        # Use asyncio.gather with return_exceptions=True to handle timeouts
         results = await asyncio.gather(*tasks_to_await, return_exceptions=True)
 
         # Initialize findings list
         combined_findings = []
-
-        # Process results
         result_index = 0
 
         # Handle context scan results
-        for detector_name in task_detector_names:
+        for idx, detector_name in enumerate(task_detector_names):
             context_scan_result = results[result_index]
             result_index += 1
-            if isinstance(context_scan_result, Exception):
-                logger.error(f"{detector_name} failed: {context_scan_result}")
-                context_scan_result = []
-                scan.detectors[detector_name] = False  # Update detector status to False (failed)
+            config = context_scan_configs[idx]  # Get the configuration for this scan
+            if isinstance(context_scan_result, (Exception, asyncio.TimeoutError)):
+                logger.error(
+                    f"Context scan failed or timed out - Detector: {detector_name}, "
+                    f"Profile: {config['profile']}, Model: {config['model']}, "
+                    f"Error: {context_scan_result}"
+                )
+                scan.detectors[detector_name] = False
             else:
+                logger.info(
+                    f"Context scan completed successfully - Detector: {detector_name}, "
+                    f"Profile: {config['profile']}, Model: {config['model']}"
+                )
                 combined_findings.extend(context_scan_result)
-                scan.detectors[detector_name] = True  # Update detector status to True (succeeded)
+                scan.detectors[detector_name] = True
             await scan.save()
 
         # Handle static analysis result
@@ -390,6 +403,7 @@ async def perform_audit_agent_background(
         scan_result.type = detected_profile
         scan_result.total_findings = total_findings_after_dedup
         scan_result.findings = dedup_findings
+        scan_result.findings_before_removal = combined_findings
         await scan_result.save()
 
         # Update scan status to 'completed' and include total_findings
@@ -418,7 +432,9 @@ async def perform_audit_agent_background(
         scan_result.type = Profiles.NONE
         scan_result.total_findings = 0
         scan_result.findings = []
+        scan_result.findings_before_removal = []
         await scan_result.save()
+
         # Update scan detectors if the entire scan failed
         scan.detectors = {key: False for key in scan.detectors.keys()}
         await scan.save()

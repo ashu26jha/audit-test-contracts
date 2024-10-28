@@ -36,6 +36,17 @@ def create_finding_section(
         f"""<span class="file-name">{file}</span>""" for file in contract_files
     )
 
+    # Get the severity text based on chip number
+    severity_text_map = {
+        "chip1": "Critical",
+        "chip2": "High Risk",
+        "chip3": "Medium Risk",
+        "chip4": "Low Risk",
+        "chip5": "Info",
+        "chip6": "Best Practices",
+    }
+    severity_text = severity_text_map.get(risk_level, "Unknown")
+
     # Convert markdown description to HTML with code highlighting and fenced code handling
     description_html = markdown.markdown(
         description,
@@ -94,8 +105,9 @@ def create_finding_section(
         <span class="finding-issue">
           {issue_title_html}
         </span>
-        <div class="severity-chip">
-          <img src="public/{risk_level}.svg" />
+        <div class="severity-chip {risk_level}">
+          <span class="elipsis"></span>
+          <span class="severity-text">{severity_text}</span>
         </div>
       </div>
 

@@ -224,32 +224,75 @@ body {
   color: var(--color-accent);
 }
 
-.severity-chip {
-  border-radius: 4px;
-  width: auto;
-  margin-right: 12px;
-  transform: scale(1.2);
+.elipsis {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  background-color: currentColor;
+  flex-shrink: 0;
 }
 
-/* Severity Chip Colors */
+.severity-chip {
+  padding: 10px 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: fit-content;
+  height: 28px;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.severity-chip .severity-text {
+  font-size: 0.9em;
+  font-weight: 600;
+  font-family: Inter, sans-serif;
+  white-space: nowrap;
+}
+
+/* Severity Colors with lighter backgrounds */
 .chip1 {
-  background-color: #dc3545; /* Critical */
+  background-color: rgba(203, 12, 138, 0.25); /* Critical */
 }
+.chip1 .severity-text {
+  color: #a00b6e;
+}
+
 .chip2 {
-  background-color: #fd7e14; /* High */
+  background-color: rgba(247, 62, 62, 0.2); /* High */
 }
+.chip2 .severity-text {
+  color: #df0505;
+}
+
 .chip3 {
-  background-color: #ffc107; /* Medium */
-  color: black;
+  background-color: rgba(238, 232, 28, 0.5); /* Medium Risk - Yellow */
 }
+.chip3 .severity-text {
+  color: #99840d;
+}
+
 .chip4 {
-  background-color: #28a745; /* Low */
+  background-color: rgba(169, 169, 169, 0.25); /* Low Risk - Gray */
 }
+.chip4 .severity-text {
+  color: #746f6f;
+}
+
 .chip5 {
-  background-color: #17a2b8; /* Info */
+  background-color: rgba(16, 102, 231, 0.25); /* Info */
 }
+.chip5 .severity-text {
+  color: #1762b8;
+}
+
 .chip6 {
-  background-color: #6c757d; /* Best Practices */
+  background-color: rgba(40, 167, 69, 0.25); /* Best Practices */
+}
+.chip6 .severity-text {
+  color: #149760;
 }
 
 /* Miscellaneous */

@@ -63,7 +63,8 @@ async def get_fuzz_test(
             logger.info("Fuzz test generated and compiled successfully.")
             return fuzz_test, None  # Success
         except CompilationError as ce:
-            logger.warning(f"Compilation failed on attempt {attempt}: {str(ce)}")
+            # logger.warning(f"Compilation failed on attempt {attempt}: {str(ce)}")
+            logger.warning(f"Compilation failed on attempt {attempt}.")
             if attempt == MAX_RETRIES:
                 logger.error("Max retries reached. Failed to generate a valid fuzz test.")
                 return "", str(ce)
@@ -131,7 +132,8 @@ async def validate_and_compile_fuzz_test(
     compilation_error = await save_and_compile_fuzz_test(fuzz_test, project_dir)
 
     if compilation_error:
-        logger.warning(f"Compilation error detected: {compilation_error}")
+        # logger.warning(f"Compilation error detected: {compilation_error}")
+        logger.warning("Compilation error detected.")
         logger.info("Attempting to fix and validate the fuzz test.")
         try:
             fixed_fuzz_test = await validate_fuzz_test(
@@ -186,7 +188,8 @@ async def save_and_compile_fuzz_test(fuzz_test: str, project_dir: str) -> Option
         logger.info("Fuzz test compiled successfully.")
         return None  # No compilation error
     except Exception as e:
-        logger.exception(f"Error in save_and_compile_fuzz_test: {str(e)}")
+        # logger.exception(f"Error in save_and_compile_fuzz_test: {str(e)}")
+        logger.exception("Error in save_and_compile_fuzz_test")
         # Extract relevant error information
         error_message = str(e)
         parsed_error = parse_compilation_error(error_message)
