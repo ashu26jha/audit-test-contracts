@@ -11,7 +11,7 @@ code {
   background-color: var(--color-background);
   line-height: 125%;
   border-radius: 4px;
-  font-size: 85%;
+  font-size: 80%;
 }
 
 /* Inline code specific */
@@ -33,16 +33,21 @@ pre code {
   word-wrap: break-word;
   overflow-wrap: break-word;
   font-size: 0.85em;
-  line-height: 1.4;
+  line-height: 1.6;
   max-width: 100%;
+  display: block;
+  tab-size: 4;
+  -moz-tab-size: 4;
 }
 
 /* Block-level <pre> tag */
 pre {
   background-color: var(--color-background);
   border: 1px solid #e1e1e8;
-  padding: 10px;
+  padding: 5px;
   border-radius: 4px;
+  position: relative;
+
   /* Add print-specific styling */
   @media print {
     break-inside: avoid;

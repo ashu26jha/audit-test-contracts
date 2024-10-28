@@ -59,18 +59,10 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
         }
 
         html_content = await create_report_html(report_data)
-        # Write the HTML content to a file for inspection
-        html_output_path = TEMPLATE_DIR / f"report_{scan.scan_number}.html"
-        with open(html_output_path, "w", encoding="utf-8") as html_file:
-            html_file.write(html_content)
-        logger.info(f"HTML content written to {html_output_path} for inspection.")
-
         pdf_filename = f"audit_agent_report_{scan.scan_number}.pdf"
         report_pdf_path = await generate_pdf(html_content, pdf_filename)
-
         final_pdf_path = combine_pdfs(report_pdf_path)
 
-        # Send the PDF via email to the user and the address in settings.py
         await send_pdf_email(user.email, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)

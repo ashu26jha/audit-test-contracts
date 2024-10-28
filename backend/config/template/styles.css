@@ -216,7 +216,7 @@ body {
 }
 
 .finding-description {
-  padding: 10px;
+  padding: 0px 10px 10px 10px;
 }
 
 .description-text {
@@ -225,9 +225,9 @@ body {
 }
 
 .severity-chip {
-  padding: 2px 4px;
   border-radius: 4px;
-  margin-left: 35px;
+  width: auto;
+  margin-right: 12px;
   transform: scale(1.2);
 }
 

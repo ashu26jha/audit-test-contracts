@@ -5,6 +5,7 @@ Your output should be the same list of the same length as the input with the sam
 
 **Additional Considerations:**
 - Make sure to remove all URLs links from the description. There should be no links in the final output as the generatedpath will not match the actual path. You can keep the line number and the function or variable name, but make sure to remove any links.
+- Do not repeat the title of the issue (the issue field) in the description.
 
 **Vulnerabilities list:**
 {vulnerabilities}
