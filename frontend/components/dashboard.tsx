@@ -21,14 +21,12 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
   const router = useRouter();
 
   const handleScanClick = (scanId: string) => {
-    console.log("handleScanClick called with scanId:", scanId);
     router.push(`/scan-results/${scanId}`);
   };
 
   const handleScan = () => {
     if (scanable) {
       if (typeof window !== "undefined" && window._mtm != undefined) {
-        console.log("Tracking event: Repository Selection");
         window._mtm.push({ event: "repository-selection" });
       }
       setShowStepper(true);

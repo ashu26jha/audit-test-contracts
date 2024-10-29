@@ -16,7 +16,6 @@ import { BranchSelection } from "./scan-stepper/BranchSelection";
 import { ContractSelection } from "./scan-stepper/ContractSelection";
 import { RepositorySelection } from "./scan-stepper/RepositorySelection";
 import { StepperVisualization } from "./scan-stepper/StepperVisualization";
-import { MAX_TOKENS } from "../config/constants";
 
 interface ScanStepperProps {
   setShowStepper: (show: boolean) => void;
@@ -34,7 +33,8 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
     selectedContracts,
     isLoading,
     repositoryURL,
-    tokens,
+    isLineExceeded,
+    isFileLimitExceeded,
     setCurrentStep,
     setIsLoading,
     setIsNextEnabled,
@@ -88,9 +88,6 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       if (typeof window !== "undefined" && window._mtm != undefined) {
         window._mtm.push({ event: "scan-started" });
       }
-      if (tokens > MAX_TOKENS) {
-        return;
-      }
       setIsLoading(true);
       try {
         if (token) {
@@ -111,10 +108,8 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
     } else {
       if (typeof window !== "undefined" && window._mtm != undefined) {
         if (currentStep === 1) {
-          console.log("Tracking event: Branch Selection");
           window._mtm.push({ event: "branch-selection" });
         } else if (currentStep === 2) {
-          console.log("Tracking event: Contract Selection");
           window._mtm.push({ event: "contract-selection" });
         }
       }
@@ -151,7 +146,10 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
           <Button
             color="secondary"
             className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3]"
-            disabled={!useScanStepperStore.getState().isNextEnabled}
+            disabled={
+              !useScanStepperStore.getState().isNextEnabled ||
+              (currentStep === STEPS.length && (isLineExceeded || isFileLimitExceeded))
+            }
             endContent={<ArrowRight size={20} />}
             onClick={handleScan}
           >
@@ -163,7 +161,7 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       <main className="flex-grow p-8 overflow-y-auto">
         <StepperVisualization />
 
-        <div className="max-w-2xl mx-auto mt-4 flex flex-col gap-4">
+        <div className="max-w-5xl mx-auto mt-4 flex flex-col gap-4">
           {currentStep === 1 && <RepositorySelection />}
           {currentStep === 2 && <BranchSelection />}
           {currentStep === 3 && <ContractSelection />}
