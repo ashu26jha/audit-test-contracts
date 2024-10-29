@@ -14,8 +14,9 @@ interface ScanStepperState {
   isNextEnabled: boolean;
   contractSearch: string;
   repositoryURL: string;
-  tokens: number;
   isSolidityFilesLoading: boolean;
+  isLineExceeded: boolean;
+  isFileLimitExceeded: boolean;
   setCurrentStep: (step: number) => void;
   setSelectedOwner: (owner: Owner | null) => void;
   setSelectedRepo: (repo: Repository | null) => void;
@@ -29,8 +30,9 @@ interface ScanStepperState {
   setIsLoading: (isLoading: boolean) => void;
   setIsNextEnabled: (isEnabled: boolean) => void;
   setRepositoryURL: (url: string) => void;
-  setTokens: (tokens: number) => void;
   setIsSolidityFilesLoading: (isLoaded: boolean) => void;
+  setIsLineExceeded: (isLineExceeded: boolean) => void;
+  setIsFileLimitExceeded: (isLineExceeded: boolean) => void;
   resetStepper: () => void;
 }
 
@@ -48,8 +50,9 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   isNextEnabled: false,
   contractSearch: "",
   repositoryURL: "",
-  tokens: 0,
   isSolidityFilesLoading: false,
+  isLineExceeded: false,
+  isFileLimitExceeded: false,
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedOwner: (owner) => set({ selectedOwner: owner }),
   setSelectedRepo: (repo) => set({ selectedRepo: repo }),
@@ -63,8 +66,9 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsNextEnabled: (isEnabled) => set({ isNextEnabled: isEnabled }),
   setRepositoryURL: (url) => set({ repositoryURL: url }),
-  setTokens: (tokens) => set({ tokens }),
   setIsSolidityFilesLoading: (isLoaded) => set({ isSolidityFilesLoading: isLoaded }),
+  setIsLineExceeded: (isLineExceeded) => set({ isLineExceeded }),
+  setIsFileLimitExceeded: (isLineExceeded) => set({ isFileLimitExceeded: isLineExceeded }),
   resetStepper: () =>
     set({
       currentStep: 1,
