@@ -4,8 +4,8 @@ import React, { useCallback } from "react";
 import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from "@nextui-org/react";
 import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
-import { HelpGuide } from "./HelpGuide";
 
+import { HelpGuide } from "./HelpGuide";
 import { MAX_FILES, MAX_LINES } from "../../config/constants";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 

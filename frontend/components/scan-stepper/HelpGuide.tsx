@@ -1,7 +1,9 @@
 import React, { useEffect } from "react";
+
 import { Progress, Divider } from "@nextui-org/react";
-import { useScanStepperStore } from "../../store/scanStepperStore";
 import Image from "next/image";
+
+import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const HelpGuide: React.FC<{
   selectedLines: number;
