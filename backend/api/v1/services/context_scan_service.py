@@ -1,3 +1,4 @@
+import time
 from typing import List, Optional
 
 from fastapi import HTTPException
@@ -24,10 +25,8 @@ async def perform_context_scan(
     """
     Performs a context scan using an LLM and returns structured findings as a list.
     """
-    # Determine if system prompt should be used
     system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
 
-    # Select the appropriate prompt based on the presence of a summary
     prompt = (
         CONTEXT_PROMPT_WITH_SUMMARY.format(summary=summary, flattened_contracts=contracts)
         if summary
@@ -35,7 +34,8 @@ async def perform_context_scan(
     )
 
     try:
-        message_history = load_profile(Profiles.DEFAULT)
+        message_history = load_profile(profile)
+        start_time = time.time()
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
             send_prompt_to_llm_async,
             model,
@@ -44,12 +44,12 @@ async def perform_context_scan(
             message_history,
             ContextScanResponse,
         )
+        elapsed = time.time() - start_time
+        logger.info(f"LLM response time: {elapsed:.2f}s for model {model}")
 
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
             logger.warning("LLM response was empty or invalid")
             raise HTTPException(status_code=500, detail="Internal Server Error")
-
-        logger.info(f"Context scan completed successfully with {model}")
 
         return llm_response.findings
 

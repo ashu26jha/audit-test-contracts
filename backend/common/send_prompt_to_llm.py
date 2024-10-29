@@ -1,8 +1,11 @@
+import time
+from asyncio import Semaphore
+from datetime import datetime, timedelta
 from typing import List, Optional, Type, TypeVar
 
-from fastapi import HTTPException
-
 # from langfuse.decorators import langfuse_context
+import httpx
+from fastapi import HTTPException
 from openai import AsyncOpenAI, OpenAIError
 from pydantic import BaseModel
 
@@ -11,9 +14,45 @@ from common.llm_clients import CLAUDE_CLIENT
 
 # Import the helper function
 from common.parse_llm_response import parse_model_response
+from common.token_count import count_tokens
 from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
 
+# Limit concurrent OpenAI requests
+OPENAI_SEMAPHORE = Semaphore(3)  # Adjust number based on your rate limits
+
 T = TypeVar("T", bound=BaseModel)
+
+
+class CircuitBreaker:
+    def __init__(self):
+        self.failures = 0
+        self.last_failure = None
+        self.is_open = False
+
+    def record_failure(self):
+        self.failures += 1
+        self.last_failure = datetime.now()
+        if self.failures >= 3:  # Open circuit after 3 failures
+            self.is_open = True
+
+    def can_try(self):
+        if not self.is_open:
+            return True
+        if datetime.now() - self.last_failure > timedelta(seconds=30):
+            self.reset()
+            return True
+        return False
+
+    def reset(self):
+        self.failures = 0
+        self.is_open = False
+
+
+# Create circuit breakers for each model
+MODEL_CIRCUIT_BREAKERS = {
+    "o1-mini": CircuitBreaker(),
+    "o1-preview": CircuitBreaker(),
+}
 
 
 async def send_prompt_to_llm_async(
@@ -36,33 +75,48 @@ async def send_prompt_to_llm_async(
     Returns:
         Optional[T]: The structured response from the LLM as an instance of response_model or raw string if no model is provided.
     """
+    start_time = time.time()
+    logger.info(f"Starting LLM request to {model_type}")
+
     if message_history is None:
         message_history = []
 
     try:
         messages = build_messages(model_type, user_input, system_prompt, message_history)
+        logger.debug(f"Message length: {count_tokens(str(messages))} tokens")
 
         if model_type in SUPPORTED_MODELS["openai"]:
-            async with AsyncOpenAI() as client:
-                if response_model and model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
-                    # Use OpenAI's parse method for models that support strict output
-                    response = await client.beta.chat.completions.parse(
-                        model=model_type,
-                        messages=messages,
-                        response_format=response_model,
-                    )
-                    # Access the parsed response
-                    structured_response: Optional[T] = response.choices[0].message.parsed
-                    return structured_response
-                else:
-                    # Models that don't support strict output
-                    response = await client.chat.completions.create(
-                        model=model_type,
-                        messages=messages,
-                    )
-                    content = response.choices[0].message.content.strip()
-                    structured_response = parse_model_response(content, response_model)
-                    return structured_response
+            async with OPENAI_SEMAPHORE:
+                timeout = httpx.Timeout(
+                    240.0, connect=5.0
+                )  # 240s total timeout, 5s connect timeout
+
+                async with AsyncOpenAI(timeout=timeout) as client:
+                    try:
+                        if response_model and model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
+                            logger.debug(f"Using OpenAI parse method for {model_type}")
+                            response = await client.beta.chat.completions.parse(
+                                model=model_type,
+                                messages=messages,
+                                response_format=response_model,
+                            )
+                            structured_response: Optional[T] = response.choices[0].message.parsed
+                        else:
+                            logger.debug(f"Using standard completion for {model_type}")
+                            response = await client.chat.completions.create(
+                                model=model_type,
+                                messages=messages,
+                            )
+                            content = response.choices[0].message.content.strip()
+                            structured_response = parse_model_response(content, response_model)
+
+                        elapsed = time.time() - start_time
+                        logger.info(f"OpenAI API call completed in {elapsed:.2f}s for {model_type}")
+                        return structured_response
+                    except OpenAIError as e:
+                        if "rate_limit" in str(e).lower():
+                            logger.error(f"Rate limit hit for {model_type}: {e}")
+                        raise
 
         elif model_type in SUPPORTED_MODELS["anthropic"]:
             response = CLAUDE_CLIENT.messages.create(

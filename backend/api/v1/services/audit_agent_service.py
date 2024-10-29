@@ -14,10 +14,9 @@ from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
 from api.v1.schemas.fuzzer_schema import SetupResult
-from api.v1.services import (
+from api.v1.services import (  # fuzzing_service,
     context_scan_service,
     flatten_contracts_service,
-    fuzzing_service,
     generate_summary_service,
     lines_of_code_service,
     scan_history_service,
@@ -255,15 +254,15 @@ async def perform_audit_agent_background(
                     setup_result,
                 )
             )
-            fuzzing_task = asyncio.create_task(
-                fuzzing_service.run_fuzzer(
-                    repositoryURL,
-                    access_token,
-                    selected_contracts,
-                    flattened_contracts,
-                    setup_result,
-                )
-            )
+            # fuzzing_task = asyncio.create_task(
+            #     fuzzing_service.run_fuzzer(
+            #         repositoryURL,
+            #         access_token,
+            #         selected_contracts,
+            #         flattened_contracts,
+            #         setup_result,
+            #     )
+            # )
         else:
             logger.warning("Skipping static analysis and fuzzing due to setup failure.")
 
@@ -278,19 +277,26 @@ async def perform_audit_agent_background(
             detected_type if isinstance(detected_type, Profiles) else Profiles.DEFAULT
         )
 
+        # Extract contract names from selected contracts
+        selected_contract_names = {contract.split("/")[-1] for contract in selected_contracts}
+
         # Start context scan tasks
         context_scan_tasks = []
         task_detector_names = []
         detector_index = 0
+
+        # Add delay between task starts to avoid rate limits
         for profile in profiles:
             for model in models:
-                # Add timeout to context scan tasks
+                await asyncio.sleep(1)  # Small delay between task starts
+                logger.info(f"Starting context scan with {model} for profile {profile}")
+
                 task = asyncio.create_task(
                     asyncio.wait_for(
                         context_scan_service.perform_context_scan(
                             summary_result, flattened_contracts, profile, model
                         ),
-                        timeout=480,  # 8 minutes timeout
+                        timeout=300,  # 5 minutes timeout
                     )
                 )
                 context_scan_tasks.append(task)
@@ -357,6 +363,13 @@ async def perform_audit_agent_background(
                 combined_findings.extend(fuzzing_findings)
                 scan.detectors["fuzzer"] = True
             await scan.save()
+
+        # Filter findings to only include those in selected contracts
+        combined_findings = [
+            finding
+            for finding in combined_findings
+            if any(contract in selected_contract_names for contract in finding.Contracts)
+        ]
 
         # Remove duplicates from combined findings
         dedup_findings = await duplicates.remove_duplicates(combined_findings)

@@ -179,5 +179,5 @@ async def compile_project(temp_dir: str) -> None:
     returncode, stdout, stderr = await run_command(FORGE_BUILD_COMMAND, temp_dir)
     if returncode != 0:
         # logger.error(f"Forge compilation failed. Stdout: {stdout}, Stderr: {stderr}")
-        raise ValueError(f"Forge compilation failed: {stderr}")
+        raise ValueError("Forge compilation failed")
     logger.info("Project compiled successfully")

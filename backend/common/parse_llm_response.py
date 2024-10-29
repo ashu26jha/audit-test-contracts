@@ -110,6 +110,7 @@ def extract_json(text: str) -> Optional[str]:
 
 def try_parse_json(json_str: str) -> Optional[Union[dict, list]]:
     # Attempt to parse JSON content, trying several strategies
+
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
@@ -132,6 +133,45 @@ def _clean_invalid_json(raw_json: str) -> str:
 
     # Remove extra commas before closing brackets
     raw_json = re.sub(r",\s*(\]|\})", r"\1", raw_json)
+
+    # Fix escaped quotes within JSON strings - look for (`""`) pattern
+    raw_json = re.sub(r'\(`""\`\)', '("")', raw_json)
+    raw_json = re.sub(r'\(`"([^"]*)"\`\)', r'("\1")', raw_json)
+
+    # Handle markdown code blocks within JSON strings
+    def replace_code_block(match):
+        # Properly escape the code block content
+        code = match.group(1)
+        # Normalize newlines
+        code = code.replace("\r\n", "\n").replace("\r", "\n")
+        # Escape backslashes and quotes
+        code = code.replace("\\", "\\\\").replace('"', '\\"')
+        # Replace newlines with \n
+        code = code.replace("\n", "\\n")
+        return f"\\n```solidity\\n{code}\\n```\\n"
+
+    # First normalize all newlines in the entire JSON
+    raw_json = raw_json.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Replace markdown code blocks before JSON parsing
+    raw_json = re.sub(r"```solidity(.*?)```", replace_code_block, raw_json, flags=re.DOTALL)
+
+    # Properly escape remaining newlines in string values
+    def escape_string_content(match):
+        content = match.group(1)
+        if "```" not in content:  # Don't process content that might contain code blocks
+            content = content.replace("\n", "\\n")
+        return f'": "{content}'
+
+    raw_json = re.sub(r'": "(.*?)"(?=,|\})', escape_string_content, raw_json, flags=re.DOTALL)
+
+    # Fix unclosed recommendation strings containing code blocks
+    raw_json = re.sub(
+        r'"Recommendation": "(.*?)(?=},|\])',
+        lambda m: f'"Recommendation": "{m.group(1)}"',
+        raw_json,
+        flags=re.DOTALL,
+    )
 
     # Replace single quotes with double quotes cautiously
     raw_json = re.sub(r"(?<=[:\s])'([^']*)'", r'"\1"', raw_json)

@@ -24,6 +24,10 @@ body {
   box-sizing: border-box;
 }
 
+/* ************************************************* */
+/*                    PDF Layout                     */
+/* ************************************************* */
+
 .a4-container {
   width: 210mm;
   min-height: 297mm;
@@ -79,7 +83,10 @@ body {
   }
 }
 
-/* Info Section */
+/* ************************************************* */
+/*                INFO & STATS SECTION              */
+/* ************************************************* */
+
 .info-container {
   width: 100%;
   padding: 0 3mm;
@@ -163,7 +170,18 @@ body {
   gap: 6px;
 }
 
-/* Findings Section */
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 3px;
+}
+
+/* ************************************************* */
+/*                 FINDINGS SECTION                  */
+/* ************************************************* */
+
 .findings-container {
   page-break-before: always;
   margin-top: 0;
@@ -224,6 +242,10 @@ body {
   color: var(--color-accent);
 }
 
+/* ************************************************* */
+/*                  SEVERITY CHIPS                   */
+/* ************************************************* */
+
 .elipsis {
   width: 6px;
   height: 6px;
@@ -252,54 +274,50 @@ body {
   white-space: nowrap;
 }
 
-/* Severity Colors with lighter backgrounds */
+/* Critical - Purple */
 .chip1 {
-  background-color: rgba(203, 12, 138, 0.25); /* Critical */
+  background-color: rgba(203, 12, 138, 0.25);
 }
 .chip1 .severity-text {
   color: #a00b6e;
 }
 
+/* High - Red*/
 .chip2 {
-  background-color: rgba(247, 62, 62, 0.2); /* High */
+  background-color: rgba(247, 62, 62, 0.2);
 }
 .chip2 .severity-text {
   color: #df0505;
 }
 
+/* Medium Risk - Yellow */
 .chip3 {
-  background-color: rgba(238, 232, 28, 0.5); /* Medium Risk - Yellow */
+  background-color: rgba(238, 232, 28, 0.5);
 }
 .chip3 .severity-text {
   color: #99840d;
 }
 
+/* Low Risk - Gray */
 .chip4 {
-  background-color: rgba(169, 169, 169, 0.25); /* Low Risk - Gray */
+  background-color: rgba(169, 169, 169, 0.25);
 }
 .chip4 .severity-text {
   color: #746f6f;
 }
 
+/* Info - Blue */
 .chip5 {
-  background-color: rgba(16, 102, 231, 0.25); /* Info */
+  background-color: rgba(16, 102, 231, 0.25);
 }
 .chip5 .severity-text {
   color: #1762b8;
 }
 
+/* Best Practices - Green */
 .chip6 {
-  background-color: rgba(40, 167, 69, 0.25); /* Best Practices */
+  background-color: rgba(40, 167, 69, 0.25);
 }
 .chip6 .severity-text {
   color: #149760;
-}
-
-/* Miscellaneous */
-.column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 3px;
 }
