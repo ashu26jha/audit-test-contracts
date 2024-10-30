@@ -1,0 +1,82 @@
+name: Build and Run application on AWS ECS  Container
+on:
+  push:
+    branches:
+      - staging #update this branch if once its fixed
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: code_auditor_images_repository
+  ECS_SERVICE: code-auditor-backend-app
+  ECS_CLUSTER: code-auditor-ecs-cluster
+  CONTAINER_NAME: code-auditor-backend
+  TASK_NAME: code-auditor-backend-app
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  code-auditor-backend-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check if Docker is installed
+        run: |
+          if ! command -v docker &> /dev/null
+          then
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo apt-get install -y docker-compose
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::762233726430:role/github-ci-cd-code-auditor
+          role-session-name: Github
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: "true"
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+        run: |
+          IMAGE_TAG_BACKEND=backend-${{ github.sha }}
+          IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_BACKEND
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          docker buildx build --platform=linux/amd64 -f ./backend/Dockerfile.backend -t $IMAGE_URI ./backend
+          docker push $IMAGE_URI
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.TASK_NAME }} --query taskDefinition > task-definition.json
+
+      - name: Log task definition
+        run: cat task-definition.json  # Log the task definition for debugging 
+      
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ env.IMAGE_URI }}
+
+      - name: Deploy Amazon ECS task definition
+        # if: github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
