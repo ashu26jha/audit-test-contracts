@@ -44,6 +44,10 @@ from config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    print(settings.ENVIRONMENT)
+    print(settings.GITHUB_CLIENT_ID)
+    print(settings.GITHUB_CLIENT_SECRET)
+    print(settings.GITHUB_INSTALLATION_URL)
     if settings.ENVIRONMENT == "development":
         db = client.audit_agent_dev
     elif settings.ENVIRONMENT == "staging":
