@@ -27,7 +27,7 @@ async def retry_async_operation(operation: Callable[..., T], *args: Any, **kwarg
             return await operation(*args, **kwargs)
         except Exception as e:
             if attempt == MAX_RETRIES - 1:
-                logger.error(f"All {MAX_RETRIES} attempts failed. Last error: {str(e)}")
+                logger.exception(f"All {MAX_RETRIES} attempts failed. Last error: {str(e)}")
                 raise
             wait_time = DELAY * (2**attempt)
             logger.warning(f"Attempt {attempt + 1} failed. Retrying in {wait_time:.2f} seconds...")

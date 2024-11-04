@@ -1,6 +1,5 @@
-import time
+import asyncio
 from asyncio import Semaphore
-from datetime import datetime, timedelta
 from typing import List, Optional, Type, TypeVar
 
 # from langfuse.decorators import langfuse_context
@@ -11,48 +10,19 @@ from pydantic import BaseModel
 
 from common import logger
 from common.llm_clients import CLAUDE_CLIENT
-
-# Import the helper function
 from common.parse_llm_response import parse_model_response
 from common.token_count import count_tokens
 from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
 
 # Limit concurrent OpenAI requests
-OPENAI_SEMAPHORE = Semaphore(3)  # Adjust number based on your rate limits
+OPENAI_SEMAPHORE = Semaphore(3)
+REQUEST_DELAY = 0.5  # seconds
+
+# Per-request timeout
+REQUEST_TIMEOUT = 240.0  # 4 minutes per request
+CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 
 T = TypeVar("T", bound=BaseModel)
-
-
-class CircuitBreaker:
-    def __init__(self):
-        self.failures = 0
-        self.last_failure = None
-        self.is_open = False
-
-    def record_failure(self):
-        self.failures += 1
-        self.last_failure = datetime.now()
-        if self.failures >= 3:  # Open circuit after 3 failures
-            self.is_open = True
-
-    def can_try(self):
-        if not self.is_open:
-            return True
-        if datetime.now() - self.last_failure > timedelta(seconds=30):
-            self.reset()
-            return True
-        return False
-
-    def reset(self):
-        self.failures = 0
-        self.is_open = False
-
-
-# Create circuit breakers for each model
-MODEL_CIRCUIT_BREAKERS = {
-    "o1-mini": CircuitBreaker(),
-    "o1-preview": CircuitBreaker(),
-}
 
 
 async def send_prompt_to_llm_async(
@@ -75,9 +45,6 @@ async def send_prompt_to_llm_async(
     Returns:
         Optional[T]: The structured response from the LLM as an instance of response_model or raw string if no model is provided.
     """
-    start_time = time.time()
-    logger.info(f"Starting LLM request to {model_type}")
-
     if message_history is None:
         message_history = []
 
@@ -87,14 +54,12 @@ async def send_prompt_to_llm_async(
 
         if model_type in SUPPORTED_MODELS["openai"]:
             async with OPENAI_SEMAPHORE:
-                timeout = httpx.Timeout(
-                    240.0, connect=5.0
-                )  # 240s total timeout, 5s connect timeout
+                await asyncio.sleep(REQUEST_DELAY)
+                timeout = httpx.Timeout(REQUEST_TIMEOUT, connect=CONNECT_TIMEOUT)
 
                 async with AsyncOpenAI(timeout=timeout) as client:
                     try:
                         if response_model and model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
-                            logger.debug(f"Using OpenAI parse method for {model_type}")
                             response = await client.beta.chat.completions.parse(
                                 model=model_type,
                                 messages=messages,
@@ -102,7 +67,6 @@ async def send_prompt_to_llm_async(
                             )
                             structured_response: Optional[T] = response.choices[0].message.parsed
                         else:
-                            logger.debug(f"Using standard completion for {model_type}")
                             response = await client.chat.completions.create(
                                 model=model_type,
                                 messages=messages,
@@ -110,8 +74,6 @@ async def send_prompt_to_llm_async(
                             content = response.choices[0].message.content.strip()
                             structured_response = parse_model_response(content, response_model)
 
-                        elapsed = time.time() - start_time
-                        logger.info(f"OpenAI API call completed in {elapsed:.2f}s for {model_type}")
                         return structured_response
                     except OpenAIError as e:
                         if "rate_limit" in str(e).lower():
@@ -153,7 +115,7 @@ async def send_prompt_to_llm_async(
         raise HTTPException(status_code=500, detail="Internal Server Error")
     except Exception as e:
         # langfuse_context.update_current_trace(metadata={"error": str(e)})
-        logger.error(f"Unexpected error when sending prompt to {model_type}: {e}")
+        logger.exception(f"Unexpected error when sending prompt to {model_type}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
@@ -163,7 +125,6 @@ def build_messages(
     system_prompt: Optional[str],
     message_history: List[dict],
 ) -> List[dict]:
-
     messages = []
 
     # For OpenAI models, handle system prompt

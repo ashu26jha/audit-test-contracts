@@ -56,7 +56,7 @@ export default function Footer() {
       <p className="text-sm text-gray-400">
         By proceeding you agree to our{" "}
         <Link
-          href="https://auditagent.nethermind.io/terms-of-use"
+          href={DISCLAIMER_PAGE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-gray-400 underline hover:text-gray-300"
@@ -65,7 +65,7 @@ export default function Footer() {
         </Link>{" "}
         and{" "}
         <Link
-          href="https://auditagent.nethermind.io/privacy-policy"
+          href={PRIVACY_POLICY_URL}
           target="_blank"
           rel="noopener noreferrer"
           className=" text-sm text-gray-400 underline hover:text-gray-300 mr-1"

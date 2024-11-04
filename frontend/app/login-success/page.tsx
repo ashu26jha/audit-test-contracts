@@ -2,8 +2,7 @@
 
 import { useEffect } from "react";
 
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -12,21 +11,23 @@ const LoginSuccessPage = () => {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const { setToken } = useAuth();
+  const { setToken, user, loading } = useAuth();
 
   useEffect(() => {
-    if (token) {
-      if (typeof token === "string") {
-        setToken(token);
-        router.push("/dashboard");
-      } else {
-        console.error("No token found in URL");
-        router.push("/login");
-      }
+    if (!token) {
+      console.error("No token found in URL");
+      router.push("/login");
+      return;
     }
-  }, [token, router, setToken]);
 
-  return <div>Processing login...</div>;
+    setToken(token);
+
+    if (!loading && user) {
+      router.replace("/dashboard");
+    }
+  }, [token, router, setToken, loading, user]);
+
+  return null;
 };
 
 export default LoginSuccessPage;

@@ -66,11 +66,11 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
         await send_pdf_email(user.email, str(final_pdf_path), scan_id)
 
         cleanup_temporary_files(report_pdf_path, final_pdf_path)
-        logger.info(f"PDF generated for scan ID: {scan_id}")
+        logger.info(f"PDF generated successfully for scan ID: {scan_id}")
     except HTTPException:
         raise
     except Exception as e:
-        logger.exception(f"Unexpected error during Audit Agent report generation: {str(e)}")
+        logger.exception(f"Unexpected error during PDF generation: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate Audit Agent report")
 
 

@@ -7,6 +7,7 @@ import httpx
 from fastapi import HTTPException
 
 from api.v1.models.github import GitHubRepo
+from api.v1.models.user import User
 from api.v1.schemas.github_schema import GitHubRepoCreate, GitHubRepoResponse
 from common import logger
 from config import settings
@@ -61,27 +62,6 @@ class GitHubService:
             raise HTTPException(status_code=400, detail="No primary email found for the user")
 
         return primary_email
-
-    async def get_user_repositories(self, access_token: str) -> list:
-        """
-        Fetch user's repositories from GitHub API.
-        """
-        headers = {
-            "Authorization": f"token {access_token}",
-            "Accept": "application/vnd.github.v3+json",
-        }
-
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/user/repos", headers=headers, params={"per_page": 100}
-            )
-
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=400, detail="Failed to fetch user repositories from GitHub"
-            )
-
-        return response.json()
 
     async def get_repository_contents(
         self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
@@ -147,110 +127,91 @@ class GitHubService:
 
         return content_data["content"]
 
-    async def get_user_organizations(self, access_token: str) -> list:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/user/orgs",
-                headers={"Authorization": f"token {access_token}"},
-            )
-        response.raise_for_status()
-        return [org["login"] for org in response.json()]
-
-    async def get_organization_repositories(self, access_token: str, org: str) -> list:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/orgs/{org}/repos",
-                headers={"Authorization": f"token {access_token}"},
-            )
-        response.raise_for_status()
-        return [{"name": repo["name"], "updatedAt": repo["updated_at"]} for repo in response.json()]
-
-    async def get_user_organizations_and_personal(self, access_token: str) -> list:
-        async with httpx.AsyncClient() as client:
-            orgs_response = await client.get(
-                f"{self.BASE_URL}/user/orgs",
-                headers={"Authorization": f"token {access_token}"},
-            )
-            user_response = await client.get(
-                f"{self.BASE_URL}/user",
-                headers={"Authorization": f"token {access_token}"},
-            )
-
-        orgs = (
-            [{"login": org["login"], "type": "organization"} for org in orgs_response.json()]
-            if orgs_response.status_code == 200
-            else []
-        )
-        user = (
-            {"login": user_response.json()["login"], "type": "user"}
-            if user_response.status_code == 200
-            else None
-        )
-
-        return [user] + orgs if user else orgs
-
-    async def get_repositories(self, access_token: str, owner: str, owner_type: str) -> list:
-        if owner_type == "user":
-            # This will fetch all repos the user has access to
-            url = f"{self.BASE_URL}/user/repos"
-            # For users, we want repos they own or are a member of
-            params = {"type": "owner", "sort": "updated", "per_page": 100}
-        else:
-            url = f"{self.BASE_URL}/orgs/{owner}/repos"
-            # For organizations, we want all repos
-            params = {"type": "all", "sort": "updated", "per_page": 100}
-
-        headers = {"Authorization": f"token {access_token}"}
-
-        all_repos = []
-        page = 1
+    async def get_installations(self, token: str) -> list:
+        url = "https://api.github.com/user/installations"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
 
         async with httpx.AsyncClient() as client:
-            while True:
-                params["page"] = page
-                response = await client.get(url, headers=headers, params=params)
+            response = await client.get(url, headers=headers)
 
-                if response.status_code != 200:
-                    logger.error(
-                        f"Failed to fetch repositories for {owner_type} {owner}. Status: {response.status_code}, Response: {response.text}"
-                    )
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail=f"GitHub API error: {response.text}",
-                    )
+        installations = response.json().get("installations", [])
 
-                repos = response.json()
-                if not repos:
-                    break
+        # Update user's installation IDs atomically
+        user = await User.find_one(User.accessToken == token)
+        if user:
+            new_installation_ids = [inst["id"] for inst in installations]
+            # Only update if there are actual changes
+            if set(new_installation_ids) != set(user.installationId):
+                await user.update({"$set": {"installationId": new_installation_ids}})
+                logger.info(f"Updated installation IDs for user {user.id}")
 
-                all_repos.extend(repos)
+        return installations
 
-                # Check if there are more pages
-                if "next" not in response.links:
-                    break
-
-                page += 1
-
-        if not all_repos:
-            logger.warning(f"No repositories found for {owner_type} {owner}")
-
-        repositories = [
-            {
-                "name": repo["name"],
-                "updatedAt": repo["updated_at"],
-                "private": repo["private"],
+    async def get_accessible_repositories(self, access_token: str) -> list:
+        """
+        Returns the repositories for which the GitHub App has access to
+        """
+        installations = await self.get_installations(access_token)
+        installation_repos = []
+        for installation in installations:
+            installation_id = installation["id"]
+            url = f"https://api.github.com/user/installations/{installation_id}/repositories"
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Accept": "application/vnd.github+json",
             }
-            for repo in all_repos
-        ]
 
-        return repositories
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, headers=headers)
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Failed to fetch repositories. Status: {response.status_code}, Response: {response.text}"
+                )
+                raise HTTPException(
+                    status_code=response.status_code, detail=f"GitHub API error: {response.text}"
+                )
+
+            data = response.json()
+            repositories = [
+                {
+                    "name": repo["name"],
+                    "updatedAt": repo["updated_at"],
+                    "private": repo["private"],
+                    "owner": repo["owner"]["login"],
+                }
+                for repo in data.get("repositories", [])
+            ]
+            installation_repos.extend(repositories)
+
+        return installation_repos
 
     async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
-        url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
+
+        repo_url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+        headers = {
+            "Authorization": f"token {access_token}",
+            "Accept": "application/vnd.github+json",
+        }
+
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers={"Authorization": f"token {access_token}"})
-        response.raise_for_status()
-        return [branch["name"] for branch in response.json()]
+            repo_response = await client.get(repo_url, headers=headers)
+            repo_response.raise_for_status()
+            repo_data = repo_response.json()
+            default_branch = repo_data.get("default_branch")
+
+            branches_url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
+            branches_response = await client.get(branches_url, headers=headers)
+            branches_response.raise_for_status()
+
+            return [
+                {"name": branch["name"], "isDefault": branch["name"] == default_branch}
+                for branch in branches_response.json()
+            ]
 
     async def get_commit_hash(
         self, access_token: str, repository_url: str, branch_name: str
@@ -424,36 +385,3 @@ class GitHubService:
             raise HTTPException(
                 status_code=response.status_code, detail="Error accessing repository"
             )
-
-
-# async def get_repository_contents(
-#     self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
-# ) -> list:
-#     async def fetch_contents(path):
-#         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}"
-#         params = {"ref": branch}
-#         async with httpx.AsyncClient() as client:
-#             response = await client.get(
-#                 url, headers={"Authorization": f"token {access_token}"}, params=params
-#             )
-#         response.raise_for_status()
-#         return response.json()
-
-#     async def recursive_fetch(path=""):
-#         contents = await fetch_contents(path)
-#         result = []
-#         for item in contents:
-#             if item["type"] == "file" and item["name"].endswith(".sol"):
-#                 result.append(
-#                     {
-#                         "name": item["name"],
-#                         "path": item["path"],
-#                         "type": "file",
-#                         "download_url": item["download_url"],
-#                     }
-#                 )
-#             elif item["type"] == "dir":
-#                 result.extend(await recursive_fetch(item["path"]))
-#         return result
-
-#     return await recursive_fetch()

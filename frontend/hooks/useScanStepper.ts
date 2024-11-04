@@ -106,7 +106,7 @@ export const useScanStepper = () => {
           const repo = pathParts[1];
 
           setSelectedOwner({ login: owner, type: "user" });
-          setSelectedRepo({ name: repo, updatedAt: "" });
+          setSelectedRepo({ name: repo, updatedAt: "", private: false });
           setRepositoryURL(url);
 
           return { owner, repo };

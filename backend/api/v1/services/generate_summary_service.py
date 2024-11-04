@@ -33,5 +33,5 @@ async def generate_summary(contracts: str) -> Tuple[str, str]:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in generate_summary: {str(e)}")
+        logger.exception(f"Unexpected error in generate_summary: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error")

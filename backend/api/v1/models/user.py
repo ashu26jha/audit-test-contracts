@@ -15,6 +15,7 @@ class User(Document):
     name: Optional[str] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    installationId: list[int] = []
 
     class Settings:
         name = "users"
@@ -30,6 +31,7 @@ class User(Document):
                 "name": "John Doe",
                 "createdAt": datetime.now(timezone.utc),
                 "updatedAt": datetime.now(timezone.utc),
+                "installationId": [12345678],
             }
         }
     )

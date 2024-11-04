@@ -1,7 +1,12 @@
-import React from "react";
+import { Fragment, type FC } from "react";
 
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button } from "@nextui-org/react";
 import Image from "next/image";
+
+interface InfoSectionProps {
+  icon: string;
+  items: { label: string; value: string | string[] }[];
+}
 
 interface ScanInfoProps {
   isOpen: boolean;
@@ -9,7 +14,7 @@ interface ScanInfoProps {
   scanData: ScanResult;
 }
 
-const ScanInfo: React.FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
+const ScanInfo: FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
   function getOrganizationName(scanData: ScanResult) {
     const organizationId = scanData.scan.repositoryURL;
     const organizationName = organizationId.split("/")[3];
@@ -47,52 +52,25 @@ const ScanInfo: React.FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
     >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">Scanned Code Info</ModalHeader>
+
         <ModalBody>
-          <div className="flex flex-row gap-1 bg-[#18181B] m-4 rounded-lg">
-            <div className="flex flex-col gap-1 border-r-1 border-[#27272A] p-4">
-              <Image src="/repository.svg" width={50} height={50} alt="repository" />
-            </div>
-
-            <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
-              <p className="text-sm text-gray-400">Organization</p>
-              <p>{getOrganizationName(scanData)}</p>
-
-              <p className="text-sm text-gray-400 mt-4">Repository</p>
-              <p>{scanData.scan.repositoryName}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-row gap-1 bg-[#18181B] m-4 rounded-lg">
-            <div className="flex flex-col gap-1 border-r-1 border-[#27272A] p-4">
-              <Image src="/branch.svg" width={50} height={50} alt="repository" />
-            </div>
-
-            <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
-              <p className="text-sm text-gray-400">Branch</p>
-              <p>{scanData.scan.branchName}</p>
-
-              <p className="text-sm text-gray-400 mt-4">Scanned Commit</p>
-              <p>{scanData.scan.commitHash.slice(0, 7)}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-row gap-1 bg-[#18181B] m-4 rounded-lg">
-            <div className="flex flex-col gap-1 border-r-1 border-[#27272A] p-4">
-              <Image src="/contract.svg" width={50} height={50} alt="repository" />
-            </div>
-
-            <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
-              <p className="text-sm text-gray-400">Contract Files</p>
-              <p>
-                {scanData.scan.contractFiles.map((file: string) => (
-                  <div className="mt-1" key={file}>
-                    {file}
-                  </div>
-                ))}
-              </p>
-            </div>
-          </div>
+          <InfoSection
+            icon="/repository.svg"
+            items={[
+              { label: "Organization", value: getOrganizationName(scanData) },
+              { label: "Repository", value: scanData.scan.repositoryName },
+            ]}
+          />
+          <InfoSection
+            icon="/branch.svg"
+            items={[
+              { label: "Branch", value: scanData.scan.branchName },
+              { label: "Scanned Commit", value: scanData.scan.commitHash.slice(0, 7) },
+            ]}
+          />
+          <InfoSection icon="/contract.svg" items={[{ label: "Contract Files", value: scanData.scan.contractFiles }]} />
         </ModalBody>
+
         <ModalFooter>
           <Button color="danger" variant="light" onPress={onClose}>
             Close
@@ -104,3 +82,30 @@ const ScanInfo: React.FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
 };
 
 export default ScanInfo;
+
+const InfoSection: FC<InfoSectionProps> = ({ icon, items }) => (
+  <div className="flex flex-row gap-1 bg-[#18181B] m-4 rounded-lg">
+    <div className="flex flex-col gap-1 border-r-1 border-[#27272A] p-4">
+      <Image src={icon} width={50} height={50} alt="icon" />
+    </div>
+    <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
+      {items.map(({ label, value }, index) => (
+        <Fragment key={label}>
+          {index > 0 && <p className="text-sm text-gray-400 mt-4">{label}</p>}
+          {index === 0 && <p className="text-sm text-gray-400">{label}</p>}
+          {Array.isArray(value) ? (
+            <p>
+              {value.map((item) => (
+                <div className="mt-1" key={item}>
+                  {item}
+                </div>
+              ))}
+            </p>
+          ) : (
+            <p>{value}</p>
+          )}
+        </Fragment>
+      ))}
+    </div>
+  </div>
+);

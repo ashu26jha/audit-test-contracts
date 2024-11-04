@@ -33,6 +33,7 @@ class ScanResultResponse(BaseModel):
     scan_id: UUID
     scan_number: int
     summary: Optional[str]
+    info_message: Optional[str] = None
     type: Optional[Profiles]
     total_findings: Optional[int] = None
     findings: List[Finding]

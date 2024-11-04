@@ -24,8 +24,8 @@ async def stripe_webhook(request: Request):
 
         return SuccessResponse(data="Webhook processed successfully")
     except ValueError as e:
-        logger.error(f"Invalid webhook payload: {str(e)}")
+        logger.exception(f"Invalid webhook payload: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
+        logger.exception(f"Error processing webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error") from e

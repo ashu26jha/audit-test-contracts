@@ -85,8 +85,9 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
 
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
+      // prettier-ignore
       if (typeof window !== "undefined" && window._mtm != undefined) {
-        window._mtm.push({ event: "scan-started" });
+        window._mtm.push({ "event": "scan-started" });
       }
       setIsLoading(true);
       try {
@@ -107,10 +108,11 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       }
     } else {
       if (typeof window !== "undefined" && window._mtm != undefined) {
+        // prettier-ignore
         if (currentStep === 1) {
-          window._mtm.push({ event: "branch-selection" });
+          window._mtm.push({ "event": "branch-selection" });
         } else if (currentStep === 2) {
-          window._mtm.push({ event: "contract-selection" });
+          window._mtm.push({ "event": "contract-selection" });
         }
       }
       setCurrentStep(currentStep + 1);

@@ -28,180 +28,128 @@ def parse_model_response(content: str, response_model: Optional[Type[T]]) -> Uni
         return content
 
     try:
-        # Extract JSON content from the response
-        json_content = extract_json(content)
-        if not json_content:
-            raise HTTPException(
-                status_code=400, detail="No JSON content found in the LLM response."
-            )
-
-        # Clean the JSON content
-        json_content_clean = remove_control_characters(json_content)
-
-        # Attempt to parse the JSON content
-        parsed_json = try_parse_json(json_content_clean)
-        if parsed_json is None:
-            raise HTTPException(status_code=400, detail="Failed to parse JSON content.")
-
-        # Try to parse using response_model
+        # 1. Try direct parsing first (fastest)
         try:
-            structured_response = response_model.model_validate(parsed_json)
-            return structured_response
-        except ValidationError as e:
-            logger.debug(f"ValidationError: {e}")
+            parsed_json = json.loads(content)
+            return response_model.model_validate(parsed_json)
+        except (json.JSONDecodeError, ValidationError):
+            logger.debug("Direct parsing failed, trying cleanup steps...")
 
-            # Handle the case where the parsed JSON is a list but the model expects a dict
-            if isinstance(parsed_json, list):
-                # Check if the model has a single field that accepts a list
-                model_fields = response_model.model_fields
-                list_field_name = None
-                for field_name, field_info in model_fields.items():
-                    field_type = field_info.outer_type_
-                    if getattr(field_type, "__origin__", None) is list:
-                        list_field_name = field_name
-                        break
+        # 2. Basic cleanup and retry
+        cleaned_content = content.strip()
+        if cleaned_content.startswith("```") or cleaned_content.startswith("```json"):
+            # Remove markdown code blocks
+            lines = cleaned_content.split("\n")
+            cleaned_content = "\n".join(
+                line for line in lines if not line.strip().startswith("```")
+            ).strip()
 
-                if list_field_name:
-                    wrapped_json = {list_field_name: parsed_json}
-                    try:
-                        structured_response = response_model.model_validate(wrapped_json)
-                        return structured_response
-                    except ValidationError as e2:
-                        logger.error(f"Validation error after wrapping: {e2}")
-                        raise HTTPException(status_code=500, detail="Internal server error")
+            try:
+                parsed_json = json.loads(cleaned_content)
+                return response_model.model_validate(parsed_json)
+            except (json.JSONDecodeError, ValidationError):
+                logger.debug("Basic markdown cleanup failed, trying JSON extraction...")
 
+        # 3. Try to extract JSON structure
+        json_content = extract_json(cleaned_content)
+        if json_content:
+            try:
+                parsed_json = json.loads(json_content)
+                return response_model.model_validate(parsed_json)
+            except (json.JSONDecodeError, ValidationError):
+                logger.debug("JSON extraction failed, trying advanced cleaning...")
+
+        # 4. Advanced cleaning as last resort
+        cleaned_json = _clean_json_content(cleaned_content)
+        try:
+            parsed_json = json.loads(cleaned_json)
+            return response_model.model_validate(parsed_json)
+        except (json.JSONDecodeError, ValidationError) as e:
+            logger.error(f"All parsing attempts failed. Final error: {str(e)}")
+            logger.error("Original content:", content[:200])
+            logger.error("After cleaning:", cleaned_json[:200])
             raise HTTPException(
-                status_code=500,
-                detail=f"Validation error parsing JSON into {response_model}",
+                status_code=400, detail=f"Failed to parse content into {response_model.__name__}"
             )
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error parsing response into {response_model}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.exception(f"Unexpected error in parse_model_response: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to parse response")
 
 
-def extract_json(text: str) -> Optional[str]:
-    """
-    Extracts JSON content from a text string, considering nested structures.
-    """
-    json_start = None
-    json_end = None
-    brace_stack = []
+def _clean_json_content(content: str) -> str:
+    """Comprehensive JSON cleaning for various edge cases."""
+    # Remove control characters (from old version)
+    control_chars = "".join(map(chr, range(0, 32))) + "".join(map(chr, range(127, 160)))
+    control_char_regex = f"[{re.escape(control_chars)}]"
+    content = re.sub(control_char_regex, "", content)
 
-    for idx, char in enumerate(text):
-        if char == "{" or char == "[":
-            if not brace_stack:
-                json_start = idx
-            brace_stack.append(char)
-        elif char == "}" or char == "]":
-            if brace_stack:
-                brace_stack.pop()
-                if not brace_stack:
-                    json_end = idx + 1
-                    break
+    # Replace curly quotes (from old version)
+    content = content.replace(""", '"').replace(""", '"')
+    content = content.replace("'", "'").replace("'", "'")
 
-    if json_start is not None and json_end is not None:
-        return text[json_start:json_end]
-    else:
-        return None
+    # Remove zero-width characters (from old version)
+    content = re.sub(r"[\u200B-\u200D\uFEFF]", "", content)
 
+    # New version cleaning
+    content = re.sub(r"`([^`]+)`", r"\1", content)  # Handle inline code
+    content = re.sub(r"```\w*\n?|\n?```", "", content)  # Remove markdown
+    content = content.replace('\\"', '"')  # Fix escaped chars
+    content = content.replace("\\n", "\n")
+    content = re.sub(r'\\+(["{}\[\]])', r"\1", content)  # Handle nested JSON
+    content = re.sub(r",(\s*[}\]])", r"\1", content)  # Fix trailing commas
 
-def try_parse_json(json_str: str) -> Optional[Union[dict, list]]:
-    # Attempt to parse JSON content, trying several strategies
-
-    try:
-        return json.loads(json_str)
-    except json.JSONDecodeError:
-        # Attempt to fix common JSON issues
-        fixed_json_str = _clean_invalid_json(json_str)
-        try:
-            return json.loads(fixed_json_str)
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON Parsing Error after cleaning: {e}")
-            return None
-
-
-def _clean_invalid_json(raw_json: str) -> str:
-    """
-    Attempts to clean and fix common issues in invalid JSON strings.
-    """
-    # Remove comments
-    raw_json = re.sub(r"//.*", "", raw_json)
-    raw_json = re.sub(r"/\*[\s\S]*?\*/", "", raw_json)
-
-    # Remove extra commas before closing brackets
-    raw_json = re.sub(r",\s*(\]|\})", r"\1", raw_json)
-
-    # Fix escaped quotes within JSON strings - look for (`""`) pattern
-    raw_json = re.sub(r'\(`""\`\)', '("")', raw_json)
-    raw_json = re.sub(r'\(`"([^"]*)"\`\)', r'("\1")', raw_json)
-
-    # Handle markdown code blocks within JSON strings
-    def replace_code_block(match):
-        # Properly escape the code block content
+    # Handle multiline code snippets
+    def clean_code_block(match):
         code = match.group(1)
-        # Normalize newlines
-        code = code.replace("\r\n", "\n").replace("\r", "\n")
-        # Escape backslashes and quotes
-        code = code.replace("\\", "\\\\").replace('"', '\\"')
-        # Replace newlines with \n
-        code = code.replace("\n", "\\n")
-        return f"\\n```solidity\\n{code}\\n```\\n"
+        return code.replace("\n", "\\n").replace('"', '\\"')
 
-    # First normalize all newlines in the entire JSON
-    raw_json = raw_json.replace("\r\n", "\n").replace("\r", "\n")
-
-    # Replace markdown code blocks before JSON parsing
-    raw_json = re.sub(r"```solidity(.*?)```", replace_code_block, raw_json, flags=re.DOTALL)
-
-    # Properly escape remaining newlines in string values
-    def escape_string_content(match):
-        content = match.group(1)
-        if "```" not in content:  # Don't process content that might contain code blocks
-            content = content.replace("\n", "\\n")
-        return f'": "{content}'
-
-    raw_json = re.sub(r'": "(.*?)"(?=,|\})', escape_string_content, raw_json, flags=re.DOTALL)
-
-    # Fix unclosed recommendation strings containing code blocks
-    raw_json = re.sub(
-        r'"Recommendation": "(.*?)(?=},|\])',
-        lambda m: f'"Recommendation": "{m.group(1)}"',
-        raw_json,
+    content = re.sub(
+        r'("code":\s*")(.*?)(")',
+        lambda m: m.group(1) + clean_code_block(m) + m.group(3),
+        content,
         flags=re.DOTALL,
     )
 
-    # Replace single quotes with double quotes cautiously
-    raw_json = re.sub(r"(?<=[:\s])'([^']*)'", r'"\1"', raw_json)
+    # Extract main JSON structure
+    json_match = re.search(r"({[\s\S]*}|\[[\s\S]*\])", content)
+    if json_match:
+        content = json_match.group(0)
 
-    # Remove control characters
-    raw_json = "".join(c for c in raw_json if ord(c) >= 32)
-
-    # Trim whitespace
-    raw_json = raw_json.strip()
-
-    return raw_json
+    return content.strip()
 
 
-def remove_control_characters(json_content: str) -> str:
-    # Remove control characters that are invalid in JSON strings
-    control_chars = "".join(map(chr, range(0, 32))) + "".join(map(chr, range(127, 160)))
-    control_char_regex = f"[{re.escape(control_chars)}]"
-    json_content = re.sub(control_char_regex, "", json_content)
+def extract_json(text: str) -> Optional[str]:
+    """Extract the first valid JSON structure from text."""
+    # Find all potential JSON objects/arrays
+    starts = []
+    stack = []
+    json_ranges = []
 
-    # Replace curly quotes with straight quotes
-    json_content = json_content.replace(""", '"').replace(""", '"')
-    json_content = json_content.replace("'", "'").replace("'", "'")
+    for i, char in enumerate(text):
+        if char in "{[":
+            if not stack:
+                starts.append(i)
+            stack.append(char)
+        elif char in "}]":
+            if stack:
+                opening = stack.pop()
+                if not stack:  # Complete JSON structure found
+                    if (opening == "{" and char == "}") or (opening == "[" and char == "]"):
+                        json_ranges.append((starts.pop(), i + 1))
 
-    # Remove zero-width or non-printing Unicode characters
-    json_content = re.sub(r"[\u200B-\u200D\uFEFF]", "", json_content)
+    # Try each potential JSON structure
+    for start, end in json_ranges:
+        potential_json = text[start:end]
+        try:
+            json.loads(potential_json)  # Validate it's proper JSON
+            return potential_json
+        except json.JSONDecodeError:
+            continue
 
-    # Trim leading/trailing whitespace
-    json_content = json_content.strip()
-
-    return json_content
+    return None
 
 
 def extract_code_from_response(content: str, language: str = "solidity") -> str:

@@ -53,6 +53,7 @@ LANGFUSE_HOST=https://...
 MONGODB_URL=your_mongodb_url
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
+GITHUB_INSTALLATION_URL=your_github_installation_url
 ```
 
 ## Running the Server
@@ -110,7 +111,7 @@ pytest backend/tests/ -v --cov=backend --cov-report=html
 
 Initiates the GitHub OAuth flow for user authentication.
 
-**Response:** Redirects to GitHub for authorization.
+**Response:** Redirects to GitHub for authorization and installation of the app.
 </details>
 
 <details>
@@ -152,7 +153,7 @@ Logs out the current user.
 <details>
 <summary>GET /api/v1/github/organizations</summary>
 
-Retrieves the list of organizations the authenticated user belongs to.
+Retrieves the list of organizations the user has added the Github app to.
 
 **Response:** Array of organization objects.
 </details>
@@ -160,7 +161,7 @@ Retrieves the list of organizations the authenticated user belongs to.
 <details>
 <summary>GET /api/v1/github/repositories/{owner}</summary>
 
-Retrieves the list of repositories for a given owner (user or organization).
+Retrieves the list of allowed repositories for a given owner (user or organization).
 
 **Parameters:**
 - `owner`: GitHub username or organization name (path parameter)
@@ -566,7 +567,8 @@ curl -X POST "http://localhost:8000/test-auth/token" \
   "avatarUrl": "string",
   "createdAt": "Datetime",
   "updatedAt": "Datetime",
-  "lastLoginAt": "Datetime"
+  "lastLoginAt": "Datetime",
+  "installationId": [integer]
 }
 ```
 

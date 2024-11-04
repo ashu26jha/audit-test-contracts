@@ -26,8 +26,9 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
 
   const handleScan = () => {
     if (scanable) {
+      // prettier-ignore
       if (typeof window !== "undefined" && window._mtm != undefined) {
-        window._mtm.push({ event: "repository-selection" });
+        window._mtm.push({ "event": "repository-selection" });
       }
       setShowStepper(true);
       // Trigger a refetch when starting a new scan
@@ -61,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
 
       {/* Main content */}
       <CardBody className="overflow-y-auto">
-        {scanHistory.length > 0 ? (
+        {scanHistory?.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {scanHistory.map((scan: ScanHistoryItem, index: number) => (
               <ScanCard key={index} scan={scan} onClick={handleScanClick} />

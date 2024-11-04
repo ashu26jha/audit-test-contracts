@@ -1,6 +1,8 @@
+import os
 import shutil
 from pathlib import Path
 
+from fastapi import HTTPException
 from pydantic import HttpUrl
 
 from api.v1.helpers.forge_helpers import (
@@ -10,7 +12,6 @@ from api.v1.helpers.forge_helpers import (
     update_foundry_config,
 )
 from api.v1.helpers.project_helpers import (
-    clone_repository,
     compile_project,
     detect_project_type,
     get_project_structure,
@@ -18,98 +19,101 @@ from api.v1.helpers.project_helpers import (
 from api.v1.helpers.run_command import run_command
 from api.v1.schemas.fuzzer_schema import SetupResult
 from common import logger
+from common.clone_repo import clone_repo
 from config.solidity import FORGE_INSTALL_COMMAND
 
 
 async def setup_environment(
-    github_url: HttpUrl, temp_dir: str, oauth_token: str = None
+    github_url: HttpUrl,
+    temp_dir: str,
+    oauth_token: str = None,
+    branch: str = "main",
 ) -> SetupResult:
     """
-    Sets up the environment by cloning the repository, initializing a Foundry project,
-    and preparing it for fuzz testing.
-
-    Args:
-        github_url (HttpUrl): The GitHub repository URL.
-        oauth_token (str): The OAuth token for private repositories.
-
-    Returns:
-        SetupResult: An instance containing project directory, contract folders, project type, project path, and project structure.
+    Sets up the environment for analysis. The temp_dir might:
+    - Already contain a cloned repo (when called from audit_agent_service)
+    - Need to be created (when called standalone from other services)
     """
-
     remappings = None
+    project_dir = temp_dir
 
     try:
-        github_url_str = str(github_url)
-        repo_dir = await clone_repository(github_url_str, temp_dir, oauth_token)
+        # Ensure temp_dir exists
+        os.makedirs(temp_dir, exist_ok=True)
+
+        # Check if temp_dir is empty (needs cloning)
+        if not os.listdir(temp_dir):
+            github_url_str = str(github_url)
+            temp_dir = await clone_repo(github_url_str, temp_dir, oauth_token, branch)
 
         # Step 1: Detect project type
-        project_type = detect_project_type(repo_dir)
+        project_type = detect_project_type(temp_dir)
 
         # Step 2: Set up the environment based on the project type
         if project_type == "brownie":
             raise NotImplementedError(f"{project_type} is currently not implemented")
 
         if project_type == "hardhat":
-            # Initialize a new Foundry project in temp_dir
-            await initialize_foundry_project(temp_dir, repo_dir, project_type)
+            # For Hardhat, create a new directory to initialize Foundry project
+            project_dir = os.path.join(os.path.dirname(temp_dir), "foundry_project")
+            os.makedirs(project_dir, exist_ok=True)
 
-            # Install NPM dependencies in the Foundry project
-            await install_npm_deps(temp_dir, repo_dir)
+            # Initialize Foundry project in the new directory
+            await initialize_foundry_project(project_dir, temp_dir, project_type)
 
-            # Update foundry.toml to use 'auto' solc version and include 'node_modules' in libs
-            update_foundry_config(temp_dir)
+            # Install NPM dependencies
+            await install_npm_deps(project_dir, temp_dir)
+
+            # Update foundry.toml configuration
+            update_foundry_config(project_dir)
 
             # Generate remappings using Foundry
             try:
-                remappings = await generate_remappings_with_foundry(temp_dir)
+                remappings = await generate_remappings_with_foundry(project_dir)
             except Exception as e:
                 logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
-                # Optionally, handle fallback or raise an error
 
-            # Remove the initial cloned repository to avoid compilation issues and confusion
-            if repo_dir != temp_dir:
-                try:
-                    shutil.rmtree(repo_dir)
-                except Exception as e:
-                    logger.error(f"Failed to remove initial cloned repository: {str(e)}")
+            # Remove the original repo to prevent confusion & conflicts
+            try:
+                shutil.rmtree(temp_dir)
+                logger.info(f"Removed original Hardhat repository: {temp_dir}")
+            except Exception as e:
+                logger.exception(f"Failed to remove original repository: {str(e)}")
 
-            # Update repo_dir to temp_dir since the project is now set up in temp_dir
-            repo_dir = temp_dir
             logger.info("Hardhat project has been set up in Foundry.")
 
         elif project_type == "foundry":
             try:
-                await run_command(FORGE_INSTALL_COMMAND, repo_dir)
+                await run_command(FORGE_INSTALL_COMMAND, project_dir)
                 logger.info("Foundry project dependencies installed.")
             except Exception as e:
-                logger.error(f"Error running forge install: {str(e)}")
+                logger.exception(f"Error running forge install: {str(e)}")
                 raise
-
-        else:
-            logger.error(f"Unsupported project type: {project_type}")
-            raise ValueError(f"Unsupported project type: {project_type}")
 
         # Step 3: Compile the project
         try:
-            await compile_project(repo_dir)
+            await compile_project(project_dir)
         except Exception as e:
-            logger.error(f"Compilation failed with error: {str(e)}")
-            raise
+            logger.exception(f"Project compilation failed: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to compile project")
 
         # Create the test directory if it doesn't exist
-        test_dir = Path(temp_dir) / "test"
+        test_dir = Path(project_dir) / "test"
         test_dir.mkdir(parents=True, exist_ok=True)
 
-        # Step 4: After setting up the environment, get the project structure
-        project_structure = get_project_structure(repo_dir)
+        # Step 4: Get the project structure
+        project_structure = get_project_structure(project_dir)
 
         return SetupResult(
-            project_dir=repo_dir,
+            project_dir=project_dir,
             project_type=project_type,
             remappings=remappings,
             project_structure=project_structure,
         )
 
-    except Exception as e:
-        logger.error(f"Error setting up environment: {str(e)}")
-        raise
+    except ValueError:
+        logger.exception("Invalid project configuration")
+        raise HTTPException(status_code=400, detail="Invalid project configuration")
+    except Exception:
+        logger.exception("Environment setup failed")
+        raise HTTPException(status_code=500, detail="Failed to set up environment")

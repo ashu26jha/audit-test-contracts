@@ -22,12 +22,17 @@ class StripeWebhookService:
 
     @staticmethod
     async def update_payment_status(event: dict):
-        session = event["data"]["object"]
-        paid_status = session["payment_status"]
-        session_id = session["id"]
+        try:
+            session = event["data"]["object"]
+            paid_status = session["payment_status"]
+            session_id = session["id"]
 
-        payment = await Payment.find_one(Payment.stripeSessionId == session_id)
-        if payment:
+            payment = await Payment.find_one(Payment.stripeSessionId == session_id)
+
+            if not payment:
+                logger.error(f"Payment not found for session ID: {session_id}")
+                return
+
             if paid_status == "paid" and payment.status != PaymentStatus.COMPLETED:
                 payment.status = PaymentStatus.COMPLETED
                 payment.event_id = event["id"]
@@ -36,14 +41,16 @@ class StripeWebhookService:
                 payment.updatedAt = datetime.now(timezone.utc)
                 await payment.save()
 
-                await update_scan_paid_status(payment.scan_id, True)
-                logger.info(f"Payment marked as completed for session ID: {session_id}")
+                is_voucher = session["amount_total"] == 0
+                await update_scan_paid_status(payment.scan_id, True, is_voucher)
+                logger.info(
+                    f"Payment completed for session ID: {session_id}. Voucher used: {is_voucher}"
+                )
             elif paid_status == "unpaid":
                 payment.status = PaymentStatus.FAILED
                 payment.updatedAt = datetime.now(timezone.utc)
                 await payment.save()
                 logger.info(f"Payment marked as failed for session ID: {session_id}")
-            else:
-                logger.info(f"Payment status unchanged for session ID: {session_id}")
-        else:
-            logger.error(f"Payment not found for session ID: {session_id}")
+
+        except Exception as e:
+            logger.exception(f"Error processing payment webhook: {str(e)}")

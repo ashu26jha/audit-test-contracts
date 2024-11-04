@@ -10,27 +10,29 @@ router = APIRouter()
 github_service = GitHubService()
 
 
-# @router.get("/organizations")
-# async def get_organizations(current_user: User = Depends(get_current_user)):
-#     return await github_service.get_user_organizations(current_user.accessToken)
-
-
-# @router.get("/repositories/{org}")
-# async def get_repositories(org: str, current_user: User = Depends(get_current_user)):
-#     return await github_service.get_organization_repositories(current_user.accessToken, org)
-
-
 @router.get("/organizations", response_model=SuccessResponse)
 async def get_organizations(current_user: User = Depends(get_current_user)):
-    orgs = await github_service.get_user_organizations_and_personal(current_user.accessToken)
+    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
+    orgs = []
+    for repo in accessible_repos:
+        orgs.append(
+            {
+                "login": repo["owner"],
+                "type": "user",
+            }
+        )
+    seen = set()
+    orgs = [org for org in orgs if not (org["login"] in seen or seen.add(org["login"]))]
     return SuccessResponse(data=orgs)
 
 
 @router.get("/repositories/{owner}", response_model=SuccessResponse)
-async def get_repositories(
-    owner: str, owner_type: str, current_user: User = Depends(get_current_user)
-):
-    repos = await github_service.get_repositories(current_user.accessToken, owner, owner_type)
+async def get_repositories(owner: str, current_user: User = Depends(get_current_user)):
+    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
+    repos = []
+    for repo in accessible_repos:
+        if repo["owner"] == owner:
+            repos.append(repo)
     return SuccessResponse(data=repos)
 
 
@@ -85,5 +87,5 @@ async def validate_repo_url(
     except HTTPException as e:
         raise e
     except Exception as e:
-        logger.error(f"Error validating repository URL: {e}")
+        logger.exception(f"Error validating repository URL: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

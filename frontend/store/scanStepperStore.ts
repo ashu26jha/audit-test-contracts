@@ -8,7 +8,7 @@ interface ScanStepperState {
   selectedContracts: string[];
   owners: Owner[];
   repositories: Repository[];
-  branches: string[];
+  branches: Branch[];
   solidityFiles: File[];
   isLoading: boolean;
   isNextEnabled: boolean;
@@ -25,7 +25,7 @@ interface ScanStepperState {
   setContractSearch: (search: string) => void;
   setOwners: (owners: Owner[]) => void;
   setRepositories: (repositories: Repository[]) => void;
-  setBranches: (branches: string[]) => void;
+  setBranches: (branches: Branch[]) => void;
   setSolidityFiles: (files: File[]) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsNextEnabled: (isEnabled: boolean) => void;

@@ -11,9 +11,9 @@ router = APIRouter()
 
 @router.post("/context-scan", response_model=SuccessResponse, status_code=status.HTTP_200_OK)
 async def perform_context_scan(request: context_scan_schema.ContextScanRequest):
-    findings = await context_scan_service.perform_context_scan(
+    response = await context_scan_service.perform_context_scan(
         request.summary,
         request.contracts,
         request.profile,
     )
-    return SuccessResponse(data=context_scan_schema.ContextScanResponse(findings=findings))
+    return SuccessResponse(data=response)

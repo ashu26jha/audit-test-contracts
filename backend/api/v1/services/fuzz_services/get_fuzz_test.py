@@ -75,8 +75,8 @@ async def get_fuzz_test(
             if attempt == MAX_RETRIES:
                 logger.error("Max retries reached. Failed to generate a valid fuzz test.")
                 return "", str(e)
-            else:
-                logger.info("Attempting to retry after unexpected error.")
+
+            logger.info("Attempting to retry after unexpected error.")
 
     # If all retries fail, return an error
     return "", "Failed to generate a valid fuzz test after multiple attempts."
@@ -212,6 +212,6 @@ def parse_compilation_error(error_message: str) -> str:
 
     if parsed_errors:
         return "\n".join(parsed_errors)
-    else:
-        # Return the original message if parsing fails
-        return error_message
+
+    # Return the original message if parsing fails
+    return error_message

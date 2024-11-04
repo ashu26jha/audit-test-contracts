@@ -16,8 +16,8 @@ def extract_organization_name(url):
     if len(path_parts) > 0:
         organization_name = path_parts[0]
         return organization_name
-    else:
-        return None
+
+    return None
 
 
 def read_html(file_path):

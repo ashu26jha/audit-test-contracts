@@ -5,7 +5,9 @@ from typing import Any, Dict, List, Optional
 
 from api.v1.helpers.run_command import run_command
 from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
+from api.v1.schemas.context_scan_schema import Finding
 from common import logger
+from common.contract_utils import filter_by_contracts
 from config.solidity import CONFIDENCE_LEVELS
 
 
@@ -54,40 +56,42 @@ def transform_slither_output(
             # Combine custom description with Slither's description
             full_description = f"{custom_description}\n\n{detector.get('description', '')}"
 
-            transformed_result = {
-                "Issue": issue_title,
-                "OriginalIssue": original_issue,
-                "Severity": severity,
-                "Confidence": detector.get("confidence", ""),
-                "Contracts": contracts,
-                "Description": full_description,
-                "Lines": lines,
-            }
+            # Convert dict to Finding model before filtering
+            transformed_result = Finding(
+                Issue=issue_title,
+                Severity=severity,
+                Contracts=contracts,
+                Description=full_description,
+                Recommendation="",
+            )
             transformed_results.append(transformed_result)
 
-    # Filter results based on selected_contracts
-    if selected_contracts:
-        filtered_results = [
-            result
-            for result in transformed_results
-            if any(
-                contract.lower() in selected.lower()
-                for contract in result["Contracts"]
-                for selected in selected_contracts
-            )
-        ]
-    else:
-        filtered_results = transformed_results
+    # Use the common filtering function
+    filtered_results = filter_by_contracts(
+        transformed_results, selected_contracts, contract_field="Contracts"
+    )
+
+    # Convert back to dict format for the return
+    filtered_dicts = [
+        {
+            "Issue": finding.Issue,
+            "Severity": finding.Severity,
+            "Contracts": finding.Contracts,
+            "Description": finding.Description,
+            "Recommendation": finding.Recommendation,
+        }
+        for finding in filtered_results
+    ]
 
     # Count severities and total findings after filtering
-    for result in filtered_results:
+    for result in filtered_dicts:
         severity = result["Severity"]
         if severity in severity_counts:
             severity_counts[severity] += 1
         total_findings += 1
 
     return {
-        "findings": filtered_results,
+        "findings": filtered_dicts,
         "total_findings": total_findings,
         "severity_counts": severity_counts,
     }
@@ -125,8 +129,7 @@ async def run_slither(
     returncode, stdout, stderr = await run_command(slither_command, temp_dir, env=env)
 
     if not os.path.exists(output_file):
-        logger.error("Slither output file not found")
-        logger.error(f"Return code: {returncode}")
+        logger.error(f"Slither output file not found. Return code: {returncode}")
         # logger.error(f"Stderr: {stderr}")
         raise ValueError(f"Slither analysis failed: {stderr}")
 
@@ -168,5 +171,5 @@ async def check_slither_installation():
             logger.error(f"Slither not found or error checking version: {stderr}")
             return False
     except Exception as e:
-        logger.error(f"Error checking Slither installation: {str(e)}")
+        logger.exception(f"Error checking Slither installation: {str(e)}")
         return False

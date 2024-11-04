@@ -1,8 +1,9 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from common.profiles import Profiles
+from common.severity import Severity  # Import centralized Severity
 
 
 class Finding(BaseModel):
@@ -11,6 +12,11 @@ class Finding(BaseModel):
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
+
+    @field_validator("Severity")
+    def validate_severity(cls, v: str) -> str:
+        # Use the centralized Severity enum
+        return Severity.from_str(v).value
 
 
 class FindingList(BaseModel):

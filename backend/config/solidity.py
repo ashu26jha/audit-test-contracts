@@ -34,7 +34,7 @@ FORGE_TEST_COMMAND = ["forge", "test", "-vvvv"]
 # Confidence levels of detection to include
 CONFIDENCE_LEVELS = ["high"]
 
-# Mapping of known Solidity package names to their GitHub repositories
+# Mapping of known Solidity package names to their GitHub repositories (Currently not used)
 PACKAGE_MAPPING = {
     "@openzeppelin/contracts": {
         "github": "OpenZeppelin/openzeppelin-contracts",

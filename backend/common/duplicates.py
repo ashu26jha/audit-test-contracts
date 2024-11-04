@@ -41,6 +41,6 @@ async def remove_duplicates(vulns: List[Dict]) -> List[Dict]:
         return parsed_response.findings
 
     except Exception as e:
-        logger.error(f"Failed to remove duplicates: {str(e)}")
+        logger.exception(f"Failed to remove duplicates: {str(e)}")
         logger.warning("Returning original vulnerabilities.")
         return vulns

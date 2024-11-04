@@ -51,15 +51,12 @@ def run_command_sync(
         Tuple[int, str, str]: A tuple containing the return code, stdout, and stderr.
     """
     try:
-        process = subprocess.Popen(
-            command,
-            cwd=cwd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        stdout, stderr = process.communicate()
-        return process.returncode, stdout.decode(), stderr.decode()
+        with subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True
+        ) as process:
+            stdout, stderr = process.communicate(timeout=10)
+            return_code = process.returncode
+            return return_code, stdout, stderr
     except Exception as e:
         logger.exception(
             f"Exception occurred while running command '{' '.join(command)}' synchronously: {str(e)}"

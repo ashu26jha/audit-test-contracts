@@ -50,7 +50,6 @@ TEMPERATURE = 0.3
 
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 STRIPE_WEBHOOK_KEY = os.getenv("STRIPE_WEBHOOK_SECRET")
-VOUCHER_CODE = os.getenv("VOUCHER_CODE")
 
 ##################################################
 #                   MONGODB
@@ -70,6 +69,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = 10800  # 1 week
 
 GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
+GITHUB_INSTALLATION_URL: str = os.getenv("GITHUB_INSTALLATION_URL")
+GITHUB_APP_URL: str = (
+    f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=user:email"
+)
 
 
 ##################################################
@@ -77,7 +80,7 @@ GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
 ##################################################
 
 SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = os.getenv("SMTP_PORT", 587)
+SMTP_PORT = os.getenv("SMTP_PORT", "587")
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 

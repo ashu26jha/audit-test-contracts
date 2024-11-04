@@ -21,7 +21,14 @@ interface AuthContextType {
   isPublicRoute: (pathname: string) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  token: null,
+  loading: true,
+  setToken: () => {},
+  logout: () => {},
+  isPublicRoute: () => false,
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
@@ -35,34 +42,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("Failed to fetch user data:", error);
       setToken(null);
+      setUser(null);
+      localStorage.removeItem("token");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-      (async () => {
-        await fetchUser(storedToken);
-      })();
-    } else {
-      setLoading(false);
-    }
-  }, [fetchUser]);
-
-  useEffect(() => {
-    if (token) {
-      localStorage.setItem("token", token);
-      setLoading(true);
-      (async () => {
-        await fetchUser(token);
-      })();
-    } else {
-      localStorage.removeItem("token");
+    try {
+      if (token) {
+        localStorage.setItem("token", token);
+        setLoading(true);
+        fetchUser(token);
+      } else {
+        const storedToken = localStorage.getItem("token");
+        if (storedToken) {
+          setToken(storedToken);
+          setLoading(true);
+          fetchUser(storedToken);
+        } else {
+          localStorage.removeItem("token");
+          setUser(null);
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error("Auth state error:", error);
+      setToken(null);
       setUser(null);
       setLoading(false);
+      localStorage.removeItem("token");
     }
   }, [token, fetchUser]);
 

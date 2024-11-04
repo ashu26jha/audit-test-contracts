@@ -1,7 +1,6 @@
 import os
 import shutil
 from pathlib import Path
-from typing import List, Tuple
 
 from api.v1.helpers.run_command import run_command
 from common import logger
@@ -14,15 +13,15 @@ from config.solidity import (
 )
 
 
-def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
+def detect_project_type(repo_dir: str) -> str:
     """
-    Detects the project type (Foundry, Hardhat, or Brownie) and gathers contract folders.
+    Detects the project type (Foundry, Hardhat, or Brownie).
 
     Args:
         repo_dir (str): The directory of the cloned repository.
 
     Returns:
-        Tuple[str, List[str]]: A tuple containing the project type and a list of contract folder paths.
+        str: The detected project type ("foundry", "hardhat", "brownie")
     """
     repo_path = Path(repo_dir)
 
@@ -34,7 +33,6 @@ def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
     for config_name in FOUNDRY_CONFIGS:
         if (repo_path / config_name).exists():
             foundry_config_found = True
-            logger.info(f"Foundry configuration detected: {config_name}")
             break
     if foundry_config_found:
         project_type = "foundry"
@@ -53,7 +51,6 @@ def detect_project_type(repo_dir: str) -> Tuple[str, List[str]]:
             for config_name in BROWNIE_CONFIGS:
                 if (repo_path / config_name).exists():
                     brownie_config_found = True
-                    logger.info(f"Brownie configuration detected: {config_name}")
                     break
             if brownie_config_found:
                 project_type = "brownie"
@@ -76,7 +73,6 @@ def get_project_structure(project_dir: str) -> str:
     Returns:
         str: A string representing the project structure.
     """
-    logger.info("Generating project structure...")
     project_structure = ""
     repo_path = Path(project_dir)
 
@@ -95,49 +91,9 @@ def get_project_structure(project_dir: str) -> str:
             structure_lines.append(f"{indent}    {file}")
 
     project_structure = "\n".join(structure_lines)
+
+    logger.info("Project structure generated successfully")
     return project_structure
-
-
-async def clone_repository(github_url: str, tmpdirname: str, oauth_token: str = None) -> str:
-    """
-    Clones a GitHub repository into a specified temporary directory.
-
-    This function uses the `git clone` command to clone a repository from GitHub into a temporary directory.
-    If an OAuth token is provided, it is used for authentication to clone private repositories.
-
-    Args:
-        github_url (str): The URL of the GitHub repository to clone.
-        tmpdirname (str): The path to the temporary directory where the repository will be cloned.
-        oauth_token (str, optional): The OAuth token for private repositories. Defaults to None.
-
-    Returns:
-        str: The path to the cloned repository directory.
-
-    Raises:
-        ValueError: If the repository cloning fails.
-    """
-    logger.info("Cloning repositoy...")
-    repo_name = str(github_url).split("/")[-1].replace(".git", "")
-    repo_dir = os.path.join(tmpdirname, repo_name)
-
-    git_clone_command = [
-        "git",
-        "clone",
-        "--depth",
-        "1",
-        (
-            github_url
-            if oauth_token is None
-            else str(github_url).replace("https://", f"https://{oauth_token}@")
-        ),
-        repo_dir,
-    ]
-
-    returncode, stdout, stderr = await run_command(git_clone_command, ".")
-    if returncode != 0:
-        raise ValueError(f"Failed to clone the repository: {stderr}")
-
-    return repo_dir
 
 
 def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:

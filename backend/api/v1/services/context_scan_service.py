@@ -1,10 +1,8 @@
 import time
-from typing import List, Optional
-
-from fastapi import HTTPException
+from typing import Optional
 
 from api.v1.helpers.retry_helper import retry_async_operation
-from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
+from api.v1.schemas.context_scan_schema import ContextScanResponse
 from common.logger import logger
 from common.profiles import Profiles, load_profile
 from common.send_prompt_to_llm import send_prompt_to_llm_async
@@ -21,19 +19,16 @@ async def perform_context_scan(
     contracts: str,
     profile: Profiles = Profiles.NONE,
     model: str = LLM_MODEL_BEST,
-) -> List[Finding]:
-    """
-    Performs a context scan using an LLM and returns structured findings as a list.
-    """
-    system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
-
-    prompt = (
-        CONTEXT_PROMPT_WITH_SUMMARY.format(summary=summary, flattened_contracts=contracts)
-        if summary
-        else CONTEXT_PROMPT_WITHOUT_SUMMARY.format(flattened_contracts=contracts)
-    )
-
+) -> ContextScanResponse:
     try:
+        system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
+
+        prompt = (
+            CONTEXT_PROMPT_WITH_SUMMARY.format(summary=summary, flattened_contracts=contracts)
+            if summary
+            else CONTEXT_PROMPT_WITHOUT_SUMMARY.format(flattened_contracts=contracts)
+        )
+
         message_history = load_profile(profile)
         start_time = time.time()
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
@@ -48,11 +43,11 @@ async def perform_context_scan(
         logger.info(f"LLM response time: {elapsed:.2f}s for model {model}")
 
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
-            logger.warning("LLM response was empty or invalid")
-            raise HTTPException(status_code=500, detail="Internal Server Error")
+            logger.error("LLM response was empty or invalid")
+            return ContextScanResponse(findings=[])
 
-        return llm_response.findings
+        return llm_response
 
     except Exception as e:
-        logger.exception(f"Unexpected Error: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        logger.error(f"Context scan failed for model {model}: {str(e)}")
+        return ContextScanResponse(findings=[])

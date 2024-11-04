@@ -45,7 +45,7 @@ async def run_fuzzer(
                 )
                 logger.info("Environment setup successfully.")
             except Exception as e:
-                logger.error(f"Failed to set up environment: {str(e)}")
+                logger.exception(f"Failed to set up environment: {str(e)}")
                 raise
 
         # Update variables from setup_result
@@ -135,7 +135,7 @@ async def run_fuzzer(
             error=None,
         )
     except Exception as e:
-        logger.error(f"An error occurred during the fuzzing process: {str(e)}")
+        logger.exception(f"An error occurred during the fuzzing process: {str(e)}")
         return FuzzerResponse(
             message="An error occurred during the fuzzing process.",
             status="Error",
@@ -145,8 +145,7 @@ async def run_fuzzer(
     finally:
         if is_local_temp_dir and temp_dir and Path(temp_dir).exists():
             try:
-                logger.info(f"Cleaning up temporary directory at {temp_dir}.")
-                # shutil.rmtree(temp_dir)
+                # shutil.rmtree(temp_dir) # TODO: Uncomment this in prod!
                 logger.info("Environment cleanup completed.")
             except Exception as cleanup_error:
-                logger.error(f"Error during cleanup: {str(cleanup_error)}")
+                logger.exception(f"Error during cleanup: {str(cleanup_error)}")

@@ -28,7 +28,6 @@ from api.v1.endpoints import (
 )
 from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
 from api.v1.models.github import GitHubRepo
-from api.v1.models.global_stats import GlobalStats
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -63,10 +62,9 @@ async def lifespan(app: FastAPI):
             Scan,
             ScanResult,
             Payment,
-            GlobalStats,
         ],
     )
-    logger.info("Connected to MongoDB")
+    logger.info(f"Connected to MongoDB in {settings.ENVIRONMENT} environment.")
     yield
     logger.info("Closing MongoDB connection")
     client.close()

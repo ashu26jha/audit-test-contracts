@@ -45,6 +45,11 @@ interface ScanResult {
   type: ScanType;
 }
 
+interface Branch {
+  name: string;
+  isDefault: boolean;
+}
+
 interface Owner {
   login: string;
   type: "user" | "organization";
@@ -53,6 +58,7 @@ interface Owner {
 interface Repository {
   name: string;
   updatedAt: string;
+  private: boolean;
 }
 
 interface File {

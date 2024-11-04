@@ -24,10 +24,14 @@ class Scan(Document):
     branchName: str = Field(default="main")
     commitHash: Optional[str] = None
     paid_status: bool = False
+    discount_applied: Optional[bool] = Field(default=False)
     total_findings: Optional[int] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     detectors: Dict[str, Optional[bool]] = Field(default_factory=dict)
+    progress: float = Field(default=0.0)  # 0-100
+    completed_detectors: int = Field(default=0)
+    total_detectors: int = Field(default=0)
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -53,6 +57,7 @@ class Scan(Document):
                 "commitHash": "1234567890",
                 "total_findings": 1,
                 "paidStatus": False,
+                "discount_applied": False,
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:00:00Z",
                 "detectors": {
@@ -63,6 +68,9 @@ class Scan(Document):
                     "static_analyzer": True,
                     "fuzzer": False,
                 },
+                "total_detectors": 5,
+                "completed_detectors": 0,
+                "progress": 0.0,
             }
         },
     )
@@ -79,7 +87,8 @@ class Scan(Document):
 class ScanResult(Document):
     scan_id: UUID = Indexed(unique=True)
     scan_number: int
-    summary: Optional[str]
+    summary: Optional[str] = None
+    info_message: Optional[str] = None
     type: Optional[Profiles]
     total_findings: int = Field(default=0)
     findings: List[Finding] = Field(default_factory=list)
@@ -96,6 +105,7 @@ class ScanResult(Document):
                 "scan_id": "507f1f77bcf86cd799439012",
                 "scan_number": 1,
                 "summary": "Generated summary of the scan.",
+                "info_message": "Optional info message",
                 "type": "DEFAULT",
                 "total_findings": 1,
                 "findings": [

@@ -23,7 +23,7 @@ async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type:
         FORGE_INIT_COMMAND,
     ]
     for command in commands:
-        returncode, stdout, stderr = await run_command(command, temp_dir)
+        returncode, _, stderr = await run_command(command, temp_dir)
         if returncode != 0:
             raise ValueError(f"Failed to initialize Foundry project: {stderr}")
 
@@ -52,13 +52,13 @@ async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
     # Install NPM dependencies in the Foundry project
     try:
         logger.info("Installing NPM dependencies...")
-        returncode, stdout, stderr = await run_command(["npm", "install"], temp_dir)
+        returncode, _, stderr = await run_command(["npm", "install"], temp_dir)
         if returncode != 0:
             if "ERESOLVE" in stderr:
                 logger.warning(
                     "NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps."
                 )
-                returncode, stdout, stderr = await run_command(
+                returncode, _, stderr = await run_command(
                     ["npm", "install", "--legacy-peer-deps"], temp_dir
                 )
                 if returncode != 0:
@@ -70,7 +70,7 @@ async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
         else:
             logger.info("NPM dependencies installed successfully.")
     except Exception as e:
-        logger.error(f"Error installing NPM dependencies: {str(e)}")
+        logger.exception(f"Error installing NPM dependencies: {str(e)}")
         raise
 
 
@@ -127,7 +127,7 @@ async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
         remappings (List[str]): A list of remapping strings.
     """
     remappings_path = os.path.join(temp_dir, "remappings.txt")
-    with open(remappings_path, "w") as f:
+    with open(remappings_path, "w", encoding="utf-8") as f:
         f.write("\n".join(remappings))
 
 
@@ -143,7 +143,7 @@ def preprocess_solidity_files(temp_dir: str) -> None:
         for file in files:
             if file.endswith(".sol"):
                 file_path = os.path.join(root, file)
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 # Replace address variables assigned to empty strings
                 content = re.sub(
@@ -151,7 +151,7 @@ def preprocess_solidity_files(temp_dir: str) -> None:
                     r"\1 address(0);",
                     content,
                 )
-                with open(file_path, "w") as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(content)
 
 
@@ -170,7 +170,7 @@ def update_foundry_config(temp_dir: str) -> None:
     if not os.path.exists(foundry_toml_path):
         raise FileNotFoundError("foundry.toml not found in the project directory.")
 
-    with open(foundry_toml_path, "r") as f:
+    with open(foundry_toml_path, "r", encoding="utf-8") as f:
         config = toml.load(f)
 
     # Ensure the default profile exists
@@ -202,7 +202,7 @@ def update_foundry_config(temp_dir: str) -> None:
     # Add invariant settings
     config["profile"]["default"]["invariant"] = {"runs": 256, "depth": 32, "fail_on_revert": True}
 
-    with open(foundry_toml_path, "w") as f:
+    with open(foundry_toml_path, "w", encoding="utf-8") as f:
         toml.dump(config, f)
 
 
@@ -217,7 +217,7 @@ def read_file(path: str) -> str:
         str: The content of the file.
     """
     try:
-        with open(path, "r") as file:
+        with open(path, "r", encoding="utf-8") as file:
             content = file.read()
         return content
     except Exception as e:

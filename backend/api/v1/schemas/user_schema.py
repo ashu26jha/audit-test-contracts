@@ -72,7 +72,7 @@ class UserInDB(UserBase):
 
 class UserResponse(UserBase):
     id: str
-
+    installationId: list[int]
     model_config = ConfigDict(from_attributes=True)
 
 

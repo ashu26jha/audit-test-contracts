@@ -66,4 +66,4 @@ AuditAgent Team"""
             server.send_message(msg)
         logger.info(f"Email sent successfully to {to_email}")
     except Exception as e:
-        logger.error(f"Error sending email: {str(e)}")
+        logger.exception(f"Error sending email: {str(e)}")

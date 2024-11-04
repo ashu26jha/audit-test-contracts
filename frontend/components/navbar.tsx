@@ -19,10 +19,18 @@ export const Navbar = () => {
   // const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && !user && !isPublicRoute(pathname)) {
+    if (!loading && !user && !isPublicRoute(pathname) && pathname !== "/login-success") {
       router.push("/login");
     }
   }, [loading, user, pathname, isPublicRoute, router]);
+
+  if (pathname === "/login-success") {
+    return null;
+  }
+
+  if (loading) {
+    return null;
+  }
 
   if (pathname === "/login") {
     return <LoginNavbar />;
@@ -50,7 +58,7 @@ export const Navbar = () => {
     >
       <NavbarBrand as="li" className="gap-3 max-w-fit min-w-[130px]">
         <NextLink className="flex justify-start items-center gap-1" href="/">
-          <Image src="/logo.svg" alt="logo" width={195} height={150} />
+          <Image src="/logo.svg" alt="logo" width={195} height={150} priority />
         </NextLink>
       </NavbarBrand>
 
@@ -65,7 +73,7 @@ export const Navbar = () => {
                   <></>
                 )}{" "}
                 <></>
-                <p className="text-neutral-50 text-base leading-normal">{user ? user.username : "Guest"}</p>
+                <p className="text-neutral-50 text-base leading-normal">{user?.username ?? "Guest"}</p>
                 <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
               </div>
             </DropdownTrigger>
@@ -98,46 +106,6 @@ export const Navbar = () => {
           </Dropdown>
         </div>
       </NavbarContent>
-
-      {/* <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
-        <NavbarItem className="hidden sm:flex gap-2">
-          <ThemeSwitch />
-        </NavbarItem>
-      </NavbarContent>
-      <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
-        <Dropdown placement="bottom-end">
-          <DropdownTrigger>
-            <Avatar
-              isBordered
-              as="button"
-              className="transition-transform"
-              color="secondary"
-              name={user ? user.username : 'Guest'}
-              size="sm"
-            />
-          </DropdownTrigger>
-          <DropdownMenu aria-label="Profile Actions" variant="flat">
-            <DropdownItem
-              key="profile"
-              onClick={() => {
-                router.push('/profile');
-              }}
-            >
-              Profile
-            </DropdownItem>
-            <DropdownItem key="support">Support Email</DropdownItem>
-            <DropdownItem key="logout" color="danger" onClick={handleLogout}>
-              Log out
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-      </NavbarContent> */}
     </NextUINavbar>
   );
 };

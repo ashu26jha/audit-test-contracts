@@ -24,14 +24,15 @@ async def run_fuzz_file(project_dir: str) -> str:
         # Combine stdout and stderr for full output
         full_output = stdout + stderr
 
-        if returncode == 0:
-            logger.info("Fuzz test completed successfully")
-            return full_output
-        else:
+        if returncode != 0:
             logger.warning(f"Forge test completed with non-zero exit code: {returncode}")
             logger.warning(full_output)
             return full_output
+
+        logger.info("Fuzz test completed successfully")
+        return full_output
+
     except Exception as e:
         # logger.error(f"Error running fuzz test: {str(e)}")
-        logger.error("Error running fuzz test")
+        logger.exception("Error running fuzz test")
         return str(e)

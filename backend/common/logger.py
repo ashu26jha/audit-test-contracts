@@ -8,7 +8,7 @@ logger = logging.getLogger("Audit Agent")
 logger.setLevel(logging.DEBUG)
 
 # Create a formatter
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(levelname)s: %(asctime)s - %(name)s - %(message)s")
 
 # Create a stream handler (for console output)
 stream_handler = logging.StreamHandler(sys.stdout)

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 
 import { Select, SelectItem, Input, type Selection, Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useDebounce } from "use-debounce";
 
 import { useScanStepper } from "@/hooks/useScanStepper";
@@ -24,6 +25,8 @@ export const RepositorySelection: React.FC = () => {
   const [inputURL, setInputURL] = useState<string>("");
 
   const [debouncedURL] = useDebounce(inputURL, 300);
+
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
 
   useEffect(() => {
     resetStepper();
@@ -61,7 +64,7 @@ export const RepositorySelection: React.FC = () => {
   };
 
   return (
-    <div id="repository-selection" className="repository-selection">
+    <>
       <Select
         variant="bordered"
         label="Git Organization"
@@ -109,20 +112,42 @@ export const RepositorySelection: React.FC = () => {
           className="w-full"
           onSelectionChange={(key) => {
             const selected = key as string;
-            setSelectedRepo(repositories.find((repo) => repo.name === selected) || null);
+            const selectedRepository = repositories.find((repo) => repo.name === selected) || null;
+            setSelectedRepo(selectedRepository);
+            setIsPrivate(selectedRepository?.private || false);
           }}
+          startContent={
+            isPrivate ? <Image src="/private.svg" alt="Private" className="ml-2" width={14} height={14} /> : null
+          }
         >
           {repositories.map((repo) => (
             <AutocompleteItem
               key={repo.name}
-              value={repo.name}
+              textValue={repo.name}
               className="hover:bg-[#4F46E5] transition-colors duration-300"
             >
-              {repo.name}
+              <div className="flex items-center">
+                {repo.name}{" "}
+                {repo.private ? (
+                  <Image src="/private.svg" alt="Private" className="ml-2" width={14} height={14} />
+                ) : null}
+              </div>
             </AutocompleteItem>
           ))}
         </Autocomplete>
       )}
+
+      <Link
+        href={`${process.env.NEXT_PUBLIC_GITHUB_APP_URL ?? "https://github.com/apps/auditagent-app/installations/new"}`}
+        className="text-sm text-[#AE7EDE] mt-[-0.5rem]"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <div className="flex items-center">
+          Add Repo from Github
+          <Image src="/link.svg" alt="Link" className="ml-2" width={14} height={14} />
+        </div>
+      </Link>
 
       <div className="flex items-center justify-center mb-3 mt-3">
         <div className="w-full h-[2px] bg-gray-700"></div>
@@ -141,6 +166,6 @@ export const RepositorySelection: React.FC = () => {
         isInvalid={isInvalidURL}
         errorMessage={isInvalidURL ? "Invalid GitHub URL" : ""}
       />
-    </div>
+    </>
   );
 };
