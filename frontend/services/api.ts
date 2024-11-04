@@ -95,6 +95,23 @@ export const getPartialScanResults = async (token: string, scanId: string) => {
   return result;
 };
 
+export const getFullScanResults = async (token: string, scanId: string) => {
+  const response = await api.get(`/api/v1/scans/full/${scanId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const result = response.data.data.result;
+  const scan = response.data.data.scan;
+  result.scan = scan;
+  // Sort the findings by severity
+  const severityOrder = ["Critical", "High", "Medium", "Low", "Info", "Best Practices"];
+  result.findings.sort((a: Finding, b: Finding) => {
+    return severityOrder.indexOf(a.Severity) - severityOrder.indexOf(b.Severity);
+  });
+  return result;
+};
+
 export const getScanHistory = async (token: string) => {
   const response = await api.get("/api/v1/scans-history", {
     headers: {

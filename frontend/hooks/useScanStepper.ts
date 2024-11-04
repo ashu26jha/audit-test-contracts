@@ -27,10 +27,13 @@ export const useScanStepper = () => {
   const fetchOwners = useCallback(
     async (token: string) => {
       try {
+        useScanStepperStore.getState().setIsOrganizationLoading(true);
         const owners = await getOrganizationsAndPersonal(token);
         setOwners(owners);
       } catch (error) {
         console.error("Error fetching owners:", error);
+      } finally {
+        useScanStepperStore.getState().setIsOrganizationLoading(false);
       }
     },
     [setOwners],
@@ -39,10 +42,13 @@ export const useScanStepper = () => {
   const fetchRepositories = useCallback(
     async (token: string, owner: Owner) => {
       try {
+        useScanStepperStore.getState().setIsRepositoryLoading(true);
         const repositories = await getRepositories(token, owner.login, owner.type);
         setRepositories(repositories);
       } catch (error) {
         console.error("Error fetching repositories:", error);
+      } finally {
+        useScanStepperStore.getState().setIsRepositoryLoading(false);
       }
     },
     [setRepositories],
@@ -51,10 +57,13 @@ export const useScanStepper = () => {
   const fetchBranches = useCallback(
     async (token: string, owner: Owner, repo: Repository) => {
       try {
+        useScanStepperStore.getState().setIsBranchLoading(true);
         const branches = await getBranches(token, owner.login, repo.name);
         setBranches(branches);
       } catch (error) {
         console.error("Error fetching branches:", error);
+      } finally {
+        useScanStepperStore.getState().setIsBranchLoading(false);
       }
     },
     [setBranches],
@@ -84,7 +93,7 @@ export const useScanStepper = () => {
         const response = await initiateScan(token, {
           repositoryURL: `https://github.com/${selectedOwner.login}/${selectedRepo.name}`,
           contractFiles: selectedContracts,
-          branchName: selectedBranch,
+          branchName: selectedBranch || "",
         });
         return response;
       } catch (error) {

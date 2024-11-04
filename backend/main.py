@@ -120,7 +120,7 @@ app.include_router(health_check.router, prefix="/api/v1")  # Admin protected
 app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(github.router, prefix="/api/v1/github")
 app.include_router(audit_agent.router, prefix="/api/v1")
-app.include_router(scan_results.router, prefix="/api/v1/scans")  # Partial only
+app.include_router(scan_results.router, prefix="/api/v1/scans")
 app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
 app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
@@ -134,7 +134,6 @@ if settings.ENVIRONMENT == "development":
     app.include_router(generate_summary.router, prefix="/api/v1")
     app.include_router(context_scan.router, prefix="/api/v1")
     app.include_router(test_auth.router, prefix="/api/v1")
-    app.include_router(scan_results.dev_router, prefix="/api/v1/scans")
 
 
 app.add_exception_handler(HTTPException, http_exception_handler)

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import Image from "next/image";
@@ -6,7 +6,17 @@ import Image from "next/image";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const BranchSelection: React.FC = () => {
-  const { branches, setSelectedBranch } = useScanStepperStore();
+  const { branches, selectedBranch, setSelectedBranch } = useScanStepperStore();
+
+  useEffect(() => {
+    if (branches.length > 0 && !selectedBranch) {
+      const defaultBranch = branches.find((branch) => branch.isDefault)?.name;
+      if (defaultBranch) {
+        setSelectedBranch(defaultBranch);
+      }
+    }
+  }, [branches, selectedBranch, setSelectedBranch]);
+
   return (
     <div className="mb-6">
       <Autocomplete
@@ -20,6 +30,8 @@ export const BranchSelection: React.FC = () => {
           const selected = keys as string;
           setSelectedBranch(selected);
         }}
+        isLoading={useScanStepperStore.getState().isBranchLoading}
+        selectedKey={selectedBranch}
       >
         {branches.map((branch) => (
           <AutocompleteItem
@@ -32,9 +44,7 @@ export const BranchSelection: React.FC = () => {
               {branch.name}
               {branch.isDefault ? (
                 <Image src="/default.svg" alt="Default" width={50} height={50} className="ml-2" />
-              ) : (
-                <></>
-              )}
+              ) : null}
             </div>
           </AutocompleteItem>
         ))}

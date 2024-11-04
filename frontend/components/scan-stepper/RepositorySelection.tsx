@@ -73,6 +73,7 @@ export const RepositorySelection: React.FC = () => {
         className="w-full"
         selectedKeys={selectedOrg ? [selectedOrg] : []}
         onSelectionChange={handleOrganizationSelect}
+        isLoading={useScanStepperStore.getState().isOrganizationLoading}
       >
         {owners.map((org) => (
           <SelectItem key={org.login} value={org.login}>
@@ -110,6 +111,7 @@ export const RepositorySelection: React.FC = () => {
           labelPlacement="outside"
           placeholder="Search a repository"
           className="w-full"
+          isLoading={useScanStepperStore.getState().isRepositoryLoading}
           onSelectionChange={(key) => {
             const selected = key as string;
             const selectedRepository = repositories.find((repo) => repo.name === selected) || null;

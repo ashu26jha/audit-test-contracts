@@ -152,41 +152,51 @@ class GitHubService:
 
     async def get_accessible_repositories(self, access_token: str) -> list:
         """
-        Returns the repositories for which the GitHub App has access to
+        Returns all repositories for which the GitHub App has access to, handling pagination
         """
         installations = await self.get_installations(access_token)
         installation_repos = []
+
         for installation in installations:
             installation_id = installation["id"]
-            url = f"https://api.github.com/user/installations/{installation_id}/repositories"
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "X-GitHub-Api-Version": "2022-11-28",
-                "Accept": "application/vnd.github+json",
-            }
+            page = 1
+            per_page = 100
 
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=headers)
-
-            if response.status_code != 200:
-                logger.error(
-                    f"Failed to fetch repositories. Status: {response.status_code}, Response: {response.text}"
-                )
-                raise HTTPException(
-                    status_code=response.status_code, detail=f"GitHub API error: {response.text}"
-                )
-
-            data = response.json()
-            repositories = [
-                {
-                    "name": repo["name"],
-                    "updatedAt": repo["updated_at"],
-                    "private": repo["private"],
-                    "owner": repo["owner"]["login"],
+            while True:
+                url = f"https://api.github.com/user/installations/{installation_id}/repositories"
+                headers = {
+                    "Authorization": f"Bearer {access_token}",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                    "Accept": "application/vnd.github+json",
                 }
-                for repo in data.get("repositories", [])
-            ]
-            installation_repos.extend(repositories)
+                params = {"page": page, "per_page": per_page}
+
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, headers=headers, params=params)
+
+                if response.status_code != 200:
+                    logger.error(
+                        f"Failed to fetch repositories. Status: {response.status_code}, Response: {response.text}"
+                    )
+                    raise HTTPException(
+                        status_code=response.status_code,
+                        detail=f"GitHub API error: {response.text}",
+                    )
+
+                data = response.json()
+                repositories = [
+                    {
+                        "name": repo["name"],
+                        "updatedAt": repo["updated_at"],
+                        "private": repo["private"],
+                        "owner": repo["owner"]["login"],
+                    }
+                    for repo in data.get("repositories", [])
+                ]
+                installation_repos.extend(repositories)
+
+                if len(data.get("repositories", [])) < per_page:
+                    break
 
         return installation_repos
 

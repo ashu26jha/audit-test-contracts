@@ -4,7 +4,7 @@ interface ScanStepperState {
   currentStep: number;
   selectedOwner: Owner | null;
   selectedRepo: Repository | null;
-  selectedBranch: string;
+  selectedBranch: string | undefined;
   selectedContracts: string[];
   owners: Owner[];
   repositories: Repository[];
@@ -14,6 +14,9 @@ interface ScanStepperState {
   isNextEnabled: boolean;
   contractSearch: string;
   repositoryURL: string;
+  isBranchLoading: boolean;
+  isOrganizationLoading: boolean;
+  isRepositoryLoading: boolean;
   isSolidityFilesLoading: boolean;
   isLineExceeded: boolean;
   isFileLimitExceeded: boolean;
@@ -30,6 +33,9 @@ interface ScanStepperState {
   setIsLoading: (isLoading: boolean) => void;
   setIsNextEnabled: (isEnabled: boolean) => void;
   setRepositoryURL: (url: string) => void;
+  setIsBranchLoading: (isLoaded: boolean) => void;
+  setIsOrganizationLoading: (isLoading: boolean) => void;
+  setIsRepositoryLoading: (isLoading: boolean) => void;
   setIsSolidityFilesLoading: (isLoaded: boolean) => void;
   setIsLineExceeded: (isLineExceeded: boolean) => void;
   setIsFileLimitExceeded: (isLineExceeded: boolean) => void;
@@ -50,6 +56,9 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   isNextEnabled: false,
   contractSearch: "",
   repositoryURL: "",
+  isBranchLoading: false,
+  isOrganizationLoading: false,
+  isRepositoryLoading: false,
   isSolidityFilesLoading: false,
   isLineExceeded: false,
   isFileLimitExceeded: false,
@@ -66,6 +75,9 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsNextEnabled: (isEnabled) => set({ isNextEnabled: isEnabled }),
   setRepositoryURL: (url) => set({ repositoryURL: url }),
+  setIsBranchLoading: (isLoaded) => set({ isBranchLoading: isLoaded }),
+  setIsOrganizationLoading: (isLoaded) => set({ isOrganizationLoading: isLoaded }),
+  setIsRepositoryLoading: (isLoaded) => set({ isRepositoryLoading: isLoaded }),
   setIsSolidityFilesLoading: (isLoaded) => set({ isSolidityFilesLoading: isLoaded }),
   setIsLineExceeded: (isLineExceeded) => set({ isLineExceeded }),
   setIsFileLimitExceeded: (isLineExceeded) => set({ isFileLimitExceeded: isLineExceeded }),

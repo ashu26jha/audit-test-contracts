@@ -28,7 +28,7 @@ export default function Footer() {
 
   if (pathname !== "/login") {
     return (
-      <footer className="px-10 py-4 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row font-inter font-normal text-[#A1A1AA] justify-between items-center text-sm">
+      <footer className="z-20 px-10 py-4 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row font-inter font-normal text-[#A1A1AA] justify-between items-center text-sm ">
         <div className="flex items-center">
           <div className="flex items-center gap-2">
             Powered by <Image src="/nethermind.svg" alt="logo" width={120} height={20} />

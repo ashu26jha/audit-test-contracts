@@ -1,6 +1,7 @@
 "use client";
 
 import { Loading } from "@/components/Loading";
+import ScanFullResults from "@/components/scan-full-results";
 import ScanResults from "@/components/scan-results";
 import { usePaymentProcessing } from "@/hooks/usePaymentProcessing";
 
@@ -19,14 +20,18 @@ const ScanResultsPage: React.FC<ScanResultsPageProps> = ({ params }) => {
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="container mx-auto max-w-10xl h-full">Error: {error}</div>;
   }
 
   if (!scanData) {
-    return <div>No scan data found</div>;
+    return <div className="container mx-auto max-w-10xl h-full">No scan data found</div>;
   }
 
-  return <ScanResults scanData={scanData} handlePayment={handlePayment} />;
+  if (scanData.scan.paid_status && scanData.findings.length > 1) {
+    return <ScanFullResults scanData={scanData} handlePayment={handlePayment} />;
+  } else {
+    return <ScanResults scanData={scanData} handlePayment={handlePayment} />;
+  }
 };
 
 export default ScanResultsPage;

@@ -174,65 +174,67 @@ Thank you,
   );
 
   return (
-    <Card className="h-full relative">
-      <CardHeader>
-        <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-          <div className="text-sm text-gray-400 flex">
-            Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
-          </div>
-          <div className="flex space-x-2">
-            <Tooltip content="More information">
-              <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
-                Info
-              </Button>
-            </Tooltip>
-            {isPaid && (
-              <Tooltip content="Send to email">
-                <Button
-                  size="sm"
-                  className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
-                  startContent={<Image src="/mail.svg" width={20} height={20} alt="Send Email" />}
-                  onPress={handleSendReportAgain}
-                >
-                  Send Report Again
+    <div className="container mx-auto max-w-10xl h-full">
+      <Card className="h-full relative">
+        <CardHeader>
+          <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
+            <div className="text-sm text-gray-400 flex">
+              Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
+            </div>
+            <div className="flex space-x-2">
+              <Tooltip content="More information">
+                <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
+                  Info
                 </Button>
               </Tooltip>
-            )}
+              {isPaid && (
+                <Tooltip content="Send to email">
+                  <Button
+                    size="sm"
+                    className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
+                    startContent={<Image src="/mail.svg" width={20} height={20} alt="Send Email" />}
+                    onPress={handleSendReportAgain}
+                  >
+                    Send Report Again
+                  </Button>
+                </Tooltip>
+              )}
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <Divider />
+        </CardHeader>
+        <Divider />
 
-      <main className="h-full p-8">
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {scanStats.map((stat, index) => (
-            <Card key={index} className="bg-[#222222]">
-              <CardBody className="flex flex-row items-center space-x-3">
-                {stat.icon}
-                <div>
-                  <p className="text-sm text-gray-400">{stat.label}</p>
-                  <p className="text-lg font-semibold">{stat.value}</p>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+        <main className="h-full p-8">
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {scanStats.map((stat, index) => (
+              <Card key={index} className="bg-[#222222]">
+                <CardBody className="flex flex-row items-center space-x-3">
+                  {stat.icon}
+                  <div>
+                    <p className="text-sm text-gray-400">{stat.label}</p>
+                    <p className="text-lg font-semibold">{stat.value}</p>
+                  </div>
+                </CardBody>
+              </Card>
+            ))}
+          </div>
 
-        {isFailed && renderFailed()}
-        {!isCompleted && !isFailed && renderInProgress()}
-        {isNoFinding && renderNoFindings()}
-        {!isNoFinding && renderFindings()}
-        {!isPaid && hasFindings && (
-          <>
-            <BluredFindings />
-            {renderPaymentCard()}
-          </>
-        )}
-        {isPaid && renderAlreadyPaid()}
-      </main>
+          {isFailed && renderFailed()}
+          {!isCompleted && !isFailed && renderInProgress()}
+          {isNoFinding && renderNoFindings()}
+          {!isNoFinding && renderFindings()}
+          {!isPaid && hasFindings && (
+            <>
+              <BluredFindings />
+              {renderPaymentCard()}
+            </>
+          )}
+          {isPaid && renderAlreadyPaid()}
+        </main>
 
-      <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
-    </Card>
+        <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
+      </Card>
+    </div>
   );
 };
 

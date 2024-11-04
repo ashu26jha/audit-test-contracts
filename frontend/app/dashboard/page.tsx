@@ -33,12 +33,13 @@ const DashboardPage = () => {
   return (
     <>
       <ScanInfoModal />
-
-      {showStepper ? (
-        <ScanStepper setShowStepper={setShowStepper} />
-      ) : (
-        <Dashboard scanHistory={scanHistory} scanable={scanable} refetch={refetch} setShowStepper={setShowStepper} />
-      )}
+      <div className="container mx-auto max-w-10xl h-full">
+        {showStepper ? (
+          <ScanStepper setShowStepper={setShowStepper} />
+        ) : (
+          <Dashboard scanHistory={scanHistory} scanable={scanable} refetch={refetch} setShowStepper={setShowStepper} />
+        )}
+      </div>
     </>
   );
 };

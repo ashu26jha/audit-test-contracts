@@ -36,9 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <div className="relative flex flex-col h-screen">
             <Navbar />
-            <main className="container h-full mx-auto max-w-10xl pt-16 px-8 flex-grow overflow-y-auto pb-6">
-              {children}
-            </main>
+            <main className="h-full w-full pt-8 px-8 flex-grow overflow-y-auto pb-6">{children}</main>
             <Footer />
           </div>
         </Providers>
