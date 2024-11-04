@@ -10,6 +10,7 @@ const api = axios.create({
 });
 
 export const initiateGithubLogin = () => {
+  console.log("initiateGithubLogin", API_URL);
   if (typeof window !== "undefined") {
     window.location.href = `${API_URL}/api/v1/auth/github-login`;
   }
