@@ -4,7 +4,7 @@ import { Button, Card } from "@nextui-org/react";
 import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { AA_EMAIL } from "@/config/constants";
+import { CONTACT } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PaymentProps {
@@ -49,7 +49,7 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           </div>
         )}
       </Card>
-      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at {AA_EMAIL}</p>
+      <p className="text-gray-500 mt-8 text-sm">Need help? Reach out to us at {CONTACT.EMAIL}</p>
     </div>
   );
 };

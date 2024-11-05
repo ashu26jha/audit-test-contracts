@@ -27,6 +27,7 @@ services:
       - auditor-network  # Connect to the custom app network
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000  # Use localhost for development
+      - NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/auditagent-dev/installations/new 
     volumes:
       - ./frontend:/app/frontend  # Mount the frontend directory
       - /app/frontend/node_modules  # Mount the node_modules directory

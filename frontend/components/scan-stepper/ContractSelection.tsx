@@ -6,7 +6,7 @@ import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
 
 import { HelpGuide } from "./HelpGuide";
-import { MAX_FILES, MAX_LINES } from "../../config/constants";
+import { LIMITS } from "../../config/constants";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {
@@ -105,9 +105,9 @@ export const ContractSelection: React.FC = () => {
       <div className="w-[30%]">
         <HelpGuide
           selectedLines={totalSelectedLines}
-          totalLines={MAX_LINES}
+          totalLines={LIMITS.MAX_LINES}
           selectedFiles={selectedContracts.length}
-          totalFiles={MAX_FILES}
+          totalFiles={LIMITS.MAX_FILES}
         />
       </div>
     </div>

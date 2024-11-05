@@ -4,7 +4,7 @@ import { Link } from "@nextui-org/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
-import { AA_EMAIL, CONTACT_PAGE_URL, DISCLAIMER_PAGE_URL, PRIVACY_POLICY_URL, TELEGRAM_URL } from "@/config/constants";
+import { CONTACT, PAGES } from "@/config/constants";
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -37,15 +37,15 @@ export default function Footer() {
           <div>©2024 Nethermind. All rights reserved</div>
         </div>
         <div className="flex items-center">
-          <FooterLink href={CONTACT_PAGE_URL}>Contact Us</FooterLink>
+          <FooterLink href={PAGES.CONTACT}>Contact Us</FooterLink>
           <Elipsis />
-          <FooterLink href={`mailto:${AA_EMAIL}`}>Support Email</FooterLink>
+          <FooterLink href={`mailto:${CONTACT.EMAIL}`}>Support Email</FooterLink>
           <Elipsis />
-          <FooterLink href={TELEGRAM_URL}>Telegram</FooterLink>
+          <FooterLink href={CONTACT.TELEGRAM}>Telegram</FooterLink>
           <Elipsis />
-          <FooterLink href={DISCLAIMER_PAGE_URL}>Terms of Use</FooterLink>
+          <FooterLink href={PAGES.DISCLAIMER}>Terms of Use</FooterLink>
           <Elipsis />
-          <FooterLink href={PRIVACY_POLICY_URL}>Privacy Policy</FooterLink>
+          <FooterLink href={PAGES.PRIVACY_POLICY}>Privacy Policy</FooterLink>
         </div>
       </footer>
     );
@@ -56,7 +56,7 @@ export default function Footer() {
       <p className="text-sm text-gray-400">
         By proceeding you agree to our{" "}
         <Link
-          href={DISCLAIMER_PAGE_URL}
+          href={PAGES.DISCLAIMER}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-gray-400 underline hover:text-gray-300"
@@ -65,7 +65,7 @@ export default function Footer() {
         </Link>{" "}
         and{" "}
         <Link
-          href={PRIVACY_POLICY_URL}
+          href={PAGES.PRIVACY_POLICY}
           target="_blank"
           rel="noopener noreferrer"
           className=" text-sm text-gray-400 underline hover:text-gray-300 mr-1"

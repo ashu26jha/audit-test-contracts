@@ -1,18 +1,17 @@
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.auditagent.nethermind.io";
+import { SERVICES } from "@/config/constants";
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: SERVICES.API_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
 export const initiateGithubLogin = () => {
-  console.log("initiateGithubLogin", API_URL);
   if (typeof window !== "undefined") {
-    window.location.href = `${API_URL}/api/v1/auth/github-login`;
+    window.location.href = `${SERVICES.API_URL}/api/v1/auth/github-login`;
   }
 };
 

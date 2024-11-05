@@ -1,11 +1,10 @@
 {
-  "plugins": ["import", "@typescript-eslint", "react", "react-hooks", "jsx-a11y"],
+  "plugins": ["import", "@typescript-eslint", "react", "jsx-a11y"],
   "extends": [
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
     "plugin:import/typescript",
     "plugin:react/recommended",
-    "plugin:react-hooks/recommended",
     "plugin:jsx-a11y/recommended",
     "prettier"
   ],

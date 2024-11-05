@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useDebounce } from "use-debounce";
 
+import { SERVICES } from "@/config/constants";
 import { useScanStepper } from "@/hooks/useScanStepper";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
@@ -140,7 +141,7 @@ export const RepositorySelection: React.FC = () => {
       )}
 
       <Link
-        href={`${process.env.NEXT_PUBLIC_GITHUB_APP_URL ?? "https://github.com/apps/auditagent-app/installations/new"}`}
+        href={SERVICES.GITHUB_APP_URL}
         className="text-sm text-[#AE7EDE] mt-[-0.5rem]"
         target="_blank"
         rel="noopener noreferrer"
