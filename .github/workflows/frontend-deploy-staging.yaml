@@ -10,8 +10,8 @@ env:
   ECS_CLUSTER: code-auditor-ecs-cluster
   CONTAINER_NAME: code-auditor-frontend
   TASK_NAME: code-auditor-frontend-app
-  NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-  NEXT_PUBLIC_GITHUB_APP_URL: ${{ secrets.NEXT_PUBLIC_GITHUB_APP_URL }}
+  NEXT_PUBLIC_API_URL: "https://app.auditagent.nethermind.dev"
+  NEXT_PUBLIC_GITHUB_APP_URL: "https://github.com/apps/auditagent-staging/installations/new"
 
 permissions:
   id-token: write
@@ -20,6 +20,7 @@ permissions:
 jobs:
   code-auditor-frontend-deploy:
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
       - name: Checkout repository
@@ -58,16 +59,14 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
-          NEXT_PUBLIC_API_URL: ${{ env.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_GITHUB_APP_URL: ${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}
         run: |
           IMAGE_TAG_FRONTEND=frontend-${{ github.sha }}
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_FRONTEND
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           docker buildx build \
             --platform=linux/amd64 \
-            --build-arg NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-            --build-arg NEXT_PUBLIC_GITHUB_APP_URL=$NEXT_PUBLIC_GITHUB_APP_URL \
+            --build-arg NEXT_PUBLIC_API_URL="${{ env.NEXT_PUBLIC_API_URL }}" \
+            --build-arg NEXT_PUBLIC_GITHUB_APP_URL="${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}" \
             -f ./frontend/Dockerfile.nginx \
             -t $IMAGE_URI ./frontend 
           docker push $IMAGE_URI
