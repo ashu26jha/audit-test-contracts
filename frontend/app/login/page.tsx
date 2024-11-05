@@ -15,6 +15,9 @@ const LoginPage = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  console.log("NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL);
+  console.log("NEXT_PUBLIC_GITHUB_APP_URL", process.env.NEXT_PUBLIC_GITHUB_APP_URL);
+
   useEffect(() => {
     if (!loading && user && pathname === "/login") {
       router.push("/dashboard");
