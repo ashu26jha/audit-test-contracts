@@ -10,8 +10,6 @@ env:
   ECS_CLUSTER: code-auditor-ecs-cluster
   CONTAINER_NAME: code-auditor-frontend
   TASK_NAME: code-auditor-frontend-app
-  NEXT_PUBLIC_API_URL: "https://api.auditagent.nethermind.dev"
-  NEXT_PUBLIC_GITHUB_APP_URL: "https://github.com/apps/auditagent-staging/installations/new"
 
 permissions:
   id-token: write
@@ -47,6 +45,26 @@ jobs:
           role-to-assume: arn:aws:iam::654654236251:role/terraform-20241003185909187100000001
           role-session-name: Github
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get secrets from AWS Secrets Manager
+        run: |
+          if ! SECRETS=$(aws secretsmanager get-secret-value --secret-id code-auditor-frontend-staging --query SecretString --output text); then
+            echo "Failed to fetch secrets from AWS Secrets Manager"
+            exit 1
+          fi
+          
+          if ! echo $SECRETS | jq -e '.NEXT_PUBLIC_API_URL' > /dev/null; then
+            echo "NEXT_PUBLIC_API_URL is missing in the secret"
+            exit 1
+          fi
+          
+          if ! echo $SECRETS | jq -e '.NEXT_PUBLIC_GITHUB_APP_URL' > /dev/null; then
+            echo "NEXT_PUBLIC_GITHUB_APP_URL is missing in the secret"
+            exit 1
+          fi
+          
+          echo "NEXT_PUBLIC_API_URL=$(echo $SECRETS | jq -r .NEXT_PUBLIC_API_URL)" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_GITHUB_APP_URL=$(echo $SECRETS | jq -r .NEXT_PUBLIC_GITHUB_APP_URL)" >> $GITHUB_ENV
 
       - name: Login to Amazon ECR
         id: login-ecr

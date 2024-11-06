@@ -12,6 +12,10 @@ ENV NEXT_PUBLIC_GITHUB_APP_URL=${NEXT_PUBLIC_GITHUB_APP_URL}
 # Set the working directory inside the container
 WORKDIR /app
 
+# Create a .env file with the environment variables
+RUN echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env && \
+    echo "NEXT_PUBLIC_GITHUB_APP_URL=$NEXT_PUBLIC_GITHUB_APP_URL" >> .env
+
 # Copy the package.json and package-lock.json into the container
 COPY package*.json ./
 
