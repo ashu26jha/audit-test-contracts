@@ -2,10 +2,11 @@ import asyncio
 from asyncio import Semaphore
 from typing import List, Optional, Type, TypeVar
 
-# from langfuse.decorators import langfuse_context
 import httpx
 from fastapi import HTTPException
-from openai import AsyncOpenAI, OpenAIError
+from langfuse.decorators import langfuse_context, observe
+from langfuse.openai import AsyncOpenAI
+from openai import OpenAIError
 from pydantic import BaseModel
 
 from common import logger
@@ -25,6 +26,7 @@ CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 T = TypeVar("T", bound=BaseModel)
 
 
+@observe(as_type="generation")
 async def send_prompt_to_llm_async(
     model_type: str,
     user_input: str,
@@ -90,13 +92,13 @@ async def send_prompt_to_llm_async(
             )
             content = response.content[0].text.strip()
 
-            # langfuse_context.update_current_observation(
-            #     model=model_type,
-            #     usage={
-            #         "input": response.usage.input_tokens,
-            #         "output": response.usage.output_tokens,
-            #     },
-            # )
+            langfuse_context.update_current_observation(
+                model=model_type,
+                usage={
+                    "input": response.usage.input_tokens,
+                    "output": response.usage.output_tokens,
+                },
+            )
 
             # Use the helper function to parse the content
             structured_response = parse_model_response(content, response_model)
@@ -106,15 +108,15 @@ async def send_prompt_to_llm_async(
             raise HTTPException(status_code=500, detail=f"Unsupported model type: {model_type}")
 
     except OpenAIError as e:
-        # langfuse_context.update_current_trace(metadata={"error": str(e)})
+        langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.error(f"OpenAI API error when sending prompt to {model_type}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     except ValueError as e:
-        # langfuse_context.update_current_trace(metadata={"error": str(e)})
+        langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.error(f"Value error when sending prompt to {model_type}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
     except Exception as e:
-        # langfuse_context.update_current_trace(metadata={"error": str(e)})
+        langfuse_context.update_current_trace(metadata={"error": str(e)})
         logger.exception(f"Unexpected error when sending prompt to {model_type}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 

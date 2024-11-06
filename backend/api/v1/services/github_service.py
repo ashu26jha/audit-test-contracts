@@ -150,78 +150,78 @@ class GitHubService:
 
         return installations
 
-    async def get_accessible_repositories(self, access_token: str) -> list:
-        """
-        Returns all repositories for which the GitHub App has access to, handling pagination
-        """
-        installations = await self.get_installations(access_token)
-        installation_repos = []
-
-        for installation in installations:
-            installation_id = installation["id"]
-            page = 1
-            per_page = 100
-
-            while True:
-                url = f"https://api.github.com/user/installations/{installation_id}/repositories"
-                headers = {
-                    "Authorization": f"Bearer {access_token}",
-                    "X-GitHub-Api-Version": "2022-11-28",
-                    "Accept": "application/vnd.github+json",
-                }
-                params = {"page": page, "per_page": per_page}
-
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(url, headers=headers, params=params)
-
-                if response.status_code != 200:
-                    logger.error(
-                        f"Failed to fetch repositories. Status: {response.status_code}, Response: {response.text}"
-                    )
-                    raise HTTPException(
-                        status_code=response.status_code,
-                        detail=f"GitHub API error: {response.text}",
-                    )
-
-                data = response.json()
-                repositories = [
-                    {
-                        "name": repo["name"],
-                        "updatedAt": repo["updated_at"],
-                        "private": repo["private"],
-                        "owner": repo["owner"]["login"],
-                    }
-                    for repo in data.get("repositories", [])
-                ]
-                installation_repos.extend(repositories)
-
-                if len(data.get("repositories", [])) < per_page:
-                    break
-
-        return installation_repos
-
-    async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
-
-        repo_url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+    async def github_request(self, url: str, access_token: str, params: dict = None) -> dict:
+        """Helper method to make GitHub API requests with consistent headers and error handling"""
         headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
         }
 
         async with httpx.AsyncClient() as client:
-            repo_response = await client.get(repo_url, headers=headers)
-            repo_response.raise_for_status()
-            repo_data = repo_response.json()
-            default_branch = repo_data.get("default_branch")
+            response = await client.get(url, headers=headers, params=params)
+            response.raise_for_status()
+            return response.json()
 
-            branches_url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
-            branches_response = await client.get(branches_url, headers=headers)
-            branches_response.raise_for_status()
+    async def get_paginated_results(self, url: str, access_token: str, per_page: int = 100) -> list:
+        """Helper method to handle GitHub API pagination"""
+        results = []
+        page = 1
 
-            return [
-                {"name": branch["name"], "isDefault": branch["name"] == default_branch}
-                for branch in branches_response.json()
+        while True:
+            params = {"per_page": per_page, "page": page}
+            page_data = await self.github_request(url, access_token, params)
+
+            items = page_data if isinstance(page_data, list) else page_data.get("repositories", [])
+            if not items:
+                break
+
+            results.extend(items)
+            page += 1
+
+            if len(items) < per_page:
+                break
+
+        return results
+
+    async def get_accessible_repositories(self, access_token: str) -> list:
+        """Returns all repositories for which the GitHub App has access to"""
+        installations = await self.get_installations(access_token)
+        all_repos = []
+
+        for installation in installations:
+            installation_id = installation["id"]
+            url = f"https://api.github.com/user/installations/{installation_id}/repositories"
+
+            repos = await self.get_paginated_results(url, access_token)
+            formatted_repos = [
+                {
+                    "name": repo["name"],
+                    "updatedAt": repo["updated_at"],
+                    "private": repo["private"],
+                    "owner": repo["owner"]["login"],
+                }
+                for repo in repos
             ]
+            all_repos.extend(formatted_repos)
+
+        return all_repos
+
+    async def get_repository_branches(self, access_token: str, owner: str, repo: str) -> list:
+        """Get all branches for a repository with pagination"""
+        # Get default branch first
+        repo_url = f"{self.BASE_URL}/repos/{owner}/{repo}"
+        repo_data = await self.github_request(repo_url, access_token)
+        default_branch = repo_data.get("default_branch")
+
+        # Get all branches
+        branches_url = f"{self.BASE_URL}/repos/{owner}/{repo}/branches"
+        branches = await self.get_paginated_results(branches_url, access_token)
+
+        return [
+            {"name": branch["name"], "isDefault": branch["name"] == default_branch}
+            for branch in branches
+        ]
 
     async def get_commit_hash(
         self, access_token: str, repository_url: str, branch_name: str

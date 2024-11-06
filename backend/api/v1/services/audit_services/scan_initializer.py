@@ -106,7 +106,7 @@ class ScanInitializer:
                 self.user.accessToken, self.request.repositoryURL, self.branch_name
             )
         except HTTPException as e:
-            await update_scan_failure(self.scan_id, f"Scan failed: {e.detail}")
+            await update_scan_failure(self.user.email, self.scan_id, f"Scan failed: {e.detail}")
             raise HTTPException(
                 status_code=e.status_code,
                 detail=f"Failed to fetch commit hash: {e.detail}",
@@ -114,7 +114,9 @@ class ScanInitializer:
 
         if not commit_hash:
             await update_scan_failure(
-                self.scan_id, "Failed to fetch commit hash. Check if branch exists."
+                self.user.email,
+                self.scan_id,
+                "Failed to fetch commit hash. Check if branch exists.",
             )
             raise HTTPException(
                 status_code=500,

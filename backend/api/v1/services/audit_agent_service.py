@@ -5,6 +5,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks, HTTPException
+from langfuse.decorators import langfuse_context, observe
 
 from api.v1.helpers.audit_helpers import update_scan_failure
 from api.v1.helpers.setup_environment_helpers import setup_environment
@@ -17,6 +18,7 @@ from api.v1.services.audit_services.result_processor import ResultProcessor
 from api.v1.services.audit_services.scan_initializer import ScanInitializer
 from api.v1.services.audit_services.task_manager import TaskManager
 from api.v1.services.github_service import GitHubService
+from common.email_utils import send_completion_email
 from common.logger import logger
 from common.profiles import Profiles
 
@@ -70,10 +72,11 @@ async def initiate_scan(
         raise
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
-        await update_scan_failure(scan_id, "Failed to initiate audit scan")
+        await update_scan_failure(user.email, scan_id, "Failed to initiate audit scan")
         raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
 
 
+@observe()
 async def perform_audit_agent_background(
     user: User,
     scan_id: UUID,
@@ -89,7 +92,7 @@ async def perform_audit_agent_background(
 
     if not temp_dir or not repo_dir:
         logger.error("Temporary directory or repository directory is missing.")
-        await update_scan_failure(scan_id, "Internal error: Missing directories.")
+        await update_scan_failure(user.email, scan_id, "Internal error: Missing directories.")
         return
 
     setup_result: Optional[SetupResult] = None
@@ -144,6 +147,8 @@ async def perform_audit_agent_background(
         await result_processor.process_results()
         total_findings_after_dedup = result_processor.get_total_findings()
 
+        langfuse_context.update_current_trace(session_id=str(scan_id))
+
         # Handle payment processing using PaymentHandler
         payment_handler = PaymentHandler(user, scan_id, total_findings_after_dedup)
         await payment_handler.process_payment()
@@ -155,10 +160,21 @@ async def perform_audit_agent_background(
 
         logger.info(f"Completed audit scan with ID: {scan_id}")
 
+        if user.email:
+            scan = await scan_history_service.get_scan(scan_id)
+            await send_completion_email(
+                to_email=user.email,
+                scan_id=str(scan_id),
+                scan_number=scan.scan_number,
+                total_findings=total_findings_after_dedup,
+            )
+        else:
+            logger.warning(f"User {user.id} does not have an email address.")
+
     except Exception as e:
         cleanup_required = True
         logger.exception(f"Error in audit scan {scan_id}: {str(e)}")
-        await update_scan_failure(scan_id, "An error occurred during the audit scan.")
+        await update_scan_failure(user.email, scan_id, "An error occurred during the audit scan.")
     finally:
         # Clean up temporary directory if it exists
         try:
