@@ -38,6 +38,16 @@ async def update_scan_status(scan_id: UUID, status: str, total_findings: Optiona
         raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
 
 
+async def update_scan_progress(scan_id: UUID, progress: float):
+    """Update the progress of a scan."""
+    scan = await Scan.find_one({"scan_id": scan_id})
+    if scan:
+        scan.progress = progress
+        await scan.save()
+        return scan
+    return None
+
+
 async def update_scan_paid_status(scan_id: UUID, paid_status: bool, discount_applied: bool = False):
     """Update the paid status and discount status of a scan."""
     scan = await get_scan(scan_id)

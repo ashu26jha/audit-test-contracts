@@ -4,10 +4,10 @@ import re
 from typing import Any, Dict, List, Optional
 
 from api.v1.helpers.run_command import run_command
-from api.v1.helpers.slither_detectors_helpers import SLITHER_DETECTOR_MAP
 from api.v1.schemas.context_scan_schema import Finding
 from common import logger
 from common.contract_utils import filter_by_contracts
+from config.slither_detectors_titles import SLITHER_DETECTOR_MAP
 from config.solidity import CONFIDENCE_LEVELS
 
 

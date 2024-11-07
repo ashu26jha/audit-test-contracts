@@ -19,6 +19,7 @@ interface ScanHistoryItem {
   name: string;
   status: ScanStatus;
   total_findings: number;
+  progress: number;
 }
 
 type ScanStatus = "pending" | "in_progress" | "completed" | "failed";
@@ -43,6 +44,7 @@ interface ScanResult {
   summary: string;
   total_findings: number;
   type: ScanType;
+  progress: number;
 }
 
 interface Branch {

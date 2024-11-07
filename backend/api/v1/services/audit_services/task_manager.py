@@ -22,10 +22,20 @@ class TaskManager:
     TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
     CONTEXT_SCANS_TIMEOUT = 600  # 10 minutes per context scan
 
-    # Progress stage weights
-    PRE_DETECTOR_WEIGHT = 15  # Setup, cloning, etc.
-    DETECTOR_WEIGHT = 70  # Detectors
-    POST_DETECTOR_WEIGHT = 15  # Deduplication, cleanup
+    # Progress stage weights - adjusted ratios
+    PRE_DETECTOR_WEIGHT = 30  # Setup, cloning, etc. (0-30%)
+    DETECTOR_WEIGHT = 55  # Detectors (30-85%)
+    POST_DETECTOR_WEIGHT = 15  # Deduplication, cleanup (85-100%)
+
+    # Add detector-specific weights
+    DETECTOR_WEIGHTS = {
+        "static_analyzer": 15,
+        "fuzzer": 10,
+        "context_scan_1": 7.5,
+        "context_scan_2": 7.5,
+        "context_scan_3": 7.5,
+        "context_scan_4": 7.5,
+    }
 
     def __init__(
         self,
@@ -71,6 +81,8 @@ class TaskManager:
         profiles = [Profiles.DEFAULT, Profiles.DEFAULT_2]
         models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2]
 
+        await scan_history_service.update_scan_progress(self.scan_id, 20)
+
         # Generate detector names for context scans
         for profile in profiles:
             for model in models:
@@ -80,6 +92,9 @@ class TaskManager:
                     {"detector_name": detector_name, "profile": profile, "model": model}
                 )
                 active_detectors += 1
+
+        # Progress update after context scan setup
+        await scan_history_service.update_scan_progress(self.scan_id, 25)
 
         # Add static analyzer if setup was successful
         detectors["static_analyzer"] = None
@@ -96,11 +111,33 @@ class TaskManager:
             self.scan.detectors = detectors
             self.scan.total_detectors = active_detectors
             self.scan.completed_detectors = 0
-            self.scan.progress = self.PRE_DETECTOR_WEIGHT  # Start at 15% after initialization
+            self.scan.progress = self.PRE_DETECTOR_WEIGHT
             await self.scan.save()
 
+        # Initialize detector weights dynamically
+        total_weight = self.DETECTOR_WEIGHT
+        context_scan_count = len(self.context_scan_configs)
+
+        # Reset weights dictionary
+        self.DETECTOR_WEIGHTS = {}
+
+        if self.setup_result:
+            self.DETECTOR_WEIGHTS["static_analyzer"] = 15
+            total_weight -= 15
+
+            if self.fuzzing_task:
+                self.DETECTOR_WEIGHTS["fuzzer"] = 10
+                total_weight -= 10
+
+        # Distribute remaining weight among context scans
+        context_scan_weight = total_weight / context_scan_count
+        for i in range(context_scan_count):
+            # flake8: noqa: E226
+            self.DETECTOR_WEIGHTS[f"context_scan_{i+1}"] = context_scan_weight
+
+        logger.info(f"Scan {self.scan_id} initialized with {active_detectors} detectors. ")
+
     async def start_tasks(self):
-        # Start all tasks with overall timeout
         try:
             async with asyncio.timeout(self.TOTAL_SCAN_TIMEOUT):
                 await self._execute_tasks()
@@ -138,6 +175,15 @@ class TaskManager:
                 #     )
                 # )
 
+                # Monitor static analysis completion
+                asyncio.create_task(
+                    self._monitor_task(
+                        self.static_analysis_task,
+                        "static_analyzer",
+                        self.DETECTOR_WEIGHTS["static_analyzer"],
+                    )
+                )
+
             # Await summary result to proceed with context scans
             try:
                 self.summary_result, self.detected_type = await self.summary_task
@@ -157,17 +203,31 @@ class TaskManager:
                 await self.scan.save()
             raise
 
+    async def _monitor_task(self, task: asyncio.Task, detector_name: str, weight: float):
+        try:
+            result = await task
+            if isinstance(result, Exception):
+                await self.update_progress(detector_name, False)
+            else:
+                await self.update_progress(detector_name, True)
+        except Exception as e:
+            logger.error(f"Task {detector_name} failed: {str(e)}")
+            await self.update_progress(detector_name, False)
+
     async def start_context_scan_tasks(self):
         for config in self.context_scan_configs:
             detector_name = config["detector_name"]
             self.task_metrics["started_at"][detector_name] = datetime.now()
             async with self.task_semaphore:
                 await asyncio.sleep(1)
-                # Individual context scan timeout
                 task = asyncio.create_task(
                     asyncio.wait_for(
                         self.run_context_scan_with_retry(config), timeout=self.CONTEXT_SCANS_TIMEOUT
                     )
+                )
+                # Monitor each context scan task individually
+                asyncio.create_task(
+                    self._monitor_task(task, detector_name, self.DETECTOR_WEIGHTS[detector_name])
                 )
                 self.context_scan_tasks.append(task)
                 self.task_detector_names.append(detector_name)
@@ -175,7 +235,7 @@ class TaskManager:
     async def run_context_scan_with_retry(self, config):
         start_time = datetime.now()
         retry_count = 0
-        max_retries = 2  # Limit retries for context scans
+        max_retries = 2
 
         while retry_count < max_retries:
             try:
@@ -190,16 +250,15 @@ class TaskManager:
                     config["profile"],
                     config["model"],
                 )
+
             except Exception as e:
                 retry_count += 1
                 if retry_count >= max_retries:
                     raise
                 logger.warning(
-                    f"Context scan attempt {retry_count} failed - "
-                    f"Profile: {config['profile']}, Model: {config['model']}, "
+                    f"Context scan attempt {retry_count}/{max_retries} failed for {config['profile']} with {config['model']}"
                     f"Error: {str(e)}"
                 )
-                # Shorter backoff for context scans
                 await asyncio.sleep(5 * retry_count)
 
     class GatherResults(TypedDict):
@@ -208,20 +267,17 @@ class TaskManager:
         detected_type: Profiles
 
     async def gather_results(self) -> GatherResults:
-        # Gather tasks to await
         tasks_to_await = self.context_scan_tasks
         if self.static_analysis_task:
             tasks_to_await.append(self.static_analysis_task)
         if self.fuzzing_task:
             tasks_to_await.append(self.fuzzing_task)
 
-        # Use asyncio.gather with return_exceptions=True to handle timeouts
         results = await asyncio.gather(*tasks_to_await, return_exceptions=True)
 
         combined_findings: List[Finding] = []
         result_index = 0
 
-        # Batch detector updates instead of individual saves
         detector_updates = {}
         findings_by_detector = {}
 
@@ -233,13 +289,11 @@ class TaskManager:
             if isinstance(context_scan_result, (Exception, asyncio.TimeoutError)):
                 detector_updates[detector_name] = False
                 logger.error(f"Context scan failed - Detector: {detector_name}")
-                await self.update_progress(detector_name, False)
             else:
                 detector_updates[detector_name] = True
                 findings = context_scan_result.findings
                 findings_by_detector[detector_name] = findings
                 combined_findings.extend(findings)
-                await self.update_progress(detector_name, True)
                 logger.info(
                     f"Context scan completed successfully - Detector: {detector_name}, "
                     f"Found {len(findings)} issues"
@@ -252,13 +306,11 @@ class TaskManager:
             if isinstance(static_result, Exception):
                 logger.error(f"Static analysis failed: {static_result}")
                 detector_updates["static_analyzer"] = False
-                await self.update_progress("static_analyzer", False)
             else:
                 detector_updates["static_analyzer"] = True
                 slither_findings = static_result.slither_output.findings
                 findings_by_detector["static_analyzer"] = slither_findings
                 combined_findings.extend(slither_findings)
-                await self.update_progress("static_analyzer", True)
                 logger.info(
                     f"Static analyzer completed successfully with {len(slither_findings)} findings"
                 )
@@ -269,13 +321,11 @@ class TaskManager:
             if isinstance(fuzzing_result, Exception):
                 logger.error(f"Fuzzing failed: {fuzzing_result}")
                 detector_updates["fuzzer"] = False
-                await self.update_progress("fuzzer", False)
             else:
                 detector_updates["fuzzer"] = True
                 fuzzing_findings = getattr(fuzzing_result.data, "findings", [])
                 findings_by_detector["fuzzer"] = fuzzing_findings
                 combined_findings.extend(fuzzing_findings)
-                await self.update_progress("fuzzer", True)
                 logger.info(f"Fuzzing completed successfully with {len(fuzzing_findings)} findings")
 
         # Single database update for all detectors
@@ -283,12 +333,13 @@ class TaskManager:
             self.scan.detectors.update(detector_updates)
             await self.scan.save()
 
-        # Log summary of all findings before deduplication
-        logger.info("=== Findings Summary Before Deduplication ===")
-        logger.info(f"Total combined findings: {len(combined_findings)}")
+        # Simplified logging for findings
+        logger.info(f"Scan {self.scan_id} completed with {len(combined_findings)} total findings:")
         for detector, findings in findings_by_detector.items():
-            logger.info(f"- {detector}: {len(findings)} findings")
-        logger.info("==========================================")
+            if findings:  # Only log detectors that found issues
+                logger.info(f"- {detector}: {len(findings)} findings")
+
+        await scan_history_service.update_scan_progress(self.scan_id, 85)
 
         return {
             "combined_findings": combined_findings,
@@ -310,19 +361,15 @@ class TaskManager:
         """Update scan progress when a detector completes."""
         if self.scan:
             self.scan.completed_detectors += 1
-            # Calculate detector portion of progress (15-85%)
-            detector_progress = (
-                self.scan.completed_detectors / self.scan.total_detectors
-            ) * self.DETECTOR_WEIGHT
-            self.scan.progress = self.PRE_DETECTOR_WEIGHT + detector_progress
-
-            # Update detector status separately
             self.scan.detectors[detector_name] = success
 
-            logger.info(
-                f"Progress update: {self.scan.progress:.1f}% "
-                f"({self.scan.completed_detectors}/{self.scan.total_detectors} detectors) - "
-                f"Detector {detector_name}: {'succeeded' if success else 'failed'}"
-            )
+            current_progress = self.PRE_DETECTOR_WEIGHT
+            for name, completed in self.scan.detectors.items():
+                if completed is not None:
+                    weight = self.DETECTOR_WEIGHTS.get(name, 7.5)
+                    current_progress += weight
+
+            if self.scan.progress < current_progress:
+                self.scan.progress = current_progress
 
             await self.scan.save()

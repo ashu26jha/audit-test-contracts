@@ -22,6 +22,7 @@ class ScanResponse(BaseModel):
     commitHash: Optional[str]
     paid_status: bool
     total_findings: Optional[int] = None
+    progress: float = 0.0
     user_id: str = Field(exclude=True)
     createdAt: datetime = Field(exclude=True)
     updatedAt: datetime = Field(exclude=True)

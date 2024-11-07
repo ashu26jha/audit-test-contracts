@@ -1,6 +1,8 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Optional
+from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import HttpUrl
@@ -18,6 +20,7 @@ from api.v1.helpers.project_helpers import (
 )
 from api.v1.helpers.run_command import run_command
 from api.v1.schemas.fuzzer_schema import SetupResult
+from api.v1.services import scan_history_service
 from common import logger
 from common.clone_repo import clone_repo
 from config.solidity import FORGE_INSTALL_COMMAND
@@ -28,6 +31,7 @@ async def setup_environment(
     temp_dir: str,
     oauth_token: str = None,
     branch: str = "main",
+    scan_id: Optional[UUID] = None,
 ) -> SetupResult:
     """
     Sets up the environment for analysis. The temp_dir might:
@@ -60,20 +64,22 @@ async def setup_environment(
 
             # Initialize Foundry project in the new directory
             await initialize_foundry_project(project_dir, temp_dir, project_type)
+            if scan_id:
+                await scan_history_service.update_scan_progress(scan_id, 15)
 
             # Install NPM dependencies
             await install_npm_deps(project_dir, temp_dir)
+            if scan_id:
+                await scan_history_service.update_scan_progress(scan_id, 20)
 
-            # Update foundry.toml configuration
+            # Update foundry.toml configuration and generate remappings
             update_foundry_config(project_dir)
-
-            # Generate remappings using Foundry
             try:
                 remappings = await generate_remappings_with_foundry(project_dir)
             except Exception as e:
                 logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
 
-            # Remove the original repo to prevent confusion & conflicts
+            # Remove the original repo
             try:
                 shutil.rmtree(temp_dir)
                 logger.info(f"Removed original Hardhat repository: {temp_dir}")
@@ -84,7 +90,10 @@ async def setup_environment(
 
         elif project_type == "foundry":
             try:
+                # Install Foundry dependencies
                 await run_command(FORGE_INSTALL_COMMAND, project_dir)
+                if scan_id:
+                    await scan_history_service.update_scan_progress(scan_id, 20)
                 logger.info("Foundry project dependencies installed.")
             except Exception as e:
                 logger.exception(f"Error running forge install: {str(e)}")
@@ -93,16 +102,19 @@ async def setup_environment(
         # Step 3: Compile the project
         try:
             await compile_project(project_dir)
+            if scan_id:
+                await scan_history_service.update_scan_progress(scan_id, 25)
         except Exception as e:
             logger.exception(f"Project compilation failed: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to compile project")
 
-        # Create the test directory if it doesn't exist
+        # Step 4: Create the test directory and get project structure
         test_dir = Path(project_dir) / "test"
         test_dir.mkdir(parents=True, exist_ok=True)
-
-        # Step 4: Get the project structure
         project_structure = get_project_structure(project_dir)
+
+        if scan_id:
+            await scan_history_service.update_scan_progress(scan_id, 30)
 
         return SetupResult(
             project_dir=project_dir,

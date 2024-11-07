@@ -32,9 +32,11 @@ class ResultProcessor:
         """Process results sequentially: filter first, then deduplicate."""
         # First filter findings to reduce the set
         await self._filter_findings()
+        await scan_history_service.update_scan_progress(self.scan_id, 95)
 
         # Then run deduplication on the filtered set
         await self._deduplicate_findings()
+        await scan_history_service.update_scan_progress(self.scan_id, 98)
 
         # Final update
         await self._update_scan_result()

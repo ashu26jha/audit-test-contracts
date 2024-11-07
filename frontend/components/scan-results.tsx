@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@nextui-org/react";
+import { Card, CardBody, CardHeader, Button, Tooltip, Divider } from "@nextui-org/react";
 import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
@@ -11,6 +11,7 @@ import { sendPdfReport } from "@/services/api";
 import BluredFindings from "./blured-findings";
 import ScanInfo from "./scan-info";
 import { openFeedbackEmail } from "../utils/email";
+import { ScanProgress } from "./scan-stepper/ScanProgress";
 
 interface ScanResultsProps {
   scanData: ScanResult;
@@ -85,10 +86,12 @@ Thank you,
   );
 
   const renderInProgress = () => (
-    <ScanStateMessage
-      icon={<Spinner size="lg" color="secondary" />}
-      message="Please wait a few minutes while your scan is being processed. You can close this page."
-    />
+    <div className="h-[calc(100%-6rem)]">
+      <div className="flex flex-col items-center justify-center h-full space-y-8">
+        <ScanProgress progress={scanData.scan.progress ?? 0} />
+        <p className="text-lg">You can close this page. You&apos;ll receive an email when the scan is complete.</p>
+      </div>
+    </div>
   );
 
   const renderNoFindings = () => (
@@ -239,7 +242,6 @@ Thank you,
 };
 
 export default ScanResults;
-
 interface ScanStateMessageProps {
   icon: React.ReactNode;
   message: string;

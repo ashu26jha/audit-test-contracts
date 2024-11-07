@@ -33,26 +33,30 @@ async def initiate_scan(
 ):
     initializer = ScanInitializer(user, request, scan_id)
     try:
-        # Validation
+        # Validation (0-1%)
         await initializer.validate_request()
+        await scan_history_service.update_scan_progress(scan_id, 1)
 
-        # Clone repository
+        # Clone repository (1-5%)
         await initializer.clone_repository()
+        await scan_history_service.update_scan_progress(scan_id, 5)
 
-        # Fetch repository info
+        # Fetch repository info (5-7%)
         await initializer.fetch_repository_info()
+        await scan_history_service.update_scan_progress(scan_id, 7)
 
-        # Create scan record
+        # Create scan record (7-8%)
         await initializer.create_scan_record()
+        await scan_history_service.update_scan_progress(scan_id, 8)
 
-        # Fetch commit hash
+        # Fetch commit hash (8-9%)
         await initializer.fetch_commit_hash()
+        await scan_history_service.update_scan_progress(scan_id, 9)
 
-        # Flatten contracts
+        # Flatten contracts & Count lines of code (9-10%)
         flattened_contracts = await initializer.flatten_contracts()
-
-        # Count lines of code
         await initializer.count_lines_of_code(flattened_contracts)
+        await scan_history_service.update_scan_progress(scan_id, 10)
 
         # Start the background task
         background_tasks.add_task(
@@ -109,6 +113,7 @@ async def perform_audit_agent_background(
                 repo_dir,
                 access_token,
                 branch_name,
+                scan_id,
             )
         except Exception:
             setup_result = None
