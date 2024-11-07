@@ -2,7 +2,7 @@ name: Build and Run application on AWS ECS  Container
 on:
   push:
     branches:
-      - staging #update this branch if once its fixed
+      - staging
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: code_auditor_images_repository
@@ -60,13 +60,14 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
         run: |
-          IMAGE_TAG_FRONTEND=frontend-${{ github.sha }}
+          IMAGE_TAG_FRONTEND=frontend-staging-${{ github.sha }}
           IMAGE_URI=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG_FRONTEND
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           docker buildx build \
             --platform=linux/amd64 \
             --build-arg NEXT_PUBLIC_API_URL="${{ env.NEXT_PUBLIC_API_URL }}" \
             --build-arg NEXT_PUBLIC_GITHUB_APP_URL="${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}" \
+            --build-arg NODE_ENV="staging" \
             -f ./frontend/Dockerfile.nginx \
             -t $IMAGE_URI ./frontend 
           docker push $IMAGE_URI
