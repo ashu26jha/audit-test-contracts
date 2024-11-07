@@ -14,9 +14,6 @@ RUN apt-get update && apt-get install -y \
     wget \
     && curl -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup \
-    && curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | tee /usr/share/keyrings/stripe.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
-    && apt-get update && apt-get install -y stripe \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -29,7 +26,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Copy installed tools from builder stage
 COPY --from=builder /root/.foundry /root/.foundry
-COPY --from=builder /usr/local/bin/stripe /usr/local/bin/stripe
 
 # Install runtime dependencies including Node.js and npm
 RUN apt-get update && apt-get install -y \
@@ -69,4 +65,4 @@ EXPOSE 8000
 # Start Redis and run the application with Doppler
 CMD redis-server --daemonize yes && \
     redis-cli ping && \
-    doppler run -- python3 main.py 
+    doppler run -- python3 main.py
