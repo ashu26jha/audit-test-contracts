@@ -8,7 +8,7 @@ from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from common.severity import Severity
 from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
-from config.settings import DELAY, LLM_MODEL_MEDIUM, MAX_RETRIES
+from config.settings import DELAY, LLM_MODEL_BEST_2, MAX_RETRIES
 
 # Mapping from our severity to Slither's severity
 SEVERITY_TO_SLITHER = {
@@ -36,7 +36,7 @@ async def improve_slither_findings(vulns: List[Dict]) -> List[Dict]:
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             # Send the prompt to the LLM
-            llm_response = await send_prompt_to_llm_async(LLM_MODEL_MEDIUM, prompt)
+            llm_response = await send_prompt_to_llm_async(LLM_MODEL_BEST_2, prompt)
 
             # Use parse_model_response to handle the LLM response
             parsed_response = parse_model_response(llm_response, FindingList)

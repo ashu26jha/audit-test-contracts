@@ -1,44 +1,35 @@
-from typing import Dict, List
+import json
+from typing import List
 
-from api.v1.helpers.retry_helper import retry_async_operation
-from api.v1.schemas.context_scan_schema import FindingList
+from api.v1.schemas.context_scan_schema import Finding, FindingList
 from common.logger import logger
-from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.duplicate_prompts import DUPLICATE_PROMPT
 from config.settings import LLM_MODEL_MEDIUM
 
 
-async def remove_duplicates(vulns: List[Dict]) -> List[Dict]:
-    """
-    Sends the new and existing vulnerabilities to the LLM for comparison and returns unique findings.
-
-    Args:
-        vulns (List[Dict]): list of all vulnerabilities combined.
-
-    Returns:
-        List[Dict]: A list of unique vulnerabilities after LLM removal.
-    """
-
-    # Prepare the prompt
-    prompt = DUPLICATE_PROMPT.format(vulnerabilities=vulns)
-    logger.info(f"Removing duplicates from {len(vulns)} findings...")
+async def remove_duplicates(vulns: List[Finding]) -> List[Finding]:
 
     try:
+        if not vulns:
+            return []
+
+        # Prepare the prompt
+        vulns_json = {"findings": [finding.model_dump() for finding in vulns]}
+
+        prompt = DUPLICATE_PROMPT.format(vulnerabilities=json.dumps(vulns_json, indent=2))
+        logger.info(f"Removing duplicates from {len(vulns)} findings...")
+
         # Send the prompt to the LLM using retry_async_operation
-        llm_response = await retry_async_operation(
-            send_prompt_to_llm_async, LLM_MODEL_MEDIUM, prompt
+        llm_response: FindingList = await send_prompt_to_llm_async(
+            model_type=LLM_MODEL_MEDIUM,
+            user_input=prompt,
+            response_model=FindingList,
         )
 
-        # Use parse_model_response to handle the LLM response
-        parsed_response = parse_model_response(llm_response, FindingList)
+        logger.info(f"Total findings after duplicate removal: {len(llm_response.findings)}")
 
-        if not isinstance(parsed_response, FindingList):
-            raise ValueError("Parsed response is not a FindingList")
-
-        logger.info(f"Total findings after duplicate removal: {len(parsed_response.findings)}")
-
-        return parsed_response.findings
+        return llm_response.findings
 
     except Exception as e:
         logger.exception(f"Failed to remove duplicates: {str(e)}")

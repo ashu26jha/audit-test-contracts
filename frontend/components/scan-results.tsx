@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 
 import { Card, CardBody, CardHeader, Button, Tooltip, Divider } from "@nextui-org/react";
-import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
+import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle, Copy, Check } from "lucide-react";
 import Image from "next/image";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/useToast";
@@ -101,6 +104,39 @@ Thank you,
     />
   );
 
+  const CodeBlock = ({ language, children }: { language: string; children: string }) => {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async () => {
+      await navigator.clipboard.writeText(children);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+      <div className="relative">
+        <button
+          onClick={handleCopy}
+          className="absolute right-2 top-2 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+        >
+          {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
+        </button>
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={language}
+          PreTag="div"
+          customStyle={{
+            background: "#0C0C0C",
+            padding: "1rem",
+            borderRadius: "0.5rem",
+          }}
+        >
+          {children}
+        </SyntaxHighlighter>
+      </div>
+    );
+  };
+
   const renderFindings = () => (
     <div>
       {scanData.findings.map((finding: Finding, index: number) => (
@@ -116,7 +152,23 @@ Thank you,
               <div className="text-sm text-gray-400">{finding.Contracts.join(", ")}</div>
             </div>
             <h3 className="text-lg font-semibold mb-2">{finding.Issue}</h3>
-            <p className="text-sm text-gray-300 mb-2">{finding.Description}</p>
+            <ReactMarkdown
+              className="text-sm font-normal text-[#D4D4D8] mb-2 px-3"
+              components={{
+                code: ({ className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || "");
+                  return match ? (
+                    <CodeBlock language={match[1]}>{String(children).replace(/\n$/, "")}</CodeBlock>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {finding.Description}
+            </ReactMarkdown>
           </CardBody>
         </Card>
       ))}

@@ -16,7 +16,7 @@ from common.token_count import count_tokens
 from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
 
 # Limit concurrent OpenAI requests
-OPENAI_SEMAPHORE = Semaphore(2)
+OPENAI_SEMAPHORE = Semaphore(4)
 REQUEST_DELAY = 0.5  # seconds
 
 # Per-request timeout

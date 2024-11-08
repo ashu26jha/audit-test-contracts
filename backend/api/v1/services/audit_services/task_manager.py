@@ -60,7 +60,7 @@ class TaskManager:
         self.static_analysis_task: Optional[asyncio.Task] = None
         self.fuzzing_task: Optional[asyncio.Task] = None
 
-        self.max_concurrent_tasks = 3
+        self.max_concurrent_tasks = 4
         self.task_semaphore = Semaphore(self.max_concurrent_tasks)
 
         self.task_metrics = {

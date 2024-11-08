@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Smart Contract Audit API",
     description="API for auditing smart contracts and detecting vulnerabilities",
-    version="1.0.0",
+    version="0.2.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -122,14 +122,13 @@ app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
 app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")
 app.include_router(stats.router, prefix="/api/v1")  # Admin protected
-app.include_router(fuzzer.router, prefix="/api/v1")
-app.include_router(static_analyzer.router, prefix="/api/v1")
-
 
 if settings.ENVIRONMENT == "development":
     app.include_router(generate_summary.router, prefix="/api/v1")
     app.include_router(context_scan.router, prefix="/api/v1")
     app.include_router(test_auth.router, prefix="/api/v1")
+    app.include_router(fuzzer.router, prefix="/api/v1")
+    app.include_router(static_analyzer.router, prefix="/api/v1")
 
 
 app.add_exception_handler(HTTPException, http_exception_handler)
