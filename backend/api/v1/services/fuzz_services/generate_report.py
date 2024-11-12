@@ -40,6 +40,7 @@ async def generate_report(
     )
 
     # Send prompt to LLM
+    # TODO: Add response model
     report_response = await send_prompt_to_llm_async(LLM_MODEL_MEDIUM, report_prompt)
 
     # Parse LLM response

@@ -15,7 +15,7 @@ from api.v1.services import (  # fuzzing_service,
 )
 from common.logger import logger
 from common.profiles import Profiles
-from config.settings import LLM_MODEL_BEST, LLM_MODEL_BEST_2
+from config.settings import LLM_MODEL_BEST, LLM_MODEL_BEST_2, LLM_MODEL_BEST_3
 
 
 class TaskManager:
@@ -31,10 +31,12 @@ class TaskManager:
     DETECTOR_WEIGHTS = {
         "static_analyzer": 15,
         "fuzzer": 10,
-        "context_scan_1": 7.5,
-        "context_scan_2": 7.5,
-        "context_scan_3": 7.5,
-        "context_scan_4": 7.5,
+        "context_scan_1": 5,
+        "context_scan_2": 5,
+        "context_scan_3": 5,
+        "context_scan_4": 5,
+        "context_scan_5": 5,
+        "context_scan_6": 5,
     }
 
     def __init__(
@@ -60,8 +62,9 @@ class TaskManager:
         self.static_analysis_task: Optional[asyncio.Task] = None
         self.fuzzing_task: Optional[asyncio.Task] = None
 
-        self.max_concurrent_tasks = 4
+        self.max_concurrent_tasks = 6
         self.task_semaphore = Semaphore(self.max_concurrent_tasks)
+        self.claude_semaphore = Semaphore(3)
 
         self.task_metrics = {
             "started_at": {},
@@ -79,7 +82,7 @@ class TaskManager:
 
         # Prepare profiles and models
         profiles = [Profiles.DEFAULT, Profiles.DEFAULT_2]
-        models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2]
+        models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2, LLM_MODEL_BEST_3]
 
         await scan_history_service.update_scan_progress(self.scan_id, 20)
 
@@ -244,12 +247,22 @@ class TaskManager:
                 if elapsed >= self.CONTEXT_SCANS_TIMEOUT:
                     raise TimeoutError("Context scan exceeded maximum time")
 
-                return await context_scan_service.perform_context_scan(
-                    self.summary_result,
-                    self.flattened_contracts,
-                    config["profile"],
-                    config["model"],
-                )
+                # Use appropriate semaphore based on model
+                if "claude" in config["model"].lower():
+                    async with self.claude_semaphore:
+                        return await context_scan_service.perform_context_scan(
+                            self.summary_result,
+                            self.flattened_contracts,
+                            config["profile"],
+                            config["model"],
+                        )
+                else:
+                    return await context_scan_service.perform_context_scan(
+                        self.summary_result,
+                        self.flattened_contracts,
+                        config["profile"],
+                        config["model"],
+                    )
 
             except Exception as e:
                 retry_count += 1

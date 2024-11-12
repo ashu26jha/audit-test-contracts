@@ -1,14 +1,13 @@
 import asyncio
-from typing import Dict, List
+from typing import List
 
-from api.v1.schemas.context_scan_schema import FindingList
+from api.v1.schemas.context_scan_schema import Finding, FindingList
 from api.v1.schemas.static_analyzer_schema import TransformedSlitherResult
 from common.logger import logger
-from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from common.severity import Severity
 from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
-from config.settings import DELAY, LLM_MODEL_BEST_2, MAX_RETRIES
+from config.settings import DELAY, LLM_MODEL_MEDIUM, MAX_RETRIES
 
 # Mapping from our severity to Slither's severity
 SEVERITY_TO_SLITHER = {
@@ -20,7 +19,7 @@ SEVERITY_TO_SLITHER = {
 }
 
 
-async def improve_slither_findings(vulns: List[Dict]) -> List[Dict]:
+async def improve_slither_findings(vulns: List[Finding]) -> List[Finding]:
     """
     Sends the slither findings to the LLM for improvement and returns the improved findings.
 
@@ -35,19 +34,17 @@ async def improve_slither_findings(vulns: List[Dict]) -> List[Dict]:
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            # Send the prompt to the LLM
-            llm_response = await send_prompt_to_llm_async(LLM_MODEL_BEST_2, prompt)
+            # Send the prompt to the LLM with structured output
+            llm_response = await send_prompt_to_llm_async(
+                LLM_MODEL_MEDIUM, prompt, response_model=FindingList
+            )
 
-            # Use parse_model_response to handle the LLM response
-            parsed_response = parse_model_response(llm_response, FindingList)
-
-            if not isinstance(parsed_response, FindingList):
-                logger.error(f"Parsed response is not a FindingList: {parsed_response}")
-                raise ValueError("Parsed response is not a FindingList")
+            if not isinstance(llm_response, FindingList):
+                raise ValueError("LLM response is not a FindingList")
 
             # Convert Finding objects to TransformedSlitherResult objects
             improved_findings = []
-            for i, finding in enumerate(parsed_response.findings):
+            for i, finding in enumerate(llm_response.findings):
                 try:
                     original_vuln = vulns[i] if i < len(vulns) else {}
                     # Convert our severity to Slither's severity

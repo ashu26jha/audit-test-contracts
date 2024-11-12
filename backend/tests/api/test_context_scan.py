@@ -92,7 +92,9 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
 
 @pytest.mark.asyncio
 async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, monkeypatch):
-    monkeypatch.setattr("api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-20240620")
+    monkeypatch.setattr(
+        "api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-sonnet-latest"
+    )
 
     mock_response = create_mock_context_scan_response(
         issue="Test Issue Claude",
@@ -120,7 +122,7 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     mock_send_prompt_to_llm_async.assert_awaited_once()
     called_args = mock_send_prompt_to_llm_async.call_args[0]
     model_used = called_args[0]
-    assert model_used == "claude-3-5-20240620"
+    assert model_used == "claude-3-5-sonnet-latest"
 
 
 @pytest.mark.asyncio

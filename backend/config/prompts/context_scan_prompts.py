@@ -11,7 +11,7 @@ The output should **only** be in a well-formed JSON as follows, without any addi
         "Issue": "Short description of the issue",
         "Severity": "High/Medium/Low/Info/Best Practices",
         "Contracts": ["ContractName.sol"],
-        "Description": "Detailed description of the issue, with code snippet when needed.",
+        "Description": "Detailed description of the issue. Example:\\n```solidity\\nfunction vulnerable() {{\\n    // show exact vulnerable code here\\n}}\\n```\\nExplain why this is vulnerable...",
         "Recommendation": ""
         }
     ]

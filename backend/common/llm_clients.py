@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import anthropic
 import openai
+from anthropic import AsyncAnthropic
 from fastapi import HTTPException
 
 from common import logger
@@ -20,4 +20,4 @@ if not ANTHROPIC_API_KEY:
 openai.api_key = OPENAI_API_KEY
 OPENAI_CLIENT = openai
 
-CLAUDE_CLIENT = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+CLAUDE_CLIENT = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)

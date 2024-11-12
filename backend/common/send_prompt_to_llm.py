@@ -83,7 +83,7 @@ async def send_prompt_to_llm_async(
                         raise
 
         elif model_type in SUPPORTED_MODELS["anthropic"]:
-            response = CLAUDE_CLIENT.messages.create(
+            response = await CLAUDE_CLIENT.messages.create(
                 model=model_type,
                 system=system_prompt if system_prompt else "",
                 messages=messages,
@@ -100,7 +100,6 @@ async def send_prompt_to_llm_async(
                 },
             )
 
-            # Use the helper function to parse the content
             structured_response = parse_model_response(content, response_model)
             return structured_response
 
