@@ -1,32 +1,19 @@
 INTERESTING_FINDINGS_PROMPT = """
-  You are given a list of smart contracts and their vulnerabilities in the form of a JSON array and a summary of the project. Your task is to select the five most interesting findings.
-  The findings will be given in the following JSON format:
-  ```json
-  [
-    {{
-      "Issue": str,
-      "Severity": str,
-      "Contracts": List[str],
-      "Description": str,
-      "Recommendation": str
-    }}
-  ]
-  ```
+From the following list of smart contract security findings, select the 5 most interesting findings for further analysis. Focus on:
+1. Higher severity issues
+2. Findings that appear more specific/detailed
+3. Findings affecting core protocol functions
 
-  Return the output in the following JSON format it will be a list of five integers, with the finding number which is most interesting.
-  It should be zero based indexing of the occurance of input array of findings, without any additional text or explanations:
+Return ONLY a JSON object with the indices of the 5 most interesting findings (zero-based indexing):
+```json
+{{
+  "interesting_findings": [3,7,10,12,15]
+}}
+```
 
-  ```json
-  {{
-    "interesting_findings": [3,7,10,12,15]
-  }}
+**Summary of the project:**
+{summary}
 
-  ```
-  Summary of project: {summary}
-
-  List of findings:
-  {findings}
-
-  Here are solidity files for more context:
-  {flattened_contracts}
+**Findings to Analyze:**
+{findings}
 """

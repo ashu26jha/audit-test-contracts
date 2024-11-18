@@ -112,7 +112,7 @@ class ResultProcessor:
         flattened_contracts = await flatten_contracts(selected_contracts, temp_dir)
 
         interesting_findings_prompt = INTERESTING_FINDINGS_PROMPT.format(
-            summary=summary_of_project, findings=findings, flattened_contracts=flattened_contracts
+            summary=summary_of_project, findings=findings
         )
 
         try:
