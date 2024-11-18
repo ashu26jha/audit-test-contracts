@@ -10,6 +10,7 @@ from api.v1.services.fuzz_services.generate_invariants import generate_invariant
 from api.v1.services.fuzz_services.generate_report import generate_report
 from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
+from api.v1.services.fuzz_services.check_for_test_folder import check_for_test_folder
 from common import logger
 from common.profiles import Profiles
 from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
@@ -34,6 +35,8 @@ async def run_fuzzer(
     system_prompt = SYSTEM_PROMPT_FUZZ_TEST
 
     temp_dir = ""
+    has_test_folder = False
+
     try:
         # 1. Setup the fuzzing environment (Handle standalone service)
         if setup_result is None:
@@ -53,6 +56,9 @@ async def run_fuzzer(
         project_type = setup_result.project_type
         project_structure = setup_result.project_structure
         remappings = setup_result.remappings
+
+        # Check for the presence of a test folder
+        has_test_folder = check_for_test_folder(temp_dir)
 
         # When called as a standalone service, flattened_contracts is not provided
         # TODO: limit tokens size? Remove interfaces?
@@ -86,6 +92,7 @@ async def run_fuzzer(
             remappings=remappings,
             flattened_contracts=flattened_contracts,
             invariants=invariants,
+            has_test_folder=has_test_folder,
         )
 
         # 5. Send the fuzz tests prompt to LLM for fuzz tests generation
@@ -97,12 +104,11 @@ async def run_fuzzer(
             project_structure,
             remappings,
             str(invariants.invariants),
+            has_test_folder,
         )
 
         if compilation_error:
-            raise Exception(
-                f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}"
-            )
+            raise Exception(f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}")
 
         # 6. Run fuzz test
         fuzz_results = await run_fuzz_file(temp_dir)

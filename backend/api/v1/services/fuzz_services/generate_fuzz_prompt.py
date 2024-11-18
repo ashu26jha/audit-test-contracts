@@ -21,6 +21,7 @@ async def generate_fuzz_prompt(
     flattened_contracts: str,
     remappings: str,
     invariants: InvariantsList,
+    has_test_folder: bool,
 ) -> str:
     """
     Generates a fuzzing prompt for the specified project directory by formatting the provided
@@ -45,12 +46,10 @@ async def generate_fuzz_prompt(
     existing_test_cases = ""
 
     # Check if the test folder exists
-    test_folder_path = Path(project_dir) / "test"
-    test_folder_exists = test_folder_path.exists() and test_folder_path.is_dir()
-    logger.info(f"Test folder exists: {test_folder_exists}")
+    if has_test_folder:
+        test_folder_path = Path(project_dir) / "test"
 
-    # Check for existing test files in the test folder
-    if test_folder_exists:
+        # Check for existing test files in the test folder
         for test_file in test_folder_path.rglob("*.t.sol"):
             existing_test_cases += f"// Existing test file: {test_file.relative_to(project_dir)}\n"
             existing_test_cases += read_file(test_file) + "\n"
@@ -64,7 +63,7 @@ async def generate_fuzz_prompt(
     invariants_formatted = "\n".join(f"- {invariant}" for invariant in invariants.invariants)
 
     # Select the appropriate prompt based on the presence of a test folder
-    if test_folder_exists and project_type.lower() == "foundry":
+    if has_test_folder and project_type.lower() == "foundry":
         logger.info("Using FUZZER_PROMPT_WITH_TEST")
         prompt = FUZZER_PROMPT_WITH_TEST.format(
             project_structure=project_structure,
