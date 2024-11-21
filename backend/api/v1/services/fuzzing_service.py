@@ -6,12 +6,12 @@ from typing import List, Optional
 from api.v1.helpers.forge_helpers import read_file
 from api.v1.helpers.setup_environment_helpers import setup_environment
 from api.v1.schemas.fuzzer_schema import FuzzerResponse, FuzzTestResult, SetupResult
+from api.v1.services.fuzz_services.check_for_test_folder import check_for_test_folder
 from api.v1.services.fuzz_services.generate_fuzz_prompt import generate_fuzz_prompt
 from api.v1.services.fuzz_services.generate_invariants import generate_invariants
 from api.v1.services.fuzz_services.generate_report import generate_report
 from api.v1.services.fuzz_services.get_fuzz_test import get_fuzz_test
 from api.v1.services.fuzz_services.run_fuzz_file import run_fuzz_file
-from api.v1.services.fuzz_services.check_for_test_folder import check_for_test_folder
 from common import logger
 from common.profiles import Profiles
 from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
@@ -134,7 +134,9 @@ async def run_fuzzer(
         )
 
         if compilation_error:
-            raise Exception(f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}")
+            raise Exception(
+                f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}"
+            )
 
         # 6. Run fuzz test
         fuzz_results = await run_fuzz_file(temp_dir)

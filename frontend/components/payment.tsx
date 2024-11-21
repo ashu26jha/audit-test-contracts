@@ -16,6 +16,10 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Fetch scanId from url
+  const url = window.location.href;
+  const scanId = url.split("scan_id=")[1];
+
   return (
     <div className="h-full bg-black text-white flex flex-col items-center justify-center">
       <Card className="bg-[#222222] p-8 max-w-md w-full text-center">
@@ -35,8 +39,12 @@ const Payment: React.FC<PaymentProps> = ({ status, onRetry }) => {
           <p className="text-gray-400 mb-6">We did not receive your payment, please try again!</p>
         )}
         {status === "success" ? (
-          <Button color="secondary" className="bg-[#8B5CF6] w-full" onPress={() => router.push("/dashboard")}>
-            Go to Dashboard
+          <Button
+            color="secondary"
+            className="bg-[#8B5CF6] w-full"
+            onPress={() => router.push(`/scan-results/${scanId}`)}
+          >
+            Go to Results
           </Button>
         ) : (
           <div className="flex gap-4">

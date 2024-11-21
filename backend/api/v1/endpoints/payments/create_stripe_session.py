@@ -17,7 +17,8 @@ async def create_checkout_session(
     try:
         # Create a checkout session
         checkout_session = await StripeSessionService.create_checkout_session(
-            current_user, scan_id=request.scanId
+            current_user,
+            scan_id=request.scanId,
         )
 
         return SuccessResponse(
@@ -26,4 +27,4 @@ async def create_checkout_session(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
