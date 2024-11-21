@@ -15,10 +15,12 @@ You are an expert smart contract auditor specializing in protocol security and i
 {project_structure}
 
 **Here is the Solidity code of the protocol:**
-```solidity
 {contract_code}
-```
 
+**You are going to only generate invariants for these Solidity contracts:**
+```solidity
+{selected_contracts_code}
+```
 **Your Task:**
 Analyze the given protocol and identify crucial invariants that should never be violated, then provide a comprehensive list of the invariants found following the response format. Focus on the following aspects:
   - State Consistency: Identify invariants related to the protocol's state variables and their relationships.
@@ -62,7 +64,7 @@ Make sure to include all the correct paths, contract names, and the needed param
 
 **Solidity contracts to test:**
 ```solidity
-{contract_code}
+{selected_contracts_code}
 ```
 
 **Invariants to be fuzzed:**
@@ -70,6 +72,9 @@ Make sure to include all the correct paths, contract names, and the needed param
 
 **Existing test files:**
 {existing_test_cases}
+
+**Contract code context:**
+{contract_code}
 
 **Forge Standard Library Reference:**
 
@@ -86,7 +91,7 @@ Additional Features:
 {forge_std_features}
 
 **Your task:**
-Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Leverage the existing test files for contract imports and environment setup. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios. Make use of the Forge Standard Library features, assertions, and cheat codes where appropriate to create robust and effective fuzz tests.
+Generate a Foundry fuzz test file named `FuzzTest.t.sol` that will test the contracts for any vulnerabilities based on the invariants provided. Leverage the existing test files for contract imports of the selected contracts and environment setup of them. Only include functions that will test and fuzz the vulnerabilities. Ensure comprehensive coverage of edge cases and various scenarios. Make use of the Forge Standard Library features, assertions, and cheat codes where appropriate to create robust and effective fuzz tests.
 
 **Additional Considerations:**
 - Use the Foundry testing library and import it as `forge-std/Test.sol`.

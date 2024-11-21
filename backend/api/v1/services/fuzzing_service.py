@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 from typing import List, Optional
@@ -76,11 +77,35 @@ async def run_fuzzer(
         # 2. Update Foundry configuration
         # update_foundry_config(temp_dir)
 
+        # Create a string for the selected contracts' code
+        if selected_contracts is not None:
+            selected_contracts_code = ""
+            for contract in selected_contracts:
+                contract_path = None
+                # Search for the contract file recursively in the src folder
+                for root, _, files in os.walk(os.path.join(temp_dir, 'src')):
+                    # Check if the contract file is in the current directory
+                    if contract in files:
+                        contract_path = os.path.join(root, contract)
+                        break
+                
+                if contract_path:
+                    # Get the relative path of the contract file
+                    relative_path = os.path.relpath(contract_path, temp_dir)
+                    selected_contracts_code += f"// {relative_path}\n"
+                    # Read the contract file content and append it to the selected contracts' code
+                    with open(contract_path, 'r') as file:
+                        selected_contracts_code += file.read() + "\n\n"
+                else:
+                    # if the contract file is not found
+                    logger.exception(f"Selected contract: {contract} not found in src folder")
+
         # 3. Generate the invariants
         invariants = await generate_invariants(
             detected_profile,
             project_structure,
             flattened_contracts,
+            selected_contracts_code,
         )
 
         # 4. Generate the fuzz tests prompt
@@ -93,6 +118,7 @@ async def run_fuzzer(
             flattened_contracts=flattened_contracts,
             invariants=invariants,
             has_test_folder=has_test_folder,
+            selected_contracts=selected_contracts_code,
         )
 
         # 5. Send the fuzz tests prompt to LLM for fuzz tests generation

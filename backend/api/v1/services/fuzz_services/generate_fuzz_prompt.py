@@ -22,6 +22,7 @@ async def generate_fuzz_prompt(
     remappings: str,
     invariants: InvariantsList,
     has_test_folder: bool,
+    selected_contracts_code: str,
 ) -> str:
     """
     Generates a fuzzing prompt for the specified project directory by formatting the provided
@@ -37,7 +38,7 @@ async def generate_fuzz_prompt(
         remappings (str): The remappings used in the project.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
         invariants (InvariantsList): The invariants to be included in the prompt.
-
+        selected_contracts_code (str): The selected contracts to be included in the prompt.
     Returns:
         str: The generated fuzzing prompt formatted for the LLM.
     """
@@ -75,6 +76,7 @@ async def generate_fuzz_prompt(
             forge_std_cheats=FORGE_STD_CHEATS,
             forge_std_errors=FORGE_STD_ERRORS,
             forge_std_features=FORGE_STD_FEATURES,
+            selected_contracts=selected_contracts_code,
         )
     else:
         logger.info("Using FUZZER_PROMPT_WITHOUT_TEST")

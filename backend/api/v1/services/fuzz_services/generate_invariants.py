@@ -11,6 +11,7 @@ async def generate_invariants(
     detected_profile: Profiles,
     project_structure: str,
     flattened_contracts: str,
+    selected_contracts_code: str,
 ) -> InvariantsList:
     """
     Generates invariants for fuzz testing based on the provided project structure, flattened contracts,
@@ -21,7 +22,7 @@ async def generate_invariants(
         detected_profile (Profiles): The detected profile, if any, used for context in generation.
         project_structure (str): The structure of the project, detailing the organization of contracts.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
-
+        selected_contracts_code (str): The selected contracts to be included in the prompt.
     Returns:
         InvariantsList: The generated invariants parsed from the LLM's response.
     """
@@ -33,6 +34,7 @@ async def generate_invariants(
     invariant_prompt = FUZZER_INVARIANT_PROMPT.format(
         project_structure=project_structure,
         contract_code=flattened_contracts,
+        selected_contracts=selected_contracts_code,
     )
 
     # Send the invariant prompt to the LLM
