@@ -112,15 +112,15 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Include routers
-app.include_router(health_check.router, prefix="/api/v1")  # Admin protected
+app.include_router(health_check.router, prefix="/api/v1")  # Throttled (5s)
 app.include_router(github_auth.router, prefix="/api/v1/auth")
 app.include_router(github.router, prefix="/api/v1/github")
-app.include_router(audit_agent.router, prefix="/api/v1")
-app.include_router(scan_results.router, prefix="/api/v1/scans")
+app.include_router(audit_agent.router, prefix="/api/v1")  # Admin protected
+app.include_router(scan_results.router, prefix="/api/v1/scans")  # Full results Admin protected
 app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
 app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
-app.include_router(generate_pdf.router, prefix="/api/v1")
+app.include_router(generate_pdf.router, prefix="/api/v1")  # Admin protected + Throttled (1mn)
 app.include_router(stats.router, prefix="/api/v1")  # Admin protected
 
 if settings.ENVIRONMENT == "development":

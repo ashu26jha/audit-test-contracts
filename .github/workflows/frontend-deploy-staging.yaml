@@ -67,6 +67,7 @@ jobs:
             --platform=linux/amd64 \
             --build-arg NEXT_PUBLIC_API_URL="${{ env.NEXT_PUBLIC_API_URL }}" \
             --build-arg NEXT_PUBLIC_GITHUB_APP_URL="${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}" \
+            --build-arg X_API_KEY="${{ secrets.X_API_KEY }}" \
             --build-arg NODE_ENV="staging" \
             -f ./frontend/Dockerfile.nginx \
             -t $IMAGE_URI ./frontend 
@@ -78,6 +79,14 @@ jobs:
 
       - name: Log task definition
         run: cat task-definition.json  # Log the task definition for debugging 
+
+      - name: Update task definition with environment variables
+        run: |
+          TASK_DEF=$(cat task-definition.json)
+          UPDATED_TASK_DEF=$(echo $TASK_DEF | jq '.containerDefinitions[0].environment += [
+            {"name": "X_API_KEY", "value": "${{ secrets.X_API_KEY }}"}
+          ]')
+          echo $UPDATED_TASK_DEF > task-definition.json
       
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def

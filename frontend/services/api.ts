@@ -74,7 +74,7 @@ export const initiateScan = async (
     branchName: string;
   },
 ) => {
-  const response = await api.post("/api/v1/audit-agent", data, {
+  const response = await axios.post("/api/launchScan", data, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -95,20 +95,12 @@ export const getPartialScanResults = async (token: string, scanId: string) => {
 };
 
 export const getFullScanResults = async (token: string, scanId: string) => {
-  const response = await api.get(`/api/v1/scans/full/${scanId}`, {
+  const response = await axios.get(`/api/getFullScanResults?scanId=${scanId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
-  const result = response.data.data.result;
-  const scan = response.data.data.scan;
-  result.scan = scan;
-  // Sort the findings by severity
-  const severityOrder = ["Critical", "High", "Medium", "Low", "Info", "Best Practices"];
-  result.findings.sort((a: Finding, b: Finding) => {
-    return severityOrder.indexOf(a.Severity) - severityOrder.indexOf(b.Severity);
-  });
-  return result;
+  return response.data;
 };
 
 export const getScanHistory = async (token: string) => {
@@ -147,7 +139,7 @@ export const createCheckoutSession = async (token: string, scanId: string) => {
 
 export const sendPdfReport = async (token: string, scanId: string) => {
   try {
-    const response = await api.get(`/api/v1/generate-pdf/${scanId}`, {
+    const response = await axios.get(`/api/sendReport?scanId=${scanId}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

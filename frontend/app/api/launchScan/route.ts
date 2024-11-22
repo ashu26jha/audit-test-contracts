@@ -1,0 +1,46 @@
+import axios, { AxiosError } from "axios";
+import { NextRequest, NextResponse } from "next/server";
+
+import { SERVICES } from "@/config/constants";
+
+const apiKey = process.env.X_API_KEY;
+
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
+  if (!token) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  if (!apiKey) {
+    return NextResponse.json({ error: "API key is not configured" }, { status: 500 });
+  }
+
+  try {
+    const body = await request.json();
+
+    const baseURL = process.env.DOCKER_ENV === "true" ? "http://backend:8000" : SERVICES.API_URL;
+
+    const response = await axios.post(`/api/v1/audit-agent`, body, {
+      baseURL,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+      },
+    });
+
+    return NextResponse.json(response.data);
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    const message = axiosError.message ?? axiosError.response?.statusText ?? error;
+    console.error("Error launching scan:", message);
+
+    if (axios.isAxiosError(error)) {
+      const status = axiosError.response?.status || 500;
+      return NextResponse.json({ error: message }, { status });
+    }
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
