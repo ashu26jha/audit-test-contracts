@@ -1,15 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-// import { Code } from "@nextui-org/code";
-// import { Link } from "@nextui-org/link";
-// import { Snippet } from "@nextui-org/snippet";
-// import { button as buttonStyles } from "@nextui-org/theme";
 import { useRouter, usePathname } from "next/navigation";
-
-// import { GithubIcon } from "@/components/icons";
-// import { title, subtitle } from "@/components/primitives";
-// import { siteConfig } from "@/config/site";
 
 import { Loading } from "@/components/Loading";
 

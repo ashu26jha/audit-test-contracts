@@ -83,18 +83,18 @@ async def run_fuzzer(
             for contract in selected_contracts:
                 contract_path = None
                 # Search for the contract file recursively in the src folder
-                for root, _, files in os.walk(os.path.join(temp_dir, 'src')):
+                for root, _, files in os.walk(os.path.join(temp_dir, "src")):
                     # Check if the contract file is in the current directory
                     if contract in files:
                         contract_path = os.path.join(root, contract)
                         break
-                
+
                 if contract_path:
                     # Get the relative path of the contract file
                     relative_path = os.path.relpath(contract_path, temp_dir)
                     selected_contracts_code += f"// {relative_path}\n"
                     # Read the contract file content and append it to the selected contracts' code
-                    with open(contract_path, 'r') as file:
+                    with open(contract_path, "r") as file:
                         selected_contracts_code += file.read() + "\n\n"
                 else:
                     # if the contract file is not found
