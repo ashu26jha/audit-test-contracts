@@ -76,8 +76,13 @@ jobs:
         run: |
           aws ecs describe-task-definition --task-definition ${{ env.TASK_NAME }} --query taskDefinition > task-definition.json
 
-      - name: Log task definition
-        run: cat task-definition.json  # Log the task definition for debugging 
+      - name: Update task definition with environment variables
+        run: |
+          TASK_DEF=$(cat task-definition.json)
+          UPDATED_TASK_DEF=$(echo $TASK_DEF | jq '.containerDefinitions[0].environment += [
+            {"name": "X_API_KEY", "value": "${{ secrets.X_API_KEY }}"}
+          ]')
+          echo $UPDATED_TASK_DEF > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
