@@ -67,8 +67,6 @@ jobs:
             --platform=linux/amd64 \
             --build-arg NEXT_PUBLIC_API_URL="${{ env.NEXT_PUBLIC_API_URL }}" \
             --build-arg NEXT_PUBLIC_GITHUB_APP_URL="${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}" \
-            --build-arg NODE_ENV="staging" \
-            --build-arg X_API_KEY="${{ secrets.X_API_KEY }}" \
             -f ./frontend/Dockerfile.nginx \
             -t $IMAGE_URI ./frontend 
           docker push $IMAGE_URI
