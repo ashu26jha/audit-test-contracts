@@ -11,6 +11,9 @@ Return ONLY a JSON object with the indices of the 5 most interesting findings (z
 }}
 ```
 
+**Total number of findings:**
+{total_findings}
+
 **Summary of the project:**
 {summary}
 

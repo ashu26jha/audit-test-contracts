@@ -13,7 +13,7 @@ from common import logger
 from common.llm_clients import CLAUDE_CLIENT
 from common.parse_llm_response import parse_model_response
 from common.token_count import count_tokens
-from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS, TEMPERATURE
+from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS
 
 # Limit concurrent OpenAI requests
 OPENAI_SEMAPHORE = Semaphore(4)
@@ -83,25 +83,15 @@ async def send_prompt_to_llm_async(
                         raise
 
         elif model_type in SUPPORTED_MODELS["anthropic"]:
-            response = await CLAUDE_CLIENT.messages.create(
+            response = await CLAUDE_CLIENT.completions.create(
                 model=model_type,
                 system=system_prompt if system_prompt else "",
                 messages=messages,
                 max_tokens=8192,
-                temperature=TEMPERATURE,
-            )
-            content = response.content[0].text.strip()
-
-            langfuse_context.update_current_observation(
-                model=model_type,
-                usage={
-                    "input": response.usage.input_tokens,
-                    "output": response.usage.output_tokens,
-                },
+                response_model=response_model,
             )
 
-            structured_response = parse_model_response(content, response_model)
-            return structured_response
+            return response
 
         else:
             raise HTTPException(status_code=500, detail=f"Unsupported model type: {model_type}")

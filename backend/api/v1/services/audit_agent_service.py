@@ -146,10 +146,11 @@ async def perform_audit_agent_background(
             user_id=str(user.id),
             combined_findings=combined_findings,
             selected_contracts=selected_contracts,
+            flattened_contracts=flattened_contracts,
             summary_result=summary_result,
             detected_type=detected_type,
         )
-        await result_processor.process_results(repo_dir)
+        await result_processor.process_results()
         total_findings_after_dedup = result_processor.get_total_findings()
 
         langfuse_context.update_current_trace(session_id=str(scan_id))

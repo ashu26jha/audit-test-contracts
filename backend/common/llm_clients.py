@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import instructor
 import openai
 from anthropic import AsyncAnthropic
 from fastapi import HTTPException
@@ -20,4 +21,7 @@ if not ANTHROPIC_API_KEY:
 openai.api_key = OPENAI_API_KEY
 OPENAI_CLIENT = openai
 
-CLAUDE_CLIENT = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+# Create base Anthropic client
+base_claude_client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+# Patch with instructor
+CLAUDE_CLIENT = instructor.from_anthropic(base_claude_client)

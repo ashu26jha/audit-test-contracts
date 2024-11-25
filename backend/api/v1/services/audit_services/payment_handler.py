@@ -26,23 +26,19 @@ class PaymentHandler:
 
         # Handle failed scans
         if scan.status == "failed":
-            await scan_history_service.update_scan(
+            await scan_history_service.update_scan_paid_status(
                 self.scan_id,
-                {
-                    "paid_status": False,
-                    "discount_applied": False,
-                },
+                paid_status=False,
+                discount_applied=False,
             )
             return
 
         # Handle free scans (0-1 findings)
         if self.total_findings <= 1:
-            await scan_history_service.update_scan(
+            await scan_history_service.update_scan_paid_status(
                 self.scan_id,
-                {
-                    "paid_status": True,
-                    "discount_applied": False,
-                },
+                paid_status=True,
+                discount_applied=False,
             )
             await self._create_free_payment_record()
             return

@@ -111,4 +111,8 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     if not installations:
         return RedirectResponse(settings.GITHUB_INSTALLATION_URL)
 
-    return UserResponse(**current_user.model_dump())
+    # Convert the model to dict and explicitly convert id to string
+    user_dict = current_user.model_dump()
+    user_dict["id"] = str(user_dict["id"])  # Convert ObjectId to string
+
+    return UserResponse(**user_dict)

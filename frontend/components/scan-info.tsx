@@ -94,13 +94,13 @@ const InfoSection: FC<InfoSectionProps> = ({ icon, items }) => (
           {index > 0 && <p className="text-sm text-gray-400 mt-4">{label}</p>}
           {index === 0 && <p className="text-sm text-gray-400">{label}</p>}
           {Array.isArray(value) ? (
-            <p>
+            <>
               {value.map((item) => (
-                <div className="mt-1" key={item}>
+                <p className="mt-1" key={item}>
                   {item}
-                </div>
+                </p>
               ))}
-            </p>
+            </>
           ) : (
             <p>{value}</p>
           )}

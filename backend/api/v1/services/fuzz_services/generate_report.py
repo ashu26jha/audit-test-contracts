@@ -3,7 +3,6 @@ from typing import List
 from api.v1.schemas.context_scan_schema import FindingList
 from api.v1.schemas.fuzzer_schema import InvariantsList
 from common import logger
-from common.parse_llm_response import parse_model_response
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.fuzzer_prompts import REPORT_PROMPT
 from config.settings import LLM_MODEL_MEDIUM
@@ -40,11 +39,9 @@ async def generate_report(
     )
 
     # Send prompt to LLM
-    # TODO: Add response model
-    report_response = await send_prompt_to_llm_async(LLM_MODEL_MEDIUM, report_prompt)
-
-    # Parse LLM response
-    report = parse_model_response(report_response, FindingList)
+    report = await send_prompt_to_llm_async(
+        LLM_MODEL_MEDIUM, report_prompt, response_model=FindingList
+    )
 
     logger.info(f"Report generated with {len(report.findings)} findings.")
     return report

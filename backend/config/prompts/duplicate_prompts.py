@@ -1,13 +1,21 @@
 DUPLICATE_PROMPT = """
-You are a smart contracts security expert. Your task is to carefully analyze the following list of vulnerabilities and identify any duplicates or similar findings:
-- For duplicate vulnerabilities, keep the one with the most information and/or the best description, add any missing information or code snippets from the other finding to the description, then remove the other one.
-- For similar vulnerabilities, combine them into a single one and remove the other one. Make sure to keep as many details as possible. For instance, if there are 2 contants that should be marked as immutable, merge them into a single findings mentioning both occurrences.
-Finally, return the list of unique findings with the most information and/or the best description, excluding any duplicates.
+You are a smart contracts security expert tasked with removing exact duplicates from a list of findings. A duplicate finding is defined as an exact same issue in the exact same contract and the exact same function, with the same description of the problem and the same consequences linked to the issue. Your goal is to remove only duplicate findings, findings that are completely identical.
 
-**Additional considerations:**
-- Make sure to keep as many details as possible for each finding's description and all code snippets. The more details, the better.
-- Combine findings when possible, but do not lose any details.
-- Make sure everything is properly formatted: proper JSON, containing attributes with proper strings, containing proper markdown, etc.
+**Rules:**
+- Keep all findings that differ in any way (different contracts, different functions, different descriptions, different consequences).
+- You are not allowed to remove any details, information or code snippets from the findings. You can only ADD details, information or code snippets from the duplicate findings that you are removing.
+- Always keep as much information as possible, the more detailed the better.
+- Do not merge or combine similar findings.
+- Do not summarize or consolidate findings.
+- Do not remove findings just because they are related.
+- Keep all unique information.
+- If in doubt, keep the finding.
+
+**Examples:**
+1. Two findings with identical Issue, Contracts, Description and consequences -> Remove one
+2. Two findings about DoS in different functions -> Keep both
+3. Two findings with same Issue but different descriptions -> Keep both
+4. Two findings affecting different contracts -> Keep both
 
 Return the output in the following JSON format, without any additional text or explanations:
 ```json
@@ -17,13 +25,13 @@ Return the output in the following JSON format, without any additional text or e
             "Issue": "Short description of the issue",
             "Severity": "High/Medium/Low/Info/Best Practices",
             "Contracts": ["ContractName.sol"],
-            "Description": "Detailed description of the issue. Example:\\n```solidity\\nfunction vulnerable() {{\\n    // show exact vulnerable code here\\n}}\\n```\\nExplain why this is vulnerable...",
+            "Description": "Detailed description of the issue with code snippets and examples properly escaped.",
             "Recommendation": ""
         }}
     ]
 }}
 ```
 
-**List of vulnerabilities:**
+**List of findings:**
 {vulnerabilities}
 """

@@ -1,6 +1,5 @@
 from api.v1.schemas.fuzzer_schema import InvariantsList
 from common import logger
-from common.parse_llm_response import parse_model_response
 from common.profiles import Profiles
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.fuzzer_prompts import FUZZER_INVARIANT_PROMPT
@@ -38,10 +37,9 @@ async def generate_invariants(
     )
 
     # Send the invariant prompt to the LLM
-    invariant_response = await send_prompt_to_llm_async(model, invariant_prompt)
-
-    # Parse LLM response
-    invariants = parse_model_response(invariant_response, InvariantsList)
+    invariants = await send_prompt_to_llm_async(
+        model, invariant_prompt, response_model=InvariantsList
+    )
 
     logger.info(f"{len(invariants.invariants)} invariants generated")
     return invariants
