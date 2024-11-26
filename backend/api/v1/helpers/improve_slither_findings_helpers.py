@@ -7,7 +7,7 @@ from common.logger import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from common.severity import Severity
 from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
-from config.settings import DELAY, LLM_MODEL_MEDIUM, MAX_RETRIES
+from config.settings import DELAY, LLM_MODEL_BEST_3, MAX_RETRIES
 
 # Mapping from our severity to Slither's severity
 SEVERITY_TO_SLITHER = {
@@ -36,7 +36,7 @@ async def improve_slither_findings(vulns: List[Finding]) -> List[Finding]:
         try:
             # Send the prompt to the LLM with structured output
             llm_response = await send_prompt_to_llm_async(
-                LLM_MODEL_MEDIUM, prompt, response_model=FindingList
+                LLM_MODEL_BEST_3, prompt, response_model=FindingList
             )
 
             if not isinstance(llm_response, FindingList):

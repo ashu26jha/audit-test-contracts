@@ -3,7 +3,7 @@ from common import logger
 from common.profiles import Profiles
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.fuzzer_prompts import FUZZER_INVARIANT_PROMPT
-from config.settings import LLM_MODEL_BEST_2
+from config.settings import LLM_MODEL_BEST_3
 
 
 async def generate_invariants(
@@ -27,7 +27,7 @@ async def generate_invariants(
     """
     logger.info("Generating invariants with LLM...")
 
-    model = LLM_MODEL_BEST_2
+    model = LLM_MODEL_BEST_3
 
     # Generate the invariant prompt
     invariant_prompt = FUZZER_INVARIANT_PROMPT.format(

@@ -5,7 +5,7 @@ from api.v1.schemas.context_scan_schema import Finding, FindingList
 from common.logger import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.duplicate_prompts import DUPLICATE_PROMPT
-from config.settings import LLM_MODEL_MEDIUM
+from config.settings import LLM_MODEL_BEST_3
 
 
 async def remove_duplicates(vulns: List[Finding]) -> List[Finding]:
@@ -22,7 +22,7 @@ async def remove_duplicates(vulns: List[Finding]) -> List[Finding]:
 
         # Send the prompt to the LLM using retry_async_operation
         llm_response: FindingList = await send_prompt_to_llm_async(
-            model_type=LLM_MODEL_MEDIUM,
+            model_type=LLM_MODEL_BEST_3,
             user_input=prompt,
             response_model=FindingList,
         )
