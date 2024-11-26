@@ -16,10 +16,10 @@ services:
       - /app/backend/__pycache__  # Mount the __pycache__ directory
 
   frontend:
-    # Build the frontend container using the Dockerfile located at ./frontend/Dockerfile.frontend
+    # Build the frontend container using the Dockerfile located at ./frontend/Dockerfile.frontend.dev
     build:
       context: ./frontend
-      dockerfile: Dockerfile.frontend
+      dockerfile: Dockerfile.frontend.dev
     container_name: frontend  # Name of the frontend container
     ports:
       - "3000:3000"  # Expose port 3000 for the frontend service
@@ -31,8 +31,6 @@ services:
       - ./frontend:/app/frontend  # Mount the frontend directory
       - /app/frontend/node_modules  # Mount the node_modules directory
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/auditagent-dev/installations/new
       - DOCKER_ENV=true
 
 # Define a custom network so both containers can communicate with each other

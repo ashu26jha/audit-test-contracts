@@ -2,9 +2,9 @@ name: Code Quality Checks
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, staging ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, staging ]
 
 # Ensure only one workflow runs at a time per branch
 concurrency:

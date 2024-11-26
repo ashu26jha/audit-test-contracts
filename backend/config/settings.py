@@ -20,6 +20,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 SUPPORTED_MODELS = {
     "openai": [
         "gpt-4o-2024-11-20",  # 128k - 16k context
+        "gpt-4o-2024-08-06",  # 128k - 16k context
         "gpt-4o-mini",  # 128k - 16k context
         "o1-preview",  # 128k - 32k context
         "o1-mini",  # 128k - 65k context
