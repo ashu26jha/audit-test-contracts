@@ -20,7 +20,7 @@ async def remove_duplicates(vulns: List[Finding]) -> List[Finding]:
         prompt = DUPLICATE_PROMPT.format(vulnerabilities=json.dumps(vulns_json, indent=2))
         logger.info(f"Removing duplicates from {len(vulns)} findings...")
 
-        # Send the prompt to the LLM using retry_async_operation
+        # Send the prompt to LLM
         llm_response: FindingList = await send_prompt_to_llm_async(
             model_type=LLM_MODEL_BEST_3,
             user_input=prompt,

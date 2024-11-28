@@ -24,6 +24,4 @@ Return the output in the following JSON format, without any additional text or e
     ]
 }}
 ```
-
-
 """
