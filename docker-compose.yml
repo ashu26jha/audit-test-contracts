@@ -29,7 +29,8 @@ services:
       - ./frontend/.env  # Load environment variables from the .env file
     volumes:
       - ./frontend:/app/frontend  # Mount the frontend directory
-      - /app/frontend/node_modules  # Mount the node_modules directory
+      - /app/frontend/.next  # Anonymous volume for .next
+      - /app/frontend/node_modules
     environment:
       - DOCKER_ENV=true
 

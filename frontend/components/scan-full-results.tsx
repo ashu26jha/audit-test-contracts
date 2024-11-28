@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@nextui-org/react";
-import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
-import { Dot } from "lucide-react";
+import { AlertTriangle, Dot, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";

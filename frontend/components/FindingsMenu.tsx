@@ -78,7 +78,7 @@ const FindingsMenu: React.FC<FindingsMenuProps> = ({
                   className="pr-2"
                   title={
                     <div className="flex items-center">
-                      <Dot size={25} className={`ml-2 ${severityColor(severity as Finding["Severity"])}`} />
+                      <Dot size={25} className={`ml-2 ${severityColor(severity)}`} />
                       <span className="text-sm font-inter font-medium text-[#B8B8B8]">{severity}</span>
                     </div>
                   }

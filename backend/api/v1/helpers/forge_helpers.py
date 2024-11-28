@@ -146,8 +146,9 @@ def preprocess_solidity_files(temp_dir: str) -> None:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
                 # Replace address variables assigned to empty strings
+                # Using atomic groups (?>) and possessive quantifiers (*+) to prevent backtracking
                 content = re.sub(
-                    r"(address\s+(?:public|private|internal|external)?\s*(?:constant\s+)?\s*\w+\s*=\s*)\"\";",
+                    r"(address\s+(?>(public|private|internal|external)?\s*)(?>(constant\s+)?)\w+\s*=\s*)\"\";",
                     r"\1 address(0);",
                     content,
                 )

@@ -25,9 +25,6 @@ def detect_project_type(repo_dir: str) -> str:
     """
     repo_path = Path(repo_dir)
 
-    # Initialize project_type
-    project_type = "unknown"
-
     # Start by detecting Foundry project
     foundry_config_found = False
     for config_name in FOUNDRY_CONFIGS:

@@ -85,7 +85,7 @@ async def perform_audit_agent_background(
     user: User,
     scan_id: UUID,
     flattened_contracts: str,
-    repositoryURL: str,
+    repository_url: str,
     access_token: str,
     selected_contracts: List[str],
     branch_name: str,
@@ -109,7 +109,7 @@ async def perform_audit_agent_background(
         # Attempt to set up the environment using the existing repo_dir
         try:
             setup_result = await setup_environment(
-                repositoryURL,
+                repository_url,
                 repo_dir,
                 access_token,
                 branch_name,

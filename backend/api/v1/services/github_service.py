@@ -103,7 +103,6 @@ class GitHubService:
         """
         Fetch the content of a specific file in a repository.
         """
-        params = {"ref": branch}
         headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github.v3+json",

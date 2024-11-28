@@ -42,7 +42,7 @@ class Scan(Document):
                 "scan_number": 1,
                 "user_id": "612e3a5e630d2b1a6f20fb4b",
                 "status": "pending",
-                "startedAt": "2023-10-01T12:00:00Z",
+                "startedAt": "2023-10-01T11:00:00Z",
                 "completedAt": None,
                 "contractFiles": ["contracts/MyContract.sol"],
                 "linesOfCode": {
@@ -59,7 +59,7 @@ class Scan(Document):
                 "paidStatus": False,
                 "discount_applied": False,
                 "createdAt": "2023-10-01T12:00:00Z",
-                "updatedAt": "2023-10-01T12:00:00Z",
+                "updatedAt": "2023-10-01T12:52:12Z",
                 "detectors": {
                     "context_scan_1": True,
                     "context_scan_2": True,
@@ -126,8 +126,8 @@ class ScanResult(Document):
                         "Recommendation": "Use mutex or check-effects-interactions pattern.",
                     }
                 ],
-                "createdAt": "2023-10-01T12:00:00Z",
-                "completedAt": "2023-10-01T12:00:00Z",
+                "createdAt": "2023-10-01T12:20:00Z",
+                "completedAt": "2023-10-01T12:10:00Z",
             }
         },
     )

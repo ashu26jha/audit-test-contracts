@@ -6,10 +6,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
     curl \
     git \
     gnupg \
-    build-essential \
     libssl-dev \
     wget \
     && curl -L https://foundry.paradigm.xyz | bash \
@@ -29,13 +29,13 @@ COPY --from=builder /root/.foundry /root/.foundry
 
 # Install runtime dependencies including Node.js and npm
 RUN apt-get update && apt-get install -y \
+    apt-transport-https \
+    build-essential \
+    ca-certificates \
     curl \
     git \
-    build-essential \
-    libssl-dev \
-    apt-transport-https \
-    ca-certificates \
     gnupg \
+    libssl-dev \
     redis-server \
     && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs=18.* \
@@ -49,13 +49,12 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app/backend
 
-# Copy and install Python dependencies
+# Copy and install Python dependencies, and setup playwright in a single layer
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir toml==0.10.2 slither-analyzer==0.10.0 solc-select==1.0.4
-
-# Install playwright and its dependencies
-RUN playwright install && playwright install-deps
+    && pip install --no-cache-dir  slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
+    && playwright install \
+    && playwright install-deps
 
 # Copy the rest of your application code
 COPY . .
@@ -63,6 +62,4 @@ COPY . .
 EXPOSE 8000
 
 # Start Redis and run the application with Doppler
-CMD redis-server --daemonize yes && \
-    redis-cli ping && \
-    doppler run -- python3 main.py
+CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && doppler run -- python3 main.py"]

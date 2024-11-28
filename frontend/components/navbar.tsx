@@ -67,7 +67,7 @@ export const Navbar = () => {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <div className="justify-center items-center gap-2 flex cursor-pointer">
-                {user && user.avatarUrl ? (
+                {user?.avatarUrl ? (
                   <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
                 ) : (
                   <></>

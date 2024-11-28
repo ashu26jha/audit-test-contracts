@@ -114,7 +114,7 @@ AuditAgent Team"""
         logger.error(f"Error sending completion email: {str(e)}")
 
 
-async def send_error_email(to_email: str, scan_id: str, scan_number: int):
+async def send_error_email(to_email: str, scan_number: int):
     """
     Send an email with the error message.
     """

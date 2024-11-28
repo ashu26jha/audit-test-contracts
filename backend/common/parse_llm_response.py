@@ -94,12 +94,12 @@ def _clean_json_content(content: str) -> str:
     content = re.sub(r"[\u200B-\u200D\uFEFF]", "", content)
 
     # New version cleaning
-    content = re.sub(r"`([^`]+)`", r"\1", content)  # Handle inline code
-    content = re.sub(r"```\w*\n?|\n?```", "", content)  # Remove markdown
+    content = re.sub(r"`((?>[^`]+))`", r"\1", content)  # Handle inline code
+    content = re.sub(r"```\w*+(?>\n)?+|(?>\n)?+```", "", content)  # Remove markdown
     content = content.replace('\\"', '"')  # Fix escaped chars
     content = content.replace("\\n", "\n")
-    content = re.sub(r'\\+(["{}\[\]])', r"\1", content)  # Handle nested JSON
-    content = re.sub(r",(\s*[}\]])", r"\1", content)  # Fix trailing commas
+    content = re.sub(r'\\++(?>["{}\[\]])', r"\1", content)  # Handle nested JSON
+    content = re.sub(r",(?>\s*+[}\]])", r"\1", content)  # Fix trailing commas
 
     # Handle multiline code snippets
     def clean_code_block(match):
@@ -107,14 +107,14 @@ def _clean_json_content(content: str) -> str:
         return code.replace("\n", "\\n").replace('"', '\\"')
 
     content = re.sub(
-        r'("code":\s*")(.*?)(")',
+        r'("code":\s*+")(?>[^"]*+)(")',
         lambda m: m.group(1) + clean_code_block(m) + m.group(3),
         content,
         flags=re.DOTALL,
     )
 
     # Extract main JSON structure
-    json_match = re.search(r"({[\s\S]*}|\[[\s\S]*\])", content)
+    json_match = re.search(r"({(?>[^}]*+})|(?>\[)[^\]]*+\])", content)
     if json_match:
         content = json_match.group(0)
 

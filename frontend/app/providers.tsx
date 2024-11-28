@@ -14,8 +14,8 @@ import { AuthProvider } from "../contexts/AuthContext";
 const queryClient = new QueryClient();
 
 export interface ProvidersProps {
-  children: ReactNode;
-  themeProps?: ThemeProviderProps;
+  readonly children: ReactNode;
+  readonly themeProps?: ThemeProviderProps;
 }
 
 export function Providers({ children, themeProps }: ProvidersProps) {

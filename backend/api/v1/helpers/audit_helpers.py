@@ -17,7 +17,7 @@ async def update_scan_failure(email: str, scan_id: UUID, message: str) -> None:
         await scan_result.save()
 
         # Send an email to the user with the error message
-        await send_error_email(email, scan_id, scan_result.scan_number)
+        await send_error_email(email, scan_result.scan_number)
 
         logger.error(f"Scan {scan_id} failed: {message}")
     except Exception as e:

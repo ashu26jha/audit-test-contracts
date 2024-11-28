@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
     // Sort the findings by severity
     const severityOrder = ["Critical", "High", "Medium", "Low", "Info", "Best Practices"];
-    result.findings.sort((a: any, b: any) => {
+    result.findings.sort((a: Finding, b: Finding) => {
       return severityOrder.indexOf(a.Severity) - severityOrder.indexOf(b.Severity);
     });
 

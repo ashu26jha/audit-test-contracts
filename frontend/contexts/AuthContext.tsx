@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useState, useContext, useEffect, useCallback } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from "react";
 
 import { getUser } from "../services/api";
 
@@ -91,14 +91,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }, []);
 
-  const value = {
-    user,
-    token,
-    loading,
-    setToken,
-    logout,
-    isPublicRoute,
-  };
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      setToken,
+      logout,
+      isPublicRoute,
+    }),
+    [user, token, loading, setToken, logout, isPublicRoute],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

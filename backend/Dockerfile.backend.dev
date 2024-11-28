@@ -5,16 +5,18 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y \
+    build-essential \
     curl \
     git \
     gnupg \
-    build-essential \
     libssl-dev \
     wget \
     && curl -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup \
     && curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | tee /usr/share/keyrings/stripe.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] https://packages.stripe.dev/stripe-cli-debian-local stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
+    && echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] \
+            https://packages.stripe.dev/stripe-cli-debian-local \
+            stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
     && apt-get update && apt-get install -y stripe \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -32,29 +34,25 @@ COPY --from=builder /usr/local/bin/stripe /usr/local/bin/stripe
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
+    git \
     nodejs=18.* \
     npm \
     redis-server \
-    git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/backend
 
-# Copy and install Python dependencies
+# Copy and install Python dependencies, and setup playwright in a single layer
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir toml==0.10.2 slither-analyzer==0.10.0 solc-select==1.0.4
-
-# Install playwright and its dependencies
-RUN playwright install && playwright install-deps
+    && pip install --no-cache-dir slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
+    && playwright install \
+    && playwright install-deps
 
 # Copy the rest of your application code
 COPY . .
 
 EXPOSE 8000
 
-CMD redis-server --daemonize yes && \
-    redis-cli ping && \
-    (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && \
-    python3 main.py
+CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && python3 main.py"]

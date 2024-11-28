@@ -183,7 +183,6 @@ class TaskManager:
                     self._monitor_task(
                         self.static_analysis_task,
                         "static_analyzer",
-                        self.DETECTOR_WEIGHTS["static_analyzer"],
                     )
                 )
 
@@ -206,7 +205,7 @@ class TaskManager:
                 await self.scan.save()
             raise
 
-    async def _monitor_task(self, task: asyncio.Task, detector_name: str, weight: float):
+    async def _monitor_task(self, task: asyncio.Task, detector_name: str):
         try:
             result = await task
             if isinstance(result, Exception):
@@ -229,9 +228,7 @@ class TaskManager:
                     )
                 )
                 # Monitor each context scan task individually
-                asyncio.create_task(
-                    self._monitor_task(task, detector_name, self.DETECTOR_WEIGHTS[detector_name])
-                )
+                asyncio.create_task(self._monitor_task(task, detector_name))
                 self.context_scan_tasks.append(task)
                 self.task_detector_names.append(detector_name)
 

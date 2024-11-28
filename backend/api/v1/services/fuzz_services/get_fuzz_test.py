@@ -201,7 +201,7 @@ def parse_compilation_error(error_message: str) -> str:
     Parses the compilation error message to extract relevant details.
     """
     # Example regex to extract error code, file, line number, and message
-    pattern = r"Error \((\d+)\): (.+?)\n\s+--> (.+?):(\d+):(\d+):\n\s+\|\n\s+\d+\s+\|\s+(.*?)\n"
+    pattern = r"Error \((\d+)\): (?>.*?)\n\s+--> (?>.*?):(?>[\d]+):(?>[\d]+):\n\s+\|\n\s+\d+\s+\|\s+(?>.*?)\n"
     matches = re.findall(pattern, error_message, re.MULTILINE)
     parsed_errors = []
     for match in matches:
