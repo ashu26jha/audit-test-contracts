@@ -123,8 +123,7 @@ app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")  # Admin protected + Throttled (1mn)
 app.include_router(stats.router, prefix="/api/v1")  # Admin protected
 
-
-if settings.ENVIRONMENT == "development":
+if settings.ENVIRONMENT in ["development", "test"]:
     app.include_router(generate_summary.router, prefix="/api/v1")
     app.include_router(context_scan.router, prefix="/api/v1")
     app.include_router(test_auth.router, prefix="/api/v1")

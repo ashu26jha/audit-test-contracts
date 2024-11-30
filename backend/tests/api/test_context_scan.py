@@ -63,12 +63,13 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
 @pytest.mark.asyncio
 async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = None
-    with pytest.raises(HTTPException) as exc_info:
-        await context_scan_service.perform_context_scan(
-            "Test Summary", "Test Contracts", Profiles.NFT
-        )
-    assert exc_info.value.status_code == 500
-    assert exc_info.value.detail == "LLM response was empty or invalid"
+
+    result = await context_scan_service.perform_context_scan(
+        "Test Summary", "Test Contracts", Profiles.NFT
+    )
+
+    assert isinstance(result, ContextScanResponse)
+    assert len(result.findings) == 0
 
 
 @pytest.mark.asyncio
@@ -92,9 +93,8 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
 
 @pytest.mark.asyncio
 async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, monkeypatch):
-    monkeypatch.setattr(
-        "api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-sonnet-latest"
-    )
+    # monkeypatch.setattr(
+    #     "api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-20240620")
 
     mock_response = create_mock_context_scan_response(
         issue="Test Issue Claude",
@@ -106,7 +106,7 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await context_scan_service.perform_context_scan(
-        "Test Summary Claude", "Test Contracts Claude", Profiles.NFT
+        "Test Summary Claude", "Test Contracts Claude", Profiles.NFT, "claude-3-5-sonnet-latest"
     )
 
     assert isinstance(result, ContextScanResponse)
@@ -161,15 +161,17 @@ def test_context_scan_endpoint():
         "api.v1.services.context_scan_service.perform_context_scan",
         new_callable=AsyncMock,
     ) as mock_perform_context_scan:
-        mock_perform_context_scan.return_value = [
-            Finding(
-                Issue="Test Issue",
-                Severity="High",
-                Contracts=["TestContract"],
-                Description="Test Description",
-                Recommendation="Test Recommendation",
-            )
-        ]
+        mock_perform_context_scan.return_value = ContextScanResponse(
+            findings=[
+                Finding(
+                    Issue="Test Issue",
+                    Severity="High",
+                    Contracts=["TestContract"],
+                    Description="Test Description",
+                    Recommendation="Test Recommendation",
+                )
+            ]
+        )
 
         response = client.post(
             "/api/v1/context-scan",

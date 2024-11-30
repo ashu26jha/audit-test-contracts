@@ -27,7 +27,7 @@ class StripeWebhookService:
             paid_status = session["payment_status"]
             session_id = session["id"]
 
-            payment = await Payment.find_one(Payment.stripeSessionId == session_id)
+            payment = await Payment.find_one({"stripeSessionId": session_id})
 
             if not payment:
                 logger.error(f"Payment not found for session ID: {session_id}")

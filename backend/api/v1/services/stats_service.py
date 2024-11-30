@@ -76,10 +76,9 @@ async def get_global_stats():
 
         # Get scan statuses in a single query for efficiency
         status_counts = {
-            status: await Scan.find(Scan.status == status).count()
+            status: await Scan.find({"status": status}).count()
             for status in ["pending", "in_progress", "completed", "failed"]
         }
-
         # Calculate total paid scans with breakdown
         regular_paid = base_stats.get("paid_scans", 0)
         discounted = base_stats.get("discounted_scans", 0)

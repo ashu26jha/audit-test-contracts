@@ -16,13 +16,10 @@ async def stripe_webhook(request: Request):
         event = await StripeWebhookService.handle_webhook(payload, sig_header)
 
         # Update payment status in DB
-        if (
-            event["type"] == "invoice.payment_succeeded"
-            or event["type"] == "checkout.session.completed"
-        ):
+        if event["type"] in ["invoice.payment_succeeded", "checkout.session.completed"]:
             await StripeWebhookService.update_payment_status(event)
 
-        return SuccessResponse(data="Webhook processed successfully")
+        return SuccessResponse(data={"event_type": event["type"]})
     except ValueError as e:
         logger.exception(f"Invalid webhook payload: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e)) from e
