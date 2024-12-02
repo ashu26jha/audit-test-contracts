@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 
 import { Card, CardBody, CardHeader, Divider, Button, Avatar } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
@@ -12,22 +12,11 @@ const ProfilePage: React.FC = () => {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
-  }, [user, router]);
-
   if (!user) {
     return null;
   }
 
   const { email, username, name, avatarUrl } = user;
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
 
   return (
     <div className="container mx-auto max-w-10xl h-full">
@@ -82,7 +71,7 @@ const ProfilePage: React.FC = () => {
               variant="flat"
               startContent={<LogOut size={14} />}
               className="w-full mt-8 hover:bg-[#F3126033] hover:text-danger text-white"
-              onClick={handleLogout}
+              onClick={logout}
             >
               Log Out
             </Button>

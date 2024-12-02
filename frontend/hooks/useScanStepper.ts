@@ -1,18 +1,13 @@
 import { useCallback } from "react";
 
-import {
-  getOrganizationsAndPersonal,
-  getRepositories,
-  getRepositoryContents,
-  getBranches,
-  initiateScan,
-} from "../services/api";
-import { useScanStepperStore } from "../store/scanStepperStore";
+import { useScanStepperStore } from "@/store/scanStepperStore";
+import { useUserDataStore } from "@/store/userDataStore";
+
+import { getRepositories, getRepositoryContents, getBranches, initiateScan } from "../services/api";
 
 export const useScanStepper = () => {
+  const { setRepositories } = useUserDataStore();
   const {
-    setOwners,
-    setRepositories,
     setBranches,
     setSolidityFiles,
     selectedOwner,
@@ -22,66 +17,52 @@ export const useScanStepper = () => {
     setSelectedOwner,
     setSelectedRepo,
     setRepositoryURL,
+    setIsLoading,
   } = useScanStepperStore();
-
-  const fetchOwners = useCallback(
-    async (token: string) => {
-      try {
-        useScanStepperStore.getState().setIsOrganizationLoading(true);
-        const owners = await getOrganizationsAndPersonal(token);
-        setOwners(owners);
-      } catch (error) {
-        console.error("Error fetching owners:", error);
-      } finally {
-        useScanStepperStore.getState().setIsOrganizationLoading(false);
-      }
-    },
-    [setOwners],
-  );
 
   const fetchRepositories = useCallback(
     async (token: string, owner: Owner) => {
       try {
-        useScanStepperStore.getState().setIsRepositoryLoading(true);
+        setIsLoading(true);
         const repositories = await getRepositories(token, owner.login, owner.type);
         setRepositories(repositories);
       } catch (error) {
         console.error("Error fetching repositories:", error);
       } finally {
-        useScanStepperStore.getState().setIsRepositoryLoading(false);
+        setIsLoading(false);
       }
     },
-    [setRepositories],
+    [setRepositories, setIsLoading],
   );
 
   const fetchBranches = useCallback(
     async (token: string, owner: Owner, repo: Repository) => {
       try {
-        useScanStepperStore.getState().setIsBranchLoading(true);
+        setIsLoading(true);
         const branches = await getBranches(token, owner.login, repo.name);
         setBranches(branches);
       } catch (error) {
         console.error("Error fetching branches:", error);
       } finally {
-        useScanStepperStore.getState().setIsBranchLoading(false);
+        setIsLoading(false);
       }
     },
-    [setBranches],
+    [setBranches, setIsLoading],
   );
 
   const fetchSolidityFiles = useCallback(
     async (token: string, owner: Owner, repo: Repository, branch: string) => {
       try {
-        useScanStepperStore.getState().setIsSolidityFilesLoading(true);
+        setIsLoading(true);
         const files = await getRepositoryContents(token, owner.login, repo.name, branch);
         setSolidityFiles(files);
       } catch (error) {
         console.error("Error fetching Solidity files:", error);
       } finally {
-        useScanStepperStore.getState().setIsSolidityFilesLoading(false);
+        setIsLoading(false);
       }
     },
-    [setSolidityFiles],
+    [setSolidityFiles, setIsLoading],
   );
 
   const initiateScanProcess = useCallback(
@@ -131,7 +112,6 @@ export const useScanStepper = () => {
   );
 
   return {
-    fetchOwners,
     fetchRepositories,
     fetchBranches,
     fetchSolidityFiles,

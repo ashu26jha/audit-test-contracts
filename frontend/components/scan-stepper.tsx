@@ -5,17 +5,13 @@ import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { STEPS } from "@/data/steps";
-import { useToast } from "@/hooks/useToast";
+import { useToast, useScanStepper } from "@/hooks";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 
 import { Loading } from "./Loading";
-import { useAuth } from "../contexts/AuthContext";
-import { useScanStepper } from "../hooks/useScanStepper";
-import { useScanStepperStore } from "../store/scanStepperStore";
-import { BranchSelection } from "./scan-stepper/BranchSelection";
-import { ContractSelection } from "./scan-stepper/ContractSelection";
-import { RepositorySelection } from "./scan-stepper/RepositorySelection";
-import { StepperVisualization } from "./scan-stepper/StepperVisualization";
+import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "./scan-stepper/";
 
 interface ScanStepperProps {
   setShowStepper: (show: boolean) => void;
@@ -31,23 +27,16 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
     selectedRepo,
     selectedBranch,
     selectedContracts,
-    isLoading,
+    isScanning,
     repositoryURL,
     isLineExceeded,
     isFileLimitExceeded,
     setCurrentStep,
-    setIsLoading,
+    setIsScanning,
     setIsNextEnabled,
     resetStepper,
   } = useScanStepperStore();
-
-  const { fetchOwners, fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
-
-  useEffect(() => {
-    if (token) {
-      fetchOwners(token);
-    }
-  }, [token, fetchOwners]);
+  const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
 
   useEffect(() => {
     if (token && selectedOwner) {
@@ -89,7 +78,7 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       if (typeof window !== "undefined" && window._mtm != undefined) {
         window._mtm.push({ "event": "scan-started" });
       }
-      setIsLoading(true);
+      setIsScanning(true);
       try {
         if (token) {
           const response = await initiateScanProcess(token);
@@ -97,7 +86,7 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
         }
       } catch (error) {
         console.error("Error initiating scan:", error);
-        setIsLoading(false);
+        setIsScanning(false);
         toast({
           title:
             ((error as AxiosError).response?.data as { message?: string })?.message ??
@@ -131,7 +120,7 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
     router.push("/dashboard");
   };
 
-  if (isLoading) {
+  if (isScanning) {
     return <Loading subText="Please wait while we analyze your code." />;
   }
 

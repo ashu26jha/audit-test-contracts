@@ -16,7 +16,7 @@ export const ContractSelection: React.FC = () => {
     setContractSearch,
     setSelectedContracts,
     selectedContracts,
-    isSolidityFilesLoading,
+    isLoading,
     isFileLimitExceeded,
   } = useScanStepperStore();
 
@@ -82,7 +82,7 @@ export const ContractSelection: React.FC = () => {
               <TableColumn>Path</TableColumn>
             </TableHeader>
             <TableBody
-              isLoading={isSolidityFilesLoading}
+              isLoading={isLoading}
               loadingContent={<Spinner />}
               emptyContent={
                 <div className="flex flex-col items-center">

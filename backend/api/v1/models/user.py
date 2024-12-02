@@ -15,7 +15,7 @@ class User(Document):
     name: Optional[str] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    installationId: list[int] = []
+    installationId: Optional[list[int]] = None
 
     class Settings:
         name = "users"

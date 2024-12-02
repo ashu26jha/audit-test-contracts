@@ -7,7 +7,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import ScanCard from "@/components/ScanCard";
-import { useToast } from "@/hooks/useToast";
+import { SERVICES } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGithubApp, useToast } from "@/hooks";
 
 interface DashboardProps {
   scanHistory: ScanHistoryItem[];
@@ -19,17 +21,26 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, setShowStepper }) => {
   const { toast } = useToast();
   const router = useRouter();
+  const { token } = useAuth();
+  const { hasGithubApp } = useGithubApp();
 
   const handleScanClick = (scanId: string) => {
     router.push(`/scan-results/${scanId}`);
   };
 
-  const handleScan = () => {
+  const handleScan = async () => {
+    if (!token) return;
     if (scanable) {
       // prettier-ignore
       if (typeof window !== "undefined" && window._mtm != undefined) {
         window._mtm.push({ "event": "repository-selection" });
       }
+
+      if (!hasGithubApp) {
+        window.location.href = SERVICES.GITHUB_APP_URL;
+        return;
+      }
+
       setShowStepper(true);
       // Trigger a refetch when starting a new scan
       refetch();
@@ -52,6 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, s
             color="secondary"
             className="bg-[#8B5CF6] text-white"
             onClick={handleScan}
+            isLoading={hasGithubApp === null}
             startContent={<Image src="/scan-icon.svg" alt="Scan" width={20} height={20} />}
           >
             Scan Code

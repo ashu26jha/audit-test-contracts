@@ -3,30 +3,18 @@ import React, { useEffect, useState } from "react";
 import { Select, SelectItem, Input, type Selection, Autocomplete, AutocompleteItem } from "@nextui-org/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useDebounce } from "use-debounce";
 
 import { SERVICES } from "@/config/constants";
-import { useScanStepper } from "@/hooks/useScanStepper";
+import { useRepositoryUrl } from "@/hooks/useRepositoryUrl";
 import { useScanStepperStore } from "@/store/scanStepperStore";
+import { useUserDataStore } from "@/store/userDataStore";
 
 export const RepositorySelection: React.FC = () => {
-  const {
-    owners,
-    setSelectedOwner,
-    setRepositoryURL,
-    selectedOwner,
-    repositories,
-    repositoryURL,
-    setSelectedRepo,
-    resetStepper,
-  } = useScanStepperStore();
-  const { extractOwnerAndRepo } = useScanStepper();
+  const { owners, repositories, isOrganizationLoading } = useUserDataStore();
+  const { isLoading, selectedOwner, setSelectedOwner, repositoryURL, setSelectedRepo, resetStepper } =
+    useScanStepperStore();
+  const { isInvalidURL, inputURL, debouncedURL, setInputURL, validateAndSetUrl, resetUrl } = useRepositoryUrl();
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
-  const [isInvalidURL, setIsInvalidURL] = useState<boolean>(false);
-  const [inputURL, setInputURL] = useState<string>("");
-
-  const [debouncedURL] = useDebounce(inputURL, 300);
-
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
 
   useEffect(() => {
@@ -34,34 +22,14 @@ export const RepositorySelection: React.FC = () => {
   }, [resetStepper]);
 
   useEffect(() => {
-    if (debouncedURL.trim()) {
-      const result = extractOwnerAndRepo(debouncedURL);
-      if (!result) {
-        setIsInvalidURL(true);
-      } else {
-        setIsInvalidURL(false);
-        setRepositoryURL(debouncedURL);
-      }
-    } else {
-      setIsInvalidURL(false);
-      setRepositoryURL("");
-    }
-  }, [debouncedURL, extractOwnerAndRepo, setRepositoryURL]);
+    validateAndSetUrl(debouncedURL);
+  }, [debouncedURL, validateAndSetUrl]);
 
   const handleOrganizationSelect = (keys: Selection) => {
     const selected = Array.from(keys)[0] as string;
-    setIsInvalidURL(false);
     setSelectedOrg(selected);
     setSelectedOwner(owners.find((owner) => owner.login === selected) || null);
-    setInputURL("");
-    setRepositoryURL("");
-  };
-
-  const handleURLChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setInputURL(url);
-    setSelectedOrg(null);
-    setSelectedOwner(null);
+    resetUrl();
   };
 
   return (
@@ -74,7 +42,7 @@ export const RepositorySelection: React.FC = () => {
         className="w-full"
         selectedKeys={selectedOrg ? [selectedOrg] : []}
         onSelectionChange={handleOrganizationSelect}
-        isLoading={useScanStepperStore.getState().isOrganizationLoading}
+        isLoading={isOrganizationLoading}
       >
         {owners.map((org) => (
           <SelectItem key={org.login} value={org.login}>
@@ -110,9 +78,9 @@ export const RepositorySelection: React.FC = () => {
           variant="bordered"
           label="Git Repository"
           labelPlacement="outside"
-          placeholder="Search a repository"
+          placeholder="Search a repository or add one from Github"
           className="w-full"
-          isLoading={useScanStepperStore.getState().isRepositoryLoading}
+          isLoading={isLoading}
           onSelectionChange={(key) => {
             const selected = key as string;
             const selectedRepository = repositories.find((repo) => repo.name === selected) || null;
@@ -164,7 +132,7 @@ export const RepositorySelection: React.FC = () => {
         placeholder="https://github.com/owner/repo"
         labelPlacement="outside"
         value={inputURL}
-        onChange={handleURLChange}
+        onChange={(e) => setInputURL(e.target.value)}
         className="w-full"
         isInvalid={isInvalidURL}
         errorMessage={isInvalidURL ? "Invalid GitHub URL" : ""}

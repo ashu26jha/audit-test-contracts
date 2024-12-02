@@ -1,6 +1,8 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from "react";
 
+import { useRouter, usePathname } from "next/navigation";
+
 import { getUser } from "../services/api";
 
 interface User {
@@ -34,6 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const fetchUser = useCallback(async (authToken: string) => {
     try {
@@ -48,6 +52,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   }, []);
+
+  const isPublicRoute = useCallback((pathname: string): boolean => {
+    const publicRoutes = ["/login", "/payment-result", "/login-success"];
+    return (
+      publicRoutes.includes(pathname) ||
+      pathname.startsWith("/scan-results/") ||
+      /^\/scan-results\/[^/]+$/.test(pathname)
+    );
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem("token");
+    router.push("/login");
+  }, [router]);
 
   useEffect(() => {
     try {
@@ -76,20 +96,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token, fetchUser]);
 
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-  }, []);
-
-  const isPublicRoute = useCallback((pathname: string): boolean => {
-    const publicRoutes = ["/login", "/payment-result", "/login-success"];
-    return (
-      publicRoutes.includes(pathname) ||
-      pathname.startsWith("/scan-results/") ||
-      /^\/scan-results\/[^/]+$/.test(pathname)
-    );
-  }, []);
+  useEffect(() => {
+    if (!loading) {
+      if (user && (pathname === "/" || pathname === "/login")) {
+        router.push("/dashboard");
+      }
+      if (!user && !isPublicRoute(pathname)) {
+        logout();
+      }
+    }
+  }, [user, loading, pathname, router, isPublicRoute, logout]);
 
   const value = useMemo(
     () => ({

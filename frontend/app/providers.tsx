@@ -7,9 +7,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
-import { Toaster } from "react-hot-toast";
 
-import { AuthProvider } from "../contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -28,18 +27,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <NextUIProvider navigate={router.push}>
       <NextThemesProvider {...themeProps}>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            {mounted && children}
-            <Toaster
-              position="bottom-center"
-              toastOptions={{
-                className: "",
-                style: {
-                  boxShadow: "none",
-                },
-              }}
-            />
-          </AuthProvider>
+          <AuthProvider>{mounted && children}</AuthProvider>
         </QueryClientProvider>
       </NextThemesProvider>
     </NextUIProvider>

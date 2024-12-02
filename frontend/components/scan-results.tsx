@@ -5,7 +5,7 @@ import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-r
 import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/useToast";
+import { useToast } from "@/hooks";
 import { sendPdfReport } from "@/services/api";
 
 import BluredFindings from "./blured-findings";

@@ -1,5 +1,4 @@
 "use client";
-import { useEffect } from "react";
 
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
@@ -8,47 +7,22 @@ import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 
+import { useAuth } from "@/contexts/AuthContext";
+
 import LoginNavbar from "./login-navbar";
-import { useAuth } from "../contexts/AuthContext";
-// import { useToast } from "../hooks/useToast";
 
 export const Navbar = () => {
-  const { user, loading, logout, isPublicRoute } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  // const { toast } = useToast();
 
-  useEffect(() => {
-    if (!loading && !user && !isPublicRoute(pathname) && pathname !== "/login-success") {
-      router.push("/login");
-    }
-  }, [loading, user, pathname, isPublicRoute, router]);
-
-  if (pathname === "/login-success") {
-    return null;
-  }
-
-  if (loading) {
+  if (pathname === "/login-success" || loading) {
     return null;
   }
 
   if (pathname === "/login") {
     return <LoginNavbar />;
   }
-
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
-
-  // const handleCopyEmail = () => {
-  //   navigator.clipboard.writeText("auditagent@nethermind.io");
-  //   toast({
-  //     title: "Support Email Copied",
-  //     status: "success",
-  //     duration: 3000,
-  //   });
-  // };
 
   return (
     <NextUINavbar
@@ -77,7 +51,7 @@ export const Navbar = () => {
                 <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
               </div>
             </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions" variant="flat" className=" rounded-lg">
+            <DropdownMenu aria-label="Profile Actions" variant="flat" className="rounded-lg">
               <DropdownItem
                 key="profile"
                 startContent={<Image src="/profile.svg" alt="profile" width={20} height={20} />}
@@ -87,18 +61,11 @@ export const Navbar = () => {
               >
                 Profile
               </DropdownItem>
-              {/* <DropdownItem
-                key="support"
-                startContent={<Image src="/copy.svg" alt="support" width={20} height={20} />}
-                onClick={handleCopyEmail}
-              >
-                Support Email
-              </DropdownItem> */}
               <DropdownItem
                 key="logout"
                 startContent={<Image src="/logout.svg" alt="logout" width={20} height={20} />}
                 color="danger"
-                onClick={handleLogout}
+                onClick={logout}
               >
                 Log out
               </DropdownItem>

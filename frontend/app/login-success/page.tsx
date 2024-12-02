@@ -4,19 +4,18 @@ import { useEffect } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LoginSuccessPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const { setToken, user, loading, logout } = useAuth();
 
-  const { setToken, user, loading } = useAuth();
+  const token = searchParams.get("token");
 
   useEffect(() => {
     if (!token) {
-      console.error("No token found in URL");
-      router.push("/login");
+      logout();
       return;
     }
 
@@ -25,7 +24,7 @@ const LoginSuccessPage = () => {
     if (!loading && user) {
       router.replace("/dashboard");
     }
-  }, [token, router, setToken, loading, user]);
+  }, [token, router, setToken, loading, user, logout]);
 
   return null;
 };

@@ -1,31 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { useRouter } from "next/navigation";
+import { type FC, useState } from "react";
 
 import Dashboard from "@/components/dashboard";
 import { Loading } from "@/components/Loading";
+import ScanStepper from "@/components/scan-stepper";
+import ScanInfoModal from "@/components/ScanInfoModal";
+import { useFetchScanHistory } from "@/hooks";
 
-import ScanStepper from "../../components/scan-stepper";
-import ScanInfoModal from "../../components/ScanInfoModal";
-import { useAuth } from "../../contexts/AuthContext";
-import { useFetchScanHistory } from "../../hooks/useFetchScanHistory";
-
-const DashboardPage = () => {
-  const { user } = useAuth();
-  const router = useRouter();
-
-  const [showStepper, setShowStepper] = useState(false);
+const DashboardPage: FC = () => {
   const { scanHistory, isLoading, scanable, refetch } = useFetchScanHistory();
+  const [showStepper, setShowStepper] = useState(false);
 
-  useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
-  }, [user, router]);
-
-  if (!user || isLoading) {
+  if (isLoading) {
     return <Loading />;
   }
 

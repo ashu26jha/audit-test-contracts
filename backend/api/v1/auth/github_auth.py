@@ -58,15 +58,6 @@ async def github_callback(
 
     # Check actual installation status
     installations = await github_service.get_installations(access_token)
-    has_valid_installation = len(installations) > 0
-
-    if not has_valid_installation:
-        if setup_action == "reinstall":  # User is coming back from installation page
-            raise HTTPException(
-                status_code=400,
-                detail="GitHub App installation required. Please install the app and grant necessary permissions.",
-            )
-        return RedirectResponse(settings.GITHUB_INSTALLATION_URL)
 
     # Handle user creation or update
     if not user:
@@ -77,7 +68,7 @@ async def github_callback(
             accessToken=access_token,
             avatarUrl=user_data["avatar_url"],
             name=user_data["name"],
-            installationId=[inst["id"] for inst in installations],  # Use actual installations
+            installationId=[inst["id"] for inst in installations],
         )
         await user.create()
     else:
@@ -106,11 +97,6 @@ async def logout(current_user: User = Depends(get_current_user)):
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    # Verify installations are still valid
-    installations = await github_service.get_installations(current_user.accessToken)
-    if not installations:
-        return RedirectResponse(settings.GITHUB_INSTALLATION_URL)
-
     # Convert the model to dict and explicitly convert id to string
     user_dict = current_user.model_dump()
     user_dict["id"] = str(user_dict["id"])  # Convert ObjectId to string

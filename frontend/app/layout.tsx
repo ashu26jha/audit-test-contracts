@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import clsx from "clsx";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { Toaster } from "react-hot-toast";
 
 import Footer from "@/components/footer";
 import { Navbar } from "@/components/navbar";
@@ -42,6 +43,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <Navbar />
             <main className="h-full w-full pt-8 px-8 flex-grow overflow-y-auto pb-6">{children}</main>
             <Footer />
+            <Toaster
+              position="bottom-center"
+              toastOptions={{
+                className: "",
+                style: {
+                  boxShadow: "none",
+                },
+              }}
+            />
           </div>
         </Providers>
 

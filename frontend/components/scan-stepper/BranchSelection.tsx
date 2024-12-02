@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const BranchSelection: React.FC = () => {
-  const { branches, selectedBranch, setSelectedBranch } = useScanStepperStore();
+  const { branches, selectedBranch, setSelectedBranch, isLoading } = useScanStepperStore();
 
   useEffect(() => {
     if (branches.length > 0 && !selectedBranch) {
@@ -30,7 +30,7 @@ export const BranchSelection: React.FC = () => {
           const selected = keys as string;
           setSelectedBranch(selected);
         }}
-        isLoading={useScanStepperStore.getState().isBranchLoading}
+        isLoading={isLoading}
         selectedKey={selectedBranch}
       >
         {branches.map((branch) => (
