@@ -4,71 +4,54 @@ from pathlib import Path
 
 from api.v1.helpers.run_command import run_command
 from common import logger
-from config.solidity import (
-    BROWNIE_CONFIGS,
-    FORGE_BUILD_COMMAND,
-    FOUNDRY_CONFIGS,
-    HARDHAT_CONFIGS,
-    SOLIDITY_EXTENSION,
-)
+from config.solidity import FORGE_BUILD_COMMAND, SOLIDITY_EXTENSION
 
 
-def detect_project_type(repo_dir: str) -> str:
-    """
-    Detects the project type (Foundry, Hardhat, or Brownie).
+async def compile_project(temp_dir: str) -> None:
+    """Compiles the project using Forge."""
+    try:
+        # First try normal compilation
+        returncode, stdout, stderr = await run_command(FORGE_BUILD_COMMAND, temp_dir)
 
-    Args:
-        repo_dir (str): The directory of the cloned repository.
+        if returncode == 0:
+            logger.info("Project compiled successfully")
+            return
 
-    Returns:
-        str: The detected project type ("foundry", "hardhat", "brownie")
-    """
-    repo_path = Path(repo_dir)
+        # If compilation fails, log the output and analyze the error
+        logger.error(f"Forge compilation output:\nSTDOUT:\n{stdout}\nSTDERR:\n{stderr}")
 
-    # Start by detecting Foundry project
-    foundry_config_found = False
-    for config_name in FOUNDRY_CONFIGS:
-        if (repo_path / config_name).exists():
-            foundry_config_found = True
-            break
-    if foundry_config_found:
-        project_type = "foundry"
-    else:
-        # Check for Hardhat project
-        hardhat_config_found = False
-        for config_name in HARDHAT_CONFIGS:
-            if (repo_path / config_name).exists():
-                hardhat_config_found = True
-                break
-        if hardhat_config_found:
-            project_type = "hardhat"
-        else:
-            # Check for Brownie project
-            brownie_config_found = False
-            for config_name in BROWNIE_CONFIGS:
-                if (repo_path / config_name).exists():
-                    brownie_config_found = True
-                    break
-            if brownie_config_found:
-                project_type = "brownie"
-            else:
-                # Default to Foundry if no project type detected
-                logger.warning("Project type not detected. Defaulting to Foundry.")
-                project_type = "foundry"
+        # Analyze the error
+        if _is_only_external_dependency_error(stderr, temp_dir):
+            logger.warning("Compilation failed only in external dependencies, continuing anyway")
+            # Create out directory to indicate partial success
+            out_dir = os.path.join(temp_dir, "out")
+            os.makedirs(out_dir, exist_ok=True)
+            return
 
-    logger.info(f"Detected project type: {project_type}")
-    return project_type
+        # If it's a project-specific error, raise an exception
+        raise ValueError(f"Forge compilation failed: {stderr}")
+    except Exception as e:
+        logger.error(f"Compilation error in {temp_dir}: {str(e)}")
+        raise
+
+
+def _is_only_external_dependency_error(stderr: str, project_dir: str) -> bool:
+    """Check if compilation errors are only in external dependencies."""
+    error_lines = stderr.split("\n")
+    for line in error_lines:
+        if "Error" in line or "ParserError" in line:
+            # Skip errors in lib/ directory or npm dependencies
+            if "lib/" in line or "node_modules/" in line or "@" in line:
+                continue
+            # If we find an error in project files, return False
+            if project_dir in line:
+                return False
+    return True
 
 
 def get_project_structure(project_dir: str) -> str:
     """
     Generates a string representation of the project structure.
-
-    Args:
-        project_dir (str): The directory of the project.
-
-    Returns:
-        str: A string representing the project structure.
     """
     project_structure = ""
     repo_path = Path(project_dir)
@@ -96,28 +79,23 @@ def get_project_structure(project_dir: str) -> str:
 def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
     """
     Copies Solidity contract files from the repository to the destination directory.
-
-    Args:
-        repo_dir (str): The source repository directory.
-        dst_dir (str): The destination directory.
-        project_type (str): The type of the project (e.g., "hardhat", "foundry").
-
-    Raises:
-        ValueError: If the expected source folder does not exist in the repository.
     """
-    src_folder = "contracts" if project_type == "hardhat" else "src"
-    src_dir = os.path.join(repo_dir, src_folder)
+    # Try both src and contracts directories
+    possible_src_dirs = ["src", "contracts"]
+    if project_type == "hardhat":
+        possible_src_dirs.reverse()  # Try contracts first for Hardhat
 
-    if not os.path.exists(src_dir):
-        # Attempt to check the alternative directory
-        alternative_folder = "src" if project_type == "hardhat" else "contracts"
-        alternative_dir = os.path.join(repo_dir, alternative_folder)
-        if not os.path.exists(alternative_dir):
-            raise ValueError(
-                f"{src_folder} and {alternative_folder} directories not found in {repo_dir}"
-            )
-        src_dir = alternative_dir
+    src_dir = None
+    for folder in possible_src_dirs:
+        potential_dir = os.path.join(repo_dir, folder)
+        if os.path.exists(potential_dir):
+            src_dir = potential_dir
+            break
 
+    if not src_dir:
+        raise ValueError(f"No valid source directory found in {repo_dir}")
+
+    files_copied = 0
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith(SOLIDITY_EXTENSION):
@@ -126,11 +104,9 @@ def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
                 dst_path = os.path.join(dst_dir, rel_path)
                 os.makedirs(os.path.dirname(dst_path), exist_ok=True)
                 shutil.copy2(src_path, dst_path)
+                files_copied += 1
 
+    if files_copied == 0:
+        raise ValueError(f"No Solidity files found in {src_dir}")
 
-async def compile_project(temp_dir: str) -> None:
-    returncode, stdout, stderr = await run_command(FORGE_BUILD_COMMAND, temp_dir)
-    if returncode != 0:
-        # logger.error(f"Forge compilation failed. Stdout: {stdout}, Stderr: {stderr}")
-        raise ValueError("Forge compilation failed")
-    logger.info("Project compiled successfully")
+    logger.info(f"Copied {files_copied} Solidity files from {src_dir} to {dst_dir}")

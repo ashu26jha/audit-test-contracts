@@ -51,11 +51,6 @@ For more infos, refers the the different READMEs
 - Set up the backend (see [Backend README](./backend/README.md))
 - Set up the frontend (see [Frontend README](./frontend/README.md))
 
-To run both the backend and frontend locally via docker-compose, run the following command:
-```bash
-docker-compose up --build
-```
-
 ## Contributing
 
 We welcome contributions to Yokai Audit Agent. Please read our contributing guidelines before submitting pull requests.

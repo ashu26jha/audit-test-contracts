@@ -90,6 +90,11 @@ To run the test suite (Make sure you have launched the local development server)
 pytest backend/tests/ -v
 ```
 
+To run the test setup environment (Add repos as needed into `repo_samples.py` file):
+```bash
+pytest backend/tests/setup_environment/test_setup_environment.py -v
+```
+
 To run tests with coverage:
 
 ```bash

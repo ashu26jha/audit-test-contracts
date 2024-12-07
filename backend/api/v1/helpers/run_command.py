@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 import subprocess
 from typing import Dict, List, Tuple
 
@@ -20,6 +21,13 @@ async def run_command(
         Tuple[int, str, str]: A tuple containing the return code, stdout, and stderr.
     """
     try:
+        # Check if command exists in PATH
+        if command[0] in ["npm", "forge", "git"]:
+            executable = shutil.which(command[0])
+            if not executable:
+                raise FileNotFoundError(f"{command[0]} not found in PATH")
+            command[0] = executable
+
         process = await asyncio.create_subprocess_exec(
             *command,
             cwd=cwd,

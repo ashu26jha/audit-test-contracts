@@ -27,11 +27,11 @@ async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type:
         if returncode != 0:
             raise ValueError(f"Failed to initialize Foundry project: {stderr}")
 
-    clean_unused_files(temp_dir)
+    _clean_unused_files(temp_dir)
 
     foundry_src_dir = os.path.join(temp_dir, "src")
     copy_solidity_files(repo_dir, foundry_src_dir, project_type)
-    preprocess_solidity_files(temp_dir)
+    _preprocess_solidity_files(temp_dir)
 
 
 async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
@@ -74,7 +74,7 @@ async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
         raise
 
 
-def clean_unused_files(temp_dir: str) -> None:
+def _clean_unused_files(temp_dir: str) -> None:
     """
     Cleans up unused files in specified folders within the temporary directory.
 
@@ -114,11 +114,11 @@ async def generate_remappings_with_foundry(temp_dir: str) -> List[str]:
     logger.info(f"Remappings generated: {remappings}")
 
     # Write remappings to file
-    await write_remappings(temp_dir, remappings)
+    await _write_remappings(temp_dir, remappings)
     return remappings
 
 
-async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
+async def _write_remappings(temp_dir: str, remappings: List[str]) -> None:
     """
     Writes remappings to the `remappings.txt` file in the temporary directory.
 
@@ -131,7 +131,7 @@ async def write_remappings(temp_dir: str, remappings: List[str]) -> None:
         f.write("\n".join(remappings))
 
 
-def preprocess_solidity_files(temp_dir: str) -> None:
+def _preprocess_solidity_files(temp_dir: str) -> None:
     """
     Preprocesses Solidity files by replacing certain placeholders.
 

@@ -145,9 +145,7 @@ class TaskManager:
             async with asyncio.timeout(self.TOTAL_SCAN_TIMEOUT):
                 await self._execute_tasks()
         except asyncio.TimeoutError:
-            logger.error(
-                f"Scan {self.scan_id} exceeded maximum time of {self.TOTAL_SCANS_TIMEOUT}s"
-            )
+            logger.error(f"Scan {self.scan_id} exceeded maximum time of {self.TOTAL_SCAN_TIMEOUT}s")
             # Handle timeout - mark remaining tasks as failed
 
     async def _execute_tasks(self):
@@ -185,6 +183,15 @@ class TaskManager:
                         "static_analyzer",
                     )
                 )
+
+                # Monitor fuzzing completion
+                if self.fuzzing_task:
+                    asyncio.create_task(
+                        self._monitor_task(
+                            self.fuzzing_task,
+                            "fuzzer",
+                        )
+                    )
 
             # Await summary result to proceed with context scans
             try:

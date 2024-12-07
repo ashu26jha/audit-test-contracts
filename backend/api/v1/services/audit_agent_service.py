@@ -1,5 +1,3 @@
-import os
-import shutil
 from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
@@ -8,7 +6,7 @@ from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.helpers.audit_helpers import update_scan_failure
-from api.v1.helpers.setup_environment_helpers import setup_environment
+from api.v1.helpers.setup_environment_helpers import cleanup_environment, setup_environment
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
 from api.v1.schemas.fuzzer_schema import SetupResult
@@ -100,13 +98,15 @@ async def perform_audit_agent_background(
         return
 
     setup_result: Optional[SetupResult] = None
-    cleanup_required = False
+    original_temp_dir = temp_dir  # Store for cleanup
+    cleanup_required = False  # Initialize the flag
 
     try:
         # Update scan status to 'in_progress'
         await scan_history_service.update_scan_status(scan_id, "in_progress")
 
         # Attempt to set up the environment using the existing repo_dir
+        setup_result = None
         try:
             setup_result = await setup_environment(
                 repository_url,
@@ -114,9 +114,11 @@ async def perform_audit_agent_background(
                 access_token,
                 branch_name,
                 scan_id,
+                selected_contracts,
             )
-        except Exception:
-            setup_result = None
+        except Exception as e:
+            logger.error(f"Environment setup failed: {str(e)}")
+            # Continue with setup_result as None
 
         # Initialize TaskManager
         task_manager = TaskManager(
@@ -130,7 +132,7 @@ async def perform_audit_agent_background(
         # Initialize scan and detectors
         await task_manager.initialize_scan()
 
-        # Start tasks
+        # Start tasks (will skip Slither if setup_result is None)
         await task_manager.start_tasks()
 
         # Gather and process results
@@ -164,8 +166,6 @@ async def perform_audit_agent_background(
             scan_id, "completed", total_findings_after_dedup
         )
 
-        logger.info(f"Completed audit scan with ID: {scan_id}")
-
         if user.email:
             scan = await scan_history_service.get_scan(scan_id)
             await send_completion_email(
@@ -177,18 +177,13 @@ async def perform_audit_agent_background(
         else:
             logger.warning(f"User {user.id} does not have an email address.")
 
+        logger.info(f"Completed audit scan with ID: {scan_id}")
     except Exception as e:
         cleanup_required = True
         logger.exception(f"Error in audit scan {scan_id}: {str(e)}")
         await update_scan_failure(user.email, scan_id, "An error occurred during the audit scan.")
     finally:
-        # Clean up temporary directory if it exists
-        try:
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
-                logger.info(f"Successfully cleaned up temporary directory: {temp_dir}")
-        except Exception as e:
-            logger.exception(f"Failed to clean up temporary directory {temp_dir}: {str(e)}")
+        await cleanup_environment(original_temp_dir, repo_dir)
 
         # If there was an error, clean up the scan data
         if cleanup_required:

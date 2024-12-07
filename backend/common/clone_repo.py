@@ -36,6 +36,12 @@ async def clone_repo(
         if returncode != 0:
             handle_clone_error(stderr, access_token, branch)
 
+        # Initialize and update submodules
+        await run_command(
+            ["git", "submodule", "update", "--init", "--recursive"],
+            cwd=repo_dir,
+        )
+
         logger.info(f"Successfully cloned repository from branch '{branch}' to {repo_dir}")
         return repo_dir
 
@@ -59,10 +65,16 @@ def prepare_clone_command(
     repository_url: str, repo_dir: str, access_token: Optional[str], branch: str
 ) -> List[str]:
     """Prepares the git clone command with appropriate authentication."""
+
+    CLONE_COMMAND = ["git", "clone", "--depth", "1", "--recurse-submodules", "-b", branch]
+
     if access_token:
         repository_url_with_auth = repository_url.replace("https://", f"https://{access_token}@")
-        return ["git", "clone", "-b", branch, repository_url_with_auth, repo_dir]
-    return ["git", "clone", "-b", branch, repository_url, repo_dir]
+        CLONE_COMMAND.extend([repository_url_with_auth, repo_dir])
+    else:
+        CLONE_COMMAND.extend([repository_url, repo_dir])
+
+    return CLONE_COMMAND
 
 
 def handle_clone_error(stderr: Union[str, bytes], access_token: Optional[str], branch: str) -> None:
