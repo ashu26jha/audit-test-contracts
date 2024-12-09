@@ -167,9 +167,9 @@ async def check_slither_installation():
         if returncode == 0:
             logger.info(f"Running Slither version: {stdout.strip()}...")
             return True
-        else:
-            logger.error(f"Slither not found or error checking version: {stderr}")
-            return False
+
+        logger.error(f"Slither not found or error checking version: {stderr}")
+        return False
     except Exception as e:
         logger.exception(f"Error checking Slither installation: {str(e)}")
         return False

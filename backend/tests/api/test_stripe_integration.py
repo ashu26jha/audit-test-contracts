@@ -57,8 +57,6 @@ def test_create_checkout_session():
 
 @pytest.mark.asyncio
 async def test_webhook_handler():
-    client = TestClient(app)
-
     # Mock beanie document settings
     with patch("api.v1.models.payment.Payment.get_settings") as mock_settings, patch(
         "api.v1.models.payment.Payment.get_motor_collection"

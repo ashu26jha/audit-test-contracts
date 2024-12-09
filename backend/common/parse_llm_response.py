@@ -175,5 +175,5 @@ def extract_code_from_response(content: str, language: str = "solidity") -> str:
         fuzz_test = fuzz_test.replace("```", "")
 
         return fuzz_test
-    else:
-        raise ValueError("No Solidity fuzz test found in the LLM response.")
+
+    raise ValueError("No Solidity fuzz test found in the LLM response.")

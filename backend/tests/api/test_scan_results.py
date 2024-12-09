@@ -182,7 +182,7 @@ class TestScanResultsEndpoints:
         assert data["partial_result"]["summary"] == "Test summary"
         assert len(data["partial_result"]["findings"]) == 1
 
-    async def test_get_scan_result_not_found(self, client, mock_get_current_user, mock_get_scan):
+    async def test_get_scan_result_not_found(self, client, mock_get_scan):
         scan_id = uuid4()
         mock_get_scan.side_effect = HTTPException(
             status_code=404, detail=f"Scan with ID {scan_id} not found"
@@ -192,10 +192,10 @@ class TestScanResultsEndpoints:
 
         response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
         assert response.status_code == 404
-        assert response.json()["success"] == False
+        assert not response.json()["success"]
 
     async def test_get_scan_result_unauthorized(
-        self, client, mock_get_current_user, mock_get_scan, mock_validate_user_scan_access
+        self, client, mock_get_scan, mock_validate_user_scan_access
     ):
         scan_id = uuid4()
         mock_get_scan.return_value = Scan(
@@ -216,4 +216,4 @@ class TestScanResultsEndpoints:
 
         response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
         assert response.status_code == 403
-        assert response.json()["success"] == False
+        assert not response.json()["success"]

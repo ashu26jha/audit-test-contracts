@@ -46,6 +46,19 @@ You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
 npm install
 ```
 
+### Configure environment variables
+
+Copy the `.env.example` file to `.env` and set the following environment variables:
+
+```javascript
+# Public Variables
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/<app-name>/installations/new
+
+# Private Variables
+X_API_KEY=<your-api-key>
+```
+
 ### Run the development server
 
 ```bash

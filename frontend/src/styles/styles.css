@@ -1,0 +1,5 @@
+.icon-transition {
+  transition:
+    transform 0.3s ease-in-out,
+    opacity 0.3s ease-in-out;
+}

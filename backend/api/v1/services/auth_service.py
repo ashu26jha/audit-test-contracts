@@ -168,7 +168,6 @@ async def handle_github_callback(
         await verify_installation_id(access_token, installation_id)
 
     # Get user data and create/update user
-    github_service = GitHubService()
     user_data = await github_service.get_user_data(access_token)
     user = await handle_user_data(user_data, access_token)
 
@@ -209,7 +208,6 @@ async def exchange_github_code(code: str, state: Optional[str] = None) -> str:
 
 async def verify_installation_id(access_token: str, installation_id: str) -> None:
     """Verify that the installation_id is valid for the user"""
-    github_service = GitHubService()
     installations = await github_service.github_helpers.get_installations(access_token)
     installation_ids = [str(inst["id"]) for inst in installations]
 
@@ -217,15 +215,30 @@ async def verify_installation_id(access_token: str, installation_id: str) -> Non
         raise HTTPException(status_code=403, detail="Invalid installation_id")
 
 
-async def handle_logout(request: Request, current_user: User) -> None:
+async def handle_logout(request: Request) -> None:
     """Handle user logout"""
     token = request.cookies.get("auth_token")
     if token:
         try:
             await blacklist_token(token)
-            await increment_token_version(current_user)
+
+            # Try to get user from token
+            try:
+                # Decode token
+                payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+                user_id = payload.get("sub")
+                if user_id:
+                    # Get user from database
+                    user = await User.get(ObjectId(user_id))
+                    if user:
+                        # Increment token version
+                        await increment_token_version(user)
+            except (JWTError, ValueError):
+                # If token is invalid or user not found, just log it
+                logger.warning("Invalid token during logout")
+
         except Exception as e:
-            logger.error(f"Error blacklisting token: {str(e)}")
+            logger.error(f"Error during logout: {str(e)}")
 
 
 async def track_login(request: Request) -> None:

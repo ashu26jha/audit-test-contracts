@@ -57,7 +57,7 @@ async def clone_repo(
 
 def prepare_repo_directory(repository_url: str, target_dir: str) -> str:
     """Prepares the repository directory path."""
-    repo_name = str(repository_url).split("/")[-1].replace(".git", "")
+    repo_name = str(repository_url).rsplit("/", maxsplit=1)[-1].replace(".git", "")
     return os.path.join(target_dir, repo_name)
 
 

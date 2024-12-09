@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import List, Optional
@@ -179,7 +180,7 @@ async def run_fuzzer(
     finally:
         if is_local_temp_dir and temp_dir and Path(temp_dir).exists():
             try:
-                # shutil.rmtree(temp_dir) # TODO: Uncomment this in prod!
+                shutil.rmtree(temp_dir)
                 logger.info("Environment cleanup completed.")
             except Exception as cleanup_error:
                 logger.exception(f"Error during cleanup: {str(cleanup_error)}")

@@ -3,10 +3,10 @@ import { nextui } from "@nextui-org/theme";
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./hooks/**/*.{js,ts,jsx,tsx}",
-    "./styles/**/*.{js,ts,jsx,tsx,css}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/hooks/**/*.{js,ts,jsx,tsx}",
+    "./src/styles/**/*.{js,ts,jsx,tsx,css}",
     "./node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {

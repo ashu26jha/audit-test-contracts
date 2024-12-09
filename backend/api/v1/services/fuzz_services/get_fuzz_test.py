@@ -68,8 +68,8 @@ async def get_fuzz_test(
             if attempt == MAX_RETRIES:
                 logger.error("Max retries reached. Failed to generate a valid fuzz test.")
                 return "", str(ce)
-            else:
-                logger.info("Attempting to fix and retry the fuzz test.")
+
+            logger.info("Attempting to fix and retry the fuzz test.")
         except Exception as e:
             logger.exception(f"Unexpected error on attempt {attempt}: {str(e)}")
             if attempt == MAX_RETRIES:

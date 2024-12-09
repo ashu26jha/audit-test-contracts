@@ -144,3 +144,19 @@ class GitHubService:
             raise HTTPException(status_code=500, detail="Failed to fetch commit hash")
 
         return commit_hash
+
+    async def validate_repository_access(self, access_token: str, repo_url: str) -> bool:
+        """
+        Validates if a repository is accessible.
+        Raises HTTPException if repository is private or inaccessible.
+        """
+        try:
+            await self.get_github_repo_info(access_token, repo_url)
+            return True
+        except HTTPException as e:
+            if e.status_code in (403, 404):
+                raise HTTPException(
+                    status_code=403,
+                    detail="This repository is private or inaccessible. Please make sure you have access to it.",
+                )
+            raise

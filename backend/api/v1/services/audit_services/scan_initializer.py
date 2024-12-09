@@ -110,7 +110,7 @@ class ScanInitializer:
             raise HTTPException(
                 status_code=e.status_code,
                 detail=f"Failed to fetch commit hash: {e.detail}",
-            )
+            ) from e
 
         if not commit_hash:
             await update_scan_failure(

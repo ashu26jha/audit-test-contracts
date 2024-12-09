@@ -386,7 +386,6 @@ class TaskManager:
                     weight = self.DETECTOR_WEIGHTS.get(name, 7.5)
                     current_progress += weight
 
-            if self.scan.progress < current_progress:
-                self.scan.progress = current_progress
+            self.scan.progress = max(self.scan.progress, current_progress)
 
             await self.scan.save()

@@ -62,8 +62,8 @@ async def github_callback(
 
 
 @router.post("/logout")
-async def logout(request: Request, current_user: User = Depends(get_current_user)):
-    await handle_logout(request, current_user)
+async def logout(request: Request):
+    await handle_logout(request)
     response = JSONResponse({"message": "Successfully logged out"})
     response.delete_cookie(
         key="auth_token", path="/", secure=True, httponly=True, samesite="strict"

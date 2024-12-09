@@ -75,7 +75,7 @@ async def initiate_scan(
     except Exception as e:
         logger.exception(f"Unexpected error during scan initiation: {str(e)}")
         await update_scan_failure(user.email, scan_id, "Failed to initiate audit scan")
-        raise HTTPException(status_code=500, detail="Failed to initiate audit scan")
+        raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
 
 @observe()

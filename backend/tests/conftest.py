@@ -4,6 +4,8 @@ import pytest
 from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
 
+from api.v1.models.payment import Payment
+from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.services.auth_service import get_current_user
 from main import app
@@ -37,10 +39,6 @@ def mock_auth():
 @pytest.fixture(autouse=True)
 async def mock_beanie_init():
     with patch("beanie.init_beanie", new_callable=AsyncMock) as mock_init_beanie:
-        # Initialize all necessary collections
-        from api.v1.models.payment import Payment
-        from api.v1.models.scan import Scan, ScanResult
-        from api.v1.models.user import User
 
         collections = [Scan, ScanResult, User, Payment]
         for collection in collections:

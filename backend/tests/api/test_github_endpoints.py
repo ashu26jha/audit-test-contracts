@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from main import app
@@ -17,8 +18,8 @@ def mock_github_service():
         mock_service.get_user_organizations_and_personal = AsyncMock()
         mock_service.get_repositories = AsyncMock()
         mock_service.get_repository_branches = AsyncMock()
-        mock_service.check_repository_access = AsyncMock()
         mock_service.get_accessible_repositories = AsyncMock()
+        mock_service.validate_repository_access = AsyncMock()
         yield mock_service
 
 
@@ -80,23 +81,30 @@ class TestGitHubEndpoints:
         assert response.status_code == 200
         assert response.json() == {"success": True, "data": ["main", "develop"]}
 
-    def test_validate_repo_url(self, client, mock_github_service):
-        mock_github_service.check_repository_access.return_value = {
-            "name": "testrepo",
-            "owner": {"login": "testowner"},
-            "default_branch": "main",
-        }
+    def test_validate_repository_accessible(self, client, mock_github_service):
+        # Mock successful repository access
+        mock_github_service.validate_repository_access.return_value = True
 
         response = client.get(
-            "/api/v1/github/validate-repo-url?repo_url=https://github.com/testowner/testrepo"
+            "/api/v1/github/validate-repository?repo_url=https://github.com/owner/public-repo"
         )
         assert response.status_code == 200
+        assert response.json() == {"success": True, "data": {"accessible": True}}
+
+    def test_validate_repository_inaccessible(self, client, mock_github_service):
+        # Mock inaccessible repository
+        mock_github_service.validate_repository_access.side_effect = HTTPException(
+            status_code=403,
+            detail="This repository is private or inaccessible. Please make sure you have access to it.",
+        )
+
+        response = client.get(
+            "/api/v1/github/validate-repository?repo_url=https://github.com/owner/private-repo"
+        )
+        assert response.status_code == 403
         assert response.json() == {
-            "success": True,
-            "data": {
-                "repo_name": "testrepo",
-                "owner": "testowner",
-                "default_branch": "main",
-                "repo_url": "https://github.com/testowner/testrepo",
-            },
+            "success": False,
+            "code": 403,
+            "message": "This repository is private or inaccessible. Please make sure you have access to it.",
+            "details": None,
         }

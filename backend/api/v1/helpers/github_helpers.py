@@ -5,9 +5,17 @@ from urllib.parse import urljoin
 
 import httpx
 from fastapi import HTTPException
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from api.v1.models.user import User
+
+
+def should_retry_github_request(exc: Exception) -> bool:
+    """Only retry on network errors and 5xx responses"""
+    if isinstance(exc, HTTPException):
+        # Never retry 4xx errors
+        return False
+    return isinstance(exc, (httpx.ConnectTimeout, httpx.ReadTimeout))
 
 
 class GithubHelpers:
@@ -41,7 +49,7 @@ class GithubHelpers:
         return str(PurePosixPath(endpoint))
 
     @retry(
-        retry=retry_if_exception_type(HTTPException),
+        retry=retry_if_exception(should_retry_github_request),
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
     )
