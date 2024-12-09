@@ -17,8 +17,10 @@ interface ScanResultsPageProps {
 
 const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
   const { scanId } = params;
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
   const { scanData, isProcessing, error, isLoading, handlePayment } = usePaymentProcessing(scanId);
+
+  if (!user) return null;
 
   if (loading) {
     return <Loading />;

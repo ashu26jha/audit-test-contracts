@@ -52,6 +52,7 @@ async def github_callback(
     response.set_cookie(
         key="auth_token",
         value=jwt_token,
+        domain=settings.COOKIE_DOMAIN,
         httponly=True,
         secure=True,
         samesite="strict",

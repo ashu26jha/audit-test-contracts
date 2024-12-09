@@ -7,6 +7,7 @@ load_dotenv()
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 BASE_URL: str = os.getenv("BASE_URL")
+COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN")
 ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY")
 
 ##################################################
