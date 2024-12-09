@@ -1,19 +1,9 @@
-from uuid import UUID
-
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel
 
 
-class GitHubRepoBase(BaseModel):
-    repo_url: str
+class GitHubRepoResponse(BaseModel):
     repo_name: str
     repo_full_name: str
-
-
-class GitHubRepoCreate(GitHubRepoBase):
-    pass
-
-
-class GitHubRepoResponse(GitHubRepoBase):
-    id: UUID = Field(exclude=True)
-
-    model_config = ConfigDict(from_attributes=True)
+    owner: str
+    default_branch: str
+    repo_url: str

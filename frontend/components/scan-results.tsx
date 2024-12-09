@@ -4,14 +4,13 @@ import { Card, CardBody, CardHeader, Button, Tooltip, Divider } from "@nextui-or
 import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks";
-import { sendPdfReport } from "@/services/api";
+import { useSendReport } from "@/hooks";
 
 import BluredFindings from "./blured-findings";
 import ScanInfo from "./scan-info";
 import { openFeedbackEmail } from "../utils/email";
 import { ScanProgress } from "./scan-stepper/ScanProgress";
+import Breadcrumb from "./shared/Breadcrumb";
 import MarkdownWithCode from "./shared/MarkdownWithCode";
 
 interface ScanResultsProps {
@@ -20,8 +19,7 @@ interface ScanResultsProps {
 }
 
 const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) => {
-  const { toast } = useToast();
-  const { token } = useAuth();
+  const { sendReportAgain, isLoading } = useSendReport();
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const isCompleted = scanData.scan.status === "completed";
@@ -29,25 +27,6 @@ const ScanResults: React.FC<ScanResultsProps> = ({ scanData, handlePayment }) =>
   const isPaid = isCompleted && scanData.scan.paid_status;
   const isNoFinding = isCompleted && scanData.total_findings === 0;
   const hasFindings = isCompleted && scanData.total_findings > 1;
-
-  const handleSendReportAgain = async () => {
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-    const res = await sendPdfReport(token, scanData.scan_id);
-    if (res.success) {
-      toast({
-        title: "Report sent",
-        status: "success",
-      });
-    } else {
-      toast({
-        title: res.message,
-        status: "error",
-      });
-    }
-  };
 
   const handleSendFeedback = () => {
     const subject = `Feedback for Scan ${scanData.scan_number}`;
@@ -182,9 +161,7 @@ Thank you,
       <Card className="h-full relative">
         <CardHeader>
           <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-            <div className="text-sm text-gray-400 flex">
-              Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
-            </div>
+            <Breadcrumb base="Dashboard" current="Results" />
             <div className="flex space-x-2">
               <Tooltip content="More information">
                 <Button size="sm" startContent={<Info size={20} />} onPress={() => setIsInfoModalOpen(true)}>
@@ -197,7 +174,8 @@ Thank you,
                     size="sm"
                     className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
                     startContent={<Image src="/mail.svg" width={20} height={20} alt="Send Email" />}
-                    onPress={handleSendReportAgain}
+                    onPress={() => sendReportAgain(scanData.scan_id)}
+                    isLoading={isLoading}
                   >
                     Send Report Again
                   </Button>

@@ -1,9 +1,10 @@
 "use client";
-import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from "react";
+import React, { createContext, useState, useContext, useEffect, useCallback, useMemo, memo } from "react";
 
 import { useRouter, usePathname } from "next/navigation";
 
-import { getUser } from "../services/api";
+import { Loading } from "@/components/Loading";
+import { getUser, logUserOut } from "@/services/api";
 
 interface User {
   id: string;
@@ -16,107 +17,137 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   loading: boolean;
-  setToken: (token: string | null) => void;
-  logout: () => void;
+  error: string | null;
+  setError: (error: string | null) => void;
   isPublicRoute: (pathname: string) => boolean;
+  logout: (url?: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  token: null,
-  loading: true,
-  setToken: () => {},
-  logout: () => {},
-  isPublicRoute: () => false,
+const AuthContext = createContext<AuthContextType | null>(null);
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const PUBLIC_ROUTES = ["/login", "/payment-result", "/login-success"] as const;
+const SCAN_RESULTS_PATTERN = /^\/scan-results\/[^/]+$/;
+
+export const ProtectedRoute = memo<ProtectedRouteProps>(({ children }) => {
+  const { loading, user, isPublicRoute } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user && !isPublicRoute(pathname)) {
+      router.replace("/login");
+    }
+  }, [loading, user, isPublicRoute, pathname, router]);
+
+  if (loading) return <Loading />;
+  if (!user && !isPublicRoute(pathname)) return null;
+  return <>{children}</>;
 });
 
+ProtectedRoute.displayName = "ProtectedRoute";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-
-  const fetchUser = useCallback(async (authToken: string) => {
-    try {
-      const userData = await getUser(authToken);
-      setUser(userData);
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
-      setToken(null);
-      setUser(null);
-      localStorage.removeItem("token");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const isPublicRoute = useCallback((pathname: string): boolean => {
-    const publicRoutes = ["/login", "/payment-result", "/login-success"];
     return (
-      publicRoutes.includes(pathname) ||
+      PUBLIC_ROUTES.includes(pathname as (typeof PUBLIC_ROUTES)[number]) ||
       pathname.startsWith("/scan-results/") ||
-      /^\/scan-results\/[^/]+$/.test(pathname)
+      SCAN_RESULTS_PATTERN.test(pathname)
     );
   }, []);
 
-  const logout = useCallback(() => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    router.push("/login");
-  }, [router]);
+  const logout = useCallback(
+    async (url: string = "/login") => {
+      setLoading(true);
+      try {
+        setUser(null);
+        localStorage.removeItem("token");
+        router.push(url);
+        await logUserOut();
+      } catch (error) {
+        console.error("Logout failed:", error);
+        setError("Logout failed. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router, setError],
+  );
 
   useEffect(() => {
-    try {
-      if (token) {
-        localStorage.setItem("token", token);
-        setLoading(true);
-        fetchUser(token);
-      } else {
-        const storedToken = localStorage.getItem("token");
-        if (storedToken) {
-          setToken(storedToken);
-          setLoading(true);
-          fetchUser(storedToken);
-        } else {
-          localStorage.removeItem("token");
-          setUser(null);
+    let isActive = true;
+
+    const sync = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const userData = await getUser();
+        if (!isActive) return;
+
+        if (!userData) {
+          throw new Error("No user data received");
+        }
+
+        setUser(userData);
+
+        // Check for legacy auth
+        const hasLegacyToken = Boolean(localStorage.getItem("token"));
+
+        if (hasLegacyToken) {
+          await logout();
+          router.push("/login?migrate=true");
+        }
+      } catch (error) {
+        if (!isActive) return;
+        console.error("Auth error:", error);
+        setError("Authentication failed. Please try again.");
+        await logout("/login?error=auth_failed");
+      } finally {
+        if (isActive) {
           setLoading(false);
         }
       }
-    } catch (error) {
-      console.error("Auth state error:", error);
-      setToken(null);
-      setUser(null);
-      setLoading(false);
-      localStorage.removeItem("token");
-    }
-  }, [token, fetchUser]);
+    };
+
+    sync();
+
+    return () => {
+      isActive = false;
+    };
+  }, [logout, router]);
 
   useEffect(() => {
     if (!loading) {
-      if (user && (pathname === "/" || pathname === "/login")) {
-        router.push("/dashboard");
-      }
-      if (!user && !isPublicRoute(pathname)) {
-        logout();
-      }
+      const handleRouting = async () => {
+        if (user && (pathname === "/" || pathname === "/login")) {
+          router.push("/dashboard");
+        }
+      };
+      handleRouting();
     }
-  }, [user, loading, pathname, router, isPublicRoute, logout]);
+  }, [user, loading, pathname, router]);
 
-  const value = useMemo(
+  const value = useMemo<AuthContextType>(
     () => ({
       user,
-      token,
       loading,
-      setToken,
-      logout,
+      error,
+      setError,
       isPublicRoute,
+      logout,
     }),
-    [user, token, loading, setToken, logout, isPublicRoute],
+    [user, loading, error, setError, isPublicRoute, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -124,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

@@ -22,7 +22,7 @@ class StripeSessionService:
         # Check if the scan exists and belongs to the user
         await validate_user_scan_access(UUID(scan_id), user)
 
-        user_id = str(user.id)
+        user_id = user.githubId
         user_email = user.email
         unit_amount = 2000  # $20.00
 
@@ -44,7 +44,7 @@ class StripeSessionService:
             success_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=success&scan_id={scan_id}",
             cancel_url=f"{FRONTEND_URL}/payment-result?session_id={{CHECKOUT_SESSION_ID}}&status=error&scan_id={scan_id}",
             metadata={
-                "userId": str(user_id),
+                "userId": user_id,
                 "scanId": scan_id,
             },
         )

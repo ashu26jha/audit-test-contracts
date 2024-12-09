@@ -22,6 +22,7 @@ python-dotenv==1.0.1
 python_jose==3.3.0
 redis==5.1.0
 starlette==0.41.3
+tenacity==9.0.0
 tiktoken==0.7.0
 toml==0.10.2
 uvicorn==0.30.6

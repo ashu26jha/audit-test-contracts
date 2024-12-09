@@ -3,21 +3,30 @@
 import { useEffect } from "react";
 
 import { Button, Card, CardBody, Image } from "@nextui-org/react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import { Loading } from "@/components/Loading";
-
-import { useAuth } from "../../contexts/AuthContext";
-import { initiateGithubLogin } from "../../services/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { initiateGithubLogin } from "@/services/api";
 
 const LoginPage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, error, setError } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const urlError = searchParams.get("error");
 
   useEffect(() => {
-    if (!loading && user && pathname === "/login") {
-      router.push("/dashboard");
+    if (urlError) {
+      setError(null);
+    }
+  }, [urlError, setError]);
+
+  useEffect(() => {
+    if (!loading) {
+      if (user && pathname === "/login") {
+        router.push("/dashboard");
+      }
     }
   }, [user, loading, router, pathname]);
 
@@ -28,6 +37,13 @@ const LoginPage = () => {
   if (user) {
     return null;
   }
+
+  const getErrorMessage = () => {
+    if (urlError === "no_token") return "Login failed. Please try again.";
+    if (urlError === "timeout") return "Login timed out. Please try again.";
+    if (urlError === "auth_failed") return "Authentication failed. Please try again.";
+    return error;
+  };
 
   return (
     <div className="flex items-center justify-center h-[calc(100%-6rem)]">
@@ -44,6 +60,7 @@ const LoginPage = () => {
             >
               Continue with GitHub
             </Button>
+            {getErrorMessage() && <p className="text-red-500 mt-4 text-center text-sm">{getErrorMessage()}</p>}
           </div>
         </CardBody>
       </Card>

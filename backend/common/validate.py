@@ -13,7 +13,7 @@ GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
 
 async def validate_user_scan_access(scan_id: UUID, current_user: User):
     scan = await get_scan(scan_id)
-    if not scan or scan.user_id != str(current_user.id):
+    if not scan or scan.user_id != current_user.githubId:
         raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
     return scan
 

@@ -167,13 +167,17 @@ async def perform_audit_agent_background(
         )
 
         if user.email:
+            # Fetch scan to get scan_number
             scan = await scan_history_service.get_scan(scan_id)
-            await send_completion_email(
-                to_email=user.email,
-                scan_id=str(scan_id),
-                scan_number=scan.scan_number,
-                total_findings=total_findings_after_dedup,
-            )
+            if scan:
+                await send_completion_email(
+                    to_email=user.email,
+                    scan_id=str(scan_id),
+                    scan_number=scan.scan_number,
+                    total_findings=total_findings_after_dedup,
+                )
+            else:
+                logger.error(f"Could not find scan with ID {scan_id} to send completion email")
         else:
             logger.warning(f"User {user.id} does not have an email address.")
 

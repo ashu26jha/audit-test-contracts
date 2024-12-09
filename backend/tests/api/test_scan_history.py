@@ -62,7 +62,7 @@ class TestScanHistoryEndpoints:
         response = client.get("/api/v1/scans-history")
         assert response.status_code == 200
         response_data = response.json()
-        assert response_data["success"] == True
+        assert response_data["success"]
         assert len(response_data["data"]) == 2
         assert response_data["data"][0]["scan_number"] == 1
         assert response_data["data"][1]["scan_number"] == 2
@@ -98,7 +98,7 @@ class TestScanHistoryEndpoints:
         mock_scan = MagicMock(
             scan_id=uuid4(),
             scan_number=1,
-            user_id=str(mock_user.id),
+            user_id=str(mock_user.githubId),
             status="completed",
             startedAt=datetime.now(timezone.utc),
             completedAt=datetime.now(timezone.utc),
@@ -121,8 +121,8 @@ class TestScanHistoryEndpoints:
             result = await scan_history_service.get_scan_history_for_user(mock_user)
             assert len(result) == 1
             assert result[0].scan_number == 1
-            assert result[0].user_id == str(mock_user.id)
+            assert result[0].user_id == str(mock_user.githubId)
 
         # Verify that the find method was called with the correct arguments
-        mocked_find.assert_called_once_with({"user_id": str(mock_user.id)})
+        mocked_find.assert_called_once_with({"user_id": str(mock_user.githubId)})
         mock_to_list.assert_called_once()

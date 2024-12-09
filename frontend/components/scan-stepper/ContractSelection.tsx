@@ -1,13 +1,14 @@
 "use client";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 
 import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Spinner } from "@nextui-org/react";
 import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
 
+import { LIMITS } from "@/config/constants";
+import { useScanStepperStore } from "@/store/scanStepperStore";
+
 import { HelpGuide } from "./HelpGuide";
-import { LIMITS } from "../../config/constants";
-import { useScanStepperStore } from "../../store/scanStepperStore";
 
 export const ContractSelection: React.FC = () => {
   const {
@@ -20,29 +21,34 @@ export const ContractSelection: React.FC = () => {
     isFileLimitExceeded,
   } = useScanStepperStore();
 
-  const filteredSolidityFiles = solidityFiles.filter(
-    (file) =>
-      file.name.toLowerCase().includes(contractSearch.toLowerCase()) ||
-      file.path.toLowerCase().includes(contractSearch.toLowerCase()),
-  );
+  const filteredSolidityFiles = useMemo(() => {
+    const searchLower = contractSearch.toLowerCase();
+    return solidityFiles.filter(
+      (file) => file.name.toLowerCase().includes(searchLower) || file.path.toLowerCase().includes(searchLower),
+    );
+  }, [solidityFiles, contractSearch]);
 
   const calculateTotalSelectedLines = useCallback(() => {
+    const fileMap = new Map(solidityFiles.map((file) => [file.path, file.lineCount]));
     return selectedContracts.reduce((acc, path) => {
-      const file = solidityFiles.find((f) => f.path === path);
-      return acc + (file?.lineCount || 0);
+      return acc + (fileMap.get(path) || 0);
     }, 0);
   }, [selectedContracts, solidityFiles]);
 
   const totalSelectedLines = calculateTotalSelectedLines();
 
-  const handleSelectionChange = (selection: Selection) => {
-    if (selection === "all") {
-      setSelectedContracts(filteredSolidityFiles.map((file) => file.path));
-    } else {
-      const newSelection = Array.from(selection) as string[];
-      setSelectedContracts(newSelection);
-    }
-  };
+  const allPaths = useMemo(() => filteredSolidityFiles.map((file) => file.path), [filteredSolidityFiles]);
+
+  const handleSelectionChange = useCallback(
+    (selection: Selection) => {
+      if (selection === "all") {
+        setSelectedContracts(allPaths);
+      } else {
+        setSelectedContracts(Array.from(selection).map(String));
+      }
+    },
+    [allPaths, setSelectedContracts],
+  );
 
   return (
     <div className="flex gap-8">
@@ -82,7 +88,7 @@ export const ContractSelection: React.FC = () => {
               <TableColumn>Path</TableColumn>
             </TableHeader>
             <TableBody
-              isLoading={isLoading}
+              isLoading={!!isLoading}
               loadingContent={<Spinner />}
               emptyContent={
                 <div className="flex flex-col items-center">

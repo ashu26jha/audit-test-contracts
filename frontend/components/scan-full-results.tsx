@@ -4,13 +4,12 @@ import { Card, CardBody, CardHeader, Button, Tooltip, Divider, Spinner } from "@
 import { AlertTriangle, Dot, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 import Image from "next/image";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/useToast";
-import { sendPdfReport } from "@/services/api";
+import { useSendReport } from "@/hooks";
 
 import CodeSummary from "./CodeSummary";
 import FindingsMenu from "./FindingsMenu";
 import ScanInfo from "./scan-info";
+import Breadcrumb from "./shared/Breadcrumb";
 import MarkdownWithCode from "./shared/MarkdownWithCode";
 
 interface ScanFullResultsProps {
@@ -19,8 +18,7 @@ interface ScanFullResultsProps {
 }
 
 const ScanFullResults: React.FC<ScanFullResultsProps> = ({ scanData }) => {
-  const { toast } = useToast();
-  const { token } = useAuth();
+  const { sendReportAgain, isLoading } = useSendReport();
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   // Add isCollapsed state
@@ -42,25 +40,6 @@ const ScanFullResults: React.FC<ScanFullResultsProps> = ({ scanData }) => {
   const isFailed = scanData.scan.status === "failed";
   const isPaid = isCompleted && scanData.scan.paid_status;
   const isNoFinding = isCompleted && scanData.total_findings === 0;
-
-  const handleSendReportAgain = async () => {
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-    const res = await sendPdfReport(token, scanData.scan_id);
-    if (res.success) {
-      toast({
-        title: "Report sent",
-        status: "success",
-      });
-    } else {
-      toast({
-        title: res.message,
-        status: "error",
-      });
-    }
-  };
 
   const scanStats = [
     {
@@ -168,9 +147,7 @@ const ScanFullResults: React.FC<ScanFullResultsProps> = ({ scanData }) => {
     <div className="h-full relative flex flex-col lg:flex-row">
       <div className="w-full">
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full p-4">
-          <div className="text-sm text-gray-400 flex">
-            Dashboard <div className="mx-2">/</div> <div className="text-white">Results</div>
-          </div>
+          <Breadcrumb base="Dashboard" current="Results" />
           <div className="flex space-x-2">
             <Tooltip content="More information">
               <Button
@@ -188,7 +165,8 @@ const ScanFullResults: React.FC<ScanFullResultsProps> = ({ scanData }) => {
                   size="sm"
                   className="bg-[#8B5CF6] hover:bg-[#7C3AED]"
                   startContent={<Image src="/mail.svg" width={20} height={20} alt="Send Email" />}
-                  onPress={handleSendReportAgain}
+                  onPress={() => sendReportAgain(scanData.scan_id)}
+                  isLoading={isLoading}
                 >
                   Resend Report
                 </Button>

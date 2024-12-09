@@ -77,5 +77,5 @@ async def get_scan_result(scan_id: UUID) -> ScanResult:
 
 async def get_scan_history_for_user(user: User) -> List[Scan]:
     """Retrieve the scan history for a given user."""
-    scans = await Scan.find({"user_id": str(user.id)}).sort("-createdAt").to_list()
+    scans = await Scan.find({"user_id": user.githubId}).sort("-createdAt").to_list()
     return scans

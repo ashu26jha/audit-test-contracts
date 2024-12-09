@@ -10,7 +10,7 @@ import { useFetchScanHistory } from "./useFetchScanHistory";
 type PaymentStatus = "success" | "failed" | "processing" | null;
 
 export const usePaymentResult = () => {
-  const { token, loading } = useAuth();
+  const { user, loading } = useAuth();
   const searchParams = useSearchParams();
   const { refetch } = useFetchScanHistory();
   const [status, setStatus] = useState<PaymentStatus>(null);
@@ -23,14 +23,14 @@ export const usePaymentResult = () => {
     const scanId = searchParams.get("scan_id");
     const urlStatus = searchParams.get("status");
 
-    if (scanId && urlStatus === "success" && token) {
+    if (scanId && urlStatus === "success" && user) {
       setStatus("processing");
       setIsProcessing(true);
       isPdfReportSentRef.current = true;
 
       try {
         refetch();
-        sendPdfReport(token, scanId);
+        sendPdfReport(scanId);
         setStatus("success");
       } catch (error) {
         console.error("Error in report generation:", error);
@@ -44,7 +44,7 @@ export const usePaymentResult = () => {
       // If the status is neither success nor error, set it to failed
       setStatus("failed");
     }
-  }, [searchParams, token, isProcessing, loading, refetch]);
+  }, [searchParams, user, isProcessing, loading, refetch]);
 
   useEffect(() => {
     handlePaymentResult();

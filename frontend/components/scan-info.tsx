@@ -65,7 +65,7 @@ const ScanInfo: FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
             icon="/branch.svg"
             items={[
               { label: "Branch", value: scanData.scan.branchName },
-              { label: "Scanned Commit", value: scanData.scan.commitHash.slice(0, 7) },
+              { label: "Scanned Commit", value: scanData.scan.commitHash.slice(0, 7) ?? "N/A" },
             ]}
           />
           <InfoSection icon="/contract.svg" items={[{ label: "Contract Files", value: scanData.scan.contractFiles }]} />

@@ -16,9 +16,11 @@ class User(Document):
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     installationId: Optional[list[int]] = None
+    token_version: int = Field(default=0, alias="token_version")
 
     class Settings:
         name = "users"
+        validate_on_save = True
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -32,6 +34,7 @@ class User(Document):
                 "createdAt": datetime.now(timezone.utc),
                 "updatedAt": datetime.now(timezone.utc),
                 "installationId": [12345678],
+                "token_version": 0,
             }
         }
     )
@@ -47,3 +50,8 @@ class User(Document):
     @classmethod
     async def by_github_id(cls, github_id: str) -> Optional["User"]:
         return await cls.find_one(cls.githubId == github_id)
+
+    async def ensure_token_version(self) -> None:
+        """Ensure user has a token_version field"""
+        if not hasattr(self, "token_version"):
+            await self.update({"$set": {"token_version": 0}})

@@ -1,13 +1,19 @@
-import httpx
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from starlette.requests import Request
 
+from api.v1.auth.auth_helpers import generate_and_store_oauth_state
 from api.v1.models.user import User
 from api.v1.schemas.user_schema import UserResponse
-from api.v1.services.auth_service import create_access_token, get_current_user
-from api.v1.services.github_service import GitHubService
+from api.v1.services.auth_service import (
+    create_access_token,
+    get_current_user,
+    handle_github_callback,
+    handle_logout,
+    track_login,
+)
+from common.throttling import throttle
 from config import settings
 
 router = APIRouter()
@@ -17,82 +23,52 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     tokenUrl="https://github.com/login/oauth/access_token",
 )
 
-github_service = GitHubService()
-
 
 @router.get("/github-login")
-async def github_login():
-    return RedirectResponse(f"{settings.GITHUB_APP_URL}")
+@throttle(rate_limit_minutes=1, max_requests=5, use_ip=True)
+async def github_login(request: Request):
+    await track_login(request)
+    auth_url = f"{settings.GITHUB_APP_URL}&state={generate_and_store_oauth_state()}"
+    return RedirectResponse(auth_url)
 
 
 @router.get("/github-callback")
+@throttle(rate_limit_minutes=5, max_requests=10, use_ip=True)
 async def github_callback(
-    code: str, request: Request, installation_id: int | None = None, setup_action: str | None = None
+    request: Request,
+    code: str,
+    state: str | None = None,
+    installation_id: str | None = None,
+    setup_action: str | None = None,
 ):
-    # Exchange code for access token
-    token_url = "https://github.com/login/oauth/access_token"
-    headers = {"Accept": "application/json"}
-    data = {
-        "client_id": settings.GITHUB_CLIENT_ID,
-        "client_secret": settings.GITHUB_CLIENT_SECRET,
-        "code": code,
-    }
+    # Handle GitHub callback and get user
+    _, user = await handle_github_callback(code, state, installation_id, setup_action)
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(token_url, headers=headers, data=data)
+    # Create our app's JWT token
+    jwt_token = create_access_token(data={"sub": str(user.id)}, user=user)
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Could not retrieve token")
-
-    token_data = response.json()
-    access_token = token_data.get("access_token")
-
-    if not access_token:
-        raise HTTPException(status_code=400, detail="Invalid token response")
-
-    # Get user info from GitHub
-    user_data = await github_service.get_user_data(access_token)
-
-    # Check if user exists
-    user = await User.find_one({"githubId": str(user_data["id"])})
-
-    # Check actual installation status
-    installations = await github_service.get_installations(access_token)
-
-    # Handle user creation or update
-    if not user:
-        user = User(
-            githubId=str(user_data["id"]),
-            username=user_data["login"],
-            email=user_data["email"],
-            accessToken=access_token,
-            avatarUrl=user_data["avatar_url"],
-            name=user_data["name"],
-            installationId=[inst["id"] for inst in installations],
-        )
-        await user.create()
-    else:
-        # Update with current installation status
-        await user.update(
-            {
-                "$set": {
-                    "accessToken": access_token,
-                    "installationId": [inst["id"] for inst in installations],
-                }
-            }
-        )
-
-    # Create JWT token
-    jwt_token = create_access_token(data={"sub": str(user.id)})
-
-    # Redirect to frontend with token
-    return RedirectResponse(f"{settings.FRONTEND_URL}/login-success?token={jwt_token}")
+    # Return response with JWT in secure cookie
+    response = RedirectResponse(f"{settings.FRONTEND_URL}/login-success")
+    response.set_cookie(
+        key="auth_token",
+        value=jwt_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    return response
 
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
-    # In a real-world scenario, you might want to invalidate the token or perform other cleanup
-    return {"message": "Successfully logged out"}
+async def logout(request: Request, current_user: User = Depends(get_current_user)):
+    await handle_logout(request, current_user)
+    response = JSONResponse({"message": "Successfully logged out"})
+    response.delete_cookie(
+        key="auth_token", path="/", secure=True, httponly=True, samesite="strict"
+    )
+    return response
 
 
 @router.get("/me", response_model=UserResponse)

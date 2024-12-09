@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { SERVICES } from "@/config/constants";
@@ -6,8 +7,8 @@ import { SERVICES } from "@/config/constants";
 const apiKey = process.env.X_API_KEY;
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+  const cookieStore = cookies();
+  const token = cookieStore.get("auth_token")?.value;
 
   if (!token) {
     return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -19,13 +20,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-
     const baseURL = process.env.DOCKER_ENV === "true" ? "http://backend:8000" : SERVICES.API_URL;
 
     const response = await axios.post(`/api/v1/audit-agent`, body, {
       baseURL,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Cookie: `auth_token=${token}`,
         "Content-Type": "application/json",
         "x-api-key": apiKey,
       },

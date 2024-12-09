@@ -12,6 +12,7 @@ import { useScanStepperStore } from "@/store/scanStepperStore";
 
 import { Loading } from "./Loading";
 import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "./scan-stepper/";
+import Breadcrumb from "./shared/Breadcrumb";
 
 interface ScanStepperProps {
   setShowStepper: (show: boolean) => void;
@@ -20,7 +21,7 @@ interface ScanStepperProps {
 const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { token } = useAuth();
+  const { user } = useAuth();
   const {
     currentStep,
     selectedOwner,
@@ -39,22 +40,22 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
   const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
 
   useEffect(() => {
-    if (token && selectedOwner) {
-      fetchRepositories(token, selectedOwner);
+    if (user && selectedOwner) {
+      fetchRepositories(selectedOwner);
     }
-  }, [token, selectedOwner, fetchRepositories]);
+  }, [user, selectedOwner, fetchRepositories]);
 
   useEffect(() => {
-    if (token && selectedOwner && selectedRepo) {
-      fetchBranches(token, selectedOwner, selectedRepo);
+    if (user && selectedOwner && selectedRepo) {
+      fetchBranches(selectedOwner, selectedRepo);
     }
-  }, [token, selectedOwner, selectedRepo, fetchBranches]);
+  }, [user, selectedOwner, selectedRepo, fetchBranches]);
 
   useEffect(() => {
-    if (token && selectedOwner && selectedRepo && selectedBranch) {
-      fetchSolidityFiles(token, selectedOwner, selectedRepo, selectedBranch);
+    if (user && selectedOwner && selectedRepo && selectedBranch) {
+      fetchSolidityFiles(selectedOwner, selectedRepo, selectedBranch);
     }
-  }, [token, selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
+  }, [user, selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
 
   const isNextStepEnabled = useCallback(() => {
     const isStep1Valid =
@@ -80,8 +81,8 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
       }
       setIsScanning(true);
       try {
-        if (token) {
-          const response = await initiateScanProcess(token);
+        if (user) {
+          const response = await initiateScanProcess();
           router.push(`/scan-results/${response.data.scan_id}`);
         }
       } catch (error) {
@@ -127,9 +128,7 @@ const ScanStepper: React.FC<ScanStepperProps> = ({ setShowStepper }) => {
   return (
     <Card className="h-full">
       <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
-        <div className="text-sm text-gray-400 flex">
-          Dashboard <div className="mx-2">/</div> <div className="text-white">Scan Code</div>
-        </div>
+        <Breadcrumb base="Dashboard" current="Scan Code" />
         <div>
           <Button className="mr-2" onClick={handleBack}>
             Go Back

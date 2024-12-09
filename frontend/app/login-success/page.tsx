@@ -2,29 +2,29 @@
 
 import { useEffect } from "react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/contexts/AuthContext";
 
 const LoginSuccessPage = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { setToken, user, loading, logout } = useAuth();
-
-  const token = searchParams.get("token");
+  const { user, loading, error } = useAuth();
 
   useEffect(() => {
-    if (!token) {
-      logout();
-      return;
-    }
+    const redirectTimer = setTimeout(() => {
+      if (!loading && !user && !error) {
+        router.push("/login?error=timeout");
+      }
+    }, 10000); // 10 second timeout
 
-    setToken(token);
-
-    if (!loading && user) {
+    if (error) {
+      router.push("/login?error=auth_failed");
+    } else if (!loading && user) {
       router.replace("/dashboard");
     }
-  }, [token, router, setToken, loading, user, logout]);
+
+    return () => clearTimeout(redirectTimer);
+  }, [error, router, loading, user]);
 
   return null;
 };

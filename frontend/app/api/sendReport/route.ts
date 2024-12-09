@@ -1,4 +1,5 @@
 import axios, { AxiosError } from "axios";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import { SERVICES } from "@/config/constants";
@@ -7,8 +8,8 @@ const apiKey = process.env.X_API_KEY;
 
 export async function GET(request: NextRequest) {
   const scanId = request.nextUrl.searchParams.get("scanId");
-  const authHeader = request.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+  const cookieStore = cookies();
+  const token = cookieStore.get("auth_token")?.value;
 
   if (!scanId) {
     return NextResponse.json({ error: "Scan ID is required" }, { status: 400 });
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     const response = await axios.get(`/api/v1/generate-pdf/${scanId}`, {
       baseURL,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Cookie: `auth_token=${token}`,
         "Content-Type": "application/json",
         "x-api-key": apiKey,
       },

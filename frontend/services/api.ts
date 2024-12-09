@@ -2,11 +2,13 @@ import axios from "axios";
 
 import { SERVICES } from "@/config/constants";
 
+// For direct backend calls
 const api = axios.create({
   baseURL: SERVICES.API_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 export const initiateGithubLogin = () => {
@@ -15,108 +17,56 @@ export const initiateGithubLogin = () => {
   }
 };
 
-export const getUser = async (token: string) => {
-  const response = await api.get("/api/v1/auth/me", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getUser = async () => {
+  const response = await api.get("/api/v1/auth/me");
   return response.data;
 };
 
-export const getOrganizationsAndPersonal = async (token: string) => {
-  const response = await api.get("/api/v1/github/organizations", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
-};
-
-export const getRepositories = async (token: string, owner: string, ownerType: string) => {
-  const response = await api.get(`/api/v1/github/repositories/${owner}?owner_type=${ownerType}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
-};
-
-export const getBranches = async (token: string, owner: string, repo: string) => {
-  const response = await api.get(`/api/v1/github/repository-branches/${owner}/${repo}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
-};
-
-export const getRepositoryContents = async (
-  token: string,
-  owner: string,
-  repo: string,
-  branch: string,
-  path: string = "",
-) => {
-  const response = await api.get(`/api/v1/github/repository-contents/${owner}/${repo}?branch=${branch}&path=${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
-};
-
-export const initiateScan = async (
-  token: string,
-  data: {
-    repositoryURL: string;
-    contractFiles: string[];
-    branchName: string;
-  },
-) => {
-  const response = await axios.post("/api/launchScan", data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const logUserOut = async () => {
+  const response = await api.post("/api/v1/auth/logout", {});
   return response.data;
 };
 
-export const getPartialScanResults = async (token: string, scanId: string) => {
-  const response = await api.get(`/api/v1/scans/partial/${scanId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getOrganizationsAndPersonal = async () => {
+  const response = await api.get("/api/v1/github/organizations");
+  return response.data.data;
+};
+
+export const getAllowedRepositories = async (owner: string) => {
+  const response = await api.get(`/api/v1/github/repositories/${owner}`);
+  return response.data.data;
+};
+
+export const getRepositories = async (owner: string, ownerType: string) => {
+  const response = await api.get(`/api/v1/github/repositories/${owner}?owner_type=${ownerType}`);
+  return response.data.data;
+};
+
+export const getBranches = async (owner: string, repo: string) => {
+  const response = await api.get(`/api/v1/github/repository-branches/${owner}/${repo}`);
+  return response.data.data;
+};
+
+export const getRepositoryContents = async (owner: string, repo: string, branch: string, path: string = "") => {
+  const response = await api.get(`/api/v1/github/repository-contents/${owner}/${repo}?branch=${branch}&path=${path}`);
+  return response.data.data;
+};
+
+export const getPartialScanResults = async (scanId: string) => {
+  const response = await api.get(`/api/v1/scans/partial/${scanId}`);
   const result = response.data.data.partial_result;
   const scan = response.data.data.scan;
   result.scan = scan;
   return result;
 };
 
-export const getFullScanResults = async (token: string, scanId: string) => {
-  const response = await axios.get(`/api/getFullScanResults?scanId=${scanId}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-export const getScanHistory = async (token: string) => {
-  const response = await api.get("/api/v1/scans-history", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export const getScanHistory = async () => {
+  const response = await api.get("/api/v1/scans-history");
   return response.data.data;
 };
 
-export const getRepoInfo = async (token: string, repoUrl: string) => {
+export const getRepoInfo = async (repoUrl: string) => {
   const response = await api.get(`/api/v1/github/validate-repo-url`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
     params: {
       repo_url: repoUrl,
     },
@@ -124,25 +74,29 @@ export const getRepoInfo = async (token: string, repoUrl: string) => {
   return response.data.data;
 };
 
-export const createCheckoutSession = async (token: string, scanId: string) => {
-  const response = await api.post(
-    "/api/v1/payments/create-stripe-session",
-    { scanId },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  );
+export const createCheckoutSession = async (scanId: string) => {
+  const response = await api.post("/api/v1/payments/create-stripe-session", { scanId });
   return response.data;
 };
 
-export const sendPdfReport = async (token: string, scanId: string) => {
+// PROTECTED ROUTES //
+
+export const initiateScan = async (data: { repositoryURL: string; contractFiles: string[]; branchName: string }) => {
+  const response = await axios.post("/api/launchScan", data);
+  return response.data;
+};
+
+export const getFullScanResults = async (scanId: string) => {
+  const response = await axios.get(`/api/getFullScanResults`, {
+    params: { scanId },
+  });
+  return response.data;
+};
+
+export const sendPdfReport = async (scanId: string) => {
   try {
-    const response = await axios.get(`/api/sendReport?scanId=${scanId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const response = await axios.get(`/api/sendReport`, {
+      params: { scanId },
     });
     return response.data;
   } catch (error) {
@@ -156,15 +110,6 @@ export const sendPdfReport = async (token: string, scanId: string) => {
     }
     return { success: false, message: (error as Error).message };
   }
-};
-
-export const getAllowedRepositories = async (token: string, owner: string) => {
-  const response = await api.get(`/api/v1/github/repositories/${owner}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.data;
 };
 
 export default api;

@@ -31,6 +31,7 @@ class PaymentHandler:
                 paid_status=False,
                 discount_applied=False,
             )
+            await self._create_failed_scan_payment_record()
             return
 
         # Handle free scans (0-1 findings)
@@ -65,7 +66,7 @@ class PaymentHandler:
                     createdAt=datetime.now(timezone.utc),
                     updatedAt=datetime.now(timezone.utc),
                     event_id="Free scan (0-1 findings)",
-                    user_id=str(self.user.id),
+                    user_id=self.user.githubId,
                     stripeSessionId="FREE_SCAN",
                 )
                 await payment.save()
@@ -88,3 +89,37 @@ class PaymentHandler:
                 f"Error creating/updating payment record for scan {self.scan_id}: {str(e)}"
             )
             # Don't raise the exception as the scan is still free regardless of payment record
+
+    async def _create_failed_scan_payment_record(self) -> None:
+        """
+        Creates or updates a payment record for failed scans.
+        """
+        try:
+            existing_payment = await Payment.find_one(Payment.scan_id == self.scan_id)
+
+            if not existing_payment:
+                payment = Payment(
+                    scan_id=self.scan_id,
+                    amount=0.0,
+                    currency="USD",
+                    status=PaymentStatus.FAILED,
+                    createdAt=datetime.now(timezone.utc),
+                    updatedAt=datetime.now(timezone.utc),
+                    event_id="Failed scan",
+                    user_id=self.user.githubId,
+                    stripeSessionId="FAILED_SCAN",
+                )
+                await payment.save()
+                logger.info(f"Created failed payment record for scan {self.scan_id}")
+            else:
+                if existing_payment.status != PaymentStatus.FAILED:
+                    existing_payment.status = PaymentStatus.FAILED
+                    existing_payment.updatedAt = datetime.now(timezone.utc)
+                    await existing_payment.save()
+                    logger.info(f"Updated existing payment to failed for scan {self.scan_id}")
+
+        except Exception as e:
+            logger.error(
+                f"Error creating/updating payment record for failed scan {self.scan_id}: {str(e)}"
+            )
+            # Don't raise the exception as the scan is already marked as failed

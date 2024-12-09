@@ -1,22 +1,20 @@
 "use client";
-import React, { useState } from "react";
+import { type FC, useState } from "react";
 
 import { Divider, Button, Avatar } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
 
 import AllowedRepositories from "@/components/AllowedRepositories";
+import Breadcrumb from "@/components/shared/Breadcrumb";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import { useAuth } from "@/contexts/AuthContext";
 
-import { useAuth } from "../../contexts/AuthContext";
-
-const ProfilePage: React.FC = () => {
+const ProfilePage: FC = () => {
   const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("details");
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const { email, username, name, avatarUrl } = user;
 
@@ -60,7 +58,7 @@ const ProfilePage: React.FC = () => {
           variant="flat"
           startContent={<LogOut size={14} />}
           className="w-full mt-8 bg-[#3F3F46] hover:bg-[#F3126033] hover:text-danger text-white"
-          onClick={logout}
+          onClick={() => logout()}
         >
           Log Out
         </Button>
@@ -93,9 +91,7 @@ const ProfilePage: React.FC = () => {
     <div className="h-full relative flex flex-col">
       <div className="w-full">
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full pb-4 px-4">
-          <div className="text-sm text-gray-400 flex">
-            Dashboard <div className="mx-2">/</div> <div className="text-white">Profile Settings</div>
-          </div>
+          <Breadcrumb base="Dashboard" current="Profile Settings" />
           <div className="flex space-x-2">
             <Button
               variant="flat"

@@ -21,15 +21,17 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ scanHistory, scanable, refetch, setShowStepper }) => {
   const { toast } = useToast();
   const router = useRouter();
-  const { token } = useAuth();
+  const { user } = useAuth();
   const { hasGithubApp } = useGithubApp();
+
+  if (!user) return null;
 
   const handleScanClick = (scanId: string) => {
     router.push(`/scan-results/${scanId}`);
   };
 
   const handleScan = async () => {
-    if (!token) return;
+    if (!user) return;
     if (scanable) {
       // prettier-ignore
       if (typeof window !== "undefined" && window._mtm != undefined) {

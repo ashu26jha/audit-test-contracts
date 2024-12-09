@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { createCheckoutSession, getPartialScanResults, getFullScanResults } from "@/services/api";
 
 export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shouldPoll, setShouldPoll] = useState(true);
@@ -19,21 +19,22 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
   } = useQuery({
     queryKey: ["scanResults", scanId],
     queryFn: async () => {
-      if (!token || !scanId) throw new Error("Token or scanId not available");
+      if (!user || !scanId) throw new Error("User or scanId not available");
+
       let result;
       if (isPaid) {
-        result = await getFullScanResults(token, scanId);
+        result = await getFullScanResults(scanId);
       } else {
-        result = await getPartialScanResults(token, scanId);
+        result = await getPartialScanResults(scanId);
         if (result.scan.paid_status) {
           // If the scan is now paid, immediately fetch full results
-          result = await getFullScanResults(token, scanId);
+          result = await getFullScanResults(scanId);
           setIsPaid(true);
         }
       }
       return result;
     },
-    enabled: !!token && !!scanId && shouldPoll,
+    enabled: !!user && !!scanId && shouldPoll,
     refetchInterval: shouldPoll ? pollingInterval : false,
     refetchIntervalInBackground: shouldPoll,
     retry: 3,
@@ -48,13 +49,13 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
   }, [scanData]);
 
   const handlePayment = useCallback(async () => {
-    if (!token || !scanId) return;
+    if (!user || !scanId) return;
 
     setIsProcessing(true);
     setError(null);
 
     try {
-      const res = await createCheckoutSession(token, scanId);
+      const res = await createCheckoutSession(scanId);
       const { URL } = res.data;
 
       // Redirect to Stripe Checkout
@@ -64,7 +65,7 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
       setError("Failed to initiate payment. Please try again.");
       setIsProcessing(false);
     }
-  }, [token, scanId]);
+  }, [user, scanId]);
 
   return {
     scanData,

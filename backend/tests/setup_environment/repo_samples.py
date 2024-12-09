@@ -22,7 +22,7 @@ class RepoConfig:
 TEST_REPOS = [
     # Foundry Projects in Root
     RepoConfig(
-        url="https://github.com/Volangel/Spectra-0x4b792db3d2a5d1c1ccf9938380756b200c240e5d",
+        url="https://github.com/Pedrojok01/repo-0-",
         project_type="foundry",
         contract_paths=["src/registry.sol", "src/factory/Factory.sol"],
         description="Basic Foundry project at root",

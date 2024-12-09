@@ -16,11 +16,11 @@ export const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  if (pathname === "/login-success" || loading) {
+  if (pathname === "/login-success") {
     return null;
   }
 
-  if (pathname === "/login") {
+  if (!user || loading || pathname === "/login") {
     return <LoginNavbar />;
   }
 
@@ -65,7 +65,7 @@ export const Navbar = () => {
                 key="logout"
                 startContent={<Image src="/logout.svg" alt="logout" width={20} height={20} />}
                 color="danger"
-                onClick={logout}
+                onClick={() => logout()}
               >
                 Log out
               </DropdownItem>

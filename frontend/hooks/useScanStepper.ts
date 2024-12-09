@@ -21,10 +21,10 @@ export const useScanStepper = () => {
   } = useScanStepperStore();
 
   const fetchRepositories = useCallback(
-    async (token: string, owner: Owner) => {
+    async (owner: Owner) => {
       try {
         setIsLoading(true);
-        const repositories = await getRepositories(token, owner.login, owner.type);
+        const repositories = await getRepositories(owner.login, owner.type);
         setRepositories(repositories);
       } catch (error) {
         console.error("Error fetching repositories:", error);
@@ -36,10 +36,10 @@ export const useScanStepper = () => {
   );
 
   const fetchBranches = useCallback(
-    async (token: string, owner: Owner, repo: Repository) => {
+    async (owner: Owner, repo: Repository) => {
       try {
         setIsLoading(true);
-        const branches = await getBranches(token, owner.login, repo.name);
+        const branches = await getBranches(owner.login, repo.name);
         setBranches(branches);
       } catch (error) {
         console.error("Error fetching branches:", error);
@@ -51,10 +51,10 @@ export const useScanStepper = () => {
   );
 
   const fetchSolidityFiles = useCallback(
-    async (token: string, owner: Owner, repo: Repository, branch: string) => {
+    async (owner: Owner, repo: Repository, branch: string) => {
       try {
         setIsLoading(true);
-        const files = await getRepositoryContents(token, owner.login, repo.name, branch);
+        const files = await getRepositoryContents(owner.login, repo.name, branch);
         setSolidityFiles(files);
       } catch (error) {
         console.error("Error fetching Solidity files:", error);
@@ -65,25 +65,22 @@ export const useScanStepper = () => {
     [setSolidityFiles, setIsLoading],
   );
 
-  const initiateScanProcess = useCallback(
-    async (token: string) => {
-      try {
-        if (!selectedOwner || !selectedRepo) {
-          throw new Error("Owner or repository not selected");
-        }
-        const response = await initiateScan(token, {
-          repositoryURL: `https://github.com/${selectedOwner.login}/${selectedRepo.name}`,
-          contractFiles: selectedContracts,
-          branchName: selectedBranch || "",
-        });
-        return response;
-      } catch (error) {
-        console.error("Error initiating scan:", error);
-        throw error;
+  const initiateScanProcess = useCallback(async () => {
+    try {
+      if (!selectedOwner || !selectedRepo) {
+        throw new Error("Owner or repository not selected");
       }
-    },
-    [selectedOwner, selectedRepo, selectedBranch, selectedContracts],
-  );
+      const response = await initiateScan({
+        repositoryURL: `https://github.com/${selectedOwner.login}/${selectedRepo.name}`,
+        contractFiles: selectedContracts,
+        branchName: selectedBranch || "",
+      });
+      return response;
+    } catch (error) {
+      console.error("Error initiating scan:", error);
+      throw error;
+    }
+  }, [selectedOwner, selectedRepo, selectedBranch, selectedContracts]);
 
   const extractOwnerAndRepo = useCallback(
     (url: string) => {

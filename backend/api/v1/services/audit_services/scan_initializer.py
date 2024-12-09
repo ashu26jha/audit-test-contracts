@@ -65,19 +65,19 @@ class ScanInitializer:
 
     async def fetch_repository_info(self):
         # Fetch repository info
-        self.repo_info = await github_service.fetch_github_repo_info(
+        self.repo_info = await github_service.get_github_repo_info(
             self.user.accessToken, self.request.repositoryURL
         )
 
     async def create_scan_record(self):
         # Get the next scan_number for this user
-        self.scan_number = await Scan.get_next_scan_number(str(self.user.id))
+        self.scan_number = await Scan.get_next_scan_number(self.user.githubId)
 
         # Create and store the new scan with initial status 'pending'
         new_scan = Scan(
             scan_id=self.scan_id,
             scan_number=self.scan_number,
-            user_id=str(self.user.id),
+            user_id=self.user.githubId,
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=self.request.contractFiles,

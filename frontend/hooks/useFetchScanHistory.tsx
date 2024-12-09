@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getScanHistory } from "@/services/api";
 
 export const useFetchScanHistory = (pollingInterval = 5000) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [scanable, setScanable] = useState<boolean>(false);
   const [hasActiveScans, setHasActiveScans] = useState<boolean>(false);
 
@@ -18,12 +18,12 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
   } = useQuery({
     queryKey: ["scanHistory"],
     queryFn: async () => {
-      if (!token) {
-        throw new Error("No token found");
+      if (!user) {
+        throw new Error("No user found");
       }
-      return await getScanHistory(token);
+      return await getScanHistory();
     },
-    enabled: !!token,
+    enabled: !!user,
     refetchInterval: hasActiveScans ? pollingInterval : false,
     refetchIntervalInBackground: hasActiveScans,
   });

@@ -1,14 +1,12 @@
-import React from "react";
+import type { FC } from "react";
 
 import { Card, CardBody, CircularProgress, Button, Image } from "@nextui-org/react";
 
 import { SERVICES } from "@/config/constants";
 import { useAllowedRepositories } from "@/hooks/useAllowedRepositories";
 
-const AllowedRepositories: React.FC = () => {
-  const { repositories, loading, error } = useAllowedRepositories();
-
-  console.log(repositories);
+const AllowedRepositories: FC = () => {
+  const { allowedRepositories, loading, error } = useAllowedRepositories();
 
   if (loading) {
     return (
@@ -29,14 +27,14 @@ const AllowedRepositories: React.FC = () => {
         These are the repositories that you allowed via Github.
       </div>
 
-      {repositories.length > 0 && repositories[0].all_repos_access && (
+      {allowedRepositories.length > 0 && allowedRepositories[0].all_repos_access && (
         <div className="text-sm font-normal text-[#A1A1AA] mb-4">You have full access to all repositories.</div>
       )}
 
-      {repositories.length > 0 ? (
+      {allowedRepositories.length > 0 ? (
         <Card className="w-full max-h-[500px] min-h-[400px] overflow-y-auto border border-[#27272A] bg-[#18181B]">
           <CardBody>
-            {repositories.map((repo) => (
+            {allowedRepositories.map((repo) => (
               <div key={repo.name} className="flex items-center justify-between p-1 rounded-md">
                 <div className="flex items-center gap-2">
                   <Image src="/repo-avatar.svg" alt="Repository" width={24} height={24} />

@@ -226,6 +226,7 @@ Validates the provided GitHub repository URL and checks if the user has access t
     "owner": "string",
     "default_branch": "string",
     "repo_url": "string",
+    "repo_full_name": "string"
   }
 }
 ```

@@ -10,21 +10,21 @@ interface GitHubRepoResponse {
 }
 
 const useFetchGithubRepoInfo = (repoUrl: string) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [repoInfo, setRepoInfo] = useState<GitHubRepoResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRepoInfo = useCallback(
     async (repoUrl: string) => {
-      if (!token) {
-        setError("No token found");
+      if (!user) {
+        setError("No user found");
         setLoading(false);
         return;
       }
       try {
         setLoading(true);
-        const response = await getRepoInfo(token, repoUrl);
+        const response = await getRepoInfo(repoUrl);
         setRepoInfo(response);
       } catch (err) {
         setError((err as Error).message ?? String(err));
@@ -32,7 +32,7 @@ const useFetchGithubRepoInfo = (repoUrl: string) => {
         setLoading(false);
       }
     },
-    [token],
+    [user],
   );
 
   useEffect(() => {

@@ -40,7 +40,7 @@ class Scan(Document):
                 "_id": "507f1f77bcf86cd799439011",
                 "scan_id": "507f1f77bcf86cd799439012",
                 "scan_number": 1,
-                "user_id": "612e3a5e630d2b1a6f20fb4b",
+                "user_id": "12345678",
                 "status": "pending",
                 "startedAt": "2023-10-01T11:00:00Z",
                 "completedAt": None,

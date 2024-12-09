@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { CONTACT, PAGES } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
 
 function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
@@ -24,9 +25,10 @@ function Elipsis({ className = "" }: { className?: string }) {
 }
 
 export default function Footer() {
+  const { user } = useAuth();
   const pathname = usePathname();
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || !user) {
     return (
       <footer className="w-full flex items-center justify-center py-3 px-4 text-center">
         <p className="text-sm text-gray-400">

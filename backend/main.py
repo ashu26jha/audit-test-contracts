@@ -27,7 +27,6 @@ from api.v1.endpoints import (
     test_auth,
 )
 from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
-from api.v1.models.github import GitHubRepo
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -54,7 +53,6 @@ async def lifespan(app: FastAPI):
         database=db,
         document_models=[
             User,
-            GitHubRepo,
             Scan,
             ScanResult,
             Payment,
@@ -79,10 +77,17 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "X-API-Key",
+        "Accept",
+        "Origin",
+    ],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 security = HTTPBasic()

@@ -31,7 +31,7 @@ if settings.ENVIRONMENT == "development":
         # Generate a JWT token for the test user
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": str(test_user.id)}, expires_delta=access_token_expires
+            data={"sub": str(test_user.id)}, user=test_user, expires_delta=access_token_expires
         )
 
         return SuccessResponse(
