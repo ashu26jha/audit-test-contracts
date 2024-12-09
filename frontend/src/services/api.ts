@@ -80,13 +80,16 @@ export const createCheckoutSession = async (scanId: string) => {
 // PROTECTED ROUTES //
 
 export const initiateScan = async (data: { repositoryURL: string; contractFiles: string[]; branchName: string }) => {
-  const response = await axios.post("/api/launchScan", data);
+  const response = await axios.post("/api/launchScan", data, {
+    withCredentials: true,
+  });
   return response.data;
 };
 
 export const getFullScanResults = async (scanId: string) => {
   const response = await axios.get(`/api/getFullScanResults`, {
     params: { scanId },
+    withCredentials: true,
   });
   return response.data;
 };
@@ -95,6 +98,7 @@ export const sendPdfReport = async (scanId: string) => {
   try {
     const response = await axios.get(`/api/sendReport`, {
       params: { scanId },
+      withCredentials: true,
     });
     return response.data;
   } catch (error) {
