@@ -190,15 +190,18 @@ class GitHubService:
 
         for installation in installations:
             installation_id = installation["id"]
-            url = f"https://api.github.com/user/installations/{installation_id}/repositories"
-
+            repository_selection = installation.get("repository_selection", "selected")
+            # Get selected repositories
+            url = f"{self.BASE_URL}/user/installations/{installation_id}/repositories"
             repos = await self.get_paginated_results(url, access_token)
+
             formatted_repos = [
                 {
                     "name": repo["name"],
                     "updatedAt": repo["updated_at"],
                     "private": repo["private"],
                     "owner": repo["owner"]["login"],
+                    "all_repos_access": repository_selection == "all",
                 }
                 for repo in repos
             ]

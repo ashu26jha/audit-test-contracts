@@ -61,6 +61,7 @@ interface Repository {
   name: string;
   updatedAt: string;
   private: boolean;
+  all_repos_access?: boolean;
 }
 
 interface File {

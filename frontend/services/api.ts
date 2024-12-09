@@ -158,4 +158,13 @@ export const sendPdfReport = async (token: string, scanId: string) => {
   }
 };
 
+export const getAllowedRepositories = async (token: string, owner: string) => {
+  const response = await api.get(`/api/v1/github/repositories/${owner}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data.data;
+};
+
 export default api;

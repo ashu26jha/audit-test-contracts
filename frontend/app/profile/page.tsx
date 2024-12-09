@@ -1,16 +1,18 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 
-import { Card, CardBody, CardHeader, Divider, Button, Avatar } from "@nextui-org/react";
+import { Divider, Button, Avatar } from "@nextui-org/react";
 import { LogOut } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+
+import AllowedRepositories from "@/components/AllowedRepositories";
+import SubscriptionCard from "@/components/SubscriptionCard";
 
 import { useAuth } from "../../contexts/AuthContext";
 
 const ProfilePage: React.FC = () => {
-  const router = useRouter();
   const { user, logout } = useAuth();
+  const [selectedTab, setSelectedTab] = useState("details");
 
   if (!user) {
     return null;
@@ -18,66 +20,117 @@ const ProfilePage: React.FC = () => {
 
   const { email, username, name, avatarUrl } = user;
 
-  return (
-    <div className="container mx-auto max-w-10xl h-full">
-      <Card className="h-full">
-        <CardHeader>
-          <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
-            <div className="text-sm text-gray-400 flex">
-              Dashboard <div className="mx-2">/</div> <div className="text-white">Profile</div>
+  const renderUserDetails = () => {
+    return (
+      <div className="w-1/3">
+        <div className="w-full flex-col">
+          <div className="text-sm font-normal text-[#A1A1AA] mt-8">Profile Picture</div>
+          <Avatar src={avatarUrl} size="sm" className="w-20 h-20 text-large rounded-md mt-2" />
+        </div>
+        {name && (
+          <div className="flex flex-col">
+            {" "}
+            {/* Added white border */}
+            <div className="text-sm font-normal text-[#A1A1AA] mt-8">Name</div>
+            <div className="text-medium text-[#A1A1AA] mt-1 border border-[#27272A] p-2 px-4 rounded-2xl bg-[#18181B]">
+              {name}
             </div>
-            <Button
-              variant="light"
-              onPress={() => router.back()}
-              className="bg-[#27272a] border border-[#3F3F46] rounded-lg"
-            >
-              Go Back
-            </Button>
           </div>
-        </CardHeader>
-        <Divider />
+        )}
+        <div className="flex flex-col mt-8 ">
+          {" "}
+          {/* Added white border */}
+          <div className="text-sm font-normal text-[#A1A1AA]">Email</div>
+          <div className="text-medium text-[#A1A1AA] mt-1 border border-[#27272A] p-2 px-4 rounded-2xl bg-[#18181B]">
+            {email}
+          </div>
+        </div>
 
-        <CardBody className="flex flex-col items-center gap-6 pb-8">
-          <div className="w-1/3">
-            <div className="w-full flex justify-center">
-              <Avatar src={avatarUrl} size="sm" className="w-20 h-20 text-large rounded-md mt-8" />
+        <div className="flex flex-col mt-8">
+          <div className="text-sm font-normal text-[#A1A1AA]">GitHub Username</div>
+          <div className="flex w-full justify-between">
+            <div className="flex items-center text-md mt-1 border text-medium text-[#A1A1AA] border-[#27272A] p-2 px-4 rounded-2xl w-full bg-[#18181B]">
+              {username}
+              <Image src="/github.svg" alt="GitHub" width={20} height={20} className="ml-auto" />
             </div>
-            {name && (
-              <div className="flex flex-col">
-                {" "}
-                {/* Added white border */}
-                <div className="text-sm text-gray-400 mt-8">Name</div>
-                <div className="text-md mt-1 border border-[#3F3F46] p-2 rounded-md">{name}</div>
-              </div>
-            )}
-            <div className="flex flex-col mt-8 ">
-              {" "}
-              {/* Added white border */}
-              <div className="text-sm text-gray-400">Email</div>
-              <div className="text-md mt-1 border border-[#3F3F46] p-2 rounded-md">{email}</div>
-            </div>
+          </div>
+        </div>
 
-            <div className="flex flex-col mt-8">
-              <div className="text-sm text-gray-400 ">GitHub Username</div>
-              <div className="flex w-full justify-between">
-                <div className="flex items-center text-md mt-1 border border-[#3F3F46] p-2 rounded-md w-full">
-                  {username}
-                  <Image src="/github.svg" alt="GitHub" width={20} height={20} className="ml-auto" />
-                </div>
-              </div>
-            </div>
+        <Button
+          variant="flat"
+          startContent={<LogOut size={14} />}
+          className="w-full mt-8 bg-[#3F3F46] hover:bg-[#F3126033] hover:text-danger text-white"
+          onClick={logout}
+        >
+          Log Out
+        </Button>
+      </div>
+    );
+  };
 
+  const renderSubscription = () => (
+    <div className="w-full max-w-[500px] p-4">
+      <SubscriptionCard
+        price={990}
+        description="Ideal for growing teams and active development."
+        features={[
+          "10 scan credits (Refreshes every month)",
+          "Up to 2,500 lines of code per scan",
+          "Up to 15 contracts per scan",
+          "CI Integration",
+          "Slither integration",
+          "Advanced vulnerability detection",
+          "PDF output",
+          "Dedicated Telegram or Slack channel support",
+          "Crypto Payment (Get in touch with Sales)",
+        ]}
+        nextPaymentDate="23 Dec 2024"
+      />
+    </div>
+  );
+
+  return (
+    <div className="h-full relative flex flex-col">
+      <div className="w-full">
+        <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full pb-4 px-4">
+          <div className="text-sm text-gray-400 flex">
+            Dashboard <div className="mx-2">/</div> <div className="text-white">Profile Settings</div>
+          </div>
+          <div className="flex space-x-2">
             <Button
               variant="flat"
-              startContent={<LogOut size={14} />}
-              className="w-full mt-8 hover:bg-[#F3126033] hover:text-danger text-white"
-              onClick={logout}
+              size="md"
+              className={`${selectedTab === "details" ? "bg-[#27272a] border-[#A1A1AA]" : "border-[#3F3F46]"} border-1 rounded-md p-4`}
+              onClick={() => setSelectedTab("details")}
             >
-              Log Out
+              User Details
+            </Button>
+            <Button
+              variant="flat"
+              size="md"
+              className={`${selectedTab === "repositories" ? "bg-[#27272a] border-[#A1A1AA]" : "border-[#3F3F46]"} border-1 rounded-md p-4`}
+              onClick={() => setSelectedTab("repositories")}
+            >
+              Repositories
+            </Button>
+            <Button
+              variant="flat"
+              size="md"
+              className={`${selectedTab === "subscription" ? "bg-[#27272a] border-[#A1A1AA]" : "border-[#3F3F46]"} border-1 rounded-md p-4`}
+              onClick={() => setSelectedTab("subscription")}
+            >
+              Subscription
             </Button>
           </div>
-        </CardBody>
-      </Card>
+        </div>
+        <Divider />
+      </div>
+
+      <div className="flex flex-col items-center gap-6 pb-8">
+        {selectedTab === "details" && renderUserDetails()}
+        {selectedTab === "repositories" && <AllowedRepositories />}
+        {selectedTab === "subscription" && renderSubscription()}
+      </div>
     </div>
   );
 };
