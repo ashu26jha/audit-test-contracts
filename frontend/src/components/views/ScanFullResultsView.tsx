@@ -116,13 +116,17 @@ const ScanFullResultsView: FC<ScanFullResultsViewProps> = ({ scanData }) => {
             </div>
           </CardHeader>
           <CardBody className="px-0 bg-black">
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center space-x-2 border-b-2 border-[#18181B] pb-2 w-full px-3">
-                <p className="text-sm font-medium text-white">{finding.Issue}</p>
-                {getSeverityChip(finding.Severity)}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2 border-b-2 border-[#18181B] w-full px-3">
+                <p className="text-sm font-medium text-white">
+                  <MarkdownWithCode content={finding.Issue} />
+                </p>
+                <div className="mb-4">{getSeverityChip(finding.Severity)}</div>
               </div>
             </div>
-            <MarkdownWithCode content={finding.Description} />
+            <div className="px-3 py-2">
+              <MarkdownWithCode content={finding.Description} />
+            </div>
           </CardBody>
         </Card>
       ))}

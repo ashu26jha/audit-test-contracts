@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, type FC } from "react";
 
 import { ChevronUp, ChevronDown } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+
+import { MarkdownWithCode } from "../layout";
 
 interface CodeSummaryProps {
   summary: string;
@@ -46,7 +47,7 @@ const CodeSummary: FC<CodeSummaryProps> = ({ summary }) => {
         style={{ maxHeight: "0px" }}
       >
         <div className="p-4">
-          <ReactMarkdown className="prose prose-invert max-w-none">{summary}</ReactMarkdown>
+          <MarkdownWithCode content={summary} />
         </div>
       </div>
     </div>

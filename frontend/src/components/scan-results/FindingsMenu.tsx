@@ -4,6 +4,8 @@ import { Accordion, AccordionItem, Card, CardHeader, Divider, Button } from "@ne
 import { Dot } from "lucide-react";
 import Image from "next/image";
 
+import { MarkdownWithCode } from "../layout";
+
 interface FindingsMenuProps {
   findings: Finding[];
   onSelectFinding: (finding: Finding) => void;
@@ -56,7 +58,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
     >
       {!isCollapsed && (
         <div className="flex flex-col h-full">
-          <CardHeader className="mt-2 mb-0 flex items-center justify-between">
+          <CardHeader className=" mb-0 flex items-center justify-between">
             <p className="text-sm font-inter font-medium">Findings</p>
 
             <Button
@@ -100,12 +102,14 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
                             selectedFinding?.Issue === finding.Issue
                               ? "text-white bg-[#18181B] before:absolute before:left-0 before:top-0 before:h-full before:w-[1px] before:bg-white"
                               : "text-[#B8B8B8]"
-                          } hover:text-white p-1 rounded`}
+                          } hover:text-white rounded`}
                       >
-                        <div className="flex items-center justify-center w-6 h-6 bg-[#3F3F4666] rounded-md">
-                          <p className="text-sm">{globalIndex++}</p>
+                        <div className="flex items-center justify-center min-w-[24px] h-6 bg-[#3F3F4666] rounded-lg">
+                          <span className="text-sm tabular-nums">{globalIndex++}</span>
                         </div>
-                        <span className="text-sm ml-2">{finding.Issue}</span>
+                        <span className="text-sm mt-4 ml-1">
+                          <MarkdownWithCode content={finding.Issue} />
+                        </span>
                       </div>
                     ))}
                   </div>
