@@ -98,8 +98,8 @@ def _clean_json_content(content: str) -> str:
     content = re.sub(r"```\w*+(?>\n)?+|(?>\n)?+```", "", content)  # Remove markdown
     content = content.replace('\\"', '"')  # Fix escaped chars
     content = content.replace("\\n", "\n")
-    content = re.sub(r'\\++(?>["{}\[\]])', r"\1", content)  # Handle nested JSON
-    content = re.sub(r",(?>\s*+[}\]])", r"\1", content)  # Fix trailing commas
+    content = re.sub(r'\\++(["{}\[\]])', r"\1", content)  # Handle nested JSON
+    content = re.sub(r",([\s]*+[}\]])", r"\1", content)  # Fix trailing commas
 
     # Handle multiline code snippets
     def clean_code_block(match):

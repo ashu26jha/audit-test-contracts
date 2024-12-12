@@ -6,6 +6,7 @@ from pydantic import BaseModel, HttpUrl
 
 class StaticAnalyzerRequest(BaseModel):
     github_url: HttpUrl
+    contracts: Optional[List[str]] = None
     oauth_token: Optional[str] = None
 
 
