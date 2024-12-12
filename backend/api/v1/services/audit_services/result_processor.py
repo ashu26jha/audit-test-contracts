@@ -3,6 +3,7 @@ from typing import List
 from uuid import UUID
 
 from api.v1.helpers.confidence_scoring_helper import confidence_scoring
+from api.v1.helpers.mitigation_helper import mitigate_findings
 from api.v1.schemas.context_scan_schema import Finding
 from api.v1.services import scan_history_service
 from common import duplicates, logger
@@ -32,17 +33,22 @@ class ResultProcessor:
         self.total_findings_after_dedup: int = 0
 
     async def process_results(self) -> None:
-        """Process results sequentially: filter first, then deduplicate."""
-        # First filter findings to reduce the set
+        """Process results sequentially: filter, deduplicate, mitigate, then confidence score."""
+        # Filter findings to ensure they all belong to the selected contracts
         await self._filter_findings()
-        await scan_history_service.update_scan_progress(self.scan_id, 95)
+        await scan_history_service.update_scan_progress(self.scan_id, 80)
 
-        # Then run deduplication on the filtered set
+        # Perform deduplication
         await self._deduplicate_findings()
-        await scan_history_service.update_scan_progress(self.scan_id, 98)
+        await scan_history_service.update_scan_progress(self.scan_id, 88)
+
+        # Perform findings mitigation
+        await self._mitigate_findings(self.flattened_contracts)
+        await scan_history_service.update_scan_progress(self.scan_id, 93)
 
         # Perform confidence scoring
         await self._perform_confidence_scoring(self.flattened_contracts)
+        await scan_history_service.update_scan_progress(self.scan_id, 98)
 
         # Final update
         await self._update_scan_result()
@@ -73,6 +79,30 @@ class ResultProcessor:
         self.dedup_findings = await duplicates.remove_duplicates(self.combined_findings)
         self.total_findings_after_dedup = len(self.dedup_findings)
 
+    async def _perform_confidence_scoring(self, flattened_contracts: str) -> None:
+        """
+        Performs confidence scoring on the findings using the confidence scoring helper.
+        If any step fails, the process continues with original findings.
+        """
+
+        self.dedup_findings = await confidence_scoring(
+            findings=self.dedup_findings,
+            summary_of_project=self.summary_result,
+            flattened_contracts=flattened_contracts,
+        )
+
+    async def _mitigate_findings(self, flattened_contracts: str) -> None:
+        """
+        Analyzes and potentially adjusts severity of specific finding types.
+        If any step fails, the process continues with original findings.
+        """
+
+        self.dedup_findings = await mitigate_findings(
+            findings=self.dedup_findings,
+            flattened_contracts=flattened_contracts,
+        )
+        self.total_findings_after_dedup = len(self.dedup_findings)
+
     async def _update_scan_result(self) -> None:
         """
         Updates the scan result in the database with the processed findings.
@@ -88,22 +118,6 @@ class ResultProcessor:
         scan_result.findings_before_removal = self.combined_findings
         scan_result.completedAt = datetime.now(timezone.utc)
         await scan_result.save()
-
-    async def _perform_confidence_scoring(self, flattened_contracts: str) -> None:
-        """
-        Performs confidence scoring on the findings using the confidence scoring helper.
-        If any step fails, the process continues with original findings.
-        """
-        try:
-            self.dedup_findings = await confidence_scoring(
-                findings=self.dedup_findings,
-                summary_of_project=self.summary_result,
-                flattened_contracts=flattened_contracts,
-            )
-        except Exception as e:
-            logger.error(f"Failed to perform confidence scoring: {e}")
-            # Original findings are preserved if anything fails
-            pass
 
     # Getters
 

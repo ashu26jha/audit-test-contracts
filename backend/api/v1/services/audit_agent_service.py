@@ -31,30 +31,24 @@ async def initiate_scan(
 ):
     initializer = ScanInitializer(user, request, scan_id)
     try:
-        # Validation (0-1%)
+        # Validation
         await initializer.validate_request()
-        await scan_history_service.update_scan_progress(scan_id, 1)
 
-        # Clone repository (1-5%)
+        # Clone repository
         await initializer.clone_repository()
-        await scan_history_service.update_scan_progress(scan_id, 5)
 
-        # Fetch repository info (5-7%)
+        # Fetch repository info
         await initializer.fetch_repository_info()
-        await scan_history_service.update_scan_progress(scan_id, 7)
 
-        # Create scan record (7-8%)
+        # Create scan record
         await initializer.create_scan_record()
-        await scan_history_service.update_scan_progress(scan_id, 8)
 
-        # Fetch commit hash (8-9%)
+        # Fetch commit hash
         await initializer.fetch_commit_hash()
-        await scan_history_service.update_scan_progress(scan_id, 9)
 
-        # Flatten contracts & Count lines of code (9-10%)
+        # Flatten contracts & Count lines of code
         flattened_contracts = await initializer.flatten_contracts()
         await initializer.count_lines_of_code(flattened_contracts)
-        await scan_history_service.update_scan_progress(scan_id, 10)
 
         # Start the background task
         background_tasks.add_task(

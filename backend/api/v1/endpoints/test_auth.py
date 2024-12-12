@@ -38,7 +38,7 @@ if settings.ENVIRONMENT == "development":
             data={
                 "access_token": access_token,
                 "token_type": "bearer",
-                "user": test_user.dict(by_alias=True),
+                "user": test_user.model_dump(by_alias=True, exclude={"id"}),
             }
         )
 

@@ -20,17 +20,17 @@ from config.settings import LLM_MODEL_BEST, LLM_MODEL_BEST_3
 
 class TaskManager:
     TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
-    CONTEXT_SCANS_TIMEOUT = 600  # 10 minutes per context scan
+    CONTEXT_SCANS_TIMEOUT = 300  # 10 minutes per context scan
 
-    # Progress stage weights - adjusted ratios
-    PRE_DETECTOR_WEIGHT = 30  # Setup, cloning, etc. (0-30%)
-    DETECTOR_WEIGHT = 55  # Detectors (30-85%)
-    POST_DETECTOR_WEIGHT = 15  # Deduplication, cleanup (85-100%)
+    # Progress stage weights
+    PRE_DETECTOR_WEIGHT = 25  # Setup, cloning, etc. (0-25%)
+    DETECTOR_WEIGHT = 50  # Detectors (25-75%)
+    POST_DETECTOR_WEIGHT = 25  # Deduplication, cleanup (75-100%)
 
     # Add detector-specific weights
     DETECTOR_WEIGHTS = {
-        "static_analyzer": 15,
-        "fuzzer": 10,
+        "static_analyzer": 5,
+        "fuzzer": 15,
         "context_scan_1": 5,
         "context_scan_2": 5,
         "context_scan_3": 5,
@@ -84,8 +84,6 @@ class TaskManager:
         profiles = [Profiles.DEFAULT, Profiles.DEFAULT_2]
         models = [LLM_MODEL_BEST, LLM_MODEL_BEST_3, LLM_MODEL_BEST_3]
 
-        await scan_history_service.update_scan_progress(self.scan_id, 20)
-
         # Generate detector names for context scans
         for profile in profiles:
             for model in models:
@@ -95,9 +93,6 @@ class TaskManager:
                     {"detector_name": detector_name, "profile": profile, "model": model}
                 )
                 active_detectors += 1
-
-        # Progress update after context scan setup
-        await scan_history_service.update_scan_progress(self.scan_id, 25)
 
         # Add static analyzer if setup was successful
         detectors["static_analyzer"] = None
@@ -355,8 +350,6 @@ class TaskManager:
         for detector, findings in findings_by_detector.items():
             if findings:  # Only log detectors that found issues
                 logger.info(f"- {detector}: {len(findings)} findings")
-
-        await scan_history_service.update_scan_progress(self.scan_id, 85)
 
         return {
             "combined_findings": combined_findings,

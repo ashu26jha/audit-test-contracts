@@ -20,6 +20,7 @@ from api.v1.endpoints import (
     generate_summary,
     github,
     health_check,
+    mitigate_findings,
     scan_history,
     scan_results,
     static_analyzer,
@@ -134,6 +135,7 @@ if settings.ENVIRONMENT in ["development", "test"]:
     app.include_router(test_auth.router, prefix="/api/v1")
     app.include_router(fuzzer.router, prefix="/api/v1")
     app.include_router(static_analyzer.router, prefix="/api/v1")
+    app.include_router(mitigate_findings.router, prefix="/api/v1")
 
 
 app.add_exception_handler(HTTPException, http_exception_handler)

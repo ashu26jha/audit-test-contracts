@@ -39,6 +39,9 @@ async def setup_environment(
     project_dir = temp_dir
     cloned_repo_dir = temp_dir
 
+    if scan_id:
+        await scan_history_service.update_scan_progress(scan_id, 5)
+
     try:
         # Step 1: Ensure temp_dir exists and clone the repo if needed
         os.makedirs(temp_dir, exist_ok=True)
@@ -52,6 +55,8 @@ async def setup_environment(
         project_config = await detect_project_config(cloned_repo_dir, contract_files)
         project_type = project_config.project_type
         project_dir = project_config.root_dir
+        if scan_id:
+            await scan_history_service.update_scan_progress(scan_id, 10)
 
         # Step 3: Set up the environment based on the project type
         if project_type == "hardhat":
@@ -61,15 +66,12 @@ async def setup_environment(
 
         elif project_type == "foundry":
             remappings = await setup_foundry_environment(scan_id, project_dir)
-
         else:
             raise NotImplementedError("This framework is not supported.")
 
         # Step 4: Compile the project
         try:
             await compile_project(project_dir)
-            if scan_id:
-                await scan_history_service.update_scan_progress(scan_id, 25)
         except Exception as e:
             logger.error(f"Project compilation failed: {str(e)}")
             return None
@@ -78,9 +80,6 @@ async def setup_environment(
         test_dir = Path(project_dir) / "test"
         test_dir.mkdir(parents=True, exist_ok=True)
         project_structure = get_project_structure(project_dir)
-
-        if scan_id:
-            await scan_history_service.update_scan_progress(scan_id, 30)
 
         return SetupResult(
             project_dir=project_dir,
@@ -92,6 +91,9 @@ async def setup_environment(
     except Exception as e:
         logger.error(f"Environment setup failed: {str(e)}")
         return None
+    finally:
+        if scan_id:
+            await scan_history_service.update_scan_progress(scan_id, 25)
 
 
 async def cleanup_environment(temp_dir: str, project_dir: str):
@@ -131,12 +133,12 @@ async def setup_hardhat_environment(
     # Initialize Foundry project in the new directory
     await initialize_foundry_project(foundry_dir, project_dir, project_type)
     if scan_id:
-        await scan_history_service.update_scan_progress(scan_id, 15)
+        await scan_history_service.update_scan_progress(scan_id, 12)
 
     # Install NPM dependencies
     await install_npm_deps(foundry_dir, project_dir)
     if scan_id:
-        await scan_history_service.update_scan_progress(scan_id, 20)
+        await scan_history_service.update_scan_progress(scan_id, 17)
 
     # Update foundry.toml configuration and generate remappings
     update_foundry_config(foundry_dir)
@@ -162,6 +164,9 @@ async def setup_hardhat_environment(
             except Exception as e:
                 logger.warning(f"Failed to remove original repository: {str(e)}")
 
+    if scan_id:
+        await scan_history_service.update_scan_progress(scan_id, 20)
+
     logger.info("Hardhat project has been set up in Foundry.")
     return project_dir, remappings
 
@@ -174,7 +179,7 @@ async def setup_foundry_environment(
         # Install Foundry dependencies
         await run_command(FORGE_INSTALL_COMMAND, project_dir)
         if scan_id:
-            await scan_history_service.update_scan_progress(scan_id, 20)
+            await scan_history_service.update_scan_progress(scan_id, 15)
 
         # Update foundry.toml configuration and generate remappings
         update_foundry_config(project_dir)
@@ -189,3 +194,6 @@ async def setup_foundry_environment(
     except Exception as e:
         logger.error(f"Error running forge install: {str(e)}")
         return None
+    finally:
+        if scan_id:
+            await scan_history_service.update_scan_progress(scan_id, 20)

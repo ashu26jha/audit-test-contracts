@@ -57,3 +57,8 @@ class ContextScanRequest(BaseModel):
 
 class ContextScanResponse(BaseModel):
     findings: List[Finding] = Field(..., description="The result of the context scan")
+
+
+class MitigationRequest(BaseModel):
+    findings: List[Finding]
+    flattened_contracts: str

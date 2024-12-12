@@ -118,9 +118,9 @@ const ScanFullResultsView: FC<ScanFullResultsViewProps> = ({ scanData }) => {
           <CardBody className="px-0 bg-black">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2 border-b-2 border-[#18181B] w-full px-3">
-                <p className="text-sm font-medium text-white">
+                <div className="text-sm font-medium text-white">
                   <MarkdownWithCode content={finding.Issue} />
-                </p>
+                </div>
                 <div className="mb-4">{getSeverityChip(finding.Severity)}</div>
               </div>
             </div>
