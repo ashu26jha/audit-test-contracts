@@ -28,6 +28,23 @@ module.exports = {
         blue: {
           500: "#3b82f6",
         },
+        background: "#0F0F0F",
+        content: {
+          1: "#18181B",
+        },
+        default: {
+          DEFAULT: "#3F3F46",
+          100: "#27272A",
+          500: "#A1A1AA",
+          600: "#D4D4D8",
+          900: "#FAFAFA",
+          flat: "#3F3F4666",
+        },
+        secondary: {
+          DEFAULT: "#9353D3",
+          flat: "#9353D333",
+          700: "#C9A9E9",
+        },
       },
       keyframes: {
         enter: {

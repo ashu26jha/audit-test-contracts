@@ -5,10 +5,10 @@ import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
 import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
 
-import { LIMITS } from "@/config/constants";
-import { useScanStepperStore } from "@/store/scanStepperStore";
-
 import { HelpGuide } from "./HelpGuide";
+import { BASIC_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 
 export const ContractSelection: FC = () => {
   const {
@@ -20,6 +20,8 @@ export const ContractSelection: FC = () => {
     isLoading,
     isFileLimitExceeded,
   } = useScanStepperStore();
+
+  const { user } = useAuth();
 
   const filteredSolidityFiles = useMemo(() => {
     const searchLower = contractSearch.toLowerCase();
@@ -117,9 +119,9 @@ export const ContractSelection: FC = () => {
       <div className="w-[30%]">
         <HelpGuide
           selectedLines={totalSelectedLines}
-          totalLines={LIMITS.MAX_LINES}
+          totalLines={user?.subscription.isActive ? PRO_PLAN_DETAILS.MAX_LINES : BASIC_PLAN_DETAILS.MAX_LINES}
           selectedFiles={selectedContracts.length}
-          totalFiles={LIMITS.MAX_FILES}
+          totalFiles={user?.subscription.isActive ? PRO_PLAN_DETAILS.MAX_FILES : BASIC_PLAN_DETAILS.MAX_FILES}
         />
       </div>
     </div>

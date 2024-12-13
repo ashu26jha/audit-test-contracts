@@ -1,19 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, type FC } from "react";
+import { useCallback, useEffect, useState, type FC } from "react";
 
 import { Button, Card, CardHeader } from "@nextui-org/react";
 import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { STEPS } from "@/config/steps";
-import { useToast, useScanStepper } from "@/hooks";
-import { useScanStepperStore } from "@/store/scanStepperStore";
-
 import { Loading } from "../layout";
 import Breadcrumb from "../layout/Breadcrumb";
+import CreditWarningModal from "../Modals/CreditWarningModal";
+import TalkToSalesModal from "../Modals/TalkToSalesModal";
 import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "../scan-stepper";
+import { STEPS } from "@/config/steps";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast, useScanStepper } from "@/hooks";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const ScanStepperView: FC = () => {
   const router = useRouter();
@@ -36,6 +38,8 @@ const ScanStepperView: FC = () => {
     resetStepper,
   } = useScanStepperStore();
   const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
+  const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (selectedOwner) {
@@ -71,27 +75,36 @@ const ScanStepperView: FC = () => {
     setIsNextEnabled(isNextStepEnabled());
   }, [isNextStepEnabled, setIsNextEnabled]);
 
+  const startScan = async () => {
+    // prettier-ignore
+    if (typeof window !== "undefined" && window._mtm != undefined) {
+      window._mtm.push({ "event": "scan-started" });
+    }
+    setIsScanning(true);
+    try {
+      const response = await initiateScanProcess();
+      router.push(`/scan-results/${response.data.scan_id}`);
+    } catch (error) {
+      console.error("Error initiating scan:", error);
+      setIsScanning(false);
+      toast({
+        title:
+          ((error as AxiosError).response?.data as { message?: string })?.message ??
+          "An error occurred while initiating the scan.",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
-      // prettier-ignore
-      if (typeof window !== "undefined" && window._mtm != undefined) {
-        window._mtm.push({ "event": "scan-started" });
+      if (user?.subscription.credits === 1 || user?.subscription.credits === 0) {
+        setOpenWarningDialog(true);
+        return;
       }
-      setIsScanning(true);
-      try {
-        const response = await initiateScanProcess();
-        router.push(`/scan-results/${response.data.scan_id}`);
-      } catch (error) {
-        console.error("Error initiating scan:", error);
-        setIsScanning(false);
-        toast({
-          title:
-            ((error as AxiosError).response?.data as { message?: string })?.message ??
-            "An error occurred while initiating the scan.",
-          status: "error",
-          duration: 3000,
-        });
-      }
+
+      startScan();
     } else {
       if (typeof window !== "undefined" && window._mtm != undefined) {
         // prettier-ignore
@@ -122,38 +135,48 @@ const ScanStepperView: FC = () => {
   }
 
   return (
-    <Card className="h-full">
-      <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
-        <Breadcrumb base="Dashboard" current="Scan Code" />
-        <div>
-          <Button className="mr-2" onClick={handleBack}>
-            Go Back
-          </Button>
-          <Button
-            color="secondary"
-            className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3]"
-            disabled={
-              !useScanStepperStore.getState().isNextEnabled ||
-              (currentStep === STEPS.length && (isLineExceeded || isFileLimitExceeded))
-            }
-            endContent={<ArrowRight size={20} />}
-            onClick={handleScan}
-          >
-            {currentStep === STEPS.length ? "Scan Code" : "Next"}
-          </Button>
-        </div>
-      </CardHeader>
+    <>
+      {user?.subscription.credits === 1 && (
+        <CreditWarningModal isOpen={openWarningDialog} setIsOpen={setOpenWarningDialog} onClick={startScan} />
+      )}
 
-      <main className="flex-grow p-8 overflow-y-auto">
-        <StepperVisualization currentStep={currentStep} />
+      {user?.subscription.credits === 0 && (
+        <TalkToSalesModal isOpen={openWarningDialog} setIsOpen={setOpenWarningDialog} />
+      )}
 
-        <div className="max-w-5xl mx-auto mt-4 flex flex-col gap-4">
-          {currentStep === 1 && <RepositorySelection />}
-          {currentStep === 2 && <BranchSelection />}
-          {currentStep === 3 && <ContractSelection />}
-        </div>
-      </main>
-    </Card>
+      <Card className="h-full">
+        <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
+          <Breadcrumb base="Dashboard" current="Scan Code" />
+          <div>
+            <Button className="mr-2" onClick={handleBack}>
+              Go Back
+            </Button>
+            <Button
+              color="secondary"
+              className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3]"
+              disabled={
+                !useScanStepperStore.getState().isNextEnabled ||
+                (currentStep === STEPS.length && (isLineExceeded || isFileLimitExceeded))
+              }
+              endContent={<ArrowRight size={20} />}
+              onClick={handleScan}
+            >
+              {currentStep === STEPS.length ? "Scan Code" : "Next"}
+            </Button>
+          </div>
+        </CardHeader>
+
+        <main className="flex-grow p-8 overflow-y-auto">
+          <StepperVisualization currentStep={currentStep} />
+
+          <div className="max-w-5xl mx-auto mt-4 flex flex-col gap-4">
+            {currentStep === 1 && <RepositorySelection />}
+            {currentStep === 2 && <BranchSelection />}
+            {currentStep === 3 && <ContractSelection />}
+          </div>
+        </main>
+      </Card>
+    </>
   );
 };
 

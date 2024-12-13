@@ -5,6 +5,7 @@ interface User {
   username: string;
   email: string;
   avatarUrl: string;
+  subscription: Subscription;
 }
 
 interface ScanHistoryItem {
@@ -80,4 +81,12 @@ interface File {
   download_url: string;
   lineCount: number;
   token: number;
+}
+
+interface Subscription {
+  isActive: boolean;
+  type: string;
+  credits: number;
+  monthlyCredits: number;
+  expiresAt: Date;
 }

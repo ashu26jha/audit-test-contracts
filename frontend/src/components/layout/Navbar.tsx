@@ -4,21 +4,31 @@ import type { FC } from "react";
 
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
-import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@nextui-org/react";
+import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
+import { Sparkles } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-
-import { useAuth } from "@/contexts/AuthContext";
-import { useScanStepperStore } from "@/store/scanStepperStore";
+import { tv } from "tailwind-variants";
 
 import LoginNavbar from "./LoginNavbar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const Navbar: FC = () => {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const { setShowStepper } = useScanStepperStore();
   const pathname = usePathname();
+
+  const scansRemainingIndicator = tv({
+    base: "h-10 bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg",
+    variants: {
+      isSubscribed: {
+        true: "bg-transparent border-default text-default-900",
+      },
+    },
+  });
 
   if (pathname === "/login-success") {
     return null;
@@ -45,6 +55,21 @@ const Navbar: FC = () => {
       </NavbarBrand>
 
       <NavbarContent justify="end">
+        <Button
+          className={scansRemainingIndicator({
+            isSubscribed: user.subscription.isActive && user.subscription.credits !== 0,
+          })}
+          startContent={<Sparkles size={14} />}
+        >
+          {user.subscription.isActive && user.subscription.credits !== 0 && (
+            <p className="text-sm">
+              {user.subscription.credits === 1 ? "1 Scan Left" : `${user.subscription.credits} Scans Left`}
+            </p>
+          )}
+
+          {(!user.subscription.isActive || user.subscription.credits === 0) && <p className="text-sm"> Upgrade Plan</p>}
+        </Button>
+
         <div className="justify-start items-center gap-1.5 flex">
           <Dropdown placement="bottom-end">
             <DropdownTrigger>

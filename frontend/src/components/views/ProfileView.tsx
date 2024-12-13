@@ -3,10 +3,10 @@ import { useState, type FC } from "react";
 
 import { Divider, Button } from "@nextui-org/react";
 
-import { AllowedRepositories, SubscriptionCard, UserDetails } from "@/components/profile";
-import { useAuth } from "@/contexts/AuthContext";
-
 import { Breadcrumb } from "../layout";
+import { AllowedRepositories, SubscriptionCard, UserDetails } from "@/components/profile";
+import { PRO_PLAN_DETAILS } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProfileView: FC = () => {
   const { user, logout } = useAuth();
@@ -37,14 +37,14 @@ const ProfileView: FC = () => {
               Repositories
             </Button>
             {/* TODO: Uncomment this when subscription is implemented */}
-            {/* <Button
+            <Button
               variant="flat"
               size="md"
               className={`${selectedTab === "subscription" ? "bg-[#27272a] border-[#A1A1AA]" : "border-[#3F3F46]"} border-1 rounded-md p-4`}
               onClick={() => setSelectedTab("subscription")}
             >
               Subscription
-            </Button> */}
+            </Button>
           </div>
         </div>
         <Divider />
@@ -55,20 +55,20 @@ const ProfileView: FC = () => {
         {selectedTab === "repositories" && <AllowedRepositories />}
         {selectedTab === "subscription" && (
           <SubscriptionCard
-            price={990}
+            price={PRO_PLAN_DETAILS.PRICE}
             description="Ideal for growing teams and active development."
             features={[
-              "10 scan credits (Refreshes every month)",
-              "Up to 2,500 lines of code per scan",
-              "Up to 15 contracts per scan",
+              `${PRO_PLAN_DETAILS.SCAN_CREDITS} scan credits (Refreshes every month)`,
+              `Up to ${PRO_PLAN_DETAILS.MAX_LINES} lines of code per scan`,
+              `Up to ${PRO_PLAN_DETAILS.MAX_FILES} contracts per scan`,
               "CI Integration",
-              "Slither integration",
-              "Advanced vulnerability detection",
               "PDF output",
+              "Priority in the scan queue",
               "Dedicated Telegram or Slack channel support",
               "Crypto Payment (Get in touch with Sales)",
             ]}
-            nextPaymentDate="23 Dec 2024"
+            nextPaymentDate={user.subscription.expiresAt}
+            isSubscribed={user.subscription.isActive}
           />
         )}
       </div>

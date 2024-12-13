@@ -67,6 +67,22 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
           throw new Error("No user data received");
         }
 
+        {
+          /* TODO: Remove this when subscriptions backend is done */
+        }
+        const subscriptionData = {
+          isActive: true,
+          type: "pro",
+          credits: 12,
+          monthlyCredits: 10,
+          expiresAt: "2024-02-20T15:30:00Z",
+        };
+
+        {
+          /* TODO: Remove this when subscriptions backend is done */
+        }
+        userData.subscription = subscriptionData;
+
         setUser(userData);
 
         // Check for legacy auth

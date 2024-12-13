@@ -4,7 +4,7 @@ import { Card, CardBody } from "@nextui-org/react";
 import { AlertTriangle } from "lucide-react";
 
 const BluredFindings: FC = () => (
-  <Card className="bg-[#222222] mb-6 blur-sm">
+  <Card className="bg-[#222222] mb-6 blur-sm mx-auto">
     <CardBody>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center space-x-2">
