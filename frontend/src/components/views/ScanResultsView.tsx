@@ -84,10 +84,12 @@ Thank you,
   );
 
   const renderInProgress = () => (
-    <div className="h-[calc(100%-6rem)]">
-      <div className="flex flex-col items-center justify-center h-full space-y-8">
-        <ScanProgress progress={scanData.scan.progress ?? 0} />
-        <p className="text-lg">You can close this page. You&apos;ll receive an email when the scan is complete.</p>
+    <div className="h-full flex justify-center items-center">
+      <div className="h-[calc(100%-6rem)]">
+        <div className="flex flex-col items-center justify-center h-full space-y-8">
+          <ScanProgress progress={scanData.scan.progress ?? 0} />
+          <p className="text-lg">You can close this page. You&apos;ll receive an email when the scan is complete.</p>
+        </div>
       </div>
     </div>
   );
@@ -225,14 +227,10 @@ Thank you,
             {!isNoFinding && renderFindings()}
 
             {isPaid && renderAlreadyPaid()}
+            {!isPaid && hasFindings && <BluredFindings />}
           </div>
         </div>
-        {!isPaid && hasFindings && (
-          <>
-            <BluredFindings />
-            {renderPaymentCard()}
-          </>
-        )}
+        {!isPaid && hasFindings && <>{renderPaymentCard()}</>}
       </div>
 
       <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
