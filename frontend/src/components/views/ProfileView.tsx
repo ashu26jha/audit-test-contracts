@@ -3,10 +3,11 @@ import { useState, type FC } from "react";
 
 import { Divider, Button } from "@nextui-org/react";
 
-import { Breadcrumb } from "../layout";
 import { AllowedRepositories, SubscriptionCard, UserDetails } from "@/components/profile";
 import { PRO_PLAN_DETAILS } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
+
+import { Breadcrumb } from "../layout";
 
 const ProfileView: FC = () => {
   const { user, logout } = useAuth();

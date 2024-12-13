@@ -3,6 +3,7 @@ import { type Dispatch, type FC, type SetStateAction } from "react";
 import { Button, Modal, ModalBody, ModalContent, ModalHeader } from "@nextui-org/react";
 import { MessagesSquare, MoveUpRight } from "lucide-react";
 
+import { PAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface TalkToSalesModalProps {
@@ -30,7 +31,7 @@ const TalkToSalesModal: FC<TalkToSalesModalProps> = ({ isOpen, setIsOpen }) => {
 
           <Button
             as="a"
-            href="https://auditagent.nethermind.io/contact-us"
+            href={PAGES.CONTACT}
             target="_blank"
             rel="noopener noreferrer"
             fullWidth

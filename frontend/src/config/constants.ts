@@ -1,7 +1,7 @@
 // Contact Information
 export const CONTACT = {
   EMAIL: "auditagent@nethermind.io",
-  TELEGRAM: "https://t.me/kirill_balakhonov",
+  TELEGRAM: "https://t.me/ai_smart_contract_auditor",
 } as const;
 
 // API and External Services

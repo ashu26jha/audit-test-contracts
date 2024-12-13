@@ -5,10 +5,11 @@ import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
 import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
 
-import { HelpGuide } from "./HelpGuide";
 import { BASIC_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepperStore } from "@/store/scanStepperStore";
+
+import { HelpGuide } from "./HelpGuide";
 
 export const ContractSelection: FC = () => {
   const {

@@ -11,9 +11,10 @@ import NextLink from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { tv } from "tailwind-variants";
 
-import LoginNavbar from "./LoginNavbar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepperStore } from "@/store/scanStepperStore";
+
+import LoginNavbar from "./LoginNavbar";
 
 const Navbar: FC = () => {
   const router = useRouter();

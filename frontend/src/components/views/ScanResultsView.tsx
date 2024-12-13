@@ -6,12 +6,13 @@ import { Card, CardBody, Button, Tooltip, Divider, CardHeader } from "@nextui-or
 import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle, Dot } from "lucide-react";
 import Image from "next/image";
 
+import { Breadcrumb, MarkdownWithCode, StateMessage } from "@/components/layout";
+import { openFeedbackEmail } from "@/utils/email";
+
 import SubscriptionPlansModal from "../Modals/SubscriptionPlansModal";
 import { BluredFindings } from "../scan-results";
 import { ScanProgress } from "../scan-stepper/ScanProgress";
 import ScanInfo from "../ScanInfo";
-import { Breadcrumb, MarkdownWithCode, StateMessage } from "@/components/layout";
-import { openFeedbackEmail } from "@/utils/email";
 
 interface ScanResultsViewProps {
   scanData: ScanResult;

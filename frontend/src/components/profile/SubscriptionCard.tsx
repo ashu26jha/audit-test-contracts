@@ -4,6 +4,7 @@ import { Button } from "@nextui-org/react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
 
+import { PAGES } from "@/config/constants";
 import { formatDate } from "@/utils/helpers";
 
 interface SubscriptionCardProps {
@@ -67,7 +68,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
         <Button
           className="flex-1 bg-transparent border border-default"
           as="a"
-          href="https://auditagent.nethermind.io/contact-us"
+          href={PAGES.CONTACT}
           target="_blank"
           rel="noopener noreferrer"
         >

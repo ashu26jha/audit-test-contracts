@@ -7,15 +7,16 @@ import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { STEPS } from "@/config/steps";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast, useScanStepper } from "@/hooks";
+import { useScanStepperStore } from "@/store/scanStepperStore";
+
 import { Loading } from "../layout";
 import Breadcrumb from "../layout/Breadcrumb";
 import CreditWarningModal from "../Modals/CreditWarningModal";
 import TalkToSalesModal from "../Modals/TalkToSalesModal";
 import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "../scan-stepper";
-import { STEPS } from "@/config/steps";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast, useScanStepper } from "@/hooks";
-import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const ScanStepperView: FC = () => {
   const router = useRouter();

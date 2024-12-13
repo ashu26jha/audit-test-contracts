@@ -3,8 +3,9 @@ import type { Dispatch, FC, SetStateAction } from "react";
 import { Button, Card, Modal, ModalBody, ModalContent, ModalHeader } from "@nextui-org/react";
 import { ArrowUpRight } from "lucide-react";
 
+import { BASIC_PLAN_DETAILS, PAGES, PRO_PLAN_DETAILS } from "@/config/constants";
+
 import SubscriptionPlanCard from "../SubscriptionPlanCard";
-import { BASIC_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
 
 interface SubscriptionPlansModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ const SubscriptionPlansModal: FC<SubscriptionPlansModalProps> = ({ isOpen, setIs
               variant="bordered"
               className="ml-auto border border-default w-32 text-white"
               as="a"
-              href="https://auditagent.nethermind.io/contact-us"
+              href={PAGES.CONTACT}
               target="_blank"
               rel="noopener noreferrer"
             >
