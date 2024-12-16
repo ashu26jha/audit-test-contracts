@@ -43,7 +43,7 @@ const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
 
   return (
     <ProtectedRoute>
-      {scanData.scan.paid_status && scanData.findings.length > 1 ? (
+      {scanData.scan.status === "completed" && scanData.scan.paid_status && scanData.findings.length > 0 ? (
         <ScanFullResultsView scanData={scanData} />
       ) : (
         <ScanResultsView scanData={scanData} handlePayment={handlePayment} />

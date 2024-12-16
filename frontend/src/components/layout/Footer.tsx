@@ -32,7 +32,7 @@ const Footer: FC = () => {
 
   if (pathname === "/login" || !user) {
     return (
-      <footer className="w-full flex items-center justify-center py-3 px-4 text-center">
+      <footer className="w-full flex items-center justify-center py-3 px-4 text-center bg-black">
         <p className="text-sm text-gray-400">
           By proceeding you agree to our{" "}
           <Link

@@ -54,7 +54,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
   return (
     <Card
       className={`border-2 border-[#27272A] bg-[#18181B] transition-all duration-300 mb-4 lg:mb-0 
-        ${isCollapsed ? "w-[50px]" : "w-full lg:h-[calc(100vh-270px)]"}`}
+        ${isCollapsed ? "w-[50px] h-fit" : "w-full lg:h-[calc(100vh-270px)]"}`}
     >
       {!isCollapsed && (
         <div className="flex flex-col h-full">
