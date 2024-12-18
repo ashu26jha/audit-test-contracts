@@ -10,7 +10,7 @@ router = APIRouter()
 async def analyze_repository(request: static_analyzer_schema.StaticAnalyzerRequest):
     try:
         result = await static_analyzer_service.run_static_analyzer(
-            request.github_url, request.oauth_token
+            request.github_url, request.oauth_token, request.contracts
         )
         return result
     except ValueError as e:

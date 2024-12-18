@@ -88,7 +88,15 @@ def transform_slither_output(
         severity = result["Severity"]
         if severity in severity_counts:
             severity_counts[severity] += 1
+        elif severity == "Info":
+            severity_counts["Informational"] += 1
+        elif severity == "Best Practices":
+            severity_counts["Optimization"] += 1
         total_findings += 1
+    # Added this as a patch to correctly count the Informational findings.
+    # Slither returns the severity as "Info", but we need to count it as "Informational".
+    # This patch is better than changing the schema which will break the frontend.
+    # The total count of findings must be equal to the sum of all severity counts.
 
     return {
         "findings": filtered_dicts,

@@ -16,8 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
     && /root/.foundry/bin/foundryup \
     && curl -s https://packages.stripe.dev/api/security/keypair/stripe-cli-gpg/public | gpg --dearmor | tee /usr/share/keyrings/stripe.gpg > /dev/null \
     && echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] \
-            https://packages.stripe.dev/stripe-cli-debian-local \
-            stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
+    https://packages.stripe.dev/stripe-cli-debian-local \
+    stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
     && apt-get update && apt-get install -y stripe \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -27,7 +27,7 @@ FROM python:3.12.0-slim
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
-    PATH="/root/.foundry/bin:${PATH}"
+    PATH="/root/.foundry/bin:/root/.cyfrin/bin:${PATH}"
 
 # Copy installed tools from builder stage
 COPY --from=builder /root/.foundry /root/.foundry
@@ -47,13 +47,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies after system dependencies
+# Install Python dependencies Playwright, and Aderyn 
 WORKDIR /app/backend
 COPY requirements.txt .
+ADD https://raw.githubusercontent.com/Cyfrin/aderyn/dev/cyfrinup/install install.sh
+ADD https://raw.githubusercontent.com/Cyfrin/aderyn/master/cyfrinup/cyfrinup /root/.cyfrin/bin/cyfrinup
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
     && playwright install \
-    && playwright install-deps
+    && playwright install-deps \
+    && chmod +x install.sh \
+    && bash ./install.sh \
+    && mkdir -p /root/.cyfrin/bin \
+    && chmod +x /root/.cyfrin/bin/cyfrinup \
+    && /root/.cyfrin/bin/cyfrinup \
+    && rm install.sh
 
 # Copy application code
 COPY . .

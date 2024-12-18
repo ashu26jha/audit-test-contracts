@@ -21,7 +21,7 @@ SEVERITY_TO_SLITHER = {
 
 async def improve_slither_findings(vulns: List[Finding]) -> List[Finding]:
     """
-    Sends the slither findings to the LLM for improvement and returns the improved findings.
+    Sends the slither and aderyn findings to the LLM for improvement and returns the improved findings.
 
     Args:
         vulns (List[Dict]): list of vulnerabilities found by Slither.

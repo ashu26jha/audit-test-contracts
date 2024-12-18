@@ -22,7 +22,11 @@ class ProjectConfig:
 async def detect_project_config(repo_dir: str, contract_files: List[str]) -> ProjectConfig:
     """Detects the most appropriate project configuration based on contract locations."""
     # Get absolute paths for contract directories
-    contract_dirs = {os.path.dirname(os.path.join(repo_dir, file)) for file in contract_files}
+    try:
+        contract_dirs = {os.path.dirname(os.path.join(repo_dir, file)) for file in contract_files}
+    except Exception as e:
+        logger.info(f"Error getting contract dirs : {e}")
+        contract_dirs = {repo_dir}
     configs: List[ProjectConfig] = []
 
     # Check sub-repo directories

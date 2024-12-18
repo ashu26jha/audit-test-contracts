@@ -8,6 +8,7 @@ class StaticAnalyzerRequest(BaseModel):
     github_url: HttpUrl
     contracts: Optional[List[str]] = None
     oauth_token: Optional[str] = None
+    contracts: Optional[List[str]] = None
 
 
 class Severity(str, Enum):
@@ -36,7 +37,7 @@ class SeverityCounts(BaseModel):
     Optimization: int = 0
 
 
-class SlitherOutput(BaseModel):
+class StaticAnalysisOutput(BaseModel):
     total_findings: int
     severity_counts: SeverityCounts
     findings: List[TransformedSlitherResult]
@@ -47,4 +48,4 @@ class StaticAnalyzerResponse(BaseModel):
     status: str
     project_type: str
     environment_setup: str
-    slither_output: SlitherOutput
+    static_analysis_output: StaticAnalysisOutput

@@ -132,7 +132,7 @@ const ScanStepperView: FC = () => {
   };
 
   if (isScanning) {
-    return <Loading subText="Please wait while we analyze your code." />;
+    return <Loading subText="Preparing your scan, please wait..." />;
   }
 
   return (

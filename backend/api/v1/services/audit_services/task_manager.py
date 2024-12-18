@@ -320,7 +320,7 @@ class TaskManager:
                 detector_updates["static_analyzer"] = False
             else:
                 detector_updates["static_analyzer"] = True
-                slither_findings = static_result.slither_output.findings
+                slither_findings = static_result.static_analysis_output.findings
                 findings_by_detector["static_analyzer"] = slither_findings
                 combined_findings.extend(slither_findings)
                 logger.info(
