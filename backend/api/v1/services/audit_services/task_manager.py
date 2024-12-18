@@ -15,7 +15,7 @@ from api.v1.services import (  # fuzzing_service,
 )
 from common.logger import logger
 from common.profiles import Profiles
-from config.settings import LLM_MODEL_BEST, LLM_MODEL_BEST_3
+from config.settings import LLM_MODEL_BEST, LLM_MODEL_BEST_2, LLM_MODEL_BEST_3
 
 
 class TaskManager:
@@ -82,7 +82,7 @@ class TaskManager:
 
         # Prepare profiles and models
         profiles = [Profiles.DEFAULT, Profiles.DEFAULT_2]
-        models = [LLM_MODEL_BEST, LLM_MODEL_BEST_3, LLM_MODEL_BEST_3]
+        models = [LLM_MODEL_BEST, LLM_MODEL_BEST_2, LLM_MODEL_BEST_3]
 
         # Generate detector names for context scans
         for profile in profiles:

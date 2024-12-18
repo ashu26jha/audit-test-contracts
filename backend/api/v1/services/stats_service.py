@@ -1,4 +1,5 @@
 from api.v1.models.scan import Scan
+from api.v1.models.user import User
 from common.logger import logger
 
 
@@ -12,6 +13,8 @@ async def get_global_stats():
     - findings
     - lines of code (only for completed scans)
     - status counts
+    - total users
+    - returning users (users with more than 1 scan)
     """
     try:
         pipeline = [
@@ -71,20 +74,39 @@ async def get_global_stats():
             }
         ]
 
+        # Pipeline to count returning users (users with more than 1 scan)
+        returning_users_pipeline = [
+            {"$group": {"_id": "$user_id", "scan_count": {"$sum": 1}}},
+            {"$match": {"scan_count": {"$gt": 1}}},
+            {"$count": "returning_users"},
+        ]
+
         stats = await Scan.aggregate(pipeline).to_list(length=1)
         base_stats = stats[0] if stats else {}
+
+        # Get returning users count
+        returning_users_result = await Scan.aggregate(returning_users_pipeline).to_list(length=1)
+        returning_users = (
+            returning_users_result[0].get("returning_users", 0) if returning_users_result else 0
+        )
 
         # Get scan statuses in a single query for efficiency
         status_counts = {
             status: await Scan.find({"status": status}).count()
             for status in ["pending", "in_progress", "completed", "failed"]
         }
+
+        # Get total number of users
+        total_users = await User.find().count()
+
         # Calculate total paid scans with breakdown
         regular_paid = base_stats.get("paid_scans", 0)
         discounted = base_stats.get("discounted_scans", 0)
 
         return {
             "total_scans": base_stats.get("total_scans", 0),
+            "total_users": total_users,
+            "returning_users": returning_users,
             "total_paid_scans": {
                 "total": regular_paid + discounted,
                 "regular_paid": regular_paid,

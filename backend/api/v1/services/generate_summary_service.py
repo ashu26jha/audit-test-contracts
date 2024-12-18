@@ -6,7 +6,7 @@ from api.v1.schemas.generate_summary_schema import SummaryResponse
 from common import logger
 from common.send_prompt_to_llm import send_prompt_to_llm_async
 from config.prompts.summary_prompts import SUMMARY_PROMPT
-from config.settings import LLM_MODEL_BEST_3
+from config.settings import LLM_MODEL_BEST_2
 
 
 async def generate_summary(contracts: str) -> Tuple[str, str]:
@@ -14,7 +14,7 @@ async def generate_summary(contracts: str) -> Tuple[str, str]:
 
     try:
         llm_response = await send_prompt_to_llm_async(
-            LLM_MODEL_BEST_3, prompt, response_model=SummaryResponse
+            LLM_MODEL_BEST_2, prompt, response_model=SummaryResponse
         )
 
         if not llm_response or not isinstance(llm_response, SummaryResponse):

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from fastapi import APIRouter, status
 
 from api.v1.schemas import context_scan_schema

@@ -13,16 +13,21 @@ client = TestClient(app)
 def mock_scan_aggregate():
     with patch("api.v1.models.scan.Scan.aggregate") as mock:
         mock_to_list = AsyncMock()
-        mock_to_list.return_value = [
-            {
-                "total_scans": 100,
-                "total_findings": 500,
-                "total_lines_of_code": 10000,
-                "paid_scans": 50,
-                "discounted_scans": 10,
-                "failed_scans": 5,
-                "unpaid_completed_scans": 40,
-            }
+        # First call for main stats
+        mock_to_list.side_effect = [
+            [
+                {
+                    "total_scans": 100,
+                    "total_findings": 500,
+                    "total_lines_of_code": 10000,
+                    "paid_scans": 50,
+                    "discounted_scans": 10,
+                    "failed_scans": 5,
+                    "unpaid_completed_scans": 40,
+                }
+            ],
+            # Second call for returning users
+            [{"returning_users": 25}],
         ]
         mock.return_value.to_list = mock_to_list
         yield mock
@@ -39,8 +44,17 @@ def mock_scan_find():
         yield mock
 
 
+@pytest.fixture
+def mock_user_count():
+    with patch("api.v1.models.user.User.find") as mock:
+        mock_find_instance = MagicMock()
+        mock_find_instance.count = AsyncMock(return_value=150)
+        mock.return_value = mock_find_instance
+        yield mock
+
+
 @pytest.mark.usefixtures("mock_auth")
-def test_get_global_stats(mock_scan_aggregate, mock_scan_find):
+def test_get_global_stats(mock_scan_aggregate, mock_scan_find, mock_user_count):
     headers = {"x-api-key": settings.ADMIN_API_KEY}
     response = client.get("/api/v1/global-stats", headers=headers)
 
@@ -48,6 +62,8 @@ def test_get_global_stats(mock_scan_aggregate, mock_scan_find):
     result = response.json()
     assert result["success"] is True
     assert result["data"]["total_scans"] == 100
+    assert result["data"]["total_users"] == 150
+    assert result["data"]["returning_users"] == 25
     assert result["data"]["total_paid_scans"] == {"total": 60, "regular_paid": 50, "discounted": 10}
     assert result["data"]["total_unpaid_scans"] == 40
     assert result["data"]["total_failed_scans"] == 5

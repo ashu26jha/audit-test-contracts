@@ -6,17 +6,21 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 from common import logger
+from config.settings import SUPPORTED_MODELS
 
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_model_response(content: str, response_model: Optional[Type[T]]) -> Union[T, str]:
+def parse_model_response(
+    content: str, response_model: Optional[Type[T]], model_type: Optional[str] = None
+) -> Union[T, str]:
     """
     Parse and clean the LLM response content into the specified Pydantic model.
 
     Args:
         content (str): The raw content returned by the LLM.
         response_model (Optional[Type[T]]): The Pydantic model to parse the content into.
+        model_type (Optional[str]): The type of model that generated the response.
 
     Returns:
         Union[T, str]: An instance of the response_model parsed from the content, or raw content if no model is provided.
@@ -28,6 +32,17 @@ def parse_model_response(content: str, response_model: Optional[Type[T]]) -> Uni
         return content
 
     try:
+        # Special handling for Gemini responses
+        if model_type in SUPPORTED_MODELS.get("gemini", []):
+            cleaned_content = _clean_gemini_response(content)
+            try:
+                parsed_json = json.loads(cleaned_content)
+                return response_model.model_validate(parsed_json)
+            except (json.JSONDecodeError, ValidationError) as e:
+                logger.debug(
+                    f"Gemini parsing failed: {str(e)}, falling back to standard parsing..."
+                )
+
         # 1. Try direct parsing first (fastest)
         try:
             parsed_json = json.loads(content)
@@ -77,6 +92,28 @@ def parse_model_response(content: str, response_model: Optional[Type[T]]) -> Uni
     except Exception as e:
         logger.exception(f"Unexpected error in parse_model_response: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to parse response")
+
+
+def _clean_gemini_response(content: str) -> str:
+    """Special cleaning for Gemini responses that often contain unescaped newlines in strings."""
+    # First try to parse as-is
+    try:
+        json.loads(content)
+        return content
+    except json.JSONDecodeError:
+        pass
+
+    # If that fails, try to extract the JSON structure while preserving content
+    try:
+        # Find the outermost JSON structure
+        json_match = re.search(r"({[\s\S]*})", content)
+        if json_match:
+            return json_match.group(1)
+    except Exception:
+        pass
+
+    # If all else fails, return the original content
+    return content
 
 
 def _clean_json_content(content: str) -> str:

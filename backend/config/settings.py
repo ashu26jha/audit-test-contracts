@@ -16,6 +16,7 @@ ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Dictionary of supported models
 SUPPORTED_MODELS = {
@@ -29,13 +30,18 @@ SUPPORTED_MODELS = {
     "anthropic": [
         "claude-3-5-sonnet-latest",
     ],
+    "gemini": [
+        "gemini-1.5-pro",
+        "gemini-1.5-pro-latest",
+        "gemini-exp-1206",
+    ],
 }
 
 # Default LLM models
 LLM_MODEL_CHEAP = os.getenv("LLM_MODEL_CHEAP", "gpt-4o-mini")
 LLM_MODEL_MEDIUM = os.getenv("LLM_MODEL_MEDIUM", "gpt-4o-2024-08-06")
 LLM_MODEL_BEST = os.getenv("LLM_MODEL_BEST", "o1-preview")
-LLM_MODEL_BEST_2 = os.getenv("LLM_MODEL_BEST_2", "o1-mini")
+LLM_MODEL_BEST_2 = os.getenv("LLM_MODEL_BEST_2", "gemini-1.5-pro-latest")
 LLM_MODEL_BEST_3 = os.getenv("LLM_MODEL_BEST_3", "claude-3-5-sonnet-latest")
 
 # List of models that do not support 'system' role
