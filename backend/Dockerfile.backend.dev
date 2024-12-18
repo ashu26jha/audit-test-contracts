@@ -4,7 +4,8 @@ FROM python:3.12.0-slim AS builder
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y \
+# Install build dependencies, Foundry and Stripe CLI
+RUN apt-get update && apt-get install -y --no-install-recommends\
     build-essential \
     curl \
     git \
@@ -33,26 +34,31 @@ COPY --from=builder /root/.foundry /root/.foundry
 COPY --from=builder /usr/local/bin/stripe /usr/local/bin/stripe
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
     git \
-    nodejs=18.* \
-    npm \
+    libssl-dev \
     redis-server \
+    && curl --proto "=https" --tlsv1.2 -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs=20.* \
+    && npm install -g --ignore-scripts npm@latest \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies after system dependencies
 WORKDIR /app/backend
-
-# Copy and install Python dependencies, and setup playwright in a single layer
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
     && playwright install \
     && playwright install-deps
 
-# Copy the rest of your application code
+# Copy application code
 COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && python3 main.py"]
+# Start Redis, Stripe listener, and the application
+CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && node -v && (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && python3 main.py"]

@@ -88,7 +88,7 @@ async def get_current_user(request: Request) -> User:
 async def handle_user_data(user_data: dict, access_token: str) -> User:
     """Create or update a user based on GitHub data"""
     # Check if user exists
-    user = await User.find_one({"githubId": str(user_data["id"])})
+    user = await User.by_github_id(str(user_data["id"]))
 
     # Get installations
     installations = await github_service.github_helpers.get_installations(access_token)
@@ -139,7 +139,7 @@ async def handle_user_data(user_data: dict, access_token: str) -> User:
             }
         )
         # Refresh user object after update
-        user = await User.find_one({"githubId": str(user_data["id"])})
+        user = await User.by_github_id(str(user_data["id"]))
 
     return user
 
