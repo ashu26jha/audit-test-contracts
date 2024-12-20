@@ -7,14 +7,13 @@ import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-r
 
 import { Breadcrumb, StateMessage } from "@/components/layout";
 
-import SubscriptionPlansModal from "../Modals/SubscriptionPlansModal";
+import PaymentsModal from "../Modals/PaymentsModal";
 import { BluredFindings, Finding } from "../scan-results";
 import { ScanProgress } from "../scan-stepper/ScanProgress";
 import ScanInfo from "../ScanInfo";
 
 interface ScanResultsViewProps {
   scanData: ScanResult;
-  handlePayment: () => void;
 }
 
 const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
@@ -73,7 +72,7 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
 
   const renderPaymentCard = () => (
     <div className="bg-transparent sticky flex justify-center items-end bottom-0 left-0 right-0 bg-gradient-to-t from-[#3B175F] to-[#18181B00] rounded-b-xl h-[8rem]">
-      <Card className="lg:w-[80%]  bg-[#F2EAFA] bottom-5 flex justify-between items-center p-2">
+      <Card className="lg:w-[80%]  bg-[#F2EAFA] bottom-6 flex justify-between items-center p-2">
         <CardBody className="flex flex-row justify-between items-center space-x-2">
           <div className="flex flex-col pl-5">
             <strong className="text-sm text-black">Only one finding is free.</strong>
@@ -148,7 +147,11 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
       {isCompleted && !isPaid && !isNoFinding && renderPaymentCard()}
 
       <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
-      <SubscriptionPlansModal isOpen={isSubscriptionModalOpen} setIsOpen={setIsSubscriptionModalOpen} />
+      <PaymentsModal
+        isOpen={isSubscriptionModalOpen}
+        setIsOpen={setIsSubscriptionModalOpen}
+        scanId={scanData.scan_id}
+      />
     </div>
   );
 };

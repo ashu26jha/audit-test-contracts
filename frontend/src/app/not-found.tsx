@@ -26,7 +26,7 @@ const NotFoundPage: FC = () => {
       <CardHeader>
         <div className="flex justify-between items-center mb-1 ml-4 mr-4 w-full">
           <h2 className="text-l font-light">404 - Page Not Found</h2>
-          <Button color="secondary" className="bg-[#8B5CF6] text-white" onClick={() => router.push("/dashboard")}>
+          <Button color="secondary" className="bg-[#8B5CF6] text-white" onPress={() => router.push("/dashboard")}>
             Go to Dashboard
           </Button>
         </div>

@@ -1,11 +1,12 @@
-import { type FC } from "react";
+import { useState, type FC } from "react";
 
 import { Button } from "@nextui-org/react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
 
 import { PAGES } from "@/config/constants";
-import { formatDate } from "@/utils/helpers";
+import { createPortalSession, createSubscriptionSession } from "@/services/api";
+import { formatDate } from "@/utils/datetime";
 
 interface SubscriptionCardProps {
   price: number;
@@ -22,6 +23,21 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   nextPaymentDate,
   isSubscribed,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setIsLoading(true);
+    if (isSubscribed) {
+      const session = await createPortalSession();
+      setIsLoading(false);
+      window.open(session.url, "_blank");
+    } else {
+      const res = await createSubscriptionSession();
+      setIsLoading(false);
+      window.location.assign(res.data.url);
+    }
+  };
+
   const actionBtn = tv({
     base: "flex-1 bg-secondary",
     variants: {
@@ -37,7 +53,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
         <div className="flex justify-between items-center mb-2">
           <div className="font-medium text-base text-[#A1A1AA]">Subscription</div>
           <div className="bg-[#9353D333] px-2 py-1 rounded text-xs text-[#C9A9E9]">
-            {isSubscribed ? "CURRENT PLAN" : "ADVANCED AUDIT"}
+            {isSubscribed ? "CURRENT PLAN" : "ADVANCED SCAN"}
           </div>
         </div>
 
@@ -75,7 +91,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
           Contact Sales
           <Image src="/svg/link.svg" alt="contact-sales" width={14} height={14} className="ml-2" />
         </Button>
-        <Button className={actionBtn({ isSubscribed })}>
+        <Button className={actionBtn({ isSubscribed })} onPress={handleManageSubscription} isLoading={isLoading}>
           {isSubscribed ? "Manage Plan" : "Pay & Subscribe"}
           <Image src="/svg/link.svg" alt="manage-plan" width={14} height={14} className="ml-2" />
         </Button>

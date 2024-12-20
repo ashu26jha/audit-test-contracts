@@ -28,7 +28,13 @@ from api.v1.endpoints import (
     stats,
     test_auth,
 )
-from api.v1.endpoints.payments import create_stripe_session, stripe_webhook
+from api.v1.endpoints.payments import (
+    create_stripe_session,
+    create_subscription_session,
+    stripe_portal,
+    stripe_webhook,
+)
+from api.v1.models.credit_transaction import CreditTransaction
 from api.v1.models.payment import Payment
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
@@ -72,6 +78,7 @@ async def lifespan(app: FastAPI):
             Scan,
             ScanResult,
             Payment,
+            CreditTransaction,
         ],
     )
     logger.info(f"Connected to MongoDB in {settings.ENVIRONMENT} environment.")
@@ -140,7 +147,9 @@ app.include_router(audit_agent.router, prefix="/api/v1")  # Admin protected
 app.include_router(scan_results.router, prefix="/api/v1/scans")  # Full results Admin protected
 app.include_router(scan_history.router, prefix="/api/v1")
 app.include_router(create_stripe_session.router, prefix="/api/v1/payments")
+app.include_router(create_subscription_session.router, prefix="/api/v1/payments")
 app.include_router(stripe_webhook.router, prefix="/api/v1/payments")
+app.include_router(stripe_portal.router, prefix="/api/v1/payments")
 app.include_router(generate_pdf.router, prefix="/api/v1")  # Admin protected + Throttled (1mn)
 app.include_router(stats.router, prefix="/api/v1")  # Admin protected
 

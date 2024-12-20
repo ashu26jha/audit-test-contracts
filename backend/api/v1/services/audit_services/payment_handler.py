@@ -6,13 +6,15 @@ from fastapi import HTTPException
 from api.v1.models.payment import Payment, PaymentStatus
 from api.v1.models.user import User
 from api.v1.services import scan_history_service
+from api.v1.services.payments.stripe_subscription_service import refund_credit
 from common.logger import logger
 
 
 class PaymentHandler:
-    def __init__(self, user: User, scan_id: UUID, total_findings: int):
+    def __init__(self, user: User, scan_id: UUID, is_pro_scan: bool, total_findings: int):
         self.user = user
         self.scan_id = scan_id
+        self.is_pro_scan = is_pro_scan
         self.total_findings = total_findings
 
     async def process_payment(self) -> None:
@@ -32,6 +34,8 @@ class PaymentHandler:
                 discount_applied=False,
             )
             await self._create_failed_scan_payment_record()
+            if self.is_pro_scan:
+                await refund_credit(self.user.githubId, self.scan_id)
             return
 
         # Handle free scans (0-1 findings)

@@ -22,7 +22,7 @@ async def create_checkout_session(
         )
 
         return SuccessResponse(
-            data=PaymentResponse(session_id=checkout_session.id, URL=checkout_session.url)
+            data=PaymentResponse(session_id=checkout_session.id, url=checkout_session.url)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

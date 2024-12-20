@@ -4,15 +4,14 @@ import { Button, Modal, ModalBody, ModalContent, ModalHeader } from "@nextui-org
 import { MessagesSquare, MoveUpRight } from "lucide-react";
 
 import { PAGES } from "@/config/constants";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface TalkToSalesModalProps {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
+  creditsPerMonth: number;
 }
 
-const TalkToSalesModal: FC<TalkToSalesModalProps> = ({ isOpen, setIsOpen }) => {
-  const { user } = useAuth();
+const TalkToSalesModal: FC<TalkToSalesModalProps> = ({ isOpen, setIsOpen, creditsPerMonth }) => {
   return (
     <Modal isOpen={isOpen} size="sm" backdrop="blur" onOpenChange={setIsOpen}>
       <ModalContent className="bg-black">
@@ -25,8 +24,8 @@ const TalkToSalesModal: FC<TalkToSalesModalProps> = ({ isOpen, setIsOpen }) => {
           <p className="font-medium">No Scan Credit Left</p>
 
           <p className="text-sm text-default-500 text-center">
-            You have utilized all {user?.subscription.monthlyCredits} scan credits for this month. Please contract our
-            sales team so you can continue auditing this month.
+            You have utilized all {creditsPerMonth} scan credits for this month. Please contract our sales team so you
+            can continue auditing this month.
           </p>
 
           <Button
@@ -38,7 +37,7 @@ const TalkToSalesModal: FC<TalkToSalesModalProps> = ({ isOpen, setIsOpen }) => {
             className="bg-secondary"
             endContent={<MoveUpRight size={16} />}
           >
-            View Form
+            Contact Sales
           </Button>
         </ModalBody>
       </ModalContent>

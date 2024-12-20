@@ -1,17 +1,17 @@
 import io
-from typing import Dict
 
 from fastapi import HTTPException
 from pygount import SourceAnalysis
 
+from api.v1.models.scan import CodeAnalysisResult
 from common import logger
 
 
-async def count_lines_of_code(flattened_contracts: str) -> Dict[str, int]:
+async def count_lines_of_code(flattened_contracts: str) -> CodeAnalysisResult:
     return await _analyze_code(content=flattened_contracts, include_string_count=True)
 
 
-async def analyze_file_content(content: str, filename: str) -> Dict[str, int]:
+async def analyze_file_content(content: str, filename: str) -> CodeAnalysisResult:
     return await _analyze_code(content=content, filename=filename, include_string_count=False)
 
 
@@ -20,7 +20,7 @@ async def _analyze_code(
     filename: str = "temp.sol",
     language: str = "solidity",
     include_string_count: bool = True,
-) -> Dict[str, int]:
+) -> CodeAnalysisResult:
     """
     Analyze code content using pygount.
 

@@ -12,6 +12,7 @@ interface AuthContextType {
   setError: (error: string | null) => void;
   isPublicRoute: (pathname: string) => boolean;
   logout: (url?: string) => Promise<void>;
+  refetchUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -52,6 +53,11 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     [router, setError],
   );
 
+  const refetchUser = useCallback(async () => {
+    const userData = await getUser();
+    setUser(userData);
+  }, [setUser]);
+
   useEffect(() => {
     let isActive = true;
 
@@ -66,22 +72,6 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
         if (!userData) {
           throw new Error("No user data received");
         }
-
-        {
-          /* TODO: Remove this when subscriptions backend is done */
-        }
-        const subscriptionData = {
-          isActive: true,
-          type: "pro",
-          credits: 12,
-          monthlyCredits: 10,
-          expiresAt: "2024-02-20T15:30:00Z",
-        };
-
-        {
-          /* TODO: Remove this when subscriptions backend is done */
-        }
-        userData.subscription = subscriptionData;
 
         setUser(userData);
 
@@ -127,11 +117,12 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
       user,
       loading,
       error,
+      refetchUser,
       setError,
       isPublicRoute,
       logout,
     }),
-    [user, loading, error, setError, isPublicRoute, logout],
+    [user, loading, error, refetchUser, setError, isPublicRoute, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

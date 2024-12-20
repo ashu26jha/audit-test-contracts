@@ -1,9 +1,10 @@
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from api.v1.models.scan import CodeAnalysisResult
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
 
@@ -15,7 +16,7 @@ class ScanResponse(BaseModel):
     startedAt: datetime
     completedAt: Optional[datetime]
     contractFiles: List[str]
-    linesOfCode: Optional[Dict[str, int]] = None
+    linesOfCode: Optional[CodeAnalysisResult] = None
     repositoryURL: Optional[str] = None
     repositoryName: Optional[str] = None
     branchName: str

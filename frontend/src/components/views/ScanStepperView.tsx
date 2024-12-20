@@ -40,7 +40,7 @@ const ScanStepperView: FC = () => {
   } = useScanStepperStore();
   const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
   const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
-  const { user } = useAuth();
+  const { user, refetchUser } = useAuth();
 
   useEffect(() => {
     if (selectedOwner) {
@@ -84,6 +84,7 @@ const ScanStepperView: FC = () => {
     setIsScanning(true);
     try {
       const response = await initiateScanProcess();
+      refetchUser();
       router.push(`/scan-results/${response.data.scan_id}`);
     } catch (error) {
       console.error("Error initiating scan:", error);
@@ -105,7 +106,7 @@ const ScanStepperView: FC = () => {
         return;
       }
 
-      startScan();
+      await startScan();
     } else {
       if (typeof window !== "undefined" && window._mtm != undefined) {
         // prettier-ignore
@@ -142,14 +143,18 @@ const ScanStepperView: FC = () => {
       )}
 
       {user?.subscription.credits === 0 && (
-        <TalkToSalesModal isOpen={openWarningDialog} setIsOpen={setOpenWarningDialog} />
+        <TalkToSalesModal
+          isOpen={openWarningDialog}
+          setIsOpen={setOpenWarningDialog}
+          creditsPerMonth={user?.subscription.credits}
+        />
       )}
 
       <Card className="h-full">
         <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
           <Breadcrumb base="Dashboard" current="Scan Code" />
           <div>
-            <Button className="mr-2" onClick={handleBack}>
+            <Button className="mr-2" onPress={handleBack}>
               Go Back
             </Button>
             <Button
@@ -160,7 +165,7 @@ const ScanStepperView: FC = () => {
                 (currentStep === STEPS.length && (isLineExceeded || isFileLimitExceeded))
               }
               endContent={<ArrowRight size={20} />}
-              onClick={handleScan}
+              onPress={handleScan}
             >
               {currentStep === STEPS.length ? "Scan Code" : "Next"}
             </Button>

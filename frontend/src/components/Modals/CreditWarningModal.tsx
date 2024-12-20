@@ -26,7 +26,7 @@ const CreditWarningModal: FC<CreditWarningModalProps> = ({ isOpen, setIsOpen, on
             to contact our sales team.
           </p>
 
-          <Button fullWidth className="bg-secondary" onClick={onClick}>
+          <Button fullWidth className="bg-secondary" onPress={() => onClick}>
             Continue
           </Button>
         </ModalBody>

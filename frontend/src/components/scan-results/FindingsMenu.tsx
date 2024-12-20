@@ -65,7 +65,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
               isIconOnly
               className="bg-[#18181B] hover:bg-[#27272A]"
               size="sm"
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onPress={() => setIsCollapsed(!isCollapsed)}
             >
               <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
             </Button>
@@ -125,7 +125,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
             isIconOnly
             className="bg-[#18181B] hover:bg-[#27272A]"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onPress={() => setIsCollapsed(!isCollapsed)}
           >
             <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
           </Button>

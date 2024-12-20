@@ -17,34 +17,36 @@ export const usePaymentResult = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const isPdfReportSentRef = useRef(false);
 
+  const scanId = searchParams.get("scan_id");
+  const urlStatus = searchParams.get("status");
+
   const handlePaymentResult = useCallback(async () => {
     if (isProcessing || isPdfReportSentRef.current || loading) return;
 
-    const scanId = searchParams.get("scan_id");
-    const urlStatus = searchParams.get("status");
-
-    if (scanId && urlStatus === "success" && user) {
+    if (urlStatus === "success" && user) {
       setStatus("processing");
       setIsProcessing(true);
       isPdfReportSentRef.current = true;
 
       try {
-        refetch();
-        sendPdfReport(scanId);
+        if (scanId) {
+          await Promise.all([refetch(), sendPdfReport(scanId)]);
+        }
         setStatus("success");
       } catch (error) {
-        console.error("Error in report generation:", error);
+        console.error("Error in payment processing:", error);
         setStatus("failed");
       } finally {
         setIsProcessing(false);
       }
     } else if (urlStatus === "error") {
       setStatus("failed");
+    } else if (urlStatus === "success") {
+      setStatus("success");
     } else {
-      // If the status is neither success nor error, set it to failed
       setStatus("failed");
     }
-  }, [searchParams, user, isProcessing, loading, refetch]);
+  }, [scanId, urlStatus, user, isProcessing, loading, refetch]);
 
   useEffect(() => {
     handlePaymentResult();
@@ -53,5 +55,6 @@ export const usePaymentResult = () => {
   return {
     status,
     isProcessing,
+    scanId,
   };
 };

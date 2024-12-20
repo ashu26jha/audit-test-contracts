@@ -19,7 +19,7 @@ export default function Error({ error, reset }: ErrorProps) {
 
   return (
     <StateMessage icon={<AlertTriangle size={40} className="text-red-500" />} message={error.message}>
-      <Button color="secondary" className="bg-[#8B5CF6] text-white mt-4" onClick={() => reset()}>
+      <Button color="secondary" className="bg-[#8B5CF6] text-white mt-4" onPress={() => reset()}>
         Try again
       </Button>
     </StateMessage>

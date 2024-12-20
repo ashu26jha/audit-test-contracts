@@ -4,10 +4,18 @@ from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
 from beanie import Document, Indexed
-from pydantic import ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from api.v1.schemas.context_scan_schema import Finding
 from common.profiles import Profiles
+
+
+class CodeAnalysisResult(BaseModel):
+    total_lines: int
+    code_lines: int
+    comment_lines: int
+    empty_lines: int
+    string_lines: int = 0
 
 
 class Scan(Document):
@@ -18,7 +26,7 @@ class Scan(Document):
     startedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     completedAt: Optional[datetime] = None
     contractFiles: List[str] = Field(default_factory=list)
-    linesOfCode: Optional[Dict[str, int]] = None
+    linesOfCode: Optional[CodeAnalysisResult] = None
     repositoryURL: Optional[str] = None
     repositoryName: Optional[str] = None
     branchName: str = Field(default="main")

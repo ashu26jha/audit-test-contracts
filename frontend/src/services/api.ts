@@ -72,8 +72,18 @@ export const getScanHistory = async () => {
   return response.data.data;
 };
 
-export const createCheckoutSession = async (scanId: string) => {
+export const createCheckoutSession = async (scanId: string): Promise<StripeCheckoutResponse> => {
   const response = await api.post("/api/v1/payments/create-stripe-session", { scanId });
+  return response.data;
+};
+
+export const createSubscriptionSession = async (scanId?: string): Promise<StripeCheckoutResponse> => {
+  const response = await api.post("/api/v1/payments/create-subscription-session", { scanId });
+  return response.data;
+};
+
+export const createPortalSession = async () => {
+  const response = await api.post("/api/v1/payments/create-portal-session");
   return response.data;
 };
 

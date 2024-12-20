@@ -19,9 +19,9 @@ const ScanCard: FC<ScanCardProps> = ({ scan, onClick }) => {
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
-  const isPaid = scan.paid_status;
   const isCompleted = scan.status === "completed";
-  const isFree = isPaid && isCompleted && (scan.total_findings === 0 || scan.total_findings === 1);
+  const isPaid = isCompleted && scan.paid_status;
+  const isFree = isPaid && (scan.total_findings === 0 || scan.total_findings === 1);
 
   const chipColor = isPaid ? "success" : isCompleted ? "warning" : "primary";
   const chipLabel = isFree ? "free" : isPaid ? "paid" : isCompleted ? "unpaid" : scan.status;
@@ -30,7 +30,7 @@ const ScanCard: FC<ScanCardProps> = ({ scan, onClick }) => {
     <Card
       isPressable
       className="bg-[#222222] cursor-pointer hover:bg-[#333333] transition-colors duration-300"
-      onClick={() => onClick(scan.scan_id)}
+      onPress={() => onClick(scan.scan_id)}
     >
       <CardBody>
         <div className="flex items-center justify-between mb-4">

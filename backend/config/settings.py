@@ -60,6 +60,7 @@ TEMPERATURE = 0.3
 
 STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 STRIPE_WEBHOOK_KEY = os.getenv("STRIPE_WEBHOOK_SECRET")
+STRIPE_SUBSCRIPTION_PRICE_ID = os.getenv("STRIPE_SUBSCRIPTION_PRICE_ID")
 
 ##################################################
 #                   MONGODB

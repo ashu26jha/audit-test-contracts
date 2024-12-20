@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from api.v1.helpers.audit_helpers import update_scan_failure
 from api.v1.helpers.lines_of_code_helpers import count_lines_of_code
-from api.v1.models.scan import Scan, ScanResult
+from api.v1.models.scan import CodeAnalysisResult, Scan, ScanResult
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
 from api.v1.services import scan_history_service
@@ -20,6 +20,7 @@ from common.validate import (
     validate_github_url,
     validate_no_in_progress_scans,
     validate_no_unpaid_scans,
+    validate_subscription,
     validate_user_has_github_token,
 )
 from config.settings import ENVIRONMENT
@@ -43,13 +44,15 @@ class ScanInitializer:
         self.repo_info = None
         self.branch_name = request.branchName or "main"
 
-    async def validate_request(self):
+    async def validate_request(self) -> bool:
         validate_user_has_github_token(self.user)
         validate_github_url(self.request.repositoryURL)
         validate_contract_files(self.request.contractFiles)
         await validate_no_in_progress_scans(self.user)
-        if ENVIRONMENT == "production":
+        if ENVIRONMENT != "development":
             await validate_no_unpaid_scans(self.user)
+
+        return await validate_subscription(self.user)
 
     async def clone_repository(self):
         # Create temporary directory for this scan
@@ -113,14 +116,15 @@ class ScanInitializer:
             ) from e
 
         if not commit_hash:
+            error_msg = "Failed to fetch commit hash. Check if branch exists."
             await update_scan_failure(
                 self.user.email,
                 self.scan_id,
-                "Failed to fetch commit hash. Check if branch exists.",
+                error_msg,
             )
             raise HTTPException(
                 status_code=500,
-                detail="Failed to fetch commit hash. Check if branch exists.",
+                detail=error_msg,
             )
 
         # Update scan with commit hash
@@ -137,7 +141,7 @@ class ScanInitializer:
         )
         return flattened_contracts
 
-    async def count_lines_of_code(self, flattened_contracts: str):
+    async def count_lines_of_code(self, flattened_contracts: str) -> CodeAnalysisResult:
         # Count lines of code
         lines_of_code = await count_lines_of_code(flattened_contracts)
 
@@ -146,3 +150,5 @@ class ScanInitializer:
         if scan:
             scan.linesOfCode = lines_of_code
             await scan.save()
+
+        return lines_of_code

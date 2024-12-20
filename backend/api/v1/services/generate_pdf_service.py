@@ -50,7 +50,7 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
             "branch_name": scan.branchName,
             "commit_hash": scan.commitHash,
             "total_vulnerabilities": full_result.total_findings,
-            "total_lines_of_code": scan.linesOfCode["total_lines"],
+            "total_lines_of_code": scan.linesOfCode.total_lines,
             "organization": extract_organization_name(scan.repositoryURL),
             "contract_files": scan.contractFiles,
             "findings": prepare_findings_data(full_result.findings),

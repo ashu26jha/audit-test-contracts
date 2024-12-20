@@ -27,11 +27,7 @@ const LoginSuccessPage = () => {
     return () => clearTimeout(redirectTimer);
   }, [error, router, loading, user]);
 
-  if (loading) {
-    return <Loading />;
-  }
-
-  return null;
+  return loading ? <Loading /> : null;
 };
 
 export default LoginSuccessPage;

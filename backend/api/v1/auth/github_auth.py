@@ -45,7 +45,7 @@ async def github_callback(
     _, user = await handle_github_callback(code, state, installation_id, setup_action)
 
     # Create our app's JWT token
-    jwt_token = create_access_token(data={"sub": str(user.id)}, user=user)
+    jwt_token = create_access_token(data={"sub": user.githubId}, user=user)
 
     # Return response with JWT in secure cookie
     response = RedirectResponse(f"{settings.FRONTEND_URL}/login-success")
@@ -74,8 +74,4 @@ async def logout(request: Request):
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
-    # Convert the model to dict and explicitly convert id to string
-    user_dict = current_user.model_dump()
-    user_dict["id"] = str(user_dict["id"])  # Convert ObjectId to string
-
-    return UserResponse(**user_dict)
+    return UserResponse.model_validate(current_user)

@@ -90,3 +90,9 @@ interface Subscription {
   monthlyCredits: number;
   expiresAt: Date;
 }
+
+interface StripeCheckoutResponse {
+  data: {
+    url: string;
+  };
+}

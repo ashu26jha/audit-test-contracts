@@ -30,7 +30,7 @@ const UserDetails: FC<UserDetailsProps> = ({ user, logout }) => {
         variant="flat"
         startContent={<LogOut size={14} />}
         className="w-full bg-[#3F3F46] hover:bg-[#F3126033] hover:text-danger text-white"
-        onClick={() => logout()}
+        onPress={() => logout()}
       >
         Log Out
       </Button>

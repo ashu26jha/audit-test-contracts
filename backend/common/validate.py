@@ -6,6 +6,7 @@ from fastapi import HTTPException
 
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import get_scan, get_scan_history_for_user
+from config.subscription_settings import SUBSCRIPTION_SETTINGS
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
@@ -66,4 +67,25 @@ def validate_contract_files(contract_files: List[str]):
         raise HTTPException(
             status_code=400,
             detail="Invalid contract files. All files must have a .sol extension",
+        )
+
+
+async def validate_subscription(user: User):
+    return await user.has_active_subscription()
+
+
+async def validate_subscription_limits(user: User, contract_files: List[str], total_loc: int):
+    """Validate subscription limits for contracts and LoC."""
+    is_pro = await validate_subscription(user)
+    limits = SUBSCRIPTION_SETTINGS["pro" if is_pro else "single"]
+
+    if len(contract_files) > limits["max_contracts"]:
+        raise HTTPException(
+            status_code=400, detail=f"Maximum {limits['max_contracts']} contracts allowed"
+        )
+
+    # TODO: Check that calculation matches the one in the frontend
+    if total_loc > limits["max_loc"]:
+        raise HTTPException(
+            status_code=400, detail=f"Maximum {limits['max_loc']} lines of code allowed"
         )

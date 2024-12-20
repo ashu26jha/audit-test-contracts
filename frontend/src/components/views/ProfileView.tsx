@@ -86,7 +86,7 @@ const ButtonProfile: FC<ButtonProfileProps> = ({ selectedTab, tabName, label, on
     className={`${
       selectedTab === tabName ? "bg-[#27272a] border-[#A1A1AA]" : "border-[#3F3F46]"
     } border-1 rounded-md p-4`}
-    onClick={() => onClick(tabName)}
+    onPress={() => onClick(tabName)}
   >
     {label}
   </Button>

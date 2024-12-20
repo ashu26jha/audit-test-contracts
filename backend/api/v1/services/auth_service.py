@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
 import httpx
-from bson import ObjectId
 from fastapi import Header, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -50,11 +49,10 @@ async def get_current_user(request: Request) -> User:
 
         # Validate JWT
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
+        github_id: str = payload.get("sub")
         token_version: int = payload.get("version", 0)
 
-        user_id_obj = ObjectId(user_id)
-        user = await User.find_one({"_id": user_id_obj})
+        user = await User.by_github_id(github_id)
 
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
@@ -226,14 +224,14 @@ async def handle_logout(request: Request) -> None:
             try:
                 # Decode token
                 payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-                user_id = payload.get("sub")
-                if user_id:
+                github_id = payload.get("sub")
+                if github_id:
                     # Get user from database
-                    user = await User.get(ObjectId(user_id))
+                    user = await User.by_github_id(github_id)
                     if user:
                         # Increment token version
                         await increment_token_version(user)
-            except (JWTError, ValueError):
+            except JWTError:
                 # If token is invalid or user not found, just log it
                 logger.warning("Invalid token during logout")
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { FC } from "react";
+import { useEffect, type FC } from "react";
 
 import { AlertTriangle } from "lucide-react";
 
@@ -17,8 +17,12 @@ interface ScanResultsPageProps {
 
 const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
   const { scanId } = params;
-  const { user, loading } = useAuth();
-  const { scanData, isProcessing, error, isLoading, handlePayment } = usePaymentProcessing(scanId);
+  const { user, loading, refetchUser } = useAuth();
+  const { scanData, isProcessing, error, isLoading } = usePaymentProcessing(scanId);
+
+  useEffect(() => {
+    refetchUser(); // To updte credits in case of refund
+  }, [scanData, refetchUser]);
 
   if (!user) return null;
 
@@ -29,6 +33,7 @@ const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
   if (isLoading) {
     return <Loading text="Loading scan results" />;
   }
+
   if (isProcessing) {
     return <Loading text="Creating payment session" />;
   }
@@ -46,7 +51,7 @@ const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
       {scanData.scan.status === "completed" && scanData.scan.paid_status && scanData.findings.length > 0 ? (
         <ScanFullResultsView scanData={scanData} />
       ) : (
-        <ScanResultsView scanData={scanData} handlePayment={handlePayment} />
+        <ScanResultsView scanData={scanData} />
       )}
     </ProtectedRoute>
   );

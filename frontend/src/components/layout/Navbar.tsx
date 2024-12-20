@@ -62,13 +62,16 @@ const Navbar: FC = () => {
           })}
           startContent={<Sparkles size={14} />}
         >
-          {user.subscription.isActive && user.subscription.credits !== 0 && (
+          {/* TODO: Display 0 credits for now for clarity when no more scans left */}
+          {/* {user.subscription.isActive && user.subscription.credits !== 0 && ( */}
+          {user.subscription.isActive && (
             <p className="text-sm">
               {user.subscription.credits === 1 ? "1 Scan Left" : `${user.subscription.credits} Scans Left`}
             </p>
           )}
 
-          {(!user.subscription.isActive || user.subscription.credits === 0) && <p className="text-sm"> Upgrade Plan</p>}
+          {/* {(!user.subscription.isActive || user.subscription.credits === 0) && <p className="text-sm"> Upgrade Plan</p>} */}
+          {!user.subscription.isActive && <p className="text-sm"> Upgrade Plan</p>}
         </Button>
 
         <div className="justify-start items-center gap-1.5 flex">
@@ -88,7 +91,7 @@ const Navbar: FC = () => {
               <DropdownItem
                 key="profile"
                 startContent={<Image src="/svg/profile.svg" alt="profile" width={20} height={20} />}
-                onClick={() => {
+                onPress={() => {
                   router.push("/profile");
                 }}
               >
@@ -98,7 +101,7 @@ const Navbar: FC = () => {
                 key="logout"
                 startContent={<Image src="/svg/logout.svg" alt="logout" width={20} height={20} />}
                 color="danger"
-                onClick={() => logout()}
+                onPress={() => logout()}
               >
                 Log out
               </DropdownItem>

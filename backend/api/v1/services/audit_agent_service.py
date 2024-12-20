@@ -16,9 +16,11 @@ from api.v1.services.audit_services.result_processor import ResultProcessor
 from api.v1.services.audit_services.scan_initializer import ScanInitializer
 from api.v1.services.audit_services.task_manager import TaskManager
 from api.v1.services.github_service import GitHubService
+from api.v1.services.payments.stripe_subscription_service import deduct_credit
 from common.email_utils import send_completion_email
 from common.logger import logger
 from common.profiles import Profiles
+from common.validate import validate_subscription_limits
 
 github_service = GitHubService()
 
@@ -32,10 +34,7 @@ async def initiate_scan(
     initializer = ScanInitializer(user, request, scan_id)
     try:
         # Validation
-        await initializer.validate_request()
-
-        # Clone repository
-        await initializer.clone_repository()
+        is_pro_scan = await initializer.validate_request()
 
         # Fetch repository info
         await initializer.fetch_repository_info()
@@ -46,22 +45,15 @@ async def initiate_scan(
         # Fetch commit hash
         await initializer.fetch_commit_hash()
 
-        # Flatten contracts & Count lines of code
-        flattened_contracts = await initializer.flatten_contracts()
-        await initializer.count_lines_of_code(flattened_contracts)
-
-        # Start the background task
+        # Start initialization in background
         background_tasks.add_task(
-            perform_audit_agent_background,
+            _perform_scan_initialization,
             user,
             scan_id,
-            flattened_contracts,
-            request.repositoryURL,
-            user.accessToken,
-            request.contractFiles,
-            initializer.branch_name,
-            initializer.temp_dir,
-            initializer.repo_dir,
+            is_pro_scan,
+            request,
+            initializer,
+            background_tasks,
         )
 
     except HTTPException:
@@ -72,10 +64,63 @@ async def initiate_scan(
         raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
 
-@observe()
-async def perform_audit_agent_background(
+async def _perform_scan_initialization(
     user: User,
     scan_id: UUID,
+    is_pro_scan: bool,
+    request: audit_agent_schema.AuditAgentRequest,
+    initializer: ScanInitializer,
+    background_tasks: BackgroundTasks,
+):
+    try:
+        # Deduct credit
+        if is_pro_scan:
+            await deduct_credit(user.githubId, scan_id, request.repositoryURL)
+
+        # Clone repository
+        await initializer.clone_repository()
+
+        # Flatten contracts & Count lines of code
+        flattened_contracts = await initializer.flatten_contracts()
+        lines_of_code = await initializer.count_lines_of_code(flattened_contracts)
+
+        try:
+            await validate_subscription_limits(
+                user, request.contractFiles, lines_of_code["total_lines"]
+            )
+        except HTTPException as e:
+            logger.error(f"Subscription limits exceeded: {str(e)}")
+            await update_scan_failure(user.email, scan_id, f"Subscription limit exceeded: {str(e)}")
+            return
+
+        await scan_history_service.update_scan_progress(scan_id, 10)
+
+        # If all initialization steps succeed, start the main audit task
+        background_tasks.add_task(
+            _perform_audit_agent_background,
+            user,
+            scan_id,
+            is_pro_scan,
+            flattened_contracts,
+            request.repositoryURL,
+            user.accessToken,
+            request.contractFiles,
+            initializer.branch_name,
+            initializer.temp_dir,
+            initializer.repo_dir,
+        )
+    except Exception as e:
+        logger.exception(f"Error during scan initialization: {str(e)}")
+        await update_scan_failure(user.email, scan_id, "Failed during scan initialization")
+        await initializer.cleanup()
+        raise  # Re-raise to ensure the task stops
+
+
+@observe()
+async def _perform_audit_agent_background(
+    user: User,
+    scan_id: UUID,
+    is_pro_scan: bool,
     flattened_contracts: str,
     repository_url: str,
     access_token: str,
@@ -152,7 +197,7 @@ async def perform_audit_agent_background(
         langfuse_context.update_current_trace(session_id=str(scan_id))
 
         # Handle payment processing using PaymentHandler
-        payment_handler = PaymentHandler(user, scan_id, total_findings_after_dedup)
+        payment_handler = PaymentHandler(user, scan_id, is_pro_scan, total_findings_after_dedup)
         await payment_handler.process_payment()
 
         # Update scan status to 'completed' and include total_findings

@@ -21,7 +21,7 @@ export const PAGES = {
 export const BASIC_PLAN_DETAILS = {
   MAX_FILES: 5,
   MAX_LINES: 800,
-  PRICE: 50,
+  PRICE: 49,
   SCAN_CREDITS: 1,
 } as const;
 
@@ -29,5 +29,5 @@ export const PRO_PLAN_DETAILS = {
   MAX_FILES: 25,
   MAX_LINES: 4000,
   PRICE: 990,
-  SCAN_CREDITS: 10,
+  SCAN_CREDITS: 20,
 } as const;

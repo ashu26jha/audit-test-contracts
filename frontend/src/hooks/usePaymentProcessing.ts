@@ -1,16 +1,22 @@
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { createCheckoutSession, getPartialScanResults, getFullScanResults } from "@/services/api";
+import {
+  createCheckoutSession,
+  createSubscriptionSession,
+  getPartialScanResults,
+  getFullScanResults,
+} from "@/services/api";
+import { usePaymentStore } from "@/store/paymentStore";
+
+export type PaymentType = "single" | "subscription";
 
 export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => {
   const { user } = useAuth();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [shouldPoll, setShouldPoll] = useState(true);
-  const [isPaid, setIsPaid] = useState(false);
+  const { isProcessing, error, shouldPoll, isPaid, setIsProcessing, setError, setShouldPoll, setIsPaid } =
+    usePaymentStore();
 
   const {
     data: scanData,
@@ -41,31 +47,44 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
   });
 
   useEffect(() => {
+    setError(null);
     if (scanData) {
       const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
       setShouldPoll(!isCompleted);
       setIsPaid(scanData.scan.paid_status);
     }
-  }, [scanData]);
 
-  const handlePayment = useCallback(async () => {
-    if (!user || !scanId) return;
+    return () => {
+      // Cleanup when unmounting
+      setError(null);
+      setShouldPoll(true);
+      setIsPaid(false);
+    };
+  }, [scanData, setError, setShouldPoll, setIsPaid]);
 
-    setIsProcessing(true);
-    setError(null);
+  const handlePayment = useCallback(
+    async (paymentType: PaymentType = "single") => {
+      if (!user || !scanId) return;
 
-    try {
-      const res = await createCheckoutSession(scanId);
-      const { URL } = res.data;
+      try {
+        setIsProcessing(true);
+        setError(null);
 
-      // Redirect to Stripe Checkout
-      window.location.href = URL;
-    } catch (err) {
-      console.error("Error creating checkout session:", err);
-      setError("Failed to initiate payment. Please try again.");
-      setIsProcessing(false);
-    }
-  }, [user, scanId]);
+        const res =
+          paymentType === "subscription"
+            ? await createSubscriptionSession(scanId)
+            : await createCheckoutSession(scanId);
+
+        setIsProcessing(false);
+        window.location.assign(res.data.url);
+      } catch (err) {
+        console.error("Error creating checkout session:", err);
+        setError(`Failed to initiate ${paymentType} payment. Please try again.`);
+        setIsProcessing(false);
+      }
+    },
+    [user, scanId, setError, setIsProcessing],
+  );
 
   return {
     scanData,

@@ -66,7 +66,7 @@ const AllowedRepositories: FC = () => {
 
       <Button
         className="mt-4 w-full bg-[#27272a] border border-[#3F3F46] hover:bg-[#3F3F46]"
-        onClick={() => window.open(SERVICES.GITHUB_APP_URL, "_blank")}
+        onPress={() => window.open(SERVICES.GITHUB_APP_URL, "_blank")}
       >
         Manage Repos on GitHub
         <Image
