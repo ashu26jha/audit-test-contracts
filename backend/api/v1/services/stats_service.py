@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from api.v1.models.scan import Scan
 from api.v1.models.user import User
 from common.logger import logger
@@ -121,3 +123,72 @@ async def get_global_stats():
     except Exception as e:
         logger.error(f"Error in stats aggregation: {str(e)}")
         raise
+
+
+async def get_24h_stats():
+    """
+    Returns counts of scans, lines of code scanned,
+    vulnerabilities found, regular paid scans, and
+    new users within the last 24 hours.
+    """
+    now_utc = datetime.now(timezone.utc)
+    twenty_four_hours_ago = now_utc - timedelta(hours=24)
+
+    stats_24h_pipeline = [
+        {"$match": {"createdAt": {"$gte": twenty_four_hours_ago}}},
+        {
+            "$group": {
+                "_id": None,
+                # Total lines of code from linesOfCode.total_lines
+                "lines_of_code": {"$sum": {"$ifNull": ["$linesOfCode.total_lines", 0]}},
+                # Count of all scans
+                "total_scans_24h": {"$sum": 1},
+                # Sum of total_findings for vulnerabilities
+                "vulnerabilities_found": {"$sum": {"$ifNull": ["$total_findings", 0]}},
+                # Count of external scans, external scan are paid scans which are not discounted
+                # One issue with this is that, if we did a scan today and paid it two days later, it won't be counted
+                "paid_scans_24h": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {
+                                        "$eq": [
+                                            {"$ifNull": ["$discount_applied", False]},
+                                            False,
+                                        ]
+                                    },
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+            }
+        },
+    ]
+
+    # Run aggregation
+    scans_24h_results = await Scan.aggregate(stats_24h_pipeline).to_list(length=1)
+    if scans_24h_results:
+        lines_of_code = scans_24h_results[0].get("lines_of_code", 0)
+        total_scans_24h = scans_24h_results[0].get("total_scans_24h", 0)
+        vulnerabilities_found = scans_24h_results[0].get("vulnerabilities_found", 0)
+        paid_scans_24h = scans_24h_results[0].get("paid_scans_24h", 0)
+    else:
+        lines_of_code = 0
+        total_scans_24h = 0
+        vulnerabilities_found = 0
+        paid_scans_24h = 0
+
+    # Number of users created in the last 24h
+    new_users_in_24h = await User.find(User.createdAt >= twenty_four_hours_ago).count()
+
+    return {
+        "lines_of_code": lines_of_code,
+        "total_scans_24h": total_scans_24h,
+        "vulnerabilities_found": vulnerabilities_found,
+        "paid_scans_24h": paid_scans_24h,
+        "new_users": new_users_in_24h,
+    }

@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 import certifi
 import uvicorn
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from beanie import init_beanie
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
@@ -38,10 +39,24 @@ from common.error_handling import (
     validation_exception_handler,
 )
 from config import settings
+from config.slack import send_slack_message
+
+# Create scheduler
+scheduler = AsyncIOScheduler()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.SLACK_TOKEN:
+        scheduler.add_job(
+            send_slack_message,
+            "cron",
+            hour=11,
+            minute=30,
+            timezone="Asia/Kolkata",  # We can adjust this...
+        )
+        scheduler.start()
+
     client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
     if settings.ENVIRONMENT == "development":
         db = client.audit_agent_dev

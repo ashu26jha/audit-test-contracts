@@ -84,6 +84,12 @@ GITHUB_APP_URL: str = (
     f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=user:email"
 )
 
+##################################################
+#                   SLACK
+##################################################
+
+SLACK_TOKEN = os.getenv("SLACK_TOKEN")
+
 
 ##################################################
 #                   EMAIL
