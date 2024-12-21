@@ -83,7 +83,20 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
         # Extract contract names from the details section
         contract_pattern = r"Found in (.*?)\s+\[Line:"
         contracts = re.findall(contract_pattern, details_section)
+        code_sections = re.finditer(r"```solidity\n(.*?)\n\s*```", details_section, re.DOTALL)
+
+        contract_code_map = {}
+        code_blocks = []
+
         contracts = [c.strip() for c in contracts]
+
+        for contract, section in zip(contracts, code_sections):
+            code = section.group(1).strip()
+            contract_code_map[contract] = code
+            code_blocks.append(code)
+
+        if not code_blocks:
+            logger.info("No code sections found")
 
         filtered_contracts = [normalize_contract_name(contract) for contract in fitler_contracts]
         contracts = [
@@ -94,6 +107,17 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
 
         if not contracts:
             continue
+
+        code_snippets = []
+        for contract in contracts:
+            if contract in contract_code_map:
+                code_snippets.append(
+                    f"\nIn contract {contract}:\n```solidity\n{contract_code_map[contract]}\n```"
+                )
+
+        description += "\n" + "\n".join(code_snippets)
+
+        logger.info(f"Description: {description}")
 
         # Create a dictionary for each vulnerability
         vulnerability = {
