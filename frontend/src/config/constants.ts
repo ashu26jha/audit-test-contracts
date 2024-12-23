@@ -19,15 +19,15 @@ export const PAGES = {
 
 // Application Limits
 export const BASIC_PLAN_DETAILS = {
-  MAX_FILES: 5,
-  MAX_LINES: 800,
+  MAX_FILES: 10,
+  MAX_LINES: 2000,
   PRICE: 49,
   SCAN_CREDITS: 1,
 } as const;
 
 export const PRO_PLAN_DETAILS = {
-  MAX_FILES: 25,
-  MAX_LINES: 4000,
+  MAX_FILES: 40,
+  MAX_LINES: 8000,
   PRICE: 990,
   SCAN_CREDITS: 20,
 } as const;

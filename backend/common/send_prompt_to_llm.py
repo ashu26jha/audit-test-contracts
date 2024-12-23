@@ -15,7 +15,7 @@ from common import logger
 from common.llm_clients import CLAUDE_CLIENT, GEMINI_CLIENT
 from common.parse_llm_response import parse_model_response
 from common.token_count import count_tokens
-from config.settings import MODELS_NOT_SUPPORTING_SYSTEM, SUPPORTED_MODELS
+from config.settings import SUPPORTED_MODELS
 
 
 class Message(TypedDict):
@@ -74,12 +74,16 @@ async def send_prompt_to_llm_async(
 
                 async with AsyncOpenAI(timeout=timeout) as client:
                     try:
-                        if response_model and model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
-                            response = await client.beta.chat.completions.parse(
-                                model=model_type,
-                                messages=messages,
-                                response_format=response_model,
-                            )
+                        params = {
+                            "model": model_type,
+                            "messages": messages,
+                            "response_format": response_model,
+                        }
+                        if "o1" in model_type:
+                            params["reasoning_effort"] = "high"
+
+                        if response_model:
+                            response = await client.beta.chat.completions.parse(**params)
                             structured_response: Optional[T] = response.choices[0].message.parsed
                         else:
                             response = await client.chat.completions.create(
@@ -195,11 +199,14 @@ def _build_messages(
     """
     messages: List[Message] = []
 
+    if "o1" in model_type:
+        role = "developer"
+    else:
+        role = "system"
+
     # For OpenAI models, handle system prompt
     if system_prompt and model_type in SUPPORTED_MODELS["openai"]:
-        if model_type not in MODELS_NOT_SUPPORTING_SYSTEM:
-            # Include system prompt as 'system' role message
-            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": role, "content": system_prompt})
 
     # Add message history if any
     if message_history:

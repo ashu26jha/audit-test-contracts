@@ -24,8 +24,8 @@ SUPPORTED_MODELS = {
         "gpt-4o-2024-11-20",  # 128k - 16k context
         "gpt-4o-2024-08-06",  # 128k - 16k context
         "gpt-4o-mini",  # 128k - 16k context
-        "o1-preview",  # 128k - 32k context
-        "o1-mini",  # 128k - 65k context
+        "o1",  # 200k - 100k context
+        "o1-2024-12-17",  # 200k - 100k context
     ],
     "anthropic": [
         "claude-3-5-sonnet-latest",
@@ -40,12 +40,10 @@ SUPPORTED_MODELS = {
 # Default LLM models
 LLM_MODEL_CHEAP = os.getenv("LLM_MODEL_CHEAP", "gpt-4o-mini")
 LLM_MODEL_MEDIUM = os.getenv("LLM_MODEL_MEDIUM", "gpt-4o-2024-08-06")
-LLM_MODEL_BEST = os.getenv("LLM_MODEL_BEST", "o1-preview")
+LLM_MODEL_BEST = os.getenv("LLM_MODEL_BEST", "o1-2024-12-17")
 LLM_MODEL_BEST_2 = os.getenv("LLM_MODEL_BEST_2", "gemini-1.5-pro-latest")
 LLM_MODEL_BEST_3 = os.getenv("LLM_MODEL_BEST_3", "claude-3-5-sonnet-latest")
 
-# List of models that do not support 'system' role
-MODELS_NOT_SUPPORTING_SYSTEM = ["o1-preview", "o1-mini"]
 
 # Tokens encoding: "cl100k_base" || "p50k_base"
 TOKENS_ENCODING = "cl100k_base"
