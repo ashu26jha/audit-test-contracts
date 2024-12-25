@@ -2,7 +2,7 @@
 
 import { type FC, useEffect } from "react";
 
-import { Progress, Divider } from "@nextui-org/react";
+import { Progress, Divider, Card, CardHeader, CardBody, CardFooter } from "@nextui-org/react";
 import Image from "next/image";
 
 import { useScanStepperStore } from "@/store/scanStepperStore";
@@ -12,7 +12,9 @@ export const HelpGuide: FC<{
   totalLines: number;
   selectedFiles: number;
   totalFiles: number;
-}> = ({ selectedLines, totalLines, selectedFiles, totalFiles }) => {
+  description: string[];
+  variant: "contract" | "readme";
+}> = ({ selectedLines, totalLines, selectedFiles, totalFiles, description, variant }) => {
   const { setIsLineExceeded, setIsFileLimitExceeded } = useScanStepperStore();
   const isLineExceeded = selectedLines > totalLines;
   const isFileLimitExceeded = selectedFiles > totalFiles;
@@ -23,27 +25,26 @@ export const HelpGuide: FC<{
   }, [isLineExceeded, isFileLimitExceeded, setIsLineExceeded, setIsFileLimitExceeded]);
 
   return (
-    <div className="flex-initial w-auto" role="complementary" aria-label="Help Guide Section">
-      <h3 className="text-base font-normal mb-2 font-inter leading-6">Help Guide</h3>
-      <div
-        className="rounded-xl border-2 border-[#27272A] pb-4 pt-4 space-y-2"
-        role="region"
-        aria-label="Help Guide Content"
-      >
-        <p className="text-sm text-[#A1A1AA] mb-2 ml-4 mr-4">Consider the following</p>
-        <Divider className="my-4 bg-[#27272A] h-0.5" />
-        <ul className="list-disc pl-5 text-gray-300 space-y-2 ml-4 mr-4 text-xs leading-5">
-          <li>
-            Only select files that are highly relevant and crucial for gaining insight into the protocol&apos;s context.
-          </li>
-          <li>Avoid selecting mock contracts, test contracts, and interface contracts.</li>
-          <li>Narrowing the scope of the scan leads to more accurate results.</li>
-        </ul>
-        <Divider className="my-4 bg-[#27272A] h-0.5" />
-        <div className="px-4 space-y-2" role="region" aria-label="Selection Status">
-          <div className="flex justify-between">
+    <div>
+      <h3 className="text-sm text-default-600 font-normal mb-2 font-inter leading-6">Help Guide</h3>
+      <Card classNames={{ base: "min-h-80 bg-content-1 border-2 border-default-100" }}>
+        <CardHeader>
+          <p className="text-sm text-default-600">Consider the following</p>
+        </CardHeader>
+
+        <Divider className="bg-default-100 h-[2px]" />
+        <CardBody>
+          <ul className="list-disc pl-4 text-gray-300 space-y-2 text-xs leading-5">
+            {description.map((desc, key) => (
+              <li key={key}>{desc}</li>
+            ))}
+          </ul>
+        </CardBody>
+        <Divider className="bg-default-100 h-[2px]" />
+        <CardFooter className="flex flex-col gap-y-2">
+          <div className="w-full flex justify-between">
             <p className={`text-xs leading-5 ${isLineExceeded ? "text-[#F871A0]" : "text-gray-300"}`}>
-              {selectedLines}/{totalLines} Lines of Code
+              {selectedLines}/{totalLines} {variant === "contract" ? "Lines of Code" : "Characters"}
             </p>
 
             <p className={`text-xs leading-5 ${isFileLimitExceeded ? "text-[#F871A0]" : "text-gray-300"}`}>
@@ -62,10 +63,12 @@ export const HelpGuide: FC<{
             value={(selectedLines / totalLines) * 100}
           />
           {isLineExceeded ? (
-            <div className="flex items-center" role="alert">
-              <Image src="/svg/error.svg" alt="Error" width={20} height={20} className="mr-1" />
+            <div className="flex items-start gap-x-2" role="alert">
+              <Image src="/svg/error.svg" alt="Error" width={20} height={20} className="mr-1 mt-1" />
               <p className="text-[#E4E4E7] text-xs mb-2">
-                The total lines of code is too large; please reduce the lines of code.
+                {variant === "contract"
+                  ? "The total lines of code is too large; please reduce the lines of code."
+                  : "The total characters exceedes the limit; please reduce the characters"}
               </p>
             </div>
           ) : (
@@ -80,8 +83,8 @@ export const HelpGuide: FC<{
               )}
             </>
           )}
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

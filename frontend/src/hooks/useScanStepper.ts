@@ -1,29 +1,53 @@
 import { useCallback } from "react";
 
+import {
+  getRepositories,
+  getRepositoryContents,
+  getBranches,
+  initiateScan,
+  getReadmeFiles,
+  getRepositoryDocs,
+} from "@/services/api";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 import { useUserDataStore } from "@/store/userDataStore";
-
-import { getRepositories, getRepositoryContents, getBranches, initiateScan } from "../services/api";
+import { sanitizeString } from "@/utils/helpers";
 
 export const useScanStepper = () => {
   const { setRepositories } = useUserDataStore();
   const {
-    setBranches,
-    setSolidityFiles,
     selectedOwner,
     selectedRepo,
     selectedBranch,
     selectedContracts,
+    repoDocs,
     setSelectedOwner,
     setSelectedRepo,
+    setBranches,
+    setSolidityFiles,
+    setReadmeFiles,
     setRepositoryURL,
     setIsLoading,
+    setRepoDocs,
   } = useScanStepperStore();
+
+  const fetchPreviousDocs = useCallback(
+    async (owner: string, repo: string) => {
+      const res = await getRepositoryDocs(owner, repo);
+
+      if (res?.docs) {
+        // Set previous readme files and QA answers if they exist
+        setRepoDocs(res.docs);
+      } else {
+        setRepoDocs({ readme: [], qa: {} });
+      }
+    },
+    [setRepoDocs],
+  );
 
   const fetchRepositories = useCallback(
     async (owner: Owner) => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
         const repositories = await getRepositories(owner.login, owner.type);
         setRepositories(repositories);
       } catch (error) {
@@ -65,22 +89,50 @@ export const useScanStepper = () => {
     [setSolidityFiles, setIsLoading],
   );
 
+  const fetchReadmeFiles = useCallback(
+    async (owner: Owner, repo: Repository, branch: string) => {
+      try {
+        setIsLoading(true);
+        const files = await getReadmeFiles(owner.login, repo.name, branch);
+        setReadmeFiles(files);
+      } catch (error) {
+        console.error("Error fetching Readme files:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setReadmeFiles, setIsLoading],
+  );
+
   const initiateScanProcess = useCallback(async () => {
     try {
       if (!selectedOwner || !selectedRepo) {
         throw new Error("Owner or repository not selected");
       }
+
+      const qa = Object.entries(repoDocs.qa).reduce(
+        (acc, [key, value]) => {
+          acc[key] = sanitizeString(value);
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
       const response = await initiateScan({
         repositoryURL: `https://github.com/${selectedOwner.login}/${selectedRepo.name}`,
         contractFiles: selectedContracts,
         branchName: selectedBranch || "",
+        docs: {
+          readme: repoDocs.readme,
+          qa,
+        },
       });
       return response;
     } catch (error) {
       console.error("Error initiating scan:", error);
       throw error;
     }
-  }, [selectedOwner, selectedRepo, selectedBranch, selectedContracts]);
+  }, [repoDocs, selectedOwner, selectedRepo, selectedBranch, selectedContracts]);
 
   const extractOwnerAndRepo = useCallback(
     (url: string) => {
@@ -112,6 +164,8 @@ export const useScanStepper = () => {
     fetchRepositories,
     fetchBranches,
     fetchSolidityFiles,
+    fetchReadmeFiles,
+    fetchPreviousDocs,
     initiateScanProcess,
     extractOwnerAndRepo,
   };

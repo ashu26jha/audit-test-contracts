@@ -53,7 +53,7 @@ const ScanFullResultsView: FC<ScanFullResultsViewProps> = ({ scanData }) => {
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full flex flex-col">
       <div className="w-full flex flex-raw justify-between items-center pb-4 px-4">
         <Breadcrumb base="Dashboard" current="Results" />
         <div className="flex space-x-2">

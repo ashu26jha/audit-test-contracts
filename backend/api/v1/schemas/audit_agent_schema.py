@@ -1,7 +1,9 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+from api.v1.models.repository_docs import QAResponse
 
 
 class AuditAgentRequest(BaseModel):
@@ -13,6 +15,9 @@ class AuditAgentRequest(BaseModel):
     branchName: str = Field(
         default="main",
         description="Name of the branch to scan. Defaults to 'main' if not provided.",
+    )
+    docs: Optional[QAResponse] = Field(
+        None, description="Optional QA response associated with the request"
     )
 
 

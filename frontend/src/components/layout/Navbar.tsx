@@ -61,6 +61,9 @@ const Navbar: FC = () => {
             isSubscribed: user.subscription.isActive && user.subscription.credits !== 0,
           })}
           startContent={<Sparkles size={14} />}
+          onPress={() => {
+            router.push("/profile?tab=subscription");
+          }}
         >
           {/* TODO: Display 0 credits for now for clarity when no more scans left */}
           {/* {user.subscription.isActive && user.subscription.credits !== 0 && ( */}

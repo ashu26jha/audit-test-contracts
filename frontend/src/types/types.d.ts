@@ -57,32 +57,6 @@ interface ScanResult {
   progress: number;
 }
 
-interface Branch {
-  name: string;
-  isDefault: boolean;
-}
-
-interface Owner {
-  login: string;
-  type: "user" | "organization";
-}
-
-interface Repository {
-  name: string;
-  updatedAt: string;
-  private: boolean;
-  all_repos_access?: boolean;
-}
-
-interface File {
-  name: string;
-  path: string;
-  type: string;
-  download_url: string;
-  lineCount: number;
-  token: number;
-}
-
 interface Subscription {
   isActive: boolean;
   type: string;
@@ -94,5 +68,19 @@ interface Subscription {
 interface StripeCheckoutResponse {
   data: {
     url: string;
+  };
+}
+
+interface DocsResponse {
+  docs: RepoDocs;
+}
+
+interface InitiateScanRequest {
+  repositoryURL: string;
+  contractFiles: string[];
+  branchName: string;
+  docs: {
+    readme: string[];
+    qa: Record<string, string>;
   };
 }

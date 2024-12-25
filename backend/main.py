@@ -36,6 +36,7 @@ from api.v1.endpoints.payments import (
 )
 from api.v1.models.credit_transaction import CreditTransaction
 from api.v1.models.payment import Payment
+from api.v1.models.repository_docs import RepositoryDocs
 from api.v1.models.scan import Scan, ScanResult
 from api.v1.models.user import User
 from common import logger
@@ -79,6 +80,7 @@ async def lifespan(app: FastAPI):
             ScanResult,
             Payment,
             CreditTransaction,
+            RepositoryDocs,
         ],
     )
     logger.info(f"Connected to MongoDB in {settings.ENVIRONMENT} environment.")

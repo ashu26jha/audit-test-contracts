@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from pydantic import BaseModel, Field, field_validator
 
 from common.profiles import Profiles
-from common.severity import Severity  # Import centralized Severity
+from common.severity import Severity
 
 
 class Finding(BaseModel):
@@ -51,6 +51,7 @@ class InterestingFindings(BaseModel):
 
 class ContextScanRequest(BaseModel):
     summary: Optional[str] = Field(None, description="An optional summary of the context")
+    docs: Optional[str] = Field(None, description="An optional documentation of the context")
     contracts: str = Field(..., description="Flattened smart contracts content")
     profile: Profiles = Field(Profiles.NONE, description="Profile to use for the scan")
 

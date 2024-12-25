@@ -30,4 +30,6 @@ export const PRO_PLAN_DETAILS = {
   MAX_LINES: 8000,
   PRICE: 990,
   SCAN_CREDITS: 20,
+  MAX_DOCS_CHARS: 20000,
+  MAX_DOCS_FILES: 5,
 } as const;

@@ -47,7 +47,7 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await context_scan_service.perform_context_scan(
-        "Test Summary", "Test Contracts", Profiles.NFT
+        "Test Summary", None, "Test Contracts", Profiles.NFT
     )
 
     assert isinstance(result, ContextScanResponse)
@@ -65,7 +65,7 @@ async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async
     mock_send_prompt_to_llm_async.return_value = None
 
     result = await context_scan_service.perform_context_scan(
-        "Test Summary", "Test Contracts", Profiles.NFT
+        "Test Summary", None, "Test Contracts", Profiles.NFT
     )
 
     assert isinstance(result, ContextScanResponse)
@@ -79,7 +79,7 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
 
     for profile in Profiles:
         result = await context_scan_service.perform_context_scan(
-            "Test Summary", "Test Contracts", profile
+            "Test Summary", None, "Test Contracts", profile
         )
         assert isinstance(result, ContextScanResponse)
         assert len(result.findings) == 1
@@ -106,7 +106,11 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await context_scan_service.perform_context_scan(
-        "Test Summary Claude", "Test Contracts Claude", Profiles.NFT, "claude-3-5-sonnet-latest"
+        "Test Summary Claude",
+        None,
+        "Test Contracts Claude",
+        Profiles.NFT,
+        "claude-3-5-sonnet-latest",
     )
 
     assert isinstance(result, ContextScanResponse)
@@ -137,7 +141,7 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await context_scan_service.perform_context_scan(
-        "Test Summary No Profile", "Test Contracts No Profile", Profiles.NONE
+        "Test Summary No Profile", None, "Test Contracts No Profile", Profiles.NONE
     )
 
     assert isinstance(result, ContextScanResponse)

@@ -2,6 +2,7 @@
 import { useState, type FC } from "react";
 
 import { Divider, Button } from "@nextui-org/react";
+import { useSearchParams } from "next/navigation";
 
 import { AllowedRepositories, SubscriptionCard, UserDetails } from "@/components/profile";
 import { PRO_PLAN_DETAILS } from "@/config/constants";
@@ -11,7 +12,8 @@ import { Breadcrumb } from "../layout";
 
 const ProfileView: FC = () => {
   const { user, logout } = useAuth();
-  const [selectedTab, setSelectedTab] = useState("details");
+  const searchParams = useSearchParams();
+  const [selectedTab, setSelectedTab] = useState(searchParams.get("tab") || "details");
 
   if (!user) return null;
 
@@ -32,7 +34,6 @@ const ProfileView: FC = () => {
             label="Repositories"
             onClick={() => setSelectedTab("repositories")}
           />
-
           <ButtonProfile
             selectedTab={selectedTab}
             tabName="subscription"
@@ -41,6 +42,7 @@ const ProfileView: FC = () => {
           />
         </div>
       </div>
+
       <Divider className="my-2" />
 
       <div className="h-full flex flex-col items-center gap-6 pb-8 mt-10">

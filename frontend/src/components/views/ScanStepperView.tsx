@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FC } from "react";
 
-import { Button, Card, CardHeader } from "@nextui-org/react";
+import { Button } from "@nextui-org/react";
 import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,7 @@ import Breadcrumb from "../layout/Breadcrumb";
 import CreditWarningModal from "../Modals/CreditWarningModal";
 import TalkToSalesModal from "../Modals/TalkToSalesModal";
 import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "../scan-stepper";
+import { DocsSelection } from "../scan-stepper/DocsSelection";
 
 const ScanStepperView: FC = () => {
   const router = useRouter();
@@ -65,7 +66,8 @@ const ScanStepperView: FC = () => {
       currentStep === 1 && selectedOwner !== null && selectedRepo !== null && (repositoryURL === "" || isValidURL);
     const isStep2Valid = currentStep === 2 && selectedBranch !== "";
     const isStep3Valid = currentStep === 3 && selectedContracts.length > 0;
-    return isStep1Valid || isStep2Valid || isStep3Valid;
+    const isSetp4Valid = currentStep === 4;
+    return isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid;
   }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, repositoryURL, isValidURL]);
 
   useEffect(() => {
@@ -150,38 +152,38 @@ const ScanStepperView: FC = () => {
         />
       )}
 
-      <Card className="h-full">
-        <CardHeader className="p-4 flex justify-between items-center border-t border-b border-gray-800">
-          <Breadcrumb base="Dashboard" current="Scan Code" />
-          <div>
-            <Button className="mr-2" onPress={handleBack}>
-              Go Back
-            </Button>
-            <Button
-              color="secondary"
-              className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3]"
-              disabled={
-                !useScanStepperStore.getState().isNextEnabled ||
-                (currentStep === STEPS.length && (isLineExceeded || isFileLimitExceeded))
-              }
-              endContent={<ArrowRight size={20} />}
-              onPress={handleScan}
-            >
-              {currentStep === STEPS.length ? "Scan Code" : "Next"}
-            </Button>
+      <section className="h-full flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <Breadcrumb base="Dashboard" current="Scan Code" />
+            <div>
+              <Button className="mr-2 rounded-lg bg-content-1 border border-default-flat" onPress={handleBack}>
+                Go Back
+              </Button>
+              <Button
+                color="secondary"
+                className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3] rounded-lg"
+                isDisabled={!useScanStepperStore.getState().isNextEnabled || isLineExceeded || isFileLimitExceeded}
+                endContent={<ArrowRight size={20} />}
+                onPress={handleScan}
+              >
+                {currentStep === STEPS.length ? "Scan Code" : "Next"}
+              </Button>
+            </div>
           </div>
-        </CardHeader>
 
-        <main className="flex-grow p-8 overflow-y-auto">
-          <StepperVisualization currentStep={currentStep} />
+          <div className="h-32 flex justify-center items-center border-y border-default-100">
+            <StepperVisualization currentStep={currentStep} />
+          </div>
 
-          <div className="max-w-5xl mx-auto mt-4 flex flex-col gap-4">
+          <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto pt-8">
             {currentStep === 1 && <RepositorySelection />}
             {currentStep === 2 && <BranchSelection />}
             {currentStep === 3 && <ContractSelection />}
+            {currentStep === 4 && <DocsSelection />}
           </div>
-        </main>
-      </Card>
+        </div>
+      </section>
     </>
   );
 };

@@ -11,6 +11,7 @@ router = APIRouter()
 async def perform_context_scan(request: context_scan_schema.ContextScanRequest):
     response = await context_scan_service.perform_context_scan(
         request.summary,
+        request.docs,
         request.contracts,
         request.profile,
     )

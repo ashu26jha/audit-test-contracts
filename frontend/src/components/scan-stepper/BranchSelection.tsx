@@ -20,14 +20,21 @@ export const BranchSelection: FC = () => {
   }, [branches, selectedBranch, setSelectedBranch]);
 
   return (
-    <div className="mb-6">
+    <div className="mb-6 w-2/5 min-w-[300px]">
       <Autocomplete
-        variant="bordered"
         label="Select Branch"
         labelPlacement="outside"
         placeholder="Search branch"
         startContent={<Image src="/svg/branch-icon.svg" alt="Branch" width={24} height={24} className="mr-2" />}
-        className="w-full"
+        classNames={{
+          base: "w-full mb-6",
+        }}
+        inputProps={{
+          classNames: {
+            inputWrapper:
+              "border-2 border-default-100 bg-content-1 hover:border-gray-600 group-data-[focus=true]:bg-content-1 data-[hover=true]:bg-content-1",
+          },
+        }}
         onSelectionChange={(keys) => {
           const selected = keys as string;
           setSelectedBranch(selected);

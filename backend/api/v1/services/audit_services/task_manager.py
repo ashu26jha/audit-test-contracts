@@ -44,12 +44,14 @@ class TaskManager:
         scan_id: UUID,
         flattened_contracts: str,
         selected_contracts: List[str],
+        docs: Optional[str],
         setup_result: Optional[SetupResult],
         detected_profile: Profiles,
     ):
         self.scan_id = scan_id
         self.flattened_contracts = flattened_contracts
         self.selected_contracts = selected_contracts
+        self.docs = docs
         self.setup_result = setup_result
         self.detected_profile = detected_profile
         self.scan: Optional[Scan] = None
@@ -251,6 +253,7 @@ class TaskManager:
                     async with self.claude_semaphore:
                         return await context_scan_service.perform_context_scan(
                             self.summary_result,
+                            self.docs,
                             self.flattened_contracts,
                             config["profile"],
                             config["model"],
@@ -258,6 +261,7 @@ class TaskManager:
                 else:
                     return await context_scan_service.perform_context_scan(
                         self.summary_result,
+                        self.docs,
                         self.flattened_contracts,
                         config["profile"],
                         config["model"],

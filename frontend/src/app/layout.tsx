@@ -40,9 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <div className="relative flex flex-col h-screen">
             <Navbar />
-            <main className="h-full w-full relative pt-8 px-8 flex-grow overflow-y-hidden pb-6 bg-black">
-              {children}
-            </main>
+            <main className="h-full w-full relative pt-8 px-8 flex-grow overflow-y-auto pb-6 bg-black">{children}</main>
             <Footer />
             <Toaster
               position="bottom-center"

@@ -6,10 +6,15 @@ import { Hourglass } from "lucide-react";
 type CreditWarningModalProps = {
   isOpen: boolean;
   setIsOpen: Dispatch<SetStateAction<boolean>>;
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: () => void;
 };
 
 const CreditWarningModal: FC<CreditWarningModalProps> = ({ isOpen, setIsOpen, onClick }) => {
+  const handleClick = () => {
+    onClick?.();
+    setIsOpen(false);
+  };
+
   return (
     <Modal isOpen={isOpen} onOpenChange={setIsOpen} size="sm" backdrop="blur">
       <ModalContent className="bg-black">
@@ -26,7 +31,7 @@ const CreditWarningModal: FC<CreditWarningModalProps> = ({ isOpen, setIsOpen, on
             to contact our sales team.
           </p>
 
-          <Button fullWidth className="bg-secondary" onPress={() => onClick}>
+          <Button fullWidth className="bg-secondary" onPress={handleClick}>
             Continue
           </Button>
         </ModalBody>

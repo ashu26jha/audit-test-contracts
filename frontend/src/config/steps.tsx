@@ -19,4 +19,10 @@ export const STEPS = [
     selectedIcon: <Image src="/svg/contract_selected.svg" alt="Contract Selected" width={60} height={60} />,
     label: "Contract",
   },
+  {
+    notSelectedIcon: <Image src="/svg/docs.svg" alt="Docs" width={45} height={45} />,
+    selectingIcon: <Image src="/svg/docs_selecting.svg" alt="Docs Selecting" width={45} height={45} />,
+    selectedIcon: <Image src="/svg/docs_selected.svg" alt="Docs Selected" width={60} height={60} />,
+    label: "Docs",
+  },
 ];

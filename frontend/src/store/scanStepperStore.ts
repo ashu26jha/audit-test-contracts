@@ -5,14 +5,16 @@ interface ScanStepperState {
   currentStep: number;
   selectedOwner: Owner | null;
   selectedRepo: Repository | null;
+  branches: Branch[];
   selectedBranch: string | undefined;
   selectedContracts: string[];
-  branches: Branch[];
-  solidityFiles: File[];
+  contractSearch: string;
+  solidityFiles: SolidityFile[];
+  readmeFiles: ReadmeFile[];
+  repoDocs: RepoDocs;
   isLoading: boolean;
   isScanning: boolean;
   isNextEnabled: boolean;
-  contractSearch: string;
   repositoryURL: string;
   isValidURL: boolean;
   isLineExceeded: boolean;
@@ -21,11 +23,13 @@ interface ScanStepperState {
   setCurrentStep: (step: number) => void;
   setSelectedOwner: (owner: Owner | null) => void;
   setSelectedRepo: (repo: Repository | null) => void;
+  setBranches: (branches: Branch[]) => void;
   setSelectedBranch: (branch: string) => void;
   setSelectedContracts: (contracts: string[]) => void;
   setContractSearch: (search: string) => void;
-  setBranches: (branches: Branch[]) => void;
-  setSolidityFiles: (files: File[]) => void;
+  setSolidityFiles: (files: SolidityFile[]) => void;
+  setReadmeFiles: (files: ReadmeFile[]) => void;
+  setRepoDocs: (docs: Partial<RepoDocs>) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsScanning: (isScanning: boolean) => void;
   setIsNextEnabled: (isEnabled: boolean) => void;
@@ -41,14 +45,19 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   currentStep: 1,
   selectedOwner: null,
   selectedRepo: null,
+  branches: [],
   selectedBranch: "",
   selectedContracts: [],
-  branches: [],
+  contractSearch: "",
   solidityFiles: [],
+  readmeFiles: [],
+  repoDocs: {
+    readme: [],
+    qa: {},
+  },
   isLoading: false,
   isScanning: false,
   isNextEnabled: false,
-  contractSearch: "",
   repositoryURL: "",
   isValidURL: false,
   isLineExceeded: false,
@@ -57,11 +66,12 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedOwner: (owner) => set({ selectedOwner: owner }),
   setSelectedRepo: (repo) => set({ selectedRepo: repo }),
+  setBranches: (branches) => set({ branches }),
   setSelectedBranch: (branch) => set({ selectedBranch: branch }),
   setSelectedContracts: (contracts) => set({ selectedContracts: contracts }),
   setContractSearch: (search) => set({ contractSearch: search }),
-  setBranches: (branches) => set({ branches }),
   setSolidityFiles: (files) => set({ solidityFiles: files }),
+  setReadmeFiles: (files) => set({ readmeFiles: files }),
   setIsLoading: (isLoading) => set({ isLoading }),
   setIsScanning: (isScanning) => set({ isScanning }),
   setIsNextEnabled: (isEnabled) => set({ isNextEnabled: isEnabled }),
@@ -69,6 +79,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setIsValidURL: (isValidURL) => set({ isValidURL }),
   setIsLineExceeded: (isLineExceeded) => set({ isLineExceeded }),
   setIsFileLimitExceeded: (isLineExceeded) => set({ isFileLimitExceeded: isLineExceeded }),
+  setRepoDocs: (docs) => set((state) => ({ repoDocs: { ...state.repoDocs, ...docs } })),
   resetStepper: () =>
     set({
       currentStep: 1,
@@ -76,12 +87,20 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
       selectedRepo: null,
       selectedBranch: "",
       selectedContracts: [],
+      branches: [],
       solidityFiles: [],
+      readmeFiles: [],
       isLoading: false,
       isScanning: false,
       isNextEnabled: false,
       contractSearch: "",
       repositoryURL: "",
       isValidURL: false,
+      isLineExceeded: false,
+      isFileLimitExceeded: false,
+      repoDocs: {
+        readme: [],
+        qa: {},
+      },
     }),
 }));

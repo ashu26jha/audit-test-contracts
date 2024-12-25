@@ -117,8 +117,6 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
 
         description += "\n" + "\n".join(code_snippets)
 
-        logger.info(f"Description: {description}")
-
         # Create a dictionary for each vulnerability
         vulnerability = {
             "Issue": new_title,

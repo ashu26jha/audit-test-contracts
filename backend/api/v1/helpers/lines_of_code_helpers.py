@@ -11,8 +11,29 @@ async def count_lines_of_code(flattened_contracts: str) -> CodeAnalysisResult:
     return await _analyze_code(content=flattened_contracts, include_string_count=True)
 
 
-async def analyze_file_content(content: str, filename: str) -> CodeAnalysisResult:
+async def analyze_file_content(
+    content: str, filename: str, is_readme: bool = False
+) -> CodeAnalysisResult:
+    if is_readme:
+        return await _count_characters(content)
     return await _analyze_code(content=content, filename=filename, include_string_count=False)
+
+
+async def _count_characters(content: str) -> dict:
+    """
+    Count the number of characters in the content.
+
+    Args:
+        content: The content to analyze
+    """
+    try:
+        return {
+            "character_count": len(content),
+            "non_whitespace_character_count": len(content.strip()),
+        }
+    except Exception as e:
+        logger.exception(f"Failed to count characters: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 async def _analyze_code(

@@ -1,3 +1,4 @@
+export { default as BottomBanner } from "./BottomBanner";
 export { default as Breadcrumb } from "./Breadcrumb";
 export { default as Footer } from "./Footer";
 export { default as Loading } from "./Loading";

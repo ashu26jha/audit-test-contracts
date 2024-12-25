@@ -6,6 +6,7 @@ from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.helpers.audit_helpers import update_scan_failure
+from api.v1.helpers.repository_docs_helpers import format_docs_for_prompt, store_repository_docs
 from api.v1.helpers.setup_environment_helpers import cleanup_environment, setup_environment
 from api.v1.models.user import User
 from api.v1.schemas import audit_agent_schema
@@ -36,6 +37,27 @@ async def initiate_scan(
         # Validation
         is_pro_scan = await initializer.validate_request()
 
+        # Format docs if provided and user is a subscriber
+        formatted_docs = None
+        if request.docs and is_pro_scan:
+            await store_repository_docs(
+                repository_url=request.repositoryURL,
+                user_id=user.githubId,
+                docs=request.docs,
+            )
+
+            # Get repository info for readme content
+            owner, repo = github_service.github_helpers.parse_github_url(request.repositoryURL)
+
+            # Format docs with actual readme content
+            formatted_docs = await format_docs_for_prompt(
+                request.docs,
+                user.accessToken,
+                owner,
+                repo,
+                request.branchName,
+            )
+
         # Fetch repository info
         await initializer.fetch_repository_info()
 
@@ -53,6 +75,7 @@ async def initiate_scan(
             is_pro_scan,
             request,
             initializer,
+            formatted_docs,
             background_tasks,
         )
 
@@ -70,6 +93,7 @@ async def _perform_scan_initialization(
     is_pro_scan: bool,
     request: audit_agent_schema.AuditAgentRequest,
     initializer: ScanInitializer,
+    formatted_docs: Optional[str],
     background_tasks: BackgroundTasks,
 ):
     try:
@@ -103,9 +127,9 @@ async def _perform_scan_initialization(
             is_pro_scan,
             flattened_contracts,
             request.repositoryURL,
-            user.accessToken,
+            request.branchName,
             request.contractFiles,
-            initializer.branch_name,
+            formatted_docs,
             initializer.temp_dir,
             initializer.repo_dir,
         )
@@ -123,9 +147,9 @@ async def _perform_audit_agent_background(
     is_pro_scan: bool,
     flattened_contracts: str,
     repository_url: str,
-    access_token: str,
-    selected_contracts: List[str],
     branch_name: str,
+    selected_contracts: List[str],
+    formatted_docs: Optional[str],
     temp_dir: str,
     repo_dir: str,
 ):
@@ -150,7 +174,7 @@ async def _perform_audit_agent_background(
             setup_result = await setup_environment(
                 repository_url,
                 repo_dir,
-                access_token,
+                user.accessToken,
                 branch_name,
                 scan_id,
                 selected_contracts,
@@ -164,6 +188,7 @@ async def _perform_audit_agent_background(
             scan_id=scan_id,
             flattened_contracts=flattened_contracts,
             selected_contracts=selected_contracts,
+            docs=formatted_docs,
             setup_result=setup_result,
             detected_profile=Profiles.DEFAULT,
         )

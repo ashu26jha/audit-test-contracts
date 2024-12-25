@@ -5,7 +5,7 @@ import { type FC, useState } from "react";
 import { Card, CardBody, Button, Tooltip, Divider } from "@nextui-org/react";
 import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 
-import { Breadcrumb, StateMessage } from "@/components/layout";
+import { Breadcrumb, StateMessage, BottomBanner } from "@/components/layout";
 
 import PaymentsModal from "../Modals/PaymentsModal";
 import { BluredFindings, Finding } from "../scan-results";
@@ -70,27 +70,8 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
     </>
   );
 
-  const renderPaymentCard = () => (
-    <div className="bg-transparent sticky flex justify-center items-end bottom-0 left-0 right-0 bg-gradient-to-t from-[#3B175F] to-[#18181B00] rounded-b-xl h-[8rem]">
-      <Card className="lg:w-[80%]  bg-[#F2EAFA] bottom-6 flex justify-between items-center p-2">
-        <CardBody className="flex flex-row justify-between items-center space-x-2">
-          <div className="flex flex-col pl-5">
-            <strong className="text-sm text-black">Only one finding is free.</strong>
-            <p className="text-sm text-black">
-              Unlock full access to a detailed report of {scanData.total_findings} vulnerabilities.
-            </p>
-          </div>
-
-          <Button color="secondary" className="bg-secondary" onPress={() => setIsSubscriptionModalOpen(true)}>
-            Pay & Get Full Report
-          </Button>
-        </CardBody>
-      </Card>
-    </div>
-  );
-
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="w-full flex flex-raw justify-between items-center pb-4 px-4">
         <Breadcrumb base="Dashboard" current={scanData.scan.repositoryName} />
         <Tooltip content="More information">
@@ -107,13 +88,13 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
 
       <Divider className="my-2" />
 
-      <div className="flex-1 flex justify-center min-h-0">
-        <div className="w-full lg:w-[80%] flex flex-col pt-4">
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="h-full w-full lg:w-[80%] mx-auto flex flex-col pt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {scanStats.map((stat, index) => (
               <Card key={index} className="bg-[#0F0F0F] border-2 border-[#18181B]">
                 <CardBody className="flex flex-row items-center space-x-3">
-                  <div className="bg-[#18181B] p-2 rounded-xl">{stat.icon}</div>
+                  <div className="bg-[#18181B] p-2 rounded-lg">{stat.icon}</div>
                   <div>
                     <p className="text-sm font-inter font-normal text-[#A1A1AA]">{stat.label}</p>
                     <p className="text-sm font-medium">{stat.value}</p>
@@ -123,28 +104,24 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
             ))}
           </div>
 
-          <div className="flex-1 relative min-h-0">
-            <div className="absolute inset-0 overflow-hidden">
-              {/* Failed scans */}
-              {isFailed && renderFailed()}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {/* Failed scans */}
+            {isFailed && renderFailed()}
 
-              {/* In progress scans */}
-              {!isFailed && !isCompleted && renderInProgress()}
+            {/* In progress scans */}
+            {!isFailed && !isCompleted && renderInProgress()}
 
-              {/* No findings scans */}
-              {isNoFinding && renderNoFindings()}
+            {/* No findings scans */}
+            {isNoFinding && renderNoFindings()}
 
-              {/* Findings scans */}
-              {!isNoFinding && renderFindings()}
+            {/* Findings scans */}
+            {isCompleted && !isNoFinding && renderFindings()}
 
-              {/* Blured finding when not paid */}
-              {isCompleted && !isPaid && !isNoFinding && <BluredFindings />}
-            </div>
+            {/* Blured finding when not paid */}
+            {isCompleted && !isPaid && !isNoFinding && <BluredFindings />}
           </div>
         </div>
       </div>
-
-      {isCompleted && !isPaid && !isNoFinding && renderPaymentCard()}
 
       <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
       <PaymentsModal
@@ -152,6 +129,19 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
         setIsOpen={setIsSubscriptionModalOpen}
         scanId={scanData.scan_id}
       />
+
+      {isCompleted && !isPaid && !isNoFinding && (
+        <BottomBanner
+          title="Only one finding is free."
+          description={`Unlock full access to a detailed report of ${scanData.total_findings} vulnerabilities.`}
+          buttonText="Pay & Get Full Report"
+          action={() => setIsSubscriptionModalOpen(true)}
+          cardBgColor="bg-[#F2EAFA]"
+          titleColor="text-black"
+          descriptionColor="text-black"
+          buttonClassName="bg-secondary text-white"
+        />
+      )}
     </div>
   );
 };

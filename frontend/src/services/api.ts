@@ -59,6 +59,16 @@ export const getRepositoryContents = async (owner: string, repo: string, branch:
   return response.data.data;
 };
 
+export const getReadmeFiles = async (owner: string, repo: string, branch: string, path: string = "") => {
+  const response = await api.get(`/api/v1/github/repository-readme/${owner}/${repo}?branch=${branch}&path=${path}`);
+  return response.data.data;
+};
+
+export const getRepositoryDocs = async (owner: string, repo: string): Promise<DocsResponse> => {
+  const response = await api.get(`/api/v1/github/repository-docs/${owner}/${repo}`);
+  return response.data.data;
+};
+
 export const getPartialScanResults = async (scanId: string) => {
   const response = await api.get(`/api/v1/scans/partial/${scanId}`);
   const result = response.data.data.partial_result;
@@ -89,7 +99,7 @@ export const createPortalSession = async () => {
 
 // PROTECTED ROUTES //
 
-export const initiateScan = async (data: { repositoryURL: string; contractFiles: string[]; branchName: string }) => {
+export const initiateScan = async (data: InitiateScanRequest) => {
   const response = await axios.post("/api/launchScan", data, {
     withCredentials: true,
   });

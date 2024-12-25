@@ -32,35 +32,74 @@ class GitHubService:
         return primary_email
 
     async def get_repository_contents(
-        self, access_token: str, owner: str, repo: str, branch: str, path: str = ""
+        self,
+        access_token: str,
+        owner: str,
+        repo: str,
+        branch: str,
+        path: str = "",
+        file_type: str = "sol",
     ) -> List[Dict[str, str]]:
+        """
+        Get repository contents filtered by file type.
+
+        Args:
+            access_token: GitHub access token
+            owner: Repository owner
+            repo: Repository name
+            branch: Branch name
+            path: Optional path within repository
+            file_type: Type of files to fetch ("sol" or "readme")
+        """
         url = f"repos/{owner}/{repo}/git/trees/{branch}"
         response = await self.github_helpers.github_get(url, access_token, {"recursive": 1})
 
-        # Filter for .sol files
-        sol_files = [
-            item
-            for item in response["tree"]
-            if item["type"] == "blob" and item["path"].endswith(".sol")
-        ]
+        # Filter files based on type
+        if file_type == "readme":
+            files = [
+                item
+                for item in response["tree"]
+                if item["type"] == "blob" and item["path"].lower().endswith("readme.md")
+            ]
+        else:  # Default to .sol files
+            files = [
+                item
+                for item in response["tree"]
+                if item["type"] == "blob" and item["path"].endswith(".sol")
+            ]
 
         # Fetch contents in parallel
         async def get_file_info(file_item):
             content = await self.get_file_content(
                 access_token, owner, repo, file_item["path"], branch
             )
-            line_count = await analyze_file_content(content, file_item["path"])
-            return {
+            is_readme = file_type == "readme"
+            analysis = await analyze_file_content(content, file_item["path"], is_readme)
+
+            result = {
                 "name": file_item["path"].split("/")[-1],
                 "path": file_item["path"],
                 "type": "file",
                 "download_url": f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_item['path']}",
                 "token": count_tokens(content),
-                "lineCount": line_count["total_lines"],
             }
 
+            if is_readme:
+                result.update(
+                    {
+                        "character_count": analysis["character_count"],
+                        "non_whitespace_character_count": analysis[
+                            "non_whitespace_character_count"
+                        ],
+                    }
+                )
+            else:
+                result["lineCount"] = analysis["total_lines"]
+
+            return result
+
         # Use asyncio.gather for parallel requests
-        tasks = [get_file_info(file) for file in sol_files]
+        tasks = [get_file_info(file) for file in files]
         files = await asyncio.gather(*tasks)
 
         return files
