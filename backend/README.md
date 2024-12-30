@@ -18,13 +18,14 @@
 
 ## Introduction
 
-This is the backend component of the Yokai Audit Agent, providing the core functionality for smart contract auditing, GitHub integration, and user management.
+This is the backend component of Audit Agent, providing the core functionality for smart contract auditing, GitHub integration, and user management.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Python 3.12+
+- Node.js 20+
 - MongoDB
 - Git
 
@@ -58,13 +59,13 @@ GITHUB_INSTALLATION_URL=your_github_installation_url
 
 ## Running the Server
 
-To launch a local development server:
+To launch a local development server (PDF generation not working):
 ```bash
 cd backend
 uvicorn main:app --reload
 ```
 
-To launch a local development server with Docker:
+To launch a local development server with Docker (PDF generation OK):
 ```bash
 cd backend
 docker build -t audit-agent-backend -f Dockerfile.backend.dev .
@@ -727,6 +728,32 @@ Your webhook signing secret is whsec_ (^C to quit)
 ## Profiles
 
 <details>
+<summary>Default 1</summary>
+
+| Audit ID   | Category    | Tokens    | Total findings |
+|------------|-------------|-----------|----------------|
+| NM0070     | NFT-Gaming  | 10,625    | 17             |
+| NM0081     | Utility     | 9,858     | 11             |
+| NM0108     | DeFi        | 4,102     | 9              |
+| NM0227     | DeFi        | 15,905    | 12             |
+| **Total**  |             | **40,490**| **49**         |
+</details>
+
+
+
+<details>
+<summary>Default 2</summary>
+
+| Audit ID   | Category    | Tokens    | Total findings |
+|------------|-------------|-----------|----------------|
+| NM0062     | NFT-Gaming  | 4,480     | 14             |
+| NM0074     | DeFi        | 22,813    | 14             |
+| NM0225     | NFT-Gaming  | 15905     | 24             |
+| **Total**  |             | **43,198**| **52**         |
+</details>
+
+
+<!-- <details>
   <summary>DeFi</summary>
   <ul>
     <li>Total token: 34,865</li>
@@ -775,22 +802,6 @@ Your webhook signing secret is whsec_ (^C to quit)
     <li>Governance, etc. Total tokens: 29,347</li>
     <li>NM00096: Tokens Input: 29,347</li>
   </ul>
-</details>
+</details> -->
 
-<details>
-  <summary>Default</summary>
-  <ul>
-    <li>Total tokens: 48,497</li>
-    <li>NM0062: Tokens Input: 1,627</li>
-    <li>NM0067: Tokens Input: 3,462</li>
-    <li>NM0070: Tokens Input: 5,601</li>
-    <li>NM0073: Tokens Input: 6,237</li>
-    <li>NM0081: Token Input: 6,753</li>
-    <li>NM0083: Tokens Input: 1,715</li>
-    <li>NM0108: Tokens Input: 1,351</li>
-    <li>NM0160: Token Input: 4,171</li>
-    <li>NM0227: Tokens Input: 11,326</li>
-    <li>NM0234: Tokens Input: 6,254</li>
-  </ul>
-</details>
 

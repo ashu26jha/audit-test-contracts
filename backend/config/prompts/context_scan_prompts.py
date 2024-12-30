@@ -66,6 +66,7 @@ CONTEXT_PROMPT_WITH_DOCS = """
     - Do not include the recommendation part. Leave it as empty string. Feel free to add vague suggestions inside the description, as long as it is not a direct recommendation, and can't introduce any liability.
 
     Return the output in the following JSON format, without any additional text or explanations:
+    ```json
     {{
         "findings": [
             {{
@@ -77,6 +78,7 @@ CONTEXT_PROMPT_WITH_DOCS = """
             }}
         ]
     }}
+    ```
 
     **Documentation of the project:**
     {docs}

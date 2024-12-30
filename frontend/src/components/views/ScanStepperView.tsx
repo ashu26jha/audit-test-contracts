@@ -103,7 +103,7 @@ const ScanStepperView: FC = () => {
 
   const handleScan = async () => {
     if (currentStep === STEPS.length) {
-      if (user?.subscription.credits === 1 || user?.subscription.credits === 0) {
+      if (user?.subscription.isActive && (user?.subscription.credits === 1 || user?.subscription.credits === 0)) {
         setOpenWarningDialog(true);
         return;
       }
@@ -140,11 +140,11 @@ const ScanStepperView: FC = () => {
 
   return (
     <>
-      {user?.subscription.credits === 1 && (
+      {user?.subscription.isActive && user?.subscription.credits === 1 && (
         <CreditWarningModal isOpen={openWarningDialog} setIsOpen={setOpenWarningDialog} onClick={startScan} />
       )}
 
-      {user?.subscription.credits === 0 && (
+      {user?.subscription.isActive && user?.subscription.credits === 0 && (
         <TalkToSalesModal
           isOpen={openWarningDialog}
           setIsOpen={setOpenWarningDialog}

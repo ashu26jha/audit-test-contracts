@@ -1,0 +1,51 @@
+# For Docker local testing only
+# TODO: 
+# - Create a new .env.staging file in backend/
+# - Change the frontend url to: http://localhost:8080
+services:
+  redis-staging:
+    image: redis:7.2-alpine
+    container_name: redis-staging
+    ports:
+      - "6379:6379"
+    networks:
+      - auditor-staging-network
+
+  backend-staging:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend.staging
+    container_name: backend-staging
+    ports:
+      - "8000:8000"
+    networks:
+      - auditor-staging-network
+    env_file:
+      - ./backend/.env.staging
+    environment:
+      - NODE_ENV=staging
+      - REDIS_URL=redis://redis-staging:6379
+    depends_on:
+      - redis-staging
+    command: sh -c "until redis-cli -h redis-staging ping; do sleep 1; done && python3 main.py"
+
+  frontend-staging:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.nginx.staging
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+        - NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/auditagent-dev/installations/new
+    container_name: frontend-staging
+    ports:
+      - "8080:80"  # Using 8080 to avoid conflicts with dev environment
+    networks:
+      - auditor-staging-network
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - backend-staging
+
+networks:
+  auditor-staging-network:
+    driver: bridge 

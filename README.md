@@ -39,13 +39,54 @@ For specific information about each component, please refer to their respective 
 
 To get started with Yokai Audit Agent, follow these steps:
 
-1. Clone the repository
-2. Configure all environment variables
-3. Start docker compose
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/NethermindEth/ai-auditor.git
+```
+
+### 2. Configure all environment variables
+
+#### In the frontend folder
+
+```bash
+# Public Variables
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/<app-name>/installations/new
+
+# Private Variables
+X_API_KEY=<your-api-key>
+
+```
+
+#### In the backend folder
+
+```bash
+ENVIRONMENT=development
+FRONTEND_URL=http://localhost:3000
+BASE_URL=http://localhost:8000
+COOKIE_DOMAIN=localhost
+...
+```
+
+### 3. Start docker compose
+
+#### Local Development
+
 ```bash
 docker-compose up --build
+
+# To reinstall the dependencies, run the following command first
+docker-compose down --volumes
 ```
-4. Run the application
+
+#### Local Staging Deployment (TESTING THE DOCKERFILE ONLY)
+
+```bash
+docker-compose -f docker-compose.staging.yml up --build
+```
+
+### 4. Run the application
 
 For more infos, refers the the different READMEs
 - Set up the backend (see [Backend README](./backend/README.md))

@@ -33,35 +33,35 @@ ENV DEBIAN_FRONTEND=noninteractive \
 COPY --from=builder /root/.foundry /root/.foundry
 COPY --from=builder /usr/local/bin/stripe /usr/local/bin/stripe
 
-# Install runtime dependencies
+# Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     ca-certificates \
     curl \
     git \
-    libssl-dev \
     redis-server \
     && curl --proto "=https" --tlsv1.2 -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=20.* \
     && npm install -g --ignore-scripts npm@latest \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* /root/.npm/* /root/.cache/*
 
-# Install Python dependencies Playwright, and Aderyn 
+# Install Python dependencies, Playwright (Chromium only), and Aderyn
 WORKDIR /app/backend
 COPY requirements.txt .
 ADD https://raw.githubusercontent.com/Cyfrin/aderyn/dev/cyfrinup/install install.sh
 ADD https://raw.githubusercontent.com/Cyfrin/aderyn/master/cyfrinup/cyfrinup /root/.cyfrin/bin/cyfrinup
+
 RUN pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
-    && playwright install \
-    && playwright install-deps \
+    && playwright install chromium --with-deps \
     && chmod +x install.sh \
     && bash ./install.sh \
     && mkdir -p /root/.cyfrin/bin \
     && chmod +x /root/.cyfrin/bin/cyfrinup \
     && /root/.cyfrin/bin/cyfrinup \
-    && rm install.sh
+    && rm -rf install.sh \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /root/.npm/* 
 
 # Copy application code
 COPY . .

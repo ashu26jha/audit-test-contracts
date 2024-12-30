@@ -43,6 +43,7 @@ The Agent Audit UI is built with modern web technologies to ensure a responsive,
 You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
 
 ```bash
+cd frontend
 npm install
 ```
 

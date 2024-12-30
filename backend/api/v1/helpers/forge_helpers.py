@@ -148,7 +148,7 @@ def _preprocess_solidity_files(temp_dir: str) -> None:
 
                 # Replace address variables assigned to empty strings
                 content = re.sub(
-                    r"address\s++(?:public|private|internal|external)?\s*+(?:constant\s*+)?\w++\s*+=\s*+\"\";",
+                    r"address\s+(?:public|private|internal|external)?\s*(?:constant\s*)?\w+\s*=\s*\"\";",
                     lambda m: m.group().replace('""', "address(0)"),
                     content,
                 )

@@ -1,12 +1,26 @@
-FROM node:18.19.0-slim
+FROM node:22.12.0-slim AS builder
+
+ENV NODE_ENV=development \
+    NPM_CONFIG_LOGLEVEL=warn
+
+RUN groupadd -r appuser && useradd -r -g appuser -m appuser
 
 WORKDIR /app/frontend
 
 COPY package*.json ./
-COPY . .
 
-RUN npm install
+RUN npm install --ignore-scripts && \
+    apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p .next && \
+    chown -R appuser:appuser /app
 
-CMD ["npm", "run", "dev"]
+COPY --chown=appuser:appuser . .
+
+USER appuser
 
 EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

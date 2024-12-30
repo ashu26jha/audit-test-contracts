@@ -60,7 +60,7 @@ def run_command_sync(
     """
     try:
         with subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, text=True
         ) as process:
             stdout, stderr = process.communicate(timeout=10)
             return_code = process.returncode
