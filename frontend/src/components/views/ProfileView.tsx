@@ -1,14 +1,13 @@
 "use client";
 import { useState, type FC } from "react";
 
-import { Divider, Button } from "@nextui-org/react";
+import { Button } from "@nextui-org/react";
 import { useSearchParams } from "next/navigation";
 
+import { Container } from "@/components/layout";
 import { AllowedRepositories, SubscriptionCard, UserDetails } from "@/components/profile";
 import { PRO_PLAN_DETAILS } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
-
-import { Breadcrumb } from "../layout";
 
 const ProfileView: FC = () => {
   const { user, logout } = useAuth();
@@ -18,9 +17,9 @@ const ProfileView: FC = () => {
   if (!user) return null;
 
   return (
-    <div className="h-full flex flex-col relative">
-      <div className="w-full flex flex-raw justify-between items-center pb-4 px-4">
-        <Breadcrumb base="Dashboard" current="Profile Settings" />
+    <Container
+      breadcrumbItems={["Dashboard", "Profile Settings"]}
+      buttons={
         <div className="flex space-x-2">
           <ButtonProfile
             selectedTab={selectedTab}
@@ -41,10 +40,8 @@ const ProfileView: FC = () => {
             onClick={() => setSelectedTab("subscription")}
           />
         </div>
-      </div>
-
-      <Divider className="my-2" />
-
+      }
+    >
       <div className="h-full flex flex-col items-center gap-6 pb-8 mt-10">
         {selectedTab === "details" && <UserDetails user={user} logout={logout} />}
         {selectedTab === "repositories" && <AllowedRepositories />}
@@ -68,7 +65,7 @@ const ProfileView: FC = () => {
           />
         )}
       </div>
-    </div>
+    </Container>
   );
 };
 

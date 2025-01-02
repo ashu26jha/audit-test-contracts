@@ -5,3 +5,4 @@ export { default as ProfileView } from "./ProfileView";
 export { default as ScanFullResultsView } from "./ScanFullResultsView";
 export { default as ScanResultsView } from "./ScanResultsView";
 export { default as ScanStepperView } from "./ScanStepperView";
+export { default as RepositoryView } from "./RepositoryView";

@@ -3,7 +3,7 @@
 import { type FC } from "react";
 
 import { ProtectedRoute } from "@/components/layout";
-import ScanInfoModal from "@/components/Modals/ScanInfoModal";
+import { ScanInfoModal } from "@/components/Modals";
 import { DashboardView, ScanStepperView } from "@/components/views";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 

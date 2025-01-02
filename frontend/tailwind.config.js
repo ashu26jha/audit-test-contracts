@@ -29,8 +29,13 @@ module.exports = {
           500: "#3b82f6",
         },
         background: "#0F0F0F",
+        foreground: {
+          DEFAULT: "#ECEDEE",
+          500: "#A1A1AA",
+        },
         content: {
           1: "#18181B",
+          2: "#27272A",
         },
         default: {
           DEFAULT: "#3F3F46",
@@ -43,6 +48,7 @@ module.exports = {
         secondary: {
           DEFAULT: "#9353D3",
           flat: "#9353D333",
+          600: "#AE7EDE",
           700: "#C9A9E9",
         },
       },

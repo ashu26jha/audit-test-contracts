@@ -7,17 +7,19 @@ import type { AxiosError } from "axios";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { Container, Loading } from "@/components/layout";
+import { CreditWarningModal, TalkToSalesModal } from "@/components/Modals";
+import {
+  BranchSelection,
+  ContractSelection,
+  RepositorySelection,
+  StepperVisualization,
+} from "@/components/scan-stepper";
+import { DocsSelection } from "@/components/scan-stepper/DocsSelection";
 import { STEPS } from "@/config/steps";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast, useScanStepper } from "@/hooks";
 import { useScanStepperStore } from "@/store/scanStepperStore";
-
-import { Loading } from "../layout";
-import Breadcrumb from "../layout/Breadcrumb";
-import CreditWarningModal from "../Modals/CreditWarningModal";
-import TalkToSalesModal from "../Modals/TalkToSalesModal";
-import { BranchSelection, ContractSelection, RepositorySelection, StepperVisualization } from "../scan-stepper";
-import { DocsSelection } from "../scan-stepper/DocsSelection";
 
 const ScanStepperView: FC = () => {
   const router = useRouter();
@@ -152,38 +154,36 @@ const ScanStepperView: FC = () => {
         />
       )}
 
-      <section className="h-full flex flex-col">
-        <div className="flex-1 min-h-0 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <Breadcrumb base="Dashboard" current="Scan Code" />
-            <div>
-              <Button className="mr-2 rounded-lg bg-content-1 border border-default-flat" onPress={handleBack}>
-                Go Back
-              </Button>
-              <Button
-                color="secondary"
-                className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3] rounded-lg"
-                isDisabled={!useScanStepperStore.getState().isNextEnabled || isLineExceeded || isFileLimitExceeded}
-                endContent={<ArrowRight size={20} />}
-                onPress={handleScan}
-              >
-                {currentStep === STEPS.length ? "Scan Code" : "Next"}
-              </Button>
-            </div>
+      <Container
+        breadcrumbItems={["Dashboard", "Scan Code"]}
+        buttons={
+          <div>
+            <Button className="mr-2 rounded-lg bg-content-1 border border-default-flat" onPress={handleBack}>
+              Go Back
+            </Button>
+            <Button
+              color="secondary"
+              className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3] rounded-lg"
+              isDisabled={!useScanStepperStore.getState().isNextEnabled || isLineExceeded || isFileLimitExceeded}
+              endContent={<ArrowRight size={20} />}
+              onPress={handleScan}
+            >
+              {currentStep === STEPS.length ? "Scan Code" : "Next"}
+            </Button>
           </div>
-
-          <div className="h-32 flex justify-center items-center border-y border-default-100">
-            <StepperVisualization currentStep={currentStep} />
-          </div>
-
-          <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto pt-8">
-            {currentStep === 1 && <RepositorySelection />}
-            {currentStep === 2 && <BranchSelection />}
-            {currentStep === 3 && <ContractSelection />}
-            {currentStep === 4 && <DocsSelection />}
-          </div>
+        }
+      >
+        <div className="h-24 flex justify-center items-start border-b-2 border-default-100">
+          <StepperVisualization currentStep={currentStep} />
         </div>
-      </section>
+
+        <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto pt-8">
+          {currentStep === 1 && <RepositorySelection />}
+          {currentStep === 2 && <BranchSelection />}
+          {currentStep === 3 && <ContractSelection />}
+          {currentStep === 4 && <DocsSelection />}
+        </div>
+      </Container>
     </>
   );
 };

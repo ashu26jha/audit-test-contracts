@@ -4,9 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { getScanHistory } from "@/services/api";
+import { useRepositoryStore } from "@/store/repositoryStore";
 
 export const useFetchScanHistory = (pollingInterval = 5000) => {
   const { user } = useAuth();
+  const { setScans, getRepositoryScans, getAllRepositories } = useRepositoryStore();
   const [scanable, setScanable] = useState<boolean>(false);
   const [hasActiveScans, setHasActiveScans] = useState<boolean>(false);
 
@@ -21,7 +23,9 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
       if (!user) {
         throw new Error("No user found");
       }
-      return await getScanHistory();
+      const data = await getScanHistory();
+      setScans(data);
+      return data;
     },
     enabled: !!user,
     refetchInterval: hasActiveScans ? pollingInterval : false,
@@ -46,5 +50,13 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
     }
   }, [scanHistory]);
 
-  return { scanHistory, isLoading, error, scanable, refetch };
+  return {
+    scanHistory,
+    isLoading,
+    error,
+    scanable,
+    refetch,
+    repositories: getAllRepositories(),
+    getRepositoryScans,
+  };
 };

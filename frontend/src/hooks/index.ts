@@ -3,6 +3,7 @@ export * from "./useFetchScanHistory";
 export * from "./useGithubApp";
 export * from "./usePaymentProcessing";
 export * from "./usePaymentResult";
+export * from "./useScansFiltering";
 export * from "./useScanStepper";
 export * from "./useSendReport";
 export * from "./useToast";

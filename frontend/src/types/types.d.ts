@@ -33,6 +33,7 @@ interface ScanHistoryItem {
 }
 
 type ScanStatus = "pending" | "in_progress" | "completed" | "failed";
+type FilterKey = (typeof filters)[number]["key"];
 
 interface Finding {
   Issue: string;
@@ -55,6 +56,17 @@ interface ScanResult {
   total_findings: number;
   type: ScanType;
   progress: number;
+}
+
+interface RepositoriesData {
+  repositoryName: string;
+  repositoryURL: string;
+  scans: ScanHistoryItem[];
+  logo?: string | null;
+  latestScan?: ScanHistoryItem;
+  totalScans: number;
+  hasUnpaidScans: boolean;
+  hasActiveScans: boolean;
 }
 
 interface Subscription {

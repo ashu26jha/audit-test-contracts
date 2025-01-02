@@ -2,15 +2,14 @@
 
 import { type FC, useState } from "react";
 
-import { Card, CardBody, Button, Tooltip, Divider } from "@nextui-org/react";
+import { Card, CardBody, Button, Tooltip } from "@nextui-org/react";
 import { AlertTriangle, FileText, Code, Hash, Info, CheckCircle } from "lucide-react";
 
-import { Breadcrumb, StateMessage, BottomBanner } from "@/components/layout";
-
-import PaymentsModal from "../Modals/PaymentsModal";
-import { BluredFindings, Finding } from "../scan-results";
-import { ScanProgress } from "../scan-stepper/ScanProgress";
-import ScanInfo from "../ScanInfo";
+import { Container, StateMessage, BottomBanner } from "@/components/layout";
+import PaymentsModal from "@/components/Modals/PaymentsModal";
+import { BluredFindings, Finding } from "@/components/scan-results";
+import { ScanProgress } from "@/components/scan-stepper/ScanProgress";
+import ScanInfo from "@/components/ScanInfo";
 
 interface ScanResultsViewProps {
   scanData: ScanResult;
@@ -71,9 +70,9 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
   );
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="w-full flex flex-raw justify-between items-center pb-4 px-4">
-        <Breadcrumb base="Dashboard" current={scanData.scan.repositoryName} />
+    <Container
+      breadcrumbItems={["Dashboard", scanData.scan.repositoryName, scanData.scan_number.toString()]}
+      buttons={
         <Tooltip content="More information">
           <Button
             size="sm"
@@ -84,65 +83,65 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
             Info
           </Button>
         </Tooltip>
-      </div>
+      }
+    >
+      <div className="overflow-hidden h-full">
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div className="h-full w-full lg:w-[80%] mx-auto flex flex-col pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {scanStats.map((stat, index) => (
+                <Card key={index} className="bg-[#0F0F0F] border-2 border-[#18181B]">
+                  <CardBody className="flex flex-row items-center space-x-3">
+                    <div className="bg-[#18181B] p-2 rounded-lg">{stat.icon}</div>
+                    <div>
+                      <p className="text-sm font-inter font-normal text-[#A1A1AA]">{stat.label}</p>
+                      <p className="text-sm font-medium">{stat.value}</p>
+                    </div>
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
 
-      <Divider className="my-2" />
+            <div className="flex-1 min-h-[calc(100vh-40vh)]  overflow-hidden flex justify-center items-center">
+              {/* Failed scans */}
+              {isFailed && renderFailed()}
 
-      <div className="flex-1 min-h-0 flex flex-col">
-        <div className="h-full w-full lg:w-[80%] mx-auto flex flex-col pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {scanStats.map((stat, index) => (
-              <Card key={index} className="bg-[#0F0F0F] border-2 border-[#18181B]">
-                <CardBody className="flex flex-row items-center space-x-3">
-                  <div className="bg-[#18181B] p-2 rounded-lg">{stat.icon}</div>
-                  <div>
-                    <p className="text-sm font-inter font-normal text-[#A1A1AA]">{stat.label}</p>
-                    <p className="text-sm font-medium">{stat.value}</p>
-                  </div>
-                </CardBody>
-              </Card>
-            ))}
-          </div>
+              {/* In progress scans */}
+              {!isFailed && !isCompleted && renderInProgress()}
 
-          <div className="flex-1 min-h-0 overflow-hidden">
-            {/* Failed scans */}
-            {isFailed && renderFailed()}
+              {/* No findings scans */}
+              {isNoFinding && renderNoFindings()}
 
-            {/* In progress scans */}
-            {!isFailed && !isCompleted && renderInProgress()}
+              {/* Findings scans */}
+              {isCompleted && !isNoFinding && renderFindings()}
 
-            {/* No findings scans */}
-            {isNoFinding && renderNoFindings()}
-
-            {/* Findings scans */}
-            {isCompleted && !isNoFinding && renderFindings()}
-
-            {/* Blured finding when not paid */}
-            {isCompleted && !isPaid && !isNoFinding && <BluredFindings />}
+              {/* Blured finding when not paid */}
+              {isCompleted && !isPaid && !isNoFinding && <BluredFindings />}
+            </div>
           </div>
         </div>
-      </div>
 
-      <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
-      <PaymentsModal
-        isOpen={isSubscriptionModalOpen}
-        setIsOpen={setIsSubscriptionModalOpen}
-        scanId={scanData.scan_id}
-      />
-
-      {isCompleted && !isPaid && !isNoFinding && (
-        <BottomBanner
-          title="Only one finding is free."
-          description={`Unlock full access to a detailed report of ${scanData.total_findings} vulnerabilities.`}
-          buttonText="Pay & Get Full Report"
-          action={() => setIsSubscriptionModalOpen(true)}
-          cardBgColor="bg-[#F2EAFA]"
-          titleColor="text-black"
-          descriptionColor="text-black"
-          buttonClassName="bg-secondary text-white"
+        <ScanInfo isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} scanData={scanData} />
+        <PaymentsModal
+          isOpen={isSubscriptionModalOpen}
+          setIsOpen={setIsSubscriptionModalOpen}
+          scanId={scanData.scan_id}
         />
-      )}
-    </div>
+
+        {isCompleted && !isPaid && !isNoFinding && (
+          <BottomBanner
+            title="Only one finding is free."
+            description={`Unlock full access to a detailed report of ${scanData.total_findings} vulnerabilities.`}
+            buttonText="Pay & Get Full Report"
+            action={() => setIsSubscriptionModalOpen(true)}
+            cardBgColor="bg-[#F2EAFA]"
+            titleColor="text-black"
+            descriptionColor="text-black"
+            buttonClassName="bg-secondary text-white"
+          />
+        )}
+      </div>
+    </Container>
   );
 };
 
