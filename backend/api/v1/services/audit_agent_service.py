@@ -97,6 +97,10 @@ async def _perform_scan_initialization(
     background_tasks: BackgroundTasks,
 ):
     try:
+        # Create initial payment record
+        payment_handler = PaymentHandler(user=user, scan_id=scan_id)
+        await payment_handler.create_initial_payment_record()
+
         # Deduct credit
         if is_pro_scan:
             await deduct_credit(user.githubId, scan_id, request.repositoryURL)

@@ -32,7 +32,7 @@ def parse_model_response(
         return content
 
     try:
-        # Special handling for Gemini responses
+        # 1. Special handling for Gemini responses
         if model_type in SUPPORTED_MODELS.get("gemini", []):
             cleaned_content = _clean_gemini_response(content)
             try:
@@ -40,17 +40,18 @@ def parse_model_response(
                 return response_model.model_validate(parsed_json)
             except (json.JSONDecodeError, ValidationError) as e:
                 logger.debug(
-                    f"Gemini parsing failed: {str(e)}, falling back to standard parsing..."
+                    f"Gemini parsing failed: {str(e)} / Errors: {getattr(e, 'errors', lambda: None)()}, "
+                    "falling back to standard parsing..."
                 )
 
-        # 1. Try direct parsing first (fastest)
+        # 2. Try direct parsing first (fastest)
         try:
             parsed_json = json.loads(content)
             return response_model.model_validate(parsed_json)
         except (json.JSONDecodeError, ValidationError):
             logger.debug("Direct parsing failed, trying cleanup steps...")
 
-        # 2. Basic cleanup and retry
+        # 3. Basic cleanup and retry
         cleaned_content = content.strip()
         if cleaned_content.startswith("```") or cleaned_content.startswith("```json"):
             # Remove markdown code blocks
@@ -65,7 +66,7 @@ def parse_model_response(
             except (json.JSONDecodeError, ValidationError):
                 logger.debug("Basic markdown cleanup failed, trying JSON extraction...")
 
-        # 3. Try to extract JSON structure
+        # 4. Try to extract JSON structure
         json_content = extract_json(cleaned_content)
         if json_content:
             try:
@@ -74,7 +75,7 @@ def parse_model_response(
             except (json.JSONDecodeError, ValidationError):
                 logger.debug("JSON extraction failed, trying advanced cleaning...")
 
-        # 4. Advanced cleaning as last resort
+        # 5. Advanced cleaning as last resort
         cleaned_json = _clean_json_content(cleaned_content)
         try:
             parsed_json = json.loads(cleaned_json)
@@ -118,68 +119,109 @@ def _clean_gemini_response(content: str) -> str:
 
 def _clean_json_content(content: str) -> str:
     """Comprehensive JSON cleaning for various edge cases."""
-    # Remove control characters (from old version)
-    control_chars = "".join(map(chr, range(0, 32))) + "".join(map(chr, range(127, 160)))
-    control_char_regex = f"[{re.escape(control_chars)}]"
-    content = re.sub(control_char_regex, "", content)
+    # If there's an odd number of triple backticks, try to close them
+    backtick_count = content.count("```")
+    if backtick_count % 2 != 0:
+        content += "\n```"
 
-    # Replace curly quotes (from old version)
+    content = content.strip()
+
+    # Replace fancy quotes with regular quotes
     content = content.replace(""", '"').replace(""", '"')
     content = content.replace("'", "'").replace("'", "'")
 
-    # Remove zero-width characters (from old version)
-    content = re.sub(r"[\u200B-\u200D\uFEFF]", "", content)
+    # --- STEP 1: Handle code blocks carefully ---
+    # We will modify your existing code block capture to also escape quotes
+    def code_block_replacer(match: re.Match) -> str:
+        """
+        - match.group(1) = code language, e.g. 'solidity'
+        - match.group(2) = the actual code content
+        """
+        lang = match.group(1)
+        code = match.group(2)
 
-    # New version cleaning
-    content = re.sub(r"`((?>[^`]+))`", r"\1", content)  # Handle inline code
-    content = re.sub(r"```\w*+(?>\n)?+|(?>\n)?+```", "", content)  # Remove markdown
-    content = content.replace('\\"', '"')  # Fix escaped chars
-    content = content.replace("\\n", "\n")
-    content = re.sub(r'\\++(["{}\[\]])', r"\1", content)  # Handle nested JSON
-    content = re.sub(r",([\s]*+[}\]])", r"\1", content)  # Fix trailing commas
+        # 1) Strip trailing whitespace
+        code = code.strip()
 
-    # Handle multiline code snippets
-    def clean_code_block(match):
-        code = match.group(1)
-        return code.replace("\n", "\\n").replace('"', '\\"')
+        # 2) Escape any double quotes that are not already escaped
+        #    We use a negative lookbehind `(?<!\\)` to avoid re-escaping already escaped quotes.
+        code = re.sub(r'(?<!\\)"', r'\\"', code)
 
+        # 3) Return a safely re-embedded code block
+        return f"```{lang}\\n{code}\\n```"
+
+    # Look for triple-backtick code blocks: ```<lang>\n...code...\n```
     content = re.sub(
-        r'("code":\s*+")(?>[^"]*+)(")',
-        lambda m: m.group(1) + clean_code_block(m) + m.group(3),
+        r"```(\w+)\n(.*?)```",
+        code_block_replacer,
         content,
         flags=re.DOTALL,
     )
+    # --- end code blocks step ---
 
-    # Extract main JSON structure
-    json_match = re.search(r"({(?>[^}]*+})|(?>\[)[^\]]*+\])", content)
+    # --- STEP 2: Remove control characters outside code blocks ---
+    def clean_outside_code_blocks(text: str) -> str:
+        parts = []
+        current_pos = 0
+        code_block_regex = r"```(\w+)\\n.*?\\n```"
+
+        for match in re.finditer(code_block_regex, text, re.DOTALL):
+            # Clean text before the code block
+            # flake8: noqa: E203
+            before_block = text[current_pos : match.start()]
+            cleaned_before = re.sub(r"[\x00-\x1F\x7F-\x9F]", "", before_block)
+            parts.append(cleaned_before)
+
+            # Keep the code block as is
+            parts.append(match.group(0))
+            current_pos = match.end()
+
+        # Clean remaining text after the last code block
+        if current_pos < len(text):
+            remaining = text[current_pos:]
+            cleaned_remaining = re.sub(r"[\x00-\x1F\x7F-\x9F]", "", remaining)
+            parts.append(cleaned_remaining)
+
+        return "".join(parts)
+
+    content = clean_outside_code_blocks(content)
+
+    # --- STEP 3: Fix common JSON issues ---
+    # Remove unnecessary escapes like \[char] (but keep \n, \")
+    content = re.sub(r"\\([^\"n\\])", r"\1", content)
+
+    # Remove trailing commas: ,} or ,]
+    content = re.sub(r",(\s*[}\]])", r"\1", content)
+
+    # Collapse multiple blank lines, e.g. "\\n\\n" -> "\\n"
+    content = re.sub(r"\\n\s*\\n", "\\n", content)
+
+    # --- STEP 4: Attempt to extract the main JSON structure
+    json_match = re.search(r"({[\s\S]*})", content)
     if json_match:
-        content = json_match.group(0)
+        content = json_match.group(1)
 
     return content.strip()
 
 
 def extract_json(text: str) -> Optional[str]:
     """Extract the first valid JSON structure from text."""
-    # Find all potential JSON objects/arrays
-    starts = []
-    stack = []
-    json_ranges = []
+    # First try to find JSON between code block markers
+    code_block_match = re.search(r"```(?:json)?\s*({[\s\S]*?})\s*```", text)
+    if code_block_match:
+        try:
+            potential_json = code_block_match.group(1).strip()
+            json.loads(potential_json)  # Validate it's proper JSON
+            return potential_json
+        except json.JSONDecodeError:
+            pass
 
-    for i, char in enumerate(text):
-        if char in "{[":
-            if not stack:
-                starts.append(i)
-            stack.append(char)
-        elif char in "}]":
-            if stack:
-                opening = stack.pop()
-                if not stack:  # Complete JSON structure found
-                    if (opening == "{" and char == "}") or (opening == "[" and char == "]"):
-                        json_ranges.append((starts.pop(), i + 1))
+    # Then try to find any JSON-like structure
+    json_pattern = r"({(?:[^{}]|{[^{}]*})*})"
+    matches = re.finditer(json_pattern, text)
 
-    # Try each potential JSON structure
-    for start, end in json_ranges:
-        potential_json = text[start:end]
+    for match in matches:
+        potential_json = match.group(1)
         try:
             json.loads(potential_json)  # Validate it's proper JSON
             return potential_json

@@ -3,9 +3,8 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 import stripe
-from beanie import Document
 
-from api.v1.models.payment import Payment, PaymentStatus
+from api.v1.models.payment import Payment, PaymentStatus, PaymentType
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import update_scan_paid_status
 from common.logger import logger
@@ -13,21 +12,19 @@ from config.settings import STRIPE_WEBHOOK_KEY
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
 
 
-class ProcessedEvent(Document):
-    """Track processed Stripe events to ensure idempotency."""
-
-    event_id: str
-    created_at: datetime = datetime.now(timezone.utc)
-
-    class Settings:
-        name = "processed_stripe_events"
-        indexes = ["event_id", "created_at"]
-
-
 class StripeWebhookService:
     # Define the constant at class level
     STRIPE_CUSTOMER_ID_FIELD = "subscription.stripeCustomerId"
     NO_USER_FOUND_ERROR = "No userId in subscription metadata or customer not found"
+
+    # Events that we can safely ignore
+    IGNORABLE_EVENTS = {
+        "promotion_code.updated",
+        "customer.discount.created",
+        "customer.discount.deleted",
+        "payment_intent.created",
+        "payment_intent.succeeded",
+    }
 
     @staticmethod
     async def handle_webhook(payload: bytes, sig_header: str):
@@ -35,31 +32,33 @@ class StripeWebhookService:
         try:
             event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_KEY)
 
-            # Check for duplicate events using Payment model
+            # Check if we've already processed this event by looking for a payment with this event_id
             if await Payment.find_one({"event_id": event["id"]}):
-                logger.info(f"Event {event['id']} already processed")
+                logger.info(f"Event {event['id']} already processed, skipping")
                 return event
 
-            logger.info(f"Processing webhook event: {event['type']}")
+            event_type = event["type"]
+            logger.info(f"Processing new Stripe event: {event_type} [{event['id']}]")
 
             # Handle different event types
-            if event["type"] == "checkout.session.completed":
+            if event_type == "checkout.session.completed":
                 session = event["data"]["object"]
-
                 if session.get("mode") == "subscription":
                     await StripeWebhookService.handle_subscription_completed(event)
                 else:
                     await StripeWebhookService.handle_checkout_completed(event)
-            elif event["type"] == "customer.subscription.created":
+            elif event_type == "customer.subscription.created":
                 await StripeWebhookService.handle_subscription_created(event)
-            elif event["type"] == "invoice.payment_succeeded":
+            elif event_type == "invoice.payment_succeeded":
                 await StripeWebhookService.handle_invoice_payment(event)
-            elif event["type"] == "customer.subscription.updated":
+            elif event_type == "customer.subscription.updated":
                 await StripeWebhookService.handle_subscription_updated(event)
-            elif event["type"] == "customer.subscription.deleted":
+            elif event_type == "customer.subscription.deleted":
                 await StripeWebhookService.handle_subscription_deleted(event)
+            elif event_type in StripeWebhookService.IGNORABLE_EVENTS:
+                logger.debug(f"Ignoring known event type: {event_type}")
             else:
-                logger.warning(f"Unhandled event type: {event['type']}")
+                logger.warning(f"Received unhandled Stripe event type: {event_type}")
 
             return event
 
@@ -100,6 +99,7 @@ class StripeWebhookService:
                 logger.info(f"Payment completed for session ID: {session_id}. Free scan: {is_free}")
             elif paid_status == "unpaid":
                 payment.status = PaymentStatus.FAILED
+                payment.payment_type = PaymentType.FAILED  # Only update type for failed payments
                 payment.updatedAt = datetime.now(timezone.utc)
                 await payment.save()
                 logger.info(f"Payment marked as failed for session ID: {session_id}")
@@ -345,6 +345,14 @@ class StripeWebhookService:
                     try:
                         await update_scan_paid_status(UUID(scan_id), True, True)
                         logger.info(f"Marked scan {scan_id} as paid for subscription checkout")
+                        # Update payment type to subscription
+                        payment = await Payment.find_one(Payment.scan_id == UUID(scan_id))
+                        if payment:
+                            payment.payment_type = PaymentType.SUBSCRIPTION
+                            payment.status = PaymentStatus.COMPLETED
+                            payment.updatedAt = datetime.now(timezone.utc)
+                            await payment.save()
+                        logger.info(f"Marked scan {scan_id} as subscription payment")
                     except Exception as e:
                         logger.error(f"Error marking scan as paid: {str(e)}")
 

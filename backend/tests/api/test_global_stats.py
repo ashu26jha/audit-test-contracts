@@ -64,7 +64,12 @@ def test_get_global_stats(mock_scan_aggregate, mock_scan_find, mock_user_count):
     assert result["data"]["total_scans"] == 100
     assert result["data"]["total_users"] == 150
     assert result["data"]["returning_users"] == 25
-    assert result["data"]["total_paid_scans"] == {"total": 60, "regular_paid": 50, "discounted": 10}
+    assert result["data"]["total_paid_scans"] == {
+        "total": 60,
+        "regular_paid": 50,
+        "discounted": 10,
+        "free": 0,
+    }
     assert result["data"]["total_unpaid_scans"] == 40
     assert result["data"]["total_failed_scans"] == 5
     assert result["data"]["total_findings"] == 500

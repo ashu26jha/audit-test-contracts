@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
 import stripe
 from fastapi import HTTPException
 
-from api.v1.models.payment import Payment
+from api.v1.models.payment import Payment, PaymentType
 from api.v1.models.user import User
 from common.logger import logger
 from common.validate import validate_user_scan_access
@@ -121,13 +122,36 @@ class StripeSessionService:
 
     @staticmethod
     async def _store_session_id(scan_id: str, session_id: str, user_id: str, amount: int):
-        payment = Payment(
-            event_id="",
-            user_id=user_id,
-            scan_id=scan_id,
-            amount=amount / 100,  # Convert cents to dollars
-            currency="usd",
-            status="pending",
-            stripeSessionId=session_id,
-        )
-        await payment.create()
+        """Store or update the Stripe session ID for a payment."""
+        try:
+            # First try to find by scan_id
+            existing_payment = await Payment.find_one({"scan_id": UUID(scan_id)})
+
+            if existing_payment:
+                # Update existing payment with new session info
+                existing_payment.stripeSessionId = session_id
+                existing_payment.amount = amount / 100  # Convert cents to dollars
+                existing_payment.event_id = "Waiting for payment"
+                existing_payment.updatedAt = datetime.now(timezone.utc)
+                await existing_payment.save()
+                logger.info(
+                    f"Updated existing payment for scan {scan_id} with session {session_id}"
+                )
+                return
+
+            # If no payment exists, create a new one
+            payment = Payment(
+                event_id="Scan initialization",
+                user_id=user_id,
+                scan_id=UUID(scan_id),
+                amount=amount / 100,  # Convert cents to dollars
+                currency="usd",
+                status="pending",
+                stripeSessionId=session_id,
+                payment_type=PaymentType.ONE_TIME,  # Set default payment type
+            )
+            await payment.create()
+            logger.info(f"Created new payment record for scan {scan_id} with session {session_id}")
+        except Exception as e:
+            logger.error(f"Error storing session ID: {str(e)}")
+            raise

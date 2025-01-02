@@ -4,12 +4,16 @@ from api.v1.models.scan import Scan
 from api.v1.models.user import User
 from common.logger import logger
 
+TOTAL_FINDINGS = "$total_findings"
+PAID_STATUS = "$paid_status"
+DISCOUNT_APPLIED = "$discount_applied"
+
 
 async def get_global_stats():
     """
     Retrieves global statistics about scans including totals for:
     - all scans
-    - paid scans (broken down into regular paid and discounted)
+    - paid scans (broken down into regular paid, discounted, and free)
     - unpaid scans (only completed scans that require payment)
     - failed scans
     - findings
@@ -24,7 +28,7 @@ async def get_global_stats():
                 "$group": {
                     "_id": None,
                     "total_scans": {"$sum": 1},
-                    "total_findings": {"$sum": {"$ifNull": ["$total_findings", 0]}},
+                    "total_findings": {"$sum": {"$ifNull": [TOTAL_FINDINGS, 0]}},
                     "total_lines_of_code": {
                         "$sum": {
                             "$cond": [
@@ -39,8 +43,9 @@ async def get_global_stats():
                             "$cond": [
                                 {
                                     "$and": [
-                                        {"$eq": ["$paid_status", True]},
-                                        {"$eq": [{"$ifNull": ["$discount_applied", False]}, False]},
+                                        {"$eq": ["$status", "completed"]},
+                                        {"$eq": [PAID_STATUS, True]},
+                                        {"$eq": [{"$ifNull": [DISCOUNT_APPLIED, False]}, False]},
                                     ]
                                 },
                                 1,
@@ -51,7 +56,27 @@ async def get_global_stats():
                     "discounted_scans": {
                         "$sum": {
                             "$cond": [
-                                {"$eq": [{"$ifNull": ["$discount_applied", False]}, True]},
+                                {
+                                    "$and": [
+                                        {"$eq": ["$status", "completed"]},
+                                        {"$eq": [PAID_STATUS, True]},
+                                        {"$eq": [{"$ifNull": [DISCOUNT_APPLIED, False]}, True]},
+                                    ]
+                                },
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "free_scans": {
+                        "$sum": {
+                            "$cond": [
+                                {
+                                    "$and": [
+                                        {"$eq": ["$status", "completed"]},
+                                        {"$lte": [{"$ifNull": [TOTAL_FINDINGS, 2]}, 1]},
+                                    ]
+                                },
                                 1,
                                 0,
                             ]
@@ -64,7 +89,11 @@ async def get_global_stats():
                                 {
                                     "$and": [
                                         {"$eq": ["$status", "completed"]},
-                                        {"$eq": ["$paid_status", False]},
+                                        {"$eq": [PAID_STATUS, False]},
+                                        {"$ne": ["$status", "failed"]},  # Exclude failed scans
+                                        {
+                                            "$gt": [{"$ifNull": [TOTAL_FINDINGS, 2]}, 1]
+                                        },  # Exclude free scans
                                     ]
                                 },
                                 1,
@@ -104,15 +133,17 @@ async def get_global_stats():
         # Calculate total paid scans with breakdown
         regular_paid = base_stats.get("paid_scans", 0)
         discounted = base_stats.get("discounted_scans", 0)
+        free = base_stats.get("free_scans", 0)
 
         return {
             "total_scans": base_stats.get("total_scans", 0),
             "total_users": total_users,
             "returning_users": returning_users,
             "total_paid_scans": {
-                "total": regular_paid + discounted,
+                "total": regular_paid + discounted + free,
                 "regular_paid": regular_paid,
                 "discounted": discounted,
+                "free": free,
             },
             "total_unpaid_scans": base_stats.get("unpaid_completed_scans", 0),
             "total_failed_scans": base_stats.get("failed_scans", 0),
@@ -121,7 +152,7 @@ async def get_global_stats():
             "scan_statuses": status_counts,
         }
     except Exception as e:
-        logger.error(f"Error in stats aggregation: {str(e)}")
+        logger.error(f"Error getting global stats: {str(e)}")
         raise
 
 
@@ -144,20 +175,16 @@ async def get_24h_stats():
                 # Count of all scans
                 "total_scans_24h": {"$sum": 1},
                 # Sum of total_findings for vulnerabilities
-                "vulnerabilities_found": {"$sum": {"$ifNull": ["$total_findings", 0]}},
-                # Count of external scans, external scan are paid scans which are not discounted
-                # One issue with this is that, if we did a scan today and paid it two days later, it won't be counted
+                "vulnerabilities_found": {"$sum": {"$ifNull": [TOTAL_FINDINGS, 0]}},
+                # Count of paid scans (non-discounted, completed)
                 "paid_scans_24h": {
                     "$sum": {
                         "$cond": [
                             {
                                 "$and": [
-                                    {
-                                        "$eq": [
-                                            {"$ifNull": ["$discount_applied", False]},
-                                            False,
-                                        ]
-                                    },
+                                    {"$eq": ["$status", "completed"]},
+                                    {"$eq": [PAID_STATUS, True]},
+                                    {"$eq": [{"$ifNull": [DISCOUNT_APPLIED, False]}, False]},
                                 ]
                             },
                             1,

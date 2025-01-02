@@ -136,12 +136,20 @@ Retrieves the current authenticated user's information.
 **Response:**
 ```json
 {
-  "id": "string",
   "username": "string",
-  "email": "string",
+  "email": "EmailStr",
   "githubId": "string",
+  "avatarUrl": "string",
   "name": "string",
-  "avatarUrl": "string"
+  "installationId": ["integer"],
+  "subscription": {
+    "isActive": "boolean",
+    "type": "string",
+    "credits": "integer",
+    "monthlyCredits": "integer",
+    "expiresAt": "Datetime",
+    "lastRenewalAt": "Datetime"
+  }
 }
 ```
 </details>
@@ -447,8 +455,14 @@ Retrieves the global statistics for the platform.
 	"success": "boolean",
 	"data": {
 		"total_scans": "number",
-		"total_paid_scans": "number",
+		"total_paid_scans": {
+      "total": "number",
+      "regular_paid": "number",
+      "discounted": "number",
+      "free": "number"
+    },
 		"total_unpaid_scans": "number",
+    "total_failed_scans": "number",
 		"total_findings": "number",
 		"total_lines_of_code": "number",
 		"scan_statuses": {
@@ -575,7 +589,16 @@ curl -X POST "http://localhost:8000/test-auth/token" \
   "createdAt": "Datetime",
   "updatedAt": "Datetime",
   "lastLoginAt": "Datetime",
-  "installationId": [integer]
+  "installationId": [integer],
+  "token_version": "integer",
+  "subscription": {
+    "isActive": "boolean",
+    "type": "string",
+    "credits": "integer",
+    "monthlyCredits": "integer",
+    "expiresAt": "Datetime",
+    "lastRenewalAt": "Datetime"
+  }
 }
 ```
 
@@ -619,8 +642,14 @@ curl -X POST "http://localhost:8000/test-auth/token" \
   "branchName": "string",
   "commitHash": "string",
   "paid_status": "boolean",
+  "discount_applied": "boolean",
+  "total_findings": "number",
   "createdAt": "Datetime",
-  "updatedAt": "Datetime"
+  "updatedAt": "Datetime",
+  "detectors": [{"key": "string", "value": "boolean"}],
+  "progress": "number",
+  "completed_detectors": "number",
+  "total_detectors": "number"
 }
 ```
 
@@ -652,34 +681,16 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 ```json
 {
   "_id": "ObjectId",
-  "event_id": "string",
-  "user_id": "ObjectId",
-  "scan_id": "ObjectId",
   "amount": "number",
-  "currency": "string",
-  "status": "string",
-  "stripeSessionId": "string",
   "createdAt": "Datetime",
-  "updatedAt": "Datetime"
-}
-```
-
-### Global Stats Collection
-
-```json
-{
-  "_id": "ObjectId",
-  "total_scans": "number",
-  "total_paid_scans": "number",
-  "total_unpaid_scans": "number",
-  "total_findings": "number",
-  "total_lines_of_code": "number",
-  "scan_statuses": {
-    "pending": "number",
-    "in_progress": "number",
-    "completed": "number",
-    "failed": "number"
-  }
+  "currency": "string",
+  "event_id": "string",
+  "payment_type": "PaymentType",
+  "scan_id": "ObjectId",
+  "status": "PaymentStatus",
+  "stripeSessionId": "string",
+  "updatedAt": "Datetime",
+  "user_id": "ObjectId"
 }
 ```
 

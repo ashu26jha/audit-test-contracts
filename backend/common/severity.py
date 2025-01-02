@@ -1,5 +1,7 @@
 from enum import Enum
 
+from common.logger import logger
+
 
 class Severity(Enum):
     HIGH = "High"
@@ -36,4 +38,9 @@ class Severity(Enum):
             "QA": cls.BEST_PRACTICES,  # Quality Assurance
         }
 
-        return mapping.get(value_upper, cls.INFO)
+        if value_upper in mapping:
+            return mapping[value_upper]
+
+        # Unknown severity fallback
+        logger.warning(f"Unknown severity '{value}', defaulting to 'Info'")
+        return cls.INFO

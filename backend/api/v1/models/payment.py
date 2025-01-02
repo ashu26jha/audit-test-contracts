@@ -14,6 +14,13 @@ class PaymentStatus(str, Enum):
     FAILED = "failed"
 
 
+class PaymentType(str, Enum):
+    ONE_TIME = "one_time"  # Regular single scan payment
+    SUBSCRIPTION = "subscription"  # Payment from subscription
+    FREE = "free"  # Free scan (0-1 findings)
+    FAILED = "failed"  # Failed scan
+
+
 class Payment(Document):
     event_id: str = Indexed()
     user_id: str = Indexed()
@@ -24,6 +31,9 @@ class Payment(Document):
     stripeSessionId: str = Indexed()
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updatedAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    payment_type: PaymentType | None = Field(
+        default=PaymentType.ONE_TIME
+    )  # Optional for backward compatibility
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -44,3 +54,8 @@ class Payment(Document):
 
     class Settings:
         name = "payments"
+        indexes = [
+            [("scan_id", 1)],  # Each scan has one payment
+            [("stripeSessionId", 1)],  # For Stripe webhook lookups
+            [("user_id", 1)],  # For user payment history queries
+        ]

@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 
-from api.v1.models.payment import Payment, PaymentStatus
+from api.v1.models.payment import Payment, PaymentStatus, PaymentType
 from api.v1.models.user import User
 from api.v1.services import scan_history_service
 from api.v1.services.payments.stripe_subscription_service import refund_credit
@@ -11,7 +11,9 @@ from common.logger import logger
 
 
 class PaymentHandler:
-    def __init__(self, user: User, scan_id: UUID, is_pro_scan: bool, total_findings: int):
+    def __init__(
+        self, user: User, scan_id: UUID, is_pro_scan: bool = False, total_findings: int = 0
+    ):
         self.user = user
         self.scan_id = scan_id
         self.is_pro_scan = is_pro_scan
@@ -67,11 +69,10 @@ class PaymentHandler:
                     amount=0.0,
                     currency="USD",
                     status=PaymentStatus.COMPLETED,
-                    createdAt=datetime.now(timezone.utc),
-                    updatedAt=datetime.now(timezone.utc),
                     event_id="Free scan (0-1 findings)",
                     user_id=self.user.githubId,
                     stripeSessionId="FREE_SCAN",
+                    payment_type=PaymentType.FREE,
                 )
                 await payment.save()
                 logger.info(
@@ -81,6 +82,7 @@ class PaymentHandler:
             else:
                 if existing_payment.status != PaymentStatus.COMPLETED:
                     existing_payment.status = PaymentStatus.COMPLETED
+                    existing_payment.payment_type = PaymentType.FREE
                     existing_payment.updatedAt = datetime.now(timezone.utc)
                     await existing_payment.save()
                     logger.info(
@@ -92,7 +94,6 @@ class PaymentHandler:
             logger.error(
                 f"Error creating/updating payment record for scan {self.scan_id}: {str(e)}"
             )
-            # Don't raise the exception as the scan is still free regardless of payment record
 
     async def _create_failed_scan_payment_record(self) -> None:
         """
@@ -107,17 +108,17 @@ class PaymentHandler:
                     amount=0.0,
                     currency="USD",
                     status=PaymentStatus.FAILED,
-                    createdAt=datetime.now(timezone.utc),
-                    updatedAt=datetime.now(timezone.utc),
                     event_id="Failed scan",
                     user_id=self.user.githubId,
                     stripeSessionId="FAILED_SCAN",
+                    payment_type=PaymentType.FAILED,
                 )
                 await payment.save()
                 logger.info(f"Created failed payment record for scan {self.scan_id}")
             else:
                 if existing_payment.status != PaymentStatus.FAILED:
                     existing_payment.status = PaymentStatus.FAILED
+                    existing_payment.payment_type = PaymentType.FAILED
                     existing_payment.updatedAt = datetime.now(timezone.utc)
                     await existing_payment.save()
                     logger.info(f"Updated existing payment to failed for scan {self.scan_id}")
@@ -126,4 +127,31 @@ class PaymentHandler:
             logger.error(
                 f"Error creating/updating payment record for failed scan {self.scan_id}: {str(e)}"
             )
-            # Don't raise the exception as the scan is already marked as failed
+
+    async def create_initial_payment_record(self) -> None:
+        """
+        Creates an initial payment record when a scan starts.
+        This ensures we have a payment record for every scan.
+        """
+        try:
+            existing_payment = await Payment.find_one(Payment.scan_id == self.scan_id)
+
+            if not existing_payment:
+                payment = Payment(
+                    scan_id=self.scan_id,
+                    amount=0,
+                    currency="usd",
+                    status=PaymentStatus.PENDING,
+                    event_id="Scan initialization",
+                    user_id=self.user.githubId,
+                    stripeSessionId="SCAN_INIT",
+                    payment_type=PaymentType.ONE_TIME,  # Will be updated later if subscription
+                )
+                await payment.save()
+                logger.info(f"Created initial payment record for scan {self.scan_id}")
+            else:
+                logger.info(f"Payment record already exists for scan {self.scan_id}")
+
+        except Exception as e:
+            logger.error(f"Error creating initial payment record for scan {self.scan_id}: {str(e)}")
+            # Don't raise the exception as we don't want to block scan initialization

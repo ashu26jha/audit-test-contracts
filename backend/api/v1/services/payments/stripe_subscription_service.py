@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
 from api.v1.models.credit_transaction import CreditTransaction, TransactionStatus, TransactionType
+from api.v1.models.payment import Payment, PaymentStatus, PaymentType
 from api.v1.models.user import User
 from api.v1.services.scan_history_service import update_scan_paid_status
 from common.logger import logger
@@ -101,9 +102,36 @@ async def _process_scan_credit(
             renewal_period=renewal_period,
         )
 
+        # Update payment record
+        existing_payment = await Payment.find_one(Payment.scan_id == scan_id)
+        if existing_payment:
+            if is_refund:
+                existing_payment.status = PaymentStatus.FAILED
+                existing_payment.payment_type = PaymentType.FAILED
+                existing_payment.event_id = "Failed scan (subscription credit refunded)"
+            else:
+                existing_payment.status = PaymentStatus.COMPLETED
+                existing_payment.payment_type = PaymentType.SUBSCRIPTION
+                existing_payment.event_id = "Subscription credit used"
+            existing_payment.updatedAt = datetime.now(timezone.utc)
+            existing_payment.stripeSessionId = "No Stripe Session ID"
+            await existing_payment.save()
+        else:
+            # Only create new payment record for non-refund operations
+            if not is_refund:
+                payment = Payment(
+                    scan_id=scan_id,
+                    amount=0.0,  # No direct charge as it's using subscription credits
+                    currency="usd",
+                    status=PaymentStatus.COMPLETED,
+                    event_id="Subscription credit used",
+                    user_id=user_id,
+                    stripeSessionId="No Stripe Session ID",
+                    payment_type=PaymentType.SUBSCRIPTION,
+                )
+                await payment.save()
+
         # Update scan status
-        # For deductions, mark as paid
-        # For refunds, we might want to add a "refunded" status
         if not is_refund:
             await update_scan_paid_status(scan_id, True, False)
             logger.info(f"Credit deducted for user {user_id}, scan {scan_id}")
