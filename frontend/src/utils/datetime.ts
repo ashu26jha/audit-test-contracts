@@ -3,12 +3,13 @@ import { format, formatDistanceToNow, formatRelative, parseISO } from "date-fns"
 /**
  * Format a date in a standard format (e.g., "15 Dec 2023")
  * @param date - Date object or ISO string
+ * @param formatStr - Optional custom format string (date-fns format)
  * @returns Formatted date string
  */
-export const formatDate = (date: Date | string): string => {
+export const formatDate = (date: Date | string, formatStr: string = "dd MMM yyyy"): string => {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date;
-    return format(dateObj, "dd MMM yyyy");
+    return format(dateObj, formatStr);
   } catch (error) {
     console.error("Error formatting date:", error);
     return String(date);

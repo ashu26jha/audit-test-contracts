@@ -4,6 +4,7 @@ import { useState, type FC } from "react";
 
 import {
   Button,
+  Chip,
   DateRangePicker,
   Popover,
   PopoverContent,
@@ -11,7 +12,9 @@ import {
   type DateValue,
   type RangeValue,
 } from "@nextui-org/react";
-import { Check, ListFilter } from "lucide-react";
+import { Calendar, Check, ListFilter } from "lucide-react";
+
+import { formatDate } from "@/utils/datetime";
 
 const filters = [
   { filter: "Newest to Oldest Scans", key: "newest" },
@@ -59,41 +62,47 @@ const ScanFilters: FC<ScanFiltersProps> = ({
     <div className="flex items-center gap-x-4">
       {/* Date Range Button */}
       <Button
-        className="bg-content-1 border border-default-100 pl-0"
+        className="bg-content-1 border border-default-100"
         radius="sm"
         size="md"
         onPress={() => setisDateFilterOpen(true)}
-        startContent={
-          <DateRangePicker
-            value={selectedDateRange}
-            onChange={handleDateFilter}
-            isOpen={isDateFilterOpen}
-            color="secondary"
-            onOpenChange={setisDateFilterOpen}
-            classNames={{
-              inputWrapper: "bg-transparent hover:bg-transparent",
-              input: "hidden",
-              separator: "hidden",
-              selectorIcon: "text-white",
-              calendar: "bg-content-1",
-            }}
-            CalendarBottomContent={
-              <div className="p-3">
-                <Button
-                  fullWidth
-                  variant="bordered"
-                  radius="sm"
-                  onPress={handleClearDateRangeFilter}
-                  isDisabled={!selectedDateRange}
-                >
-                  Clear Filter
-                </Button>
-              </div>
-            }
-          />
-        }
+        startContent={<Calendar size={16} />}
       >
-        Sort by Date
+        <DateRangePicker
+          value={selectedDateRange}
+          onChange={handleDateFilter}
+          isOpen={isDateFilterOpen}
+          color="secondary"
+          onOpenChange={setisDateFilterOpen}
+          classNames={{
+            base: "w-0",
+            inputWrapper: "bg-transparent hover:bg-transparent",
+            input: "hidden hover:hidden",
+            separator: "hidden",
+            selectorButton: "hidden",
+            selectorIcon: "text-white hidden",
+            calendar: "bg-content-1",
+          }}
+          CalendarBottomContent={
+            <div className="p-3">
+              <Button
+                fullWidth
+                variant="bordered"
+                radius="sm"
+                onPress={handleClearDateRangeFilter}
+                isDisabled={!selectedDateRange}
+              >
+                Clear Filter
+              </Button>
+            </div>
+          }
+        />
+        {selectedDateRange
+          ? `${formatDate(new Date(selectedDateRange.start.toString()), "dd MMM yy")} - ${formatDate(
+              new Date(selectedDateRange.end.toString()),
+              "dd MMM yy",
+            )}`
+          : "Sort by Date"}
       </Button>
 
       {/* Filters Button */}
@@ -113,6 +122,11 @@ const ScanFilters: FC<ScanFiltersProps> = ({
             startContent={<ListFilter size={20} />}
           >
             Filters
+            {selectedFilter && (
+              <Chip radius="sm" size="sm">
+                <p className="text-sm">1</p>
+              </Chip>
+            )}
           </Button>
         </PopoverTrigger>
 

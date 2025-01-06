@@ -102,7 +102,7 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
               ))}
             </div>
 
-            <div className="flex-1 min-h-[calc(100vh-40vh)]  overflow-hidden flex justify-center items-center">
+            <div className="flex-1 min-h-[60vh] overflow-hidden flex flex-col justify-center items-center">
               {/* Failed scans */}
               {isFailed && renderFailed()}
 

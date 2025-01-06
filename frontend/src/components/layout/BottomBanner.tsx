@@ -34,7 +34,7 @@ const BottomBanner: FC<BottomBannerProps> = ({
   buttonClassName = "bg-secondary",
 }) => {
   return (
-    <div className="sticky bottom-0 left-0 right-0 z-10 rounded-b-xl overflow-hidden">
+    <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 rounded-b-xl overflow-hidden">
       <div
         className="bg-transparent flex justify-center items-end"
         style={{
