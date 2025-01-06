@@ -1,11 +1,12 @@
+# pylint: disable=redefined-outer-name
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from api.v1.schemas.generate_summary_schema import SummaryResponse
-from api.v1.services import generate_summary_service
+from api.v1.utilities.summary.schema import SummaryResponse
+from api.v1.utilities.summary.service import generate_summary
 from main import app
 
 client = TestClient(app)
@@ -14,7 +15,7 @@ client = TestClient(app)
 @pytest.fixture
 def mock_send_prompt_to_llm_async():
     with patch(
-        "api.v1.services.generate_summary_service.send_prompt_to_llm_async",
+        "api.v1.utilities.summary.service.send_prompt_to_llm_async",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
@@ -25,7 +26,7 @@ async def test_generate_summary_success(mock_send_prompt_to_llm_async):
     mock_summary_response = SummaryResponse(summary="This is a test summary.", type="DEFAULT")
     mock_send_prompt_to_llm_async.return_value = mock_summary_response
 
-    summary, contract_type = await generate_summary_service.generate_summary("Test Contracts")
+    summary, contract_type = await generate_summary("Test Contracts")
 
     assert isinstance(summary, str)
     assert len(summary) > 0
@@ -58,7 +59,7 @@ async def test_generate_summary_error(mock_send_prompt_to_llm_async):
     assert error_response["details"] is None
 
     with pytest.raises(HTTPException) as exc_info:
-        await generate_summary_service.generate_summary("Test Contracts")
+        await generate_summary("Test Contracts")
 
     assert exc_info.value.status_code == 500
     assert exc_info.value.detail == "Internal Server Error"

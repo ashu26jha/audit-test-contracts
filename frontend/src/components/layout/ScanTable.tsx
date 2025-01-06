@@ -68,8 +68,8 @@ const ScanTable: FC<ScanTableProps> = ({ scans, currentPage, totalPages, onPageC
           <TableRow key={scan.scan_id}>
             <TableCell>{scan.scan_number}</TableCell>
             <TableCell>
-              <Chip color={getScanStatusVariant(scan.status)} variant="flat" size="sm" radius="sm">
-                {formatScanStatus(scan.status)}
+              <Chip color={getScanStatusVariant(scan.status, scan.paid_status)} variant="flat" size="sm" radius="sm">
+                {formatScanStatus(scan.status, scan.paid_status)}
               </Chip>
             </TableCell>
             <TableCell>{scan.total_findings}</TableCell>

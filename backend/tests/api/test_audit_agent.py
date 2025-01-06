@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 from unittest.mock import AsyncMock, patch
 from uuid import UUID
 
@@ -5,25 +6,27 @@ import pytest
 from fastapi import BackgroundTasks
 from fastapi.testclient import TestClient
 
-from api.v1.models.user import User
-from api.v1.schemas.audit_agent_schema import AuditAgentRequest
+from api.v1.audit_agent.schema import AuditAgentRequest
 from config import settings
+from core.models.user import User
 from main import app
 
 client = TestClient(app)
 
 
 @pytest.fixture
-def mock_initiate_scan():
-    with patch("api.v1.services.audit_agent_service.initiate_scan", new_callable=AsyncMock) as mock:
+def mock_create_scan():
+    with patch(
+        "api.v1.audit_agent.service.AuditAgentService.create_scan", new_callable=AsyncMock
+    ) as mock:
         yield mock
 
 
 @pytest.mark.usefixtures("mock_auth")
 class TestAuditAgentEndpoints:
-    def test_perform_audit_agent_success(self, mock_initiate_scan):
+    def test_perform_audit_agent_success(self, mock_create_scan):
         # Arrange
-        mock_initiate_scan.return_value = None
+        mock_create_scan.return_value = None
 
         request_payload = {
             "repositoryURL": "https://github.com/testowner/testrepo",
@@ -42,9 +45,9 @@ class TestAuditAgentEndpoints:
         assert "data" in response_data
         assert "scan_id" in response_data["data"]
 
-        # Verify initiate_scan was called with correct argument types
-        mock_initiate_scan.assert_awaited_once()
-        call_args = mock_initiate_scan.await_args
+        # Verify create_scan was called with correct argument types
+        mock_create_scan.assert_awaited_once()
+        call_args = mock_create_scan.await_args
         assert isinstance(call_args[0][0], UUID)  # scan_id
         assert isinstance(call_args[0][1], User)  # user
         assert isinstance(call_args[0][2], AuditAgentRequest)  # request

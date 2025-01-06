@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name,unused-argument
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
@@ -7,10 +8,8 @@ from beanie import PydanticObjectId
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from api.v1.models.scan import Scan, ScanResult
-from api.v1.models.user import User
-from api.v1.schemas.context_scan_schema import Finding
 from config import settings
+from core.models.user import User
 from main import app
 
 
@@ -21,7 +20,7 @@ def client():
 
 @pytest.fixture
 def mock_get_current_user():
-    with patch("api.v1.services.auth_service.get_current_user", new_callable=AsyncMock) as mock:
+    with patch("api.v1.auth.helpers.dependencies.get_current_user", new_callable=AsyncMock) as mock:
         mock.return_value = User(
             id=PydanticObjectId(),
             username="testuser",
@@ -36,41 +35,20 @@ def mock_get_current_user():
 
 @pytest.fixture
 def mock_get_scan():
-    with patch("api.v1.models.scan.Scan.get_settings") as mock_settings, patch(
-        "api.v1.models.scan.Scan.get_motor_collection"
-    ) as mock_collection, patch(
-        "api.v1.services.scan_history_service.Scan.find_one", new_callable=AsyncMock
-    ) as mock:
-
-        mock_settings.return_value.motor_collection = AsyncMock()
-        mock_collection.return_value = AsyncMock()
-
-        mock_scan = Scan(
-            scan_id=uuid4(),
-            user_id="test_user_id",
-            status="completed",
-            scan_number=1,
-            startedAt=datetime.now(timezone.utc),
-            completedAt=datetime.now(timezone.utc),
-            createdAt=datetime.now(timezone.utc),
-            updatedAt=datetime.now(timezone.utc),
-        )
-        mock.return_value = mock_scan
+    with patch("core.db.repositories.scan.ScanRepository.get_scan", new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_validate_user_scan_access():
-    with patch(
-        "api.v1.endpoints.scan_results.validate_user_scan_access", new_callable=AsyncMock
-    ) as mock:
+    with patch("core.utils.validate.validate_user_scan_access", new_callable=AsyncMock) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_get_full_scan_result():
     with patch(
-        "api.v1.endpoints.scan_results.get_full_scan_result", new_callable=AsyncMock
+        "api.v1.scans.service.ScanResultService.get_full_result", new_callable=AsyncMock
     ) as mock:
         yield mock
 
@@ -78,14 +56,14 @@ def mock_get_full_scan_result():
 @pytest.fixture
 def mock_get_partial_scan_result():
     with patch(
-        "api.v1.endpoints.scan_results.get_partial_scan_result", new_callable=AsyncMock
+        "api.v1.scans.service.ScanResultService.get_partial_result", new_callable=AsyncMock
     ) as mock:
         yield mock
 
 
 @pytest.fixture
 def mock_validate_scan_paid():
-    with patch("api.v1.endpoints.scan_results.validate_scan_paid", new_callable=AsyncMock) as mock:
+    with patch("core.utils.validate.validate_scan_paid", new_callable=AsyncMock) as mock:
         yield mock
 
 
@@ -95,52 +73,60 @@ class TestScanResultsEndpoints:
         self,
         client,
         mock_get_current_user,
-        mock_get_scan,
-        mock_validate_user_scan_access,
         mock_get_full_scan_result,
-        mock_validate_scan_paid,
     ):
         scan_id = uuid4()
-        mock_scan = Scan(
-            scan_id=scan_id,
-            user_id="test_user_id",
-            status="completed",
-            scan_number=1,
-            startedAt=datetime.now(timezone.utc),
-            completedAt=datetime.now(timezone.utc),
-            createdAt=datetime.now(timezone.utc),
-            updatedAt=datetime.now(timezone.utc),
-            paid_status=True,
-        )
-        mock_get_scan.return_value = mock_scan
-
-        mock_full_result = ScanResult(
-            scan_id=scan_id,
-            scan_number=1,
-            summary="Test summary",
-            type="default",
-            total_findings=1,
-            findings=[
-                Finding(
-                    Issue="Test issue",
-                    Severity="High",
-                    Contracts=["TestContract.sol"],
-                    Description="Test description",
-                    Recommendation="Test recommendation",
-                )
-            ],
-            info_message="Test info message",
-            createdAt=datetime.now(timezone.utc),
-            completedAt=datetime.now(timezone.utc),
-        )
-        mock_get_full_scan_result.return_value = mock_full_result
+        mock_result = {
+            "scan": {
+                "scan_id": str(scan_id),
+                "user_id": "test_user_id",
+                "status": "completed",
+                "scan_number": 1,
+                "startedAt": datetime.now(timezone.utc),
+                "completedAt": datetime.now(timezone.utc),
+                "createdAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc),
+                "paid_status": True,
+                "contractFiles": ["TestContract.sol"],
+                "branchName": "main",
+                "commitHash": "abc123",
+                "repositoryURL": "https://github.com/test/repo",
+                "repositoryName": "test-repo",
+                "linesOfCode": None,
+                "total_findings": 1,
+                "progress": 1.0,
+            },
+            "result": {
+                "scan_id": str(scan_id),
+                "scan_number": 1,
+                "summary": "Test summary",
+                "type": "default",
+                "total_findings": 1,
+                "findings": [
+                    {
+                        "Issue": "Test issue",
+                        "Severity": "High",
+                        "Contracts": ["TestContract.sol"],
+                        "Description": "Test description",
+                        "Recommendation": "Test recommendation",
+                    }
+                ],
+                "info_message": "Test info message",
+                "createdAt": datetime.now(timezone.utc),
+                "completedAt": datetime.now(timezone.utc),
+            },
+        }
+        mock_get_full_scan_result.return_value = mock_result
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
         response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
 
         assert response.status_code == 200
-        data = response.json()["data"]
+        result = response.json()
+        assert result["success"] is True
+        assert "data" in result
+        data = result["data"]
         assert data["scan"]["scan_id"] == str(scan_id)
         assert data["result"]["summary"] == "Test summary"
         assert len(data["result"]["findings"]) == 1
@@ -149,42 +135,69 @@ class TestScanResultsEndpoints:
         self,
         client,
         mock_get_current_user,
-        mock_get_scan,
-        mock_validate_user_scan_access,
         mock_get_partial_scan_result,
     ):
         scan_id = uuid4()
-        mock_scan = Scan(scan_id=scan_id, user_id="test_user_id", status="completed")
-        mock_get_scan.return_value = mock_scan
-
-        mock_partial_result = ScanResult(
-            scan_id=scan_id,
-            scan_number=1,
-            summary="Test summary",
-            type="default",
-            findings=[
-                Finding(
-                    Issue="Test issue",
-                    Severity="High",
-                    Contracts=["TestContract.sol"],
-                    Description="Test description",
-                )
-            ],
-        )
-        mock_get_partial_scan_result.return_value = mock_partial_result
+        mock_result = {
+            "scan": {
+                "scan_id": str(scan_id),
+                "user_id": "test_user_id",
+                "status": "completed",
+                "scan_number": 1,
+                "startedAt": datetime.now(timezone.utc),
+                "completedAt": datetime.now(timezone.utc),
+                "createdAt": datetime.now(timezone.utc),
+                "updatedAt": datetime.now(timezone.utc),
+                "contractFiles": ["TestContract.sol"],
+                "branchName": "main",
+                "commitHash": "abc123",
+                "repositoryURL": "https://github.com/test/repo",
+                "repositoryName": "test-repo",
+                "linesOfCode": None,
+                "total_findings": 1,
+                "progress": 0.5,
+                "paid_status": False,
+            },
+            "partial_result": {
+                "scan_id": str(scan_id),
+                "scan_number": 1,
+                "summary": "Test summary",
+                "type": "default",
+                "findings": [
+                    {
+                        "Issue": "Test issue",
+                        "Severity": "High",
+                        "Contracts": ["TestContract.sol"],
+                        "Description": "Test description",
+                    }
+                ],
+                "createdAt": datetime.now(timezone.utc),
+                "completedAt": datetime.now(timezone.utc),
+                "total_findings": 1,
+                "info_message": None,
+            },
+        }
+        mock_get_partial_scan_result.return_value = mock_result
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
-
         response = client.get(f"/api/v1/scans/partial/{str(scan_id)}", headers=headers)
         assert response.status_code == 200
-        data = response.json()["data"]
+        result = response.json()
+        assert result["success"] is True
+        assert "data" in result
+        data = result["data"]
         assert data["scan"]["scan_id"] == str(scan_id)
         assert data["partial_result"]["summary"] == "Test summary"
         assert len(data["partial_result"]["findings"]) == 1
 
-    async def test_get_scan_result_not_found(self, client, mock_get_scan):
+    async def test_get_scan_result_not_found(
+        self,
+        client,
+        mock_get_current_user,
+        mock_get_full_scan_result,
+    ):
         scan_id = uuid4()
-        mock_get_scan.side_effect = HTTPException(
+        mock_get_full_scan_result.side_effect = HTTPException(
             status_code=404, detail=f"Scan with ID {scan_id} not found"
         )
 
@@ -195,20 +208,13 @@ class TestScanResultsEndpoints:
         assert not response.json()["success"]
 
     async def test_get_scan_result_unauthorized(
-        self, client, mock_get_scan, mock_validate_user_scan_access
+        self,
+        client,
+        mock_get_current_user,
+        mock_get_full_scan_result,
     ):
         scan_id = uuid4()
-        mock_get_scan.return_value = Scan(
-            scan_id=scan_id,
-            user_id="other_user_id",
-            status="completed",
-            scan_number=1,
-            startedAt=datetime.now(timezone.utc),
-            completedAt=datetime.now(timezone.utc),
-            createdAt=datetime.now(timezone.utc),
-            updatedAt=datetime.now(timezone.utc),
-        )
-        mock_validate_user_scan_access.side_effect = HTTPException(
+        mock_get_full_scan_result.side_effect = HTTPException(
             status_code=403, detail="Unauthorized access"
         )
 

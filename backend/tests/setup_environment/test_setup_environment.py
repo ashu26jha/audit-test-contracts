@@ -3,9 +3,9 @@ import tempfile
 
 import pytest
 
-from api.v1.helpers.setup_environment_helpers import setup_environment
-from api.v1.schemas.fuzzer_schema import SetupResult
-from common import logger
+from api.v1.common.setup_environment import setup_environment
+from core.schemas.audit_agent_schema import SetupResult
+from core.utils.logger import logger
 from tests.setup_environment.repo_samples import TEST_REPOS, RepoConfig
 
 

@@ -1,0 +1,189 @@
+import os
+import shutil
+import tempfile
+from pathlib import Path
+from typing import List, Optional
+
+from api.v1.common.forge_helpers import read_file
+from api.v1.common.setup_environment import setup_environment
+from api.v1.detectors.fuzzer.helpers.check_for_test_folder import check_for_test_folder
+from api.v1.detectors.fuzzer.helpers.generate_fuzz_prompt import generate_fuzz_prompt
+from api.v1.detectors.fuzzer.helpers.generate_invariants import generate_invariants
+from api.v1.detectors.fuzzer.helpers.generate_report import generate_report
+from api.v1.detectors.fuzzer.helpers.get_fuzz_test import get_fuzz_test
+from api.v1.detectors.fuzzer.helpers.run_fuzz_file import run_fuzz_file
+from api.v1.detectors.fuzzer.schema import FuzzerResponse, FuzzTestResult
+from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
+from core.schemas.audit_agent_schema import SetupResult
+from core.utils.logger import logger
+from core.utils.profiles import Profiles
+
+
+class FuzzerService:
+    @staticmethod
+    # TODO: filter findings by selected contracts
+    async def run_fuzzer(
+        github_url: str,
+        oauth_token: Optional[str] = None,
+        selected_contracts: Optional[List[str]] = None,
+        flattened_contracts: Optional[str] = None,
+        setup_result: Optional[SetupResult] = None,
+    ) -> FuzzerResponse:
+
+        is_local_temp_dir = False
+
+        # TODO: Different profiles for different fuzzing techniques?
+        # for now both stateless and statefull (invariant) are in the same profile
+        detected_profile = Profiles.FUZZING
+
+        # TODO: Determine if system prompt should be used (right now it's always used)
+        system_prompt = SYSTEM_PROMPT_FUZZ_TEST
+
+        temp_dir = ""
+        has_test_folder = False
+
+        try:
+            # 1. Setup the fuzzing environment (Handle standalone service)
+            if setup_result is None:
+                temp_dir = tempfile.mkdtemp()
+                is_local_temp_dir = True
+                try:
+                    setup_result: SetupResult = await setup_environment(
+                        github_url, temp_dir, oauth_token
+                    )
+                    logger.info("Environment setup successfully.")
+                except Exception as e:
+                    logger.exception(f"Failed to set up environment: {str(e)}")
+                    raise
+
+            # Update variables from setup_result
+            temp_dir = setup_result.project_dir
+            project_type = setup_result.project_type
+            project_structure = setup_result.project_structure
+            remappings = setup_result.remappings
+
+            # Check for the presence of a test folder
+            has_test_folder = check_for_test_folder(temp_dir)
+
+            # When called as a standalone service, flattened_contracts is not provided
+            # TODO: limit tokens size? Remove interfaces?
+            if flattened_contracts is None:
+                project_dir_path = Path(temp_dir) / "src"
+
+                all_contract_codes = ""
+                for contract_file in project_dir_path.rglob("*.sol"):
+                    if "lib" not in contract_file.parts:
+                        all_contract_codes += f"// {contract_file.relative_to(project_dir_path)}\n"
+                        all_contract_codes += read_file(contract_file) + "\n"
+
+                flattened_contracts = all_contract_codes
+
+            # 2. Update Foundry configuration
+            # update_foundry_config(temp_dir)
+
+            # Create a string for the selected contracts' code
+            if selected_contracts is not None:
+                selected_contracts_code = ""
+                for contract in selected_contracts:
+                    contract_path = None
+                    # Search for the contract file recursively in the src folder
+                    for root, _, files in os.walk(os.path.join(temp_dir, "src")):
+                        # Check if the contract file is in the current directory
+                        if contract in files:
+                            contract_path = os.path.join(root, contract)
+                            break
+
+                    if contract_path:
+                        # Get the relative path of the contract file
+                        relative_path = os.path.relpath(contract_path, temp_dir)
+                        selected_contracts_code += f"// {relative_path}\n"
+                        # Read the contract file content and append it to the selected contracts' code
+                        with open(contract_path, "r", encoding="utf-8") as file:
+                            selected_contracts_code += file.read() + "\n\n"
+                    else:
+                        # if the contract file is not found
+                        logger.exception(f"Selected contract: {contract} not found in src folder")
+
+            # 3. Generate the invariants
+            invariants = await generate_invariants(
+                detected_profile,
+                project_structure,
+                flattened_contracts,
+                selected_contracts_code,
+            )
+
+            # 4. Generate the fuzz tests prompt
+            fuzz_prompts = await generate_fuzz_prompt(
+                project_dir=temp_dir,
+                detected_profile=detected_profile,
+                project_type=project_type,
+                project_structure=project_structure,
+                remappings=remappings,
+                flattened_contracts=flattened_contracts,
+                invariants=invariants,
+                has_test_folder=has_test_folder,
+                selected_contracts=selected_contracts_code,
+            )
+
+            # 5. Send the fuzz tests prompt to LLM for fuzz tests generation
+            fuzz_test, compilation_error = await get_fuzz_test(
+                fuzz_prompts,
+                system_prompt,
+                detected_profile,
+                temp_dir,
+                project_structure,
+                remappings,
+                str(invariants.invariants),
+                has_test_folder,
+            )
+
+            if compilation_error:
+                raise Exception(
+                    f"Failed to generate valid fuzz test after multiple attempts: {compilation_error}"
+                )
+
+            # 6. Run fuzz test
+            fuzz_results = await run_fuzz_file(temp_dir)
+
+            # Check if there were compilation errors
+            if (
+                "compilation error" in fuzz_results.lower()
+                and "no files changed" not in fuzz_results.lower()
+            ):
+                logger.error("Compilation error detected during fuzz test execution.")
+                raise Exception(f"Compilation error occurred: {fuzz_results}")
+
+            # 7. Generate report from tests
+            report = await generate_report(invariants, fuzz_test, fuzz_results, flattened_contracts)
+
+            report_json = FuzzTestResult(
+                fuzz_test=fuzz_test,
+                fuzz_results=fuzz_results,
+                findings=report.findings if report and report.findings else [],
+            )
+
+            logger.info(
+                f"Fuzzing completed successfully with {len(report.findings) if report and report.findings else 0} findings."
+            )
+
+            return FuzzerResponse(
+                message="Fuzzing completed successfully.",
+                status="Success",
+                data=report_json,
+                error=None,
+            )
+        except Exception as e:
+            logger.exception(f"An error occurred during the fuzzing process: {str(e)}")
+            return FuzzerResponse(
+                message="An error occurred during the fuzzing process.",
+                status="Error",
+                data=None,
+                error=str(e),
+            )
+        finally:
+            if is_local_temp_dir and temp_dir and Path(temp_dir).exists():
+                try:
+                    shutil.rmtree(temp_dir)
+                    logger.info("Environment cleanup completed.")
+                except Exception as cleanup_error:
+                    logger.exception(f"Error during cleanup: {str(cleanup_error)}")

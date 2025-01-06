@@ -4,10 +4,10 @@ import pytest
 from beanie import PydanticObjectId
 from fastapi.testclient import TestClient
 
-from api.v1.models.payment import Payment
-from api.v1.models.scan import Scan, ScanResult
-from api.v1.models.user import User
-from api.v1.services.auth_service import get_current_user
+from api.v1.auth.helpers.dependencies import get_current_user
+from core.models.payment import Payment
+from core.models.scan import Scan, ScanResult
+from core.models.user import User
 from main import app
 
 
@@ -18,8 +18,8 @@ def test_client():
 
 @pytest.fixture
 def mock_auth():
-    with patch("api.v1.models.user.User.get_motor_collection", new_callable=AsyncMock):
-        with patch("api.v1.models.user.User.get_settings") as mock_get_settings:
+    with patch("core.models.user.User.get_motor_collection", new_callable=AsyncMock):
+        with patch("core.models.user.User.get_settings") as mock_get_settings:
             mock_get_settings.return_value.motor_collection = AsyncMock()
 
             async def override_get_current_user():

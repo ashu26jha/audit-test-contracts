@@ -4,6 +4,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+TITLE = "AuditAgent - APIs"
+DESCRIPTION = "API for auditing smart contracts and detecting vulnerabilities"
+VERSION = "0.3.0"
+
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")
 BASE_URL: str = os.getenv("BASE_URL")
@@ -34,15 +38,15 @@ SUPPORTED_MODELS = {
         "gemini-1.5-pro",
         "gemini-1.5-pro-latest",
         "gemini-exp-1206",
+        "gemini-2.0-flash-exp",
     ],
 }
 
 # Default LLM models
-LLM_MODEL_CHEAP = os.getenv("LLM_MODEL_CHEAP", "gpt-4o-mini")
-LLM_MODEL_MEDIUM = os.getenv("LLM_MODEL_MEDIUM", "gpt-4o-2024-08-06")
-LLM_MODEL_BEST = os.getenv("LLM_MODEL_BEST", "o1-2024-12-17")
-LLM_MODEL_BEST_2 = os.getenv("LLM_MODEL_BEST_2", "gemini-1.5-pro-latest")
-LLM_MODEL_BEST_3 = os.getenv("LLM_MODEL_BEST_3", "claude-3-5-sonnet-latest")
+LLM_UTILITY = os.getenv("LLM_UTILITY", "claude-3-5-sonnet-latest")
+LLM_SCAN_1 = os.getenv("LLM_SCAN_1", "o1-2024-12-17")
+LLM_SCAN_2 = os.getenv("LLM_SCAN_2", "claude-3-5-sonnet-latest")
+LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "gemini-2.0-flash-exp")
 
 
 # Tokens encoding: "cl100k_base" || "p50k_base"
@@ -76,6 +80,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = 10800  # 1 week
 #                   GITHUB
 ##################################################
 
+GITHUB_API_URL = "https://api.github.com"
 GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
 GITHUB_INSTALLATION_URL: str = os.getenv("GITHUB_INSTALLATION_URL")

@@ -5,9 +5,10 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from api.v1.schemas.context_scan_schema import ContextScanResponse, Finding
-from api.v1.services import context_scan_service
-from common.profiles import Profiles
+from api.v1.detectors.context_scan.schema import ContextScanResponse
+from api.v1.detectors.context_scan.service import run_context_scan
+from core.models.scan import Finding
+from core.utils.profiles import Profiles
 from main import app
 
 client = TestClient(app)
@@ -35,20 +36,27 @@ def create_mock_context_scan_response(
 @pytest.fixture
 def mock_send_prompt_to_llm_async():
     with patch(
-        "api.v1.services.context_scan_service.send_prompt_to_llm_async",
+        "api.v1.detectors.context_scan.service.send_prompt_to_llm_async",
+        new_callable=AsyncMock,
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture
+def mock_retry_async_operation():
+    with patch(
+        "api.v1.detectors.context_scan.service.retry_async_operation",
         new_callable=AsyncMock,
     ) as mock:
         yield mock
 
 
 @pytest.mark.asyncio
-async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
+async def test_run_context_scan_success(mock_send_prompt_to_llm_async):
     mock_response = create_mock_context_scan_response()
     mock_send_prompt_to_llm_async.return_value = mock_response
 
-    result = await context_scan_service.perform_context_scan(
-        "Test Summary", None, "Test Contracts", Profiles.NFT
-    )
+    result = await run_context_scan("Test Summary", None, "Test Contracts", Profiles.NFT)
 
     assert isinstance(result, ContextScanResponse)
     assert len(result.findings) == 1
@@ -61,26 +69,22 @@ async def test_perform_context_scan_success(mock_send_prompt_to_llm_async):
 
 
 @pytest.mark.asyncio
-async def test_perform_context_scan_empty_response(mock_send_prompt_to_llm_async):
+async def test_run_context_scan_empty_response(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = None
 
-    result = await context_scan_service.perform_context_scan(
-        "Test Summary", None, "Test Contracts", Profiles.NFT
-    )
+    result = await run_context_scan("Test Summary", None, "Test Contracts", Profiles.NFT)
 
     assert isinstance(result, ContextScanResponse)
     assert len(result.findings) == 0
 
 
 @pytest.mark.asyncio
-async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_async):
+async def test_run_context_scan_different_profiles(mock_send_prompt_to_llm_async):
     mock_response = create_mock_context_scan_response()
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     for profile in Profiles:
-        result = await context_scan_service.perform_context_scan(
-            "Test Summary", None, "Test Contracts", profile
-        )
+        result = await run_context_scan("Test Summary", None, "Test Contracts", profile)
         assert isinstance(result, ContextScanResponse)
         assert len(result.findings) == 1
         assert isinstance(result.findings[0], Finding)
@@ -92,10 +96,7 @@ async def test_perform_context_scan_different_profiles(mock_send_prompt_to_llm_a
 
 
 @pytest.mark.asyncio
-async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, monkeypatch):
-    # monkeypatch.setattr(
-    #     "api.v1.services.context_scan_service.LLM_MODEL", "claude-3-5-20240620")
-
+async def test_run_context_scan_claude_model(mock_send_prompt_to_llm_async):
     mock_response = create_mock_context_scan_response(
         issue="Test Issue Claude",
         severity="Medium",
@@ -105,7 +106,7 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
     )
     mock_send_prompt_to_llm_async.return_value = mock_response
 
-    result = await context_scan_service.perform_context_scan(
+    result = await run_context_scan(
         "Test Summary Claude",
         None,
         "Test Contracts Claude",
@@ -130,7 +131,7 @@ async def test_perform_context_scan_claude_model(mock_send_prompt_to_llm_async, 
 
 
 @pytest.mark.asyncio
-async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
+async def test_run_context_scan_no_profile(mock_send_prompt_to_llm_async):
     mock_response = create_mock_context_scan_response(
         issue="Test Issue No Profile",
         severity="Low",
@@ -140,7 +141,7 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
     )
     mock_send_prompt_to_llm_async.return_value = mock_response
 
-    result = await context_scan_service.perform_context_scan(
+    result = await run_context_scan(
         "Test Summary No Profile", None, "Test Contracts No Profile", Profiles.NONE
     )
 
@@ -160,59 +161,42 @@ async def test_perform_context_scan_no_profile(mock_send_prompt_to_llm_async):
     assert system_prompt_used is None
 
 
-def test_context_scan_endpoint():
-    with patch(
-        "api.v1.services.context_scan_service.perform_context_scan",
-        new_callable=AsyncMock,
-    ) as mock_perform_context_scan:
-        mock_perform_context_scan.return_value = ContextScanResponse(
-            findings=[
-                Finding(
-                    Issue="Test Issue",
-                    Severity="High",
-                    Contracts=["TestContract"],
-                    Description="Test Description",
-                    Recommendation="Test Recommendation",
-                )
-            ]
-        )
+def test_context_scan_endpoint(mock_send_prompt_to_llm_async):
+    mock_response = create_mock_context_scan_response()
+    mock_send_prompt_to_llm_async.return_value = mock_response
 
-        response = client.post(
-            "/api/v1/context-scan",
-            json={
-                "summary": "Test Summary",
-                "contracts": "Test Contracts",
-                "profile": "nft",
-            },
-        )
-        assert response.status_code == 200
-        result = response.json()
-        assert result["success"] is True
-        assert "data" in result
-        assert "findings" in result["data"]
-        assert isinstance(result["data"]["findings"], list)
+    response = client.post(
+        "/api/v1/context-scan",
+        json={
+            "summary": "Test Summary",
+            "contracts": "Test Contracts",
+            "profile": "nft",
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["success"] is True
+    assert "data" in result
+    assert "findings" in result["data"]
+    assert isinstance(result["data"]["findings"], list)
 
 
-def test_context_scan_endpoint_error():
-    with patch(
-        "api.v1.services.context_scan_service.perform_context_scan",
-        new_callable=AsyncMock,
-    ) as mock_perform_context_scan:
-        mock_perform_context_scan.side_effect = HTTPException(
-            status_code=400, detail="Failed to parse LLM response as valid JSON"
-        )
+def test_context_scan_endpoint_error(mock_send_prompt_to_llm_async):
+    mock_send_prompt_to_llm_async.side_effect = HTTPException(
+        status_code=400, detail="Failed to parse LLM response as valid JSON"
+    )
 
-        response = client.post(
-            "/api/v1/context-scan",
-            json={
-                "summary": "Test Summary",
-                "contracts": "Test Contracts",
-                "profile": "nft",
-            },
-        )
-        assert response.status_code == 400
-        error_response = response.json()
-        assert error_response["success"] is False
-        assert error_response["code"] == 400
-        assert "Failed to parse LLM response as valid JSON" in error_response["message"]
-        assert error_response["details"] is None
+    response = client.post(
+        "/api/v1/context-scan",
+        json={
+            "summary": "Test Summary",
+            "contracts": "Test Contracts",
+            "profile": "nft",
+        },
+    )
+    assert response.status_code == 200
+    result = response.json()
+    assert result["success"] is True
+    assert "data" in result
+    assert "findings" in result["data"]
+    assert len(result["data"]["findings"]) == 0

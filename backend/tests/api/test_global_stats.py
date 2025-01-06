@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name,unused-argument
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,7 +12,7 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_scan_aggregate():
-    with patch("api.v1.models.scan.Scan.aggregate") as mock:
+    with patch("core.models.scan.Scan.aggregate") as mock:
         mock_to_list = AsyncMock()
         # First call for main stats
         mock_to_list.side_effect = [
@@ -35,7 +36,7 @@ def mock_scan_aggregate():
 
 @pytest.fixture
 def mock_scan_find():
-    with patch("api.v1.models.scan.Scan.find") as mock:
+    with patch("core.models.scan.Scan.find") as mock:
         mock_find_instance = MagicMock()
         # Define the side effects for each call to count()
         # The order of side effects should match the order of status queries
@@ -46,7 +47,7 @@ def mock_scan_find():
 
 @pytest.fixture
 def mock_user_count():
-    with patch("api.v1.models.user.User.find") as mock:
+    with patch("core.models.user.User.find") as mock:
         mock_find_instance = MagicMock()
         mock_find_instance.count = AsyncMock(return_value=150)
         mock.return_value = mock_find_instance

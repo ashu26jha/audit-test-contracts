@@ -83,6 +83,7 @@ const ScanFilters: FC<ScanFiltersProps> = ({
             selectorIcon: "text-white hidden",
             calendar: "bg-content-1",
           }}
+          aria-label="Select date range filter"
           CalendarBottomContent={
             <div className="p-3">
               <Button

@@ -19,12 +19,12 @@ export const initiateGithubLogin = () => {
 
 export const getUser = async () => {
   const response = await api.get("/api/v1/auth/me");
-  return response.data;
+  return response.data.data;
 };
 
 export const logUserOut = async () => {
   const response = await api.post("/api/v1/auth/logout", {});
-  return response.data;
+  return response.data.data;
 };
 
 export const getOrganizationsAndPersonal = async () => {
@@ -78,9 +78,11 @@ export const getPartialScanResults = async (scanId: string) => {
 };
 
 export const getScanHistory = async () => {
-  const response = await api.get("/api/v1/scans-history");
+  const response = await api.get("/api/v1/scans/history");
   return response.data.data;
 };
+
+// STRIPE ROUTES //
 
 export const createCheckoutSession = async (scanId: string): Promise<StripeCheckoutResponse> => {
   const response = await api.post("/api/v1/payments/create-stripe-session", { scanId });
@@ -94,7 +96,7 @@ export const createSubscriptionSession = async (scanId?: string): Promise<Stripe
 
 export const createPortalSession = async () => {
   const response = await api.post("/api/v1/payments/create-portal-session");
-  return response.data;
+  return response.data.data;
 };
 
 // PROTECTED ROUTES //

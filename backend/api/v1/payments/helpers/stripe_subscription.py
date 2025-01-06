@@ -1,0 +1,64 @@
+from typing import Optional
+from uuid import UUID
+
+import stripe
+from fastapi import HTTPException
+
+from api.v1.payments.helpers.get_result_url import get_payment_urls
+from config.settings import FRONTEND_URL
+from config.subscription_settings import SUBSCRIPTION_SETTINGS
+from core.db.repositories.user import UserRepository
+from core.models.user import User
+from core.utils.validate import validate_user_scan_access
+
+
+class StripeSubscriptionHelper:
+    user_repo = UserRepository()
+
+    @staticmethod
+    async def create_subscription_session(user: User, scan_id: Optional[str] = None):
+        """Create subscription session for pro plan."""
+        # Check if the scan exists and belongs to the user
+        if scan_id:
+            await validate_user_scan_access(UUID(scan_id), user)
+
+        if not SUBSCRIPTION_SETTINGS["pro"]["price"]:
+            raise HTTPException(
+                status_code=500, detail="Stripe subscription price ID is not configured"
+            )
+
+        success_url, cancel_url = get_payment_urls(scan_id or "")
+
+        try:
+            return stripe.checkout.Session.create(
+                billing_address_collection="auto",
+                customer_email=user.email,
+                line_items=[
+                    {
+                        "price": SUBSCRIPTION_SETTINGS["pro"]["price"],
+                        "quantity": 1,
+                    }
+                ],
+                mode="subscription",
+                payment_method_collection="if_required",
+                allow_promotion_codes=True,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata={"userId": user.githubId, "scanId": scan_id or "", "type": "subscription"},
+            )
+        except stripe.error.StripeError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @staticmethod
+    async def create_portal_session(user: User) -> stripe.billing_portal.Session:
+        """Create a Stripe billing portal session."""
+        if not user.subscription.stripeCustomerId:
+            raise HTTPException(status_code=400, detail="No active subscription found")
+
+        try:
+            return stripe.billing_portal.Session.create(
+                customer=user.subscription.stripeCustomerId,
+                return_url=f"{FRONTEND_URL}/dashboard",
+            )
+        except stripe.error.StripeError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
