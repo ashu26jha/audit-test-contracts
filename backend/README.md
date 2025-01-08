@@ -42,10 +42,36 @@ cd backend
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables (create a `.env` file in the `backend` directory):
+### Configure environment variables
+
+If you are coming from the parent [readme](../README.md) and want to run both frontend and backend together, you just need to configure the environment variables below. No need to run the backend separately
+
+1. ADMIN_API_KEY - Use the same value defined in the frontend
+2. OPENAI_API_KEY
+3. ANTHROPIC_API_KEY
+4. SECRET_KEY - Generate any UUID
+5. LANGFUSE_SECRET_KEY
+6. LANGFUSE_PUBLIC_KEY
+7. LANGFUSE_HOST
+8. MONGODB_URL
+10. GITHUB_CLIENT_ID
+11. GITHUB_CLIENT_SECRET
+12. GITHUB_INSTALLATION_URL
+13. SMTP_SERVER - SMTP server URL
+14. SMTP_PORT
+15. SMTP_USERNAME
+16. SMTP_PASSWORD
+17. STRIPE_API_KEY
+18. STRIPE_WEBHOOK
+19. STRIPE_SUBSCRIPTION_PRICE_ID
+20. SLACK_TOKEN - Optional
+
+Copy the `.env.example` file to `.env` and set the variables:
 ```bash
+ADMIN_API_KEY
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-...
+SECRET_KEY= 12f671d3-c4be-4b0f-a2a7-e1e88ef6458a
 
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_PUBLIC_KEY=pk-lf-...
@@ -55,9 +81,23 @@ MONGODB_URL=your_mongodb_url
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 GITHUB_INSTALLATION_URL=your_github_installation_url
+
+STRIPE_API_KEY=sk
+STRIPE_WEBHOOK_SECRET=wk # Check readme for more details
+STRIPE_SUBSCRIPTION_PRICE_ID=price_yourPriceIdHere
+
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+
+SLACK_TOKEN = x123
+...
 ```
 
-## Running the Server
+## How to run the backend separately
+
+### Run the server
 
 To launch a local development server (PDF generation not working):
 ```bash
