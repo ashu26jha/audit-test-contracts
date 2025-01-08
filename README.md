@@ -58,6 +58,7 @@ NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/<app-name>/installations/new
 X_API_KEY=<your-api-key>
 
 ```
+Refer to the complete list of frontend environment variables in [here](./frontend/README.md)
 
 #### In the backend folder
 
@@ -68,6 +69,7 @@ BASE_URL=http://localhost:8000
 COOKIE_DOMAIN=localhost
 ...
 ```
+Refer to the complete list of backend environment variables in [here](./backend/README.md)
 
 ### 3. Start docker compose
 
@@ -88,7 +90,17 @@ docker-compose -f docker-compose.staging.yml up --build
 
 ### 4. Run the application
 
-For more infos, refers the the different READMEs
+To access the frontend go to:
+```
+https://localhost:3000
+```
+
+To access the API docs go to:
+```
+https://localost:8000/docs
+```
+
+For more info, refer to the the following READMEs
 - Set up the backend (see [Backend README](./backend/README.md))
 - Set up the frontend (see [Frontend README](./frontend/README.md))
 
