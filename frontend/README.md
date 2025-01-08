@@ -38,17 +38,14 @@ The Agent Audit UI is built with modern web technologies to ensure a responsive,
 
 ## Getting Started
 
-### Install dependencies
-
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
-
-```bash
-cd frontend
-npm install
-```
-
 ### Configure environment variables
 
+If you are coming from the parent [readme](../README.md) and want to run both frontend and backend together, you just need to configure the environment variables below. No need to run the frontend separately
+
+1. NEXT_PUBLIC_API_URL
+2. NEXT_PUBLIC_GITHUB_APP_URL
+3. X_API_KEY - Set your own API key
+   
 Copy the `.env.example` file to `.env` and set the following environment variables:
 
 ```javascript
@@ -59,14 +56,24 @@ NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/<app-name>/installations/new
 # Private Variables
 X_API_KEY=<your-api-key>
 ```
+### How to run the frontend separately
 
-### Run the development server
+#### Install dependencies
+
+You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+
+```bash
+cd frontend
+npm install
+```
+
+#### Run the development server
 
 ```bash
 npm run dev
 ```
 
-### Setup pnpm (optional)
+#### Setup pnpm (optional)
 
 If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
 
