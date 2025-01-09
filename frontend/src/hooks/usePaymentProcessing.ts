@@ -53,7 +53,8 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
         setIsProcessing(true);
         setError(null);
 
-        const res = await createSubscriptionSession(scanId);
+        // TODO: Handle the subscription type dynamically if needed
+        const res = await createSubscriptionSession("pro");
 
         setIsProcessing(false);
         window.location.assign(res.data.url);
