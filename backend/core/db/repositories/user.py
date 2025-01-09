@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException
 
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
-from core.models.user import SubscriptionData, User
+from core.models.user import SubscriptionData, SubscriptionType, User
 from core.utils.logger import logger
 
 
@@ -131,7 +131,7 @@ class UserRepository:
             raise HTTPException(status_code=500, detail="Failed to update user") from e
 
     @staticmethod
-    async def increment_token_version(user: User) -> None:
+    async def increment_token_version(self, user: User) -> None:
         """Increment user's token version to invalidate all existing tokens"""
         await user.update({"$inc": {"token_version": 1}})
 
@@ -139,8 +139,8 @@ class UserRepository:
     async def activate_subscription(
         user: User,
         subscription_id: str,
-        customer_id: str,
-        subscription_type: str = "pro",
+        subscription_type: SubscriptionType = SubscriptionType.PRO,
+        customer_id: str = None,
     ) -> User:
         """
         Activate a user's subscription with full setup of credits and expiration.
@@ -148,29 +148,30 @@ class UserRepository:
         Args:
             user: User object to update
             subscription_id: Stripe subscription ID
-            customer_id: Optional Stripe customer ID
             subscription_type: Type of subscription (defaults to 'pro')
+            customer_id: Stripe customer ID
 
         Returns:
             Updated User object
         """
         try:
+            subscription = SUBSCRIPTION_SETTINGS[subscription_type]
             now = datetime.now(timezone.utc)
-            updates = {
-                "subscription.isActive": True,
-                "subscription.type": subscription_type,
-                "subscription.stripeSubscriptionId": subscription_id,
-                "subscription.credits": SUBSCRIPTION_SETTINGS[subscription_type]["monthly_credits"],
-                "subscription.monthlyCredits": SUBSCRIPTION_SETTINGS[subscription_type][
-                    "monthly_credits"
-                ],
-                "subscription.stripeCustomerId": customer_id,
-                "subscription.lastRenewalAt": now,
-                "subscription.expiresAt": now
-                + SUBSCRIPTION_SETTINGS[subscription_type]["credit_expiry_period"],
-            }
 
-            await user.update({"$set": updates})
+            # Create a new SubscriptionData object with all the fields
+            subscription_data = SubscriptionData(
+                isActive=True,
+                type=subscription_type,
+                stripeSubscriptionId=subscription_id,
+                stripeCustomerId=customer_id,
+                credits=subscription["monthly_credits"],
+                monthlyCredits=subscription["monthly_credits"],
+                lastRenewalAt=now,
+                expiresAt=now + subscription["credit_expiry_period"],
+            )
+
+            # Update using the model
+            await user.update({"$set": {"subscription": subscription_data.model_dump()}})
             return await UserRepository.get_by_github_id(user.githubId)
 
         except Exception as e:
@@ -180,25 +181,24 @@ class UserRepository:
     @staticmethod
     async def deactivate_subscription(user: User) -> User:
         """
-        Deactivate a user's subscription.
-
-        Args:
-            user: User object to update
-
-        Returns:
-            Updated User object
+        Deactivate a user's subscription while preserving the Stripe customer ID.
         """
         try:
-            updates = {
+            now = datetime.now(timezone.utc)
+
+            # Create update data preserving the customer ID
+            subscription_update = {
                 "subscription.isActive": False,
-                "subscription.type": "single",
+                "subscription.type": SubscriptionType.FREE,
                 "subscription.credits": 0,
                 "subscription.monthlyCredits": 0,
                 "subscription.stripeSubscriptionId": None,
-                "subscription.expiresAt": datetime.now(timezone.utc),
+                "subscription.expiresAt": now,
+                "subscription.lastRenewalAt": None,
+                # Explicitly NOT updating stripeCustomerId to preserve it
             }
 
-            await user.update({"$set": updates})
+            await user.update({"$set": subscription_update})
             return await UserRepository.get_by_github_id(user.githubId)
 
         except Exception as e:
@@ -209,12 +209,6 @@ class UserRepository:
     async def renew_subscription_credits(user: User) -> User:
         """
         Renew subscription credits for the current billing period.
-
-        Args:
-            user: User object to update
-
-        Returns:
-            Updated User object
         """
         try:
             now = datetime.now(timezone.utc)
@@ -223,14 +217,16 @@ class UserRepository:
             if subscription_type not in SUBSCRIPTION_SETTINGS:
                 raise ValueError(f"Invalid subscription type: {subscription_type}")
 
+            subscription = SUBSCRIPTION_SETTINGS[subscription_type]
             updates = {
-                "subscription.credits": SUBSCRIPTION_SETTINGS[subscription_type]["monthly_credits"],
-                "subscription.lastRenewalAt": now,
-                "subscription.expiresAt": now
-                + SUBSCRIPTION_SETTINGS[subscription_type]["credit_expiry_period"],
+                "$set": {
+                    "subscription.credits": subscription["monthly_credits"],
+                    "subscription.lastRenewalAt": now,
+                    "subscription.expiresAt": now + subscription["credit_expiry_period"],
+                }
             }
 
-            await user.update({"$set": updates})
+            await user.update(updates)
             return await UserRepository.get_by_github_id(user.githubId)
 
         except Exception as e:
@@ -238,6 +234,31 @@ class UserRepository:
             raise HTTPException(
                 status_code=500, detail="Failed to renew subscription credits"
             ) from e
+
+    async def ensure_user_subscription_data(user: User) -> User:
+        """
+        Ensure user has subscription data initialized.
+
+        Args:
+            user: User object to check/update
+
+        Returns:
+            Updated User object
+        """
+        if not user.subscription:
+            user.subscription = SubscriptionData(
+                isActive=False,
+                type=SubscriptionType.FREE,
+                credits=0,
+                monthlyCredits=0,
+                stripeSubscriptionId=None,
+                stripeCustomerId=None,
+                expiresAt=None,
+                lastRenewalAt=None,
+            )
+            await user.save()
+            logger.info(f"Initialized subscription data for user {user.githubId}")
+        return user
 
     @staticmethod
     async def create_test_user(username: str) -> User:
@@ -252,9 +273,10 @@ class UserRepository:
             createdAt=datetime.now(timezone.utc),
             updatedAt=datetime.now(timezone.utc),
             installationId=[12345],
+            token_version=0,
             subscription=SubscriptionData(
                 isActive=False,
-                type="single",
+                type=SubscriptionType.FREE,
                 credits=0,
                 monthlyCredits=0,
                 expiresAt=None,

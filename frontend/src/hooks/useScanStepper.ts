@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getRepositories,
   getRepositoryContents,
@@ -29,19 +30,20 @@ export const useScanStepper = () => {
     setIsLoading,
     setRepoDocs,
   } = useScanStepperStore();
+  const { user } = useAuth();
 
   const fetchPreviousDocs = useCallback(
     async (owner: string, repo: string) => {
       const res = await getRepositoryDocs(owner, repo);
 
-      if (res?.docs) {
+      if (res?.docs && user?.subscription.type !== "free") {
         // Set previous readme files and QA answers if they exist
         setRepoDocs(res.docs);
       } else {
         setRepoDocs({ readme: [], qa: {} });
       }
     },
-    [setRepoDocs],
+    [setRepoDocs, user],
   );
 
   const fetchRepositories = useCallback(

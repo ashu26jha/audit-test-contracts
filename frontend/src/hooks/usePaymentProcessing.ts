@@ -3,20 +3,14 @@ import { useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  createCheckoutSession,
-  createSubscriptionSession,
-  getPartialScanResults,
-  getFullScanResults,
-} from "@/services/api";
+import { createSubscriptionSession, getScanResults } from "@/services/api";
 import { usePaymentStore } from "@/store/paymentStore";
 
 export type PaymentType = "single" | "subscription";
 
 export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => {
   const { user } = useAuth();
-  const { isProcessing, error, shouldPoll, isPaid, setIsProcessing, setError, setShouldPoll, setIsPaid } =
-    usePaymentStore();
+  const { isProcessing, error, shouldPoll, setIsProcessing, setError, setShouldPoll } = usePaymentStore();
 
   const {
     data: scanData,
@@ -27,17 +21,8 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
     queryFn: async () => {
       if (!user || !scanId) throw new Error("User or scanId not available");
 
-      let result;
-      if (isPaid) {
-        result = await getFullScanResults(scanId);
-      } else {
-        result = await getPartialScanResults(scanId);
-        if (result.scan.paid_status) {
-          // If the scan is now paid, immediately fetch full results
-          result = await getFullScanResults(scanId);
-          setIsPaid(true);
-        }
-      }
+      const result = await getScanResults(scanId);
+
       return result;
     },
     enabled: !!user && !!scanId && shouldPoll,
@@ -51,16 +36,14 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
     if (scanData) {
       const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
       setShouldPoll(!isCompleted);
-      setIsPaid(scanData.scan.paid_status);
     }
 
     return () => {
       // Cleanup when unmounting
       setError(null);
       setShouldPoll(true);
-      setIsPaid(false);
     };
-  }, [scanData, setError, setShouldPoll, setIsPaid]);
+  }, [scanData, setError, setShouldPoll]);
 
   const handlePayment = useCallback(
     async (paymentType: PaymentType = "single") => {
@@ -70,10 +53,7 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
         setIsProcessing(true);
         setError(null);
 
-        const res =
-          paymentType === "subscription"
-            ? await createSubscriptionSession(scanId)
-            : await createCheckoutSession(scanId);
+        const res = await createSubscriptionSession(scanId);
 
         setIsProcessing(false);
         window.location.assign(res.data.url);
@@ -91,7 +71,6 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
     isProcessing,
     error,
     isLoading,
-    isPaid,
     handlePayment,
     refetchScanResults: refetch,
   };

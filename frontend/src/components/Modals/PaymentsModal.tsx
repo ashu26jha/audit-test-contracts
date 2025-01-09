@@ -3,7 +3,7 @@ import type { Dispatch, FC, SetStateAction } from "react";
 import { Button, Card, Modal, ModalBody, ModalContent, ModalHeader } from "@nextui-org/react";
 import { ArrowUpRight } from "lucide-react";
 
-import { BASIC_PLAN_DETAILS, PAGES, PRO_PLAN_DETAILS } from "@/config/constants";
+import { FREE_PLAN_DETAILS, PAGES, PRO_PLAN_DETAILS } from "@/config/constants";
 import { usePaymentProcessing, type PaymentType } from "@/hooks";
 
 import SubscriptionPlanCard from "../SubscriptionPlanCard";
@@ -15,9 +15,9 @@ interface SubscriptionPlansModalProps {
 }
 
 const LIMITED_PLAN_FEATURES = [
-  `${BASIC_PLAN_DETAILS.SCAN_CREDITS} scan credit only`,
-  `Up to ${BASIC_PLAN_DETAILS.MAX_LINES} lines of code per scan`,
-  `${BASIC_PLAN_DETAILS.MAX_FILES} contracts per scan`,
+  `${FREE_PLAN_DETAILS.SCAN_CREDITS} scan credit only`,
+  `Up to ${FREE_PLAN_DETAILS.MAX_LINES} lines of code per scan`,
+  `${FREE_PLAN_DETAILS.MAX_FILES} contracts per scan`,
   "PDF output",
 ];
 
@@ -53,7 +53,7 @@ const PaymentsModal: FC<SubscriptionPlansModalProps> = ({ isOpen, setIsOpen, sca
             <SubscriptionPlanCard
               features={LIMITED_PLAN_FEATURES}
               type="single"
-              price={BASIC_PLAN_DETAILS.PRICE}
+              price={FREE_PLAN_DETAILS.PRICE}
               onSelect={() => handlePlanSelection("single")}
             />
             <SubscriptionPlanCard

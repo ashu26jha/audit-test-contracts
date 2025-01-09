@@ -1,4 +1,3 @@
-import asyncio
 import gc
 from typing import List
 
@@ -22,122 +21,55 @@ class ResultProcessor:
     ):
         self.scan_id = context.scan_id
         self.user_id = context.user_id
-        self.combined_findings = combined_findings
+        self.combined_findings: List[Finding] = []  # Initialize empty
+        self.findings_before_removal = combined_findings  # Store initial findings
         self.selected_contracts = context.contract_files
         self.flattened_contracts = flattened_contracts
         self.summary_result = summary_result
         self.detected_type = detected_type
-        self.dedup_findings: List[Finding] = []
-        self.total_findings_after_dedup: int = 0
 
     async def process_results(self) -> None:
-        """Process results sequentially: filter, deduplicate, mitigate, then confidence score."""
-        # Filter findings to ensure they all belong to the selected contracts
-        await self._filter_findings()
+        """Process results sequentially: filter, deduplicate, then mitigate."""
+        # 1. Filter findings to ensure they all belong to the selected contracts
+        initial_count = len(self.findings_before_removal)
+        self.findings_before_removal = contract_utils.filter_by_contracts(
+            self.findings_before_removal, self.selected_contracts, contract_field="Contracts"
+        )
+        logger.logger.info(
+            f"Filtered out {initial_count - len(self.findings_before_removal)} findings that didn't match selected contracts"
+        )
         await ScanRepository.update_scan_progress(self.scan_id, 80)
 
-        await asyncio.sleep(1)  # Brief pause to let CPU settle
+        # 2. Perform deduplication and mitigation
+        self.combined_findings = await CriticService.remove_duplicates(self.findings_before_removal)
+        await ScanRepository.update_scan_progress(self.scan_id, 90)
 
-        # Perform deduplication
-        await self._deduplicate_findings()
-        await ScanRepository.update_scan_progress(self.scan_id, 88)
-
-        await asyncio.sleep(1)  # Brief pause to let CPU settle
-
-        # Process mitigation and confidence scoring in parallel
-        await self._process_parallel_tasks()
+        # 3. Perform mitigation
+        self.combined_findings = await CriticService.mitigate_findings(
+            findings=self.combined_findings,
+            flattened_contracts=self.flattened_contracts,
+        )
         self.flattened_contracts = None
         gc.collect()
         await ScanRepository.update_scan_progress(self.scan_id, 100)
 
-        # Final update
+        # 4. Update scan result in database
         result = await self._get_scan_result()
-        is_new = False  # Update an existing scan result
-        await ScanRepository.store_scan_result(result, is_new)
+        await ScanRepository.store_scan_result(result, is_new=False)  # Update existing scan result
+
+    def get_total_findings(self) -> int:
+        """Returns the current total number of findings after processing."""
+        return len(self.combined_findings)
 
     async def _get_scan_result(self) -> ScanResult:
-        """
-        Creates a ScanResult object with the current state of processing.
-        """
+        """Creates a ScanResult object with the current state of processing."""
         scan_result = await ScanRepository.get_scan_result(self.scan_id)
         scan_result.summary = self.summary_result
         scan_result.info_message = "Scan completed"
         scan_result.type = (
             self.detected_type if isinstance(self.detected_type, Profiles) else Profiles.DEFAULT
         )
-        scan_result.total_findings = self.total_findings_after_dedup
-        scan_result.findings = self.dedup_findings
-        scan_result.findings_before_removal = self.combined_findings
+        scan_result.total_findings = len(self.combined_findings)
+        scan_result.findings = self.combined_findings
+        scan_result.findings_before_removal = self.findings_before_removal
         return scan_result
-
-    async def _filter_findings(self) -> None:
-        """
-        Filters findings to include only those in selected contracts.
-        """
-        filtered_findings = contract_utils.filter_by_contracts(
-            self.combined_findings, self.selected_contracts, contract_field="Contracts"
-        )
-
-        removed_count = len(self.combined_findings) - len(filtered_findings)
-        logger.logger.info(
-            f"Filtered out {removed_count} findings that didn't match selected contracts"
-        )
-
-        self.combined_findings = filtered_findings
-
-    async def _deduplicate_findings(self) -> None:
-        """
-        Deduplicates findings to remove any duplicates.
-        """
-        self.dedup_findings = await CriticService.remove_duplicates(self.combined_findings)
-        self.total_findings_after_dedup = len(self.dedup_findings)
-        self.combined_findings = None
-        gc.collect()
-
-    async def _process_parallel_tasks(self) -> None:
-        """
-        Process mitigation and confidence scoring in parallel since they don't depend on each other.
-        """
-        # Create tasks for parallel processing
-        tasks = [
-            self._perform_confidence_scoring(),
-            self._mitigate_findings(),
-        ]
-
-        # Wait for both tasks to complete
-        results = await asyncio.gather(*tasks)
-
-        # Combine results - take the confidence scores from the first task
-        # and severity adjustments from the second task
-        confidence_findings, mitigated_findings = results
-
-        # Update findings with both confidence scores and mitigated severities
-        for i, finding in enumerate(self.dedup_findings):
-            if i < len(confidence_findings):
-                finding.Confidence = confidence_findings[i].Confidence
-            if i < len(mitigated_findings):
-                finding.Severity = mitigated_findings[i].Severity
-
-    async def _perform_confidence_scoring(self) -> List[Finding]:
-        """
-        Performs confidence scoring on the findings using the confidence scoring helper.
-        If any step fails, the process continues with original findings.
-        """
-        return await CriticService.confidence_scoring(
-            findings=self.dedup_findings,
-            summary_of_project=self.summary_result,
-            flattened_contracts=self.flattened_contracts,
-        )
-
-    async def _mitigate_findings(self) -> List[Finding]:
-        """
-        Analyzes and potentially adjusts severity of specific finding types.
-        If any step fails, the process continues with original findings.
-        """
-        return await CriticService.mitigate_findings(
-            findings=self.dedup_findings,
-            flattened_contracts=self.flattened_contracts,
-        )
-
-    def get_total_findings(self) -> int:
-        return self.total_findings_after_dedup

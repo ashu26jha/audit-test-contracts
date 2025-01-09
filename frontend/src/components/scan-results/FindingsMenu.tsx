@@ -1,6 +1,6 @@
 import { type FC } from "react";
 
-import { Accordion, AccordionItem, Card, CardHeader, Divider, Button } from "@nextui-org/react";
+import { Accordion, AccordionItem, Card, CardHeader, Divider, Button, Skeleton } from "@nextui-org/react";
 import { Dot } from "lucide-react";
 import Image from "next/image";
 
@@ -12,6 +12,8 @@ interface FindingsMenuProps {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   selectedFinding: Finding | null;
+  isLoading?: boolean;
+  isButtonDisabled?: boolean;
 }
 
 const FindingsMenu: FC<FindingsMenuProps> = ({
@@ -20,6 +22,8 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
   isCollapsed,
   setIsCollapsed,
   selectedFinding,
+  isLoading,
+  isButtonDisabled,
 }) => {
   const severityColor = (severity: Finding["Severity"]) => {
     switch (severity) {
@@ -53,15 +57,42 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
 
   return (
     <Card
-      className={`border-2 border-[#27272A] bg-[#18181B] transition-all duration-300 mb-4 lg:mb-0 
+      className={`border-2 border-content-2 bg-content-1 transition-all duration-300 mb-4 lg:mb-0 
         ${isCollapsed ? "w-[50px] h-fit" : "w-full lg:h-full"}`}
     >
-      {!isCollapsed && (
+      {!isCollapsed && isLoading && (
+        <div className="flex flex-col h-full">
+          <CardHeader className="mb-0 flex items-center justify-between">
+            <p className="text-sm font-inter font-medium">Findings</p>
+
+            <Button
+              isDisabled={isButtonDisabled}
+              isIconOnly
+              className="bg-[#18181B] hover:bg-[#27272A]"
+              size="sm"
+              onPress={() => setIsCollapsed(!isCollapsed)}
+            >
+              <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
+            </Button>
+          </CardHeader>
+          <Divider className="my-2" />
+          <div className="flex flex-col p-3 gap-y-4">
+            <Skeleton className="h-6 w-full rounded-lg" />
+            <Skeleton className="h-6 w-3/4 rounded-lg" />
+            <Skeleton className="h-6 w-2/4 rounded-lg" />
+            <Skeleton className="h-6 w-1/4 rounded-lg" />
+            <Skeleton className="h-6 w-full rounded-lg" />
+          </div>
+        </div>
+      )}
+
+      {!isCollapsed && !isLoading && (
         <div className="flex flex-col h-full">
           <CardHeader className=" mb-0 flex items-center justify-between">
             <p className="text-sm font-inter font-medium">Findings</p>
 
             <Button
+              isDisabled={isButtonDisabled}
               isIconOnly
               className="bg-[#18181B] hover:bg-[#27272A]"
               size="sm"
@@ -122,6 +153,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
       {isCollapsed && (
         <div className="flex flex-col items-center py-2 px-2">
           <Button
+            isDisabled={isButtonDisabled}
             isIconOnly
             className="bg-[#18181B] hover:bg-[#27272A]"
             size="sm"

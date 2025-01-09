@@ -69,14 +69,6 @@ export const getRepositoryDocs = async (owner: string, repo: string): Promise<Do
   return response.data.data;
 };
 
-export const getPartialScanResults = async (scanId: string) => {
-  const response = await api.get(`/api/v1/scans/partial/${scanId}`);
-  const result = response.data.data.partial_result;
-  const scan = response.data.data.scan;
-  result.scan = scan;
-  return result;
-};
-
 export const getScanHistory = async () => {
   const response = await api.get("/api/v1/scans/history");
   return response.data.data;
@@ -84,13 +76,10 @@ export const getScanHistory = async () => {
 
 // STRIPE ROUTES //
 
-export const createCheckoutSession = async (scanId: string): Promise<StripeCheckoutResponse> => {
-  const response = await api.post("/api/v1/payments/create-stripe-session", { scanId });
-  return response.data;
-};
-
-export const createSubscriptionSession = async (scanId?: string): Promise<StripeCheckoutResponse> => {
-  const response = await api.post("/api/v1/payments/create-subscription-session", { scanId });
+export const createSubscriptionSession = async (
+  subscription_type: Exclude<SubscriptionType, "free">,
+): Promise<StripeCheckoutResponse> => {
+  const response = await api.post("/api/v1/payments/create-subscription-session", { subscription_type });
   return response.data;
 };
 
@@ -108,8 +97,8 @@ export const initiateScan = async (data: InitiateScanRequest) => {
   return response.data;
 };
 
-export const getFullScanResults = async (scanId: string) => {
-  const response = await axios.get(`/api/getFullScanResults`, {
+export const getScanResults = async (scanId: string) => {
+  const response = await axios.get(`/api/getScanResults`, {
     params: { scanId },
     withCredentials: true,
   });

@@ -5,7 +5,7 @@ import { useEffect, type FC } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Loading, ProtectedRoute, StateMessage } from "@/components/layout";
-import { ScanFullResultsView, ScanResultsView } from "@/components/views";
+import { ScanResultsView, ScanLoadingStateView } from "@/components/views";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePaymentProcessing } from "@/hooks";
 
@@ -48,10 +48,11 @@ const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
 
   return (
     <ProtectedRoute>
-      {scanData.scan.status === "completed" && scanData.scan.paid_status && scanData.findings.length > 0 ? (
-        <ScanFullResultsView scanData={scanData} />
-      ) : (
+      {scanData.scan.status === "completed" && scanData.findings.length > 0 ? (
         <ScanResultsView scanData={scanData} />
+      ) : (
+        // Displays scan loading, failed, or no findings states
+        <ScanLoadingStateView scanData={scanData} />
       )}
     </ProtectedRoute>
   );

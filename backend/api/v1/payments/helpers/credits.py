@@ -11,7 +11,7 @@ from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
 from core.models.credit_transaction import CreditTransaction, TransactionStatus, TransactionType
 from core.models.payment import Payment
-from core.models.user import User
+from core.models.user import SubscriptionType, User
 from core.utils.email_utils import send_failed_refund_email
 from core.utils.logger import logger
 
@@ -91,7 +91,7 @@ async def _process_scan_credit(
     user_id: str,
     scan_id: UUID,
     repository_name: str,
-    subscription_type: str,
+    subscription_type: SubscriptionType,
     renewal_period: Optional[datetime],
     is_refund: bool = False,
 ) -> None:

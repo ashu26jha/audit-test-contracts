@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 from typing import Dict, List
 
 from beanie import Document
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from core.utils.ensure_utc import ensure_utc_datetime
 
 
 class QAResponse(BaseModel):
@@ -40,6 +42,11 @@ class ReadmeDocs(Document):
             }
         },
     )
+
+    @field_validator("created_at", "updated_at", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        return ensure_utc_datetime(v)
 
     class Settings:
         name = "repository_docs"

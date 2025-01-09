@@ -5,7 +5,9 @@ from enum import Enum
 from uuid import UUID
 
 from beanie import Document, Indexed
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
+
+from core.utils.ensure_utc import ensure_utc_datetime
 
 
 class PaymentStatus(str, Enum):
@@ -15,7 +17,7 @@ class PaymentStatus(str, Enum):
 
 
 class PaymentType(str, Enum):
-    ONE_TIME = "one_time"  # Regular single scan payment
+    ONE_TIME = "one_time"  # Regular free scan payment
     SUBSCRIPTION = "subscription"  # Payment from subscription
     FREE = "free"  # Free scan (0-1 findings)
     FAILED = "failed"  # Failed scan
@@ -50,6 +52,11 @@ class Payment(Document):
             }
         },
     )
+
+    @field_validator("createdAt", "updatedAt", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        return ensure_utc_datetime(v)
 
     class Settings:
         name = "payments"

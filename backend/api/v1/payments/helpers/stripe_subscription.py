@@ -8,7 +8,7 @@ from api.v1.payments.helpers.get_result_url import get_payment_urls
 from config.settings import FRONTEND_URL
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.db.repositories.user import UserRepository
-from core.models.user import User
+from core.models.user import SubscriptionType, User
 from core.utils.validate import validate_user_scan_access
 
 
@@ -16,26 +16,41 @@ class StripeSubscriptionHelper:
     user_repo = UserRepository()
 
     @staticmethod
-    async def create_subscription_session(user: User, scan_id: Optional[str] = None):
+    async def create_subscription_session(
+        user: User, subscription_type: SubscriptionType, scan_id: Optional[str] = None
+    ):
         """Create subscription session for pro plan."""
+        # Ensure user has subscription data
+        if not user.subscription:
+            user = await UserRepository.ensure_user_subscription_data(user)
+
         # Check if the scan exists and belongs to the user
         if scan_id:
             await validate_user_scan_access(UUID(scan_id), user)
 
-        if not SUBSCRIPTION_SETTINGS["pro"]["price"]:
+        subscription = SUBSCRIPTION_SETTINGS[subscription_type]
+
+        if not subscription["price"]:
             raise HTTPException(
                 status_code=500, detail="Stripe subscription price ID is not configured"
             )
 
-        success_url, cancel_url = get_payment_urls(scan_id or "")
+        success_url, cancel_url = get_payment_urls()
 
         try:
+            metadata = {
+                "userId": user.githubId,
+                "scanId": scan_id or "",
+                "type": subscription_type.value,
+            }
+
             return stripe.checkout.Session.create(
+                customer=user.subscription.stripeCustomerId,
+                customer_email=user.email if not user.subscription.stripeCustomerId else None,
                 billing_address_collection="auto",
-                customer_email=user.email,
                 line_items=[
                     {
-                        "price": SUBSCRIPTION_SETTINGS["pro"]["price"],
+                        "price": subscription["price"],
                         "quantity": 1,
                     }
                 ],
@@ -44,7 +59,8 @@ class StripeSubscriptionHelper:
                 allow_promotion_codes=True,
                 success_url=success_url,
                 cancel_url=cancel_url,
-                metadata={"userId": user.githubId, "scanId": scan_id or "", "type": "subscription"},
+                metadata=metadata,
+                subscription_data={"metadata": metadata},
             )
         except stripe.error.StripeError as e:
             raise HTTPException(status_code=400, detail=str(e)) from e

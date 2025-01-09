@@ -70,46 +70,6 @@ AuditAgent Team"""
         logger.error(f"Error sending email: {str(e)}")
 
 
-async def send_completion_email(to_email: str, scan_id: str, scan_number: int, total_findings: int):
-    """
-    Send a notification email when scan is completed.
-    """
-
-    # Create the email message
-    msg = MIMEMultipart()
-    msg["From"] = smtp_username
-    msg["To"] = to_email
-    msg["Subject"] = f"Scan ID {scan_number} Completed!"
-
-    # Email body
-    body = f"""
-Hello,
-
-Your scan has been completed successfully!
-
-Scan ID: {scan_number}
-Total Findings: {total_findings}
-
-You can view the detailed results by logging into your AuditAgent dashboard or clicking the link below:
-
-{settings.FRONTEND_URL}/scan-results/{scan_id}
-
-Best regards,
-AuditAgent Team"""
-
-    msg.attach(MIMEText(body, "plain"))
-
-    # Send the email
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_username, smtp_password)
-            server.send_message(msg)
-        logger.info(f"Completion email sent successfully to {to_email}")
-    except Exception as e:
-        logger.error(f"Error sending completion email: {str(e)}")
-
-
 async def send_error_email(to_email: str, scan_number: int):
     """
     Send an email with the error message.

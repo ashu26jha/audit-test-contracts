@@ -44,7 +44,7 @@ class ScanContext(BaseModel):
     repository_url: str
     branch_name: str
     contract_files: List[str]
-    is_pro_scan: bool = False
+    is_subscription_scan: bool = False
     formatted_docs: Optional[str] = None
 
     class Config:
@@ -53,3 +53,8 @@ class ScanContext(BaseModel):
 
 class AuditAgentInitiateResponse(BaseModel):
     scan_id: UUID = Field(..., description="Unique identifier for the scan")
+
+
+class IsFreeScanAllowedResponse(BaseModel):
+    is_allowed: bool
+    message: str

@@ -18,14 +18,6 @@ class DeduplicateRequest(BaseModel):
     findings: List[Finding]
 
 
-class ConfidenceScoringRequest(BaseModel):
-    """Request model for confidence scoring."""
-
-    findings: List[Finding]
-    summary_of_project: str
-    flattened_contracts: str
-
-
 class DeduplicateResponse(BaseModel):
     """Response model for deduplication results."""
 
@@ -39,10 +31,4 @@ class MitigationResponse(BaseModel):
 
     original_count: int
     findings_count: int
-    findings: List[Finding]
-
-
-class ConfidenceScoringResponse(BaseModel):
-    """Response model for confidence scoring results."""
-
     findings: List[Finding]

@@ -1,19 +1,21 @@
 from functools import wraps
 from typing import Optional
 
-import redis
 from fastapi import HTTPException, Request
 
-from config import settings
+from config.redis_client import REDIS_CLIENT
 from core.utils.logger import logger
-
-redis_client = redis.from_url(settings.REDIS_URL)
 
 
 def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = False):
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
+            # If Redis is not available, skip throttling
+            if not REDIS_CLIENT:
+                logger.warning("Redis unavailable, throttling disabled")
+                return await func(*args, **kwargs)
+
             try:
                 if use_ip:
                     # Get IP from request
@@ -36,7 +38,7 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                     key = f"throttle:{func.__name__}:{current_user.id}"
 
                 # Get current request count
-                current_count = redis_client.get(key)
+                current_count = REDIS_CLIENT.get(key)
                 if current_count and int(current_count) >= max_requests:
                     raise HTTPException(
                         status_code=429,
@@ -45,15 +47,14 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
 
                 # Increment counter or set initial value
                 if current_count:
-                    redis_client.incr(key)
+                    REDIS_CLIENT.incr(key)
                 else:
-                    redis_client.setex(key, rate_limit_minutes * 60, "1")
+                    REDIS_CLIENT.setex(key, rate_limit_minutes * 60, "1")
 
                 return await func(*args, **kwargs)
-            except redis.exceptions.ConnectionError as e:
-                logger.error(f"Unable to connect to Redis: {str(e)}")
-                logger.warning("Throttling is disabled due to Redis connection error.")
-                # Proceed without throttling
+            except Exception as e:
+                logger.error(f"Error in throttling: {str(e)}")
+                # Proceed without throttling on error
                 return await func(*args, **kwargs)
 
         return wrapper

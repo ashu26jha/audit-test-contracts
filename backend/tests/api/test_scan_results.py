@@ -120,7 +120,7 @@ class TestScanResultsEndpoints:
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
-        response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
+        response = client.get(f"/api/v1/scans/result/{str(scan_id)}", headers=headers)
 
         assert response.status_code == 200
         result = response.json()
@@ -130,65 +130,6 @@ class TestScanResultsEndpoints:
         assert data["scan"]["scan_id"] == str(scan_id)
         assert data["result"]["summary"] == "Test summary"
         assert len(data["result"]["findings"]) == 1
-
-    async def test_get_partial_scan_result(
-        self,
-        client,
-        mock_get_current_user,
-        mock_get_partial_scan_result,
-    ):
-        scan_id = uuid4()
-        mock_result = {
-            "scan": {
-                "scan_id": str(scan_id),
-                "user_id": "test_user_id",
-                "status": "completed",
-                "scan_number": 1,
-                "startedAt": datetime.now(timezone.utc),
-                "completedAt": datetime.now(timezone.utc),
-                "createdAt": datetime.now(timezone.utc),
-                "updatedAt": datetime.now(timezone.utc),
-                "contractFiles": ["TestContract.sol"],
-                "branchName": "main",
-                "commitHash": "abc123",
-                "repositoryURL": "https://github.com/test/repo",
-                "repositoryName": "test-repo",
-                "linesOfCode": None,
-                "total_findings": 1,
-                "progress": 0.5,
-                "paid_status": False,
-            },
-            "partial_result": {
-                "scan_id": str(scan_id),
-                "scan_number": 1,
-                "summary": "Test summary",
-                "type": "default",
-                "findings": [
-                    {
-                        "Issue": "Test issue",
-                        "Severity": "High",
-                        "Contracts": ["TestContract.sol"],
-                        "Description": "Test description",
-                    }
-                ],
-                "createdAt": datetime.now(timezone.utc),
-                "completedAt": datetime.now(timezone.utc),
-                "total_findings": 1,
-                "info_message": None,
-            },
-        }
-        mock_get_partial_scan_result.return_value = mock_result
-
-        headers = {"x-api-key": settings.ADMIN_API_KEY}
-        response = client.get(f"/api/v1/scans/partial/{str(scan_id)}", headers=headers)
-        assert response.status_code == 200
-        result = response.json()
-        assert result["success"] is True
-        assert "data" in result
-        data = result["data"]
-        assert data["scan"]["scan_id"] == str(scan_id)
-        assert data["partial_result"]["summary"] == "Test summary"
-        assert len(data["partial_result"]["findings"]) == 1
 
     async def test_get_scan_result_not_found(
         self,
@@ -203,7 +144,7 @@ class TestScanResultsEndpoints:
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
-        response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
+        response = client.get(f"/api/v1/scans/result/{str(scan_id)}", headers=headers)
         assert response.status_code == 404
         assert not response.json()["success"]
 
@@ -220,6 +161,6 @@ class TestScanResultsEndpoints:
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
-        response = client.get(f"/api/v1/scans/full/{str(scan_id)}", headers=headers)
+        response = client.get(f"/api/v1/scans/result/{str(scan_id)}", headers=headers)
         assert response.status_code == 403
         assert not response.json()["success"]

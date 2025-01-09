@@ -4,7 +4,9 @@ from typing import Optional
 from uuid import UUID
 
 from beanie import Document, Indexed
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from core.utils.ensure_utc import ensure_utc_datetime
 
 
 class TransactionType(str, Enum):
@@ -62,6 +64,11 @@ class CreditTransaction(Document):
             }
         },
     )
+
+    @field_validator("timestamp", "renewal_period", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        return ensure_utc_datetime(v)
 
     class Settings:
         name = "credit_transactions"

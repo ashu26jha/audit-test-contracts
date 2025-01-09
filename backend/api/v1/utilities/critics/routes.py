@@ -3,8 +3,6 @@ from typing import Union
 from fastapi import APIRouter
 
 from api.v1.utilities.critics.schema import (
-    ConfidenceScoringRequest,
-    ConfidenceScoringResponse,
     DeduplicateRequest,
     DeduplicateResponse,
     MitigationRequest,
@@ -91,44 +89,5 @@ async def test_mitigation(request: MitigationRequest):
             original_count=len(request.findings),
             findings_count=len(mitigated_findings),
             findings=mitigated_findings,
-        )
-    )
-
-
-@router.post(
-    "/confidence-scoring",
-    response_model=Union[SuccessResponse[ConfidenceScoringResponse], ErrorResponse],
-    description="Performs confidence scoring on the findings.",
-)
-async def confidence_scoring(request: ConfidenceScoringRequest):
-    """
-    Performs confidence scoring on the findings.
-
-    Process:
-    1. For >5 findings, identifies most interesting findings
-    2. Analyzes code context to assess confidence
-    3. Assigns confidence scores based on:
-       - Code pattern matches
-       - Implementation context
-       - Security impact likelihood
-
-    Args:
-        findings: List of findings to score
-        summary_of_project: Project summary for context
-        flattened_contracts: Flattened contracts for context
-
-    Returns:
-        ConfidenceScoringResponse containing:
-        - findings: List of findings with confidence scores (0-100)
-    """
-    confidence_scored_findings = await CriticService.confidence_scoring(
-        findings=request.findings,
-        summary_of_project=request.summary_of_project,
-        flattened_contracts=request.flattened_contracts,
-    )
-
-    return SuccessResponse(
-        data=ConfidenceScoringResponse(
-            findings=confidence_scored_findings,
         )
     )

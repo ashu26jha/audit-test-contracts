@@ -1,9 +1,8 @@
 import stripe
 from fastapi import HTTPException
 
-from api.v1.payments.helpers.stripe_session import stripe_checkout_session
 from config.settings import STRIPE_API_KEY
-from core.models.user import User
+from core.models.user import SubscriptionType, User
 from core.utils import logger
 
 from .helpers.stripe_subscription import StripeSubscriptionHelper
@@ -16,12 +15,6 @@ if not STRIPE_API_KEY:
     raise HTTPException(status_code=500, detail=MESSAGE)
 
 
-class StripeSessionService:
-    @staticmethod
-    async def create_checkout_session(user: User, scan_id: str) -> stripe.checkout.Session:
-        return await stripe_checkout_session(user, scan_id)
-
-
 class StripeWebhookService:
     @staticmethod
     async def handle_webhook(payload: bytes, sig_header: str):
@@ -31,9 +24,11 @@ class StripeWebhookService:
 class StripeSubscriptionService:
     @staticmethod
     async def create_subscription_session(
-        user: User, scan_id: str = None
+        user: User, subscription_type: SubscriptionType, scan_id: str = None
     ) -> stripe.checkout.Session:
-        return await StripeSubscriptionHelper.create_subscription_session(user, scan_id)
+        return await StripeSubscriptionHelper.create_subscription_session(
+            user, subscription_type, scan_id
+        )
 
     @staticmethod
     async def create_portal_session(user: User) -> stripe.billing_portal.Session:

@@ -114,7 +114,7 @@ async def create_report_html(report_data):
     summary_html = markdown.markdown(
         report_data["summary"],
         extensions=[
-            FencedCodeExtension(),  # Add this extension here as well
+            FencedCodeExtension(),
             CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
             SaneListExtension(),
             Nl2BrExtension(),

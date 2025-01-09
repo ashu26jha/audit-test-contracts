@@ -14,15 +14,17 @@ from api.v1.common.setup_environment import cleanup_environment, setup_environme
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
 from api.v1.payments.helpers.credits import CreditHelper
+from api.v1.utilities.pdf.service import generate_pdf_from_scan
 from core.db.repositories.docs import DocsRepository
 from core.db.repositories.scan import ScanRepository
+from core.db.repositories.user import UserRepository
 from core.models.scan import Scan
 from core.models.user import User
 from core.schemas.audit_agent_schema import SetupResult
-from core.utils.email_utils import send_completion_email, send_error_email
+from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
-from core.utils.validate import validate_subscription_limits
+from core.utils.validate import validate_free_scan_limit, validate_subscription_limits
 
 github_service = GitHubService()
 github_api_client = GitHubAPIClient()
@@ -39,12 +41,16 @@ class AuditAgentService:
         initializer = ScanInitializer(user, request, scan_id)
         try:
             # Validation
-            is_pro_scan = await user.has_active_subscription()
+            is_subscription_scan = not user.is_free
+
+            if not is_subscription_scan:
+                await validate_free_scan_limit(user.githubId)
+
             await initializer.validate_request()
 
             # Format docs if provided and user is a subscriber
             formatted_docs = None
-            if request.docs and is_pro_scan:
+            if request.docs and is_subscription_scan and user.is_enterprise:
                 await DocsRepository.store_docs(
                     repository_url=request.repositoryURL,
                     user_id=user.githubId,
@@ -83,7 +89,7 @@ class AuditAgentService:
                 repository_url=request.repositoryURL,
                 branch_name=request.branchName,
                 contract_files=request.contractFiles,
-                is_pro_scan=is_pro_scan,
+                is_subscription_scan=is_subscription_scan,
                 formatted_docs=formatted_docs,
             )
 
@@ -115,7 +121,7 @@ class AuditAgentService:
             await payment_handler.initialize_payment()
 
             # Deduct credit
-            if context.is_pro_scan:
+            if context.is_subscription_scan:
                 try:
                     await CreditHelper.deduct_credit(
                         context.user_id, context.scan_id, context.repository_url
@@ -159,7 +165,7 @@ class AuditAgentService:
             await ScanRepository.update_scan_failure(
                 context.scan_id, "Failed during scan initialization"
             )
-            if context.is_pro_scan:
+            if context.is_subscription_scan:
                 await CreditHelper.refund_credit(context.user_id, context.scan_id)
             await send_error_email(context.user_email, context.scan_id)
             await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
@@ -243,20 +249,10 @@ class AuditAgentService:
                 context.scan_id, "completed", total_findings_after_dedup
             )
 
+            # Send PDF email
             if context.user_email:
-                # Fetch scan to get scan_number
-                scan = await ScanRepository.get_scan(context.scan_id)
-                if scan:
-                    await send_completion_email(
-                        to_email=context.user_email,
-                        scan_id=str(context.scan_id),
-                        scan_number=scan.scan_number,
-                        total_findings=total_findings_after_dedup,
-                    )
-                else:
-                    logger.error(
-                        f"Could not find scan with ID {context.scan_id} to send completion email"
-                    )
+                user = await UserRepository.get_by_github_id(context.user_id)
+                await generate_pdf_from_scan(user, context.scan_id)
             else:
                 logger.warning(f"User {context.user_id} does not have an email address.")
 
@@ -265,7 +261,7 @@ class AuditAgentService:
             error_msg = f"Error in audit scan {context.scan_id}: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            if context.is_pro_scan:
+            if context.is_subscription_scan:
                 await CreditHelper.refund_credit(context.user_id, context.scan_id)
             await send_error_email(context.user_email, context.scan_id)
             raise
@@ -274,7 +270,7 @@ class AuditAgentService:
             error_msg = f"Unexpected error: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            if context.is_pro_scan:
+            if context.is_subscription_scan:
                 await CreditHelper.refund_credit(context.user_id, context.scan_id)
             await send_error_email(context.user_email, context.scan_id)
             raise HTTPException(status_code=500, detail=error_msg) from e

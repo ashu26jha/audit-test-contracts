@@ -71,11 +71,13 @@ interface RepositoriesData {
 
 interface Subscription {
   isActive: boolean;
-  type: string;
+  type: SubscriptionType;
   credits: number;
   monthlyCredits: number;
   expiresAt: Date;
 }
+
+type SubscriptionType = "free" | "pro" | "enterprise";
 
 interface StripeCheckoutResponse {
   data: {

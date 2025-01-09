@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timedelta, timezone
 from typing import List
 from uuid import UUID
 
@@ -7,7 +8,9 @@ from fastapi import HTTPException
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
+from core.models.scan import Scan
 from core.models.user import User
+from core.utils.logger import logger
 
 # Regular expression for GitHub repository URL validation
 GITHUB_URL_PATTERN = r"^https?://github\.com/[\w.-]+/[\w.-]+(?:\.git)?$"
@@ -71,15 +74,52 @@ def validate_contract_files(contract_files: List[str]):
         )
 
 
-async def validate_subscription(user: User):
-    return await user.has_active_subscription()
+async def validate_free_scan_limit(user_id: str) -> bool:
+    """
+    Checks if a user can perform a free scan based on their scan history.
+    A user is allowed one free scan per month if they are not a subscriber.
+
+    Args:
+        user_id: The GitHub ID of the user
+
+    Returns:
+        bool: True if user can perform a free scan, False otherwise
+
+    Raises:
+        HTTPException: If user is not found or other server errors occur
+    """
+    try:
+        # Get user to check subscription status
+        user = await UserRepository.get_by_github_id(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Check scans in the last 30 days
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_scans = await Scan.find(
+            {
+                "user_id": user_id,
+                "createdAt": {"$gte": thirty_days_ago},
+                "paid_status": False,  # Only check non-paid (free) scans
+                "status": "completed",  # Only count completed scans
+            }
+        ).to_list()
+
+        return len(recent_scans) == 0
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating free scan limit for user {user_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to validate free scan limit") from e
 
 
 async def validate_subscription_limits(user_id: str, contract_files: List[str], total_loc: int):
     """Validate subscription limits for contracts and LoC."""
     user = await UserRepository.get_by_github_id(user_id)
-    is_pro = await validate_subscription(user)
-    limits = SUBSCRIPTION_SETTINGS["pro" if is_pro else "single"]
+
+    plan = user.subscription.type
+    limits = SUBSCRIPTION_SETTINGS[plan]
 
     if len(contract_files) > limits["max_contracts"]:
         raise HTTPException(

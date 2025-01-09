@@ -1,11 +1,12 @@
 # pylint: disable=too-many-ancestors,too-few-public-methods
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
 from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from core.utils.ensure_utc import ensure_utc_datetime
 from core.utils.profiles import Profiles
 from core.utils.severity import Severity
 
@@ -21,7 +22,6 @@ class Finding(BaseModel):
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
-    Confidence: Optional[int] = Field(None, description="Confidence score of the issue (0-100)")
 
     def __hash__(self):
         # Create a hash based on immutable fields that define a finding's identity
@@ -49,25 +49,6 @@ class Finding(BaseModel):
     def validate_severity(cls, v: str) -> str:
         # Use the centralized Severity enum
         return Severity.from_str(v).value
-
-    # Compatibility with old databases
-    @field_validator("Confidence", mode="before")
-    @classmethod
-    def validate_confidence(cls, v: Optional[Union[int, str]]) -> Optional[int]:
-        if v is None:
-            return None
-        if isinstance(v, int):
-            return v
-        if isinstance(v, str):
-            severity_map = {"high": 90, "medium": 60, "low": 30, "info": 10}
-            if v.lower() in severity_map:
-                return severity_map[v.lower()]
-            # Integer conversion
-            try:
-                return int(v)
-            except ValueError:
-                return None
-        return None
 
     class Config:
         # Allow population by field name for backward compatibility
@@ -171,6 +152,17 @@ class Scan(Document):
         },
     )
 
+    @field_validator("startedAt", "createdAt", "completedAt", "updatedAt", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        return ensure_utc_datetime(v)
+
+    @classmethod
+    async def get_next_scan_number(cls, user_id: str) -> int:
+        """Get the next sequential scan number for a user."""
+        last_scan = await cls.find(cls.user_id == user_id).sort("-scan_number").limit(1).to_list()
+        return (last_scan[0].scan_number + 1) if last_scan else 1
+
     class Settings:
         name = "scans"
         validate_on_save = True
@@ -181,12 +173,6 @@ class Scan(Document):
             [("paid_status", 1)],
             [("repositoryURL", 1), ("branchName", 1)],
         ]
-
-    @classmethod
-    async def get_next_scan_number(cls, user_id: str) -> int:
-        """Get the next sequential scan number for a user."""
-        last_scan = await cls.find(cls.user_id == user_id).sort("-scan_number").limit(1).to_list()
-        return (last_scan[0].scan_number + 1) if last_scan else 1
 
 
 class ScanResult(Document):
@@ -240,6 +226,11 @@ class ScanResult(Document):
             }
         },
     )
+
+    @field_validator("createdAt", "completedAt", mode="before")
+    @classmethod
+    def ensure_utc(cls, v):
+        return ensure_utc_datetime(v)
 
     class Settings:
         name = "scan_results"

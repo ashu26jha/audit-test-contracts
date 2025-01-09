@@ -9,7 +9,6 @@ import { useRepositoryStore } from "@/store/repositoryStore";
 export const useFetchScanHistory = (pollingInterval = 5000) => {
   const { user } = useAuth();
   const { setScans, getRepositoryScans, getAllRepositories } = useRepositoryStore();
-  const [scanable, setScanable] = useState<boolean>(false);
   const [hasActiveScans, setHasActiveScans] = useState<boolean>(false);
 
   const {
@@ -34,14 +33,6 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
 
   useEffect(() => {
     if (scanHistory) {
-      // Check for unpaid completed scans
-      const hasUnpaidCompletedScans = scanHistory.some(
-        (scan: ScanHistoryItem) => !scan.paid_status && scan.status === "completed",
-      );
-
-      // Set scanable to true if there are no unpaid completed scans
-      setScanable(!hasUnpaidCompletedScans);
-
       // Check for active scans (only in_progress or pending)
       const activeScans = scanHistory.some(
         (scan: ScanHistoryItem) => scan.status === "in_progress" || scan.status === "pending",
@@ -54,7 +45,6 @@ export const useFetchScanHistory = (pollingInterval = 5000) => {
     scanHistory,
     isLoading,
     error,
-    scanable,
     refetch,
     repositories: getAllRepositories(),
     getRepositoryScans,

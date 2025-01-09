@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   try {
     const baseURL = process.env.DOCKER_ENV === "true" ? "http://backend:8000" : SERVICES.API_URL;
 
-    const response = await axios.get(`/api/v1/scans/full/${scanId}`, {
+    const response = await axios.get(`/api/v1/scans/result/${scanId}`, {
       baseURL,
       headers: {
         Cookie: `auth_token=${token}`,

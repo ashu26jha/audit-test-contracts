@@ -13,7 +13,7 @@ from core.models.user import User
 from main import app
 
 client = TestClient(app)
-AMOUNT = SUBSCRIPTION_SETTINGS["single"]["price"] * 100  # Convert to cents for Stripe
+AMOUNT = SUBSCRIPTION_SETTINGS["free"]["price"] * 100  # Convert to cents for Stripe
 
 
 @pytest.fixture
@@ -69,25 +69,6 @@ def mock_db():
         yield
 
 
-@pytest.mark.usefixtures("mock_auth")
-def test_create_checkout_session():
-    with patch(
-        "api.v1.payments.service.StripeSessionService.create_checkout_session",
-        new_callable=AsyncMock,
-    ) as mock_create_session:
-        mock_create_session.return_value = AsyncMock(id="test_session_id", url="https://test.com")
-
-        response = client.post(
-            "/api/v1/payments/create-stripe-session", json={"scanId": str(uuid4())}
-        )
-        assert response.status_code == 200
-        result = response.json()
-        assert result["success"] is True
-        assert "data" in result
-        assert "session_id" in result["data"]
-        assert "url" in result["data"]
-
-
 @pytest.mark.asyncio
 async def test_webhook_handler():
     # Mock beanie document settings and Stripe event construction
@@ -132,24 +113,6 @@ def test_webhook_handler_invalid_signature():
         assert error_response["success"] is False
         assert error_response["code"] == 400
         assert "Invalid signature" in error_response["message"]
-
-
-@pytest.mark.usefixtures("mock_auth")
-def test_create_checkout_session_invalid_scan_id():
-    with patch(
-        "api.v1.payments.service.StripeSessionService.create_checkout_session",
-        new_callable=AsyncMock,
-    ) as mock_create_session:
-        mock_create_session.side_effect = HTTPException(status_code=400, detail="No scan found")
-
-        response = client.post(
-            "/api/v1/payments/create-stripe-session", json={"scanId": str(uuid4())}
-        )
-        assert response.status_code == 400
-        error_response = response.json()
-        assert error_response["success"] is False
-        assert error_response["code"] == 400
-        assert "No scan found" in error_response["message"]
 
 
 @pytest.mark.usefixtures("mock_auth")

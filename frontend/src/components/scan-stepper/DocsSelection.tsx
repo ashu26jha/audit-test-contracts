@@ -87,7 +87,7 @@ export const DocsSelection: FC = () => {
     }
   }, [fetchReadmeFiles, selectedOwner, selectedRepo, selectedBranch]);
 
-  const isBlurred = !user?.subscription.isActive;
+  const isBlurred = user?.subscription.type !== "enterprise";
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -199,10 +199,10 @@ export const DocsSelection: FC = () => {
         </div>
       </section>
 
-      {!user?.subscription.isActive && (
+      {user?.subscription.type !== "enterprise" && (
         <BottomBanner
-          title="Context docs are for subscribers only"
-          description="Please subscribe to access the docs and Q&A."
+          title="Context docs are only available for enterprise users"
+          description="Please subscribe to enterprise plan to access the docs and Q&A."
           buttonText="Subscribe Now"
           buttonIcon={<Sparkles size={14} />}
           action={() => router.push("/profile?tab=subscription")}

@@ -1,8 +1,18 @@
+# pylint: disable=no-member
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
 from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_serializer, field_validator
+
+from core.utils.ensure_utc import ensure_utc_datetime
+
+
+class SubscriptionType(str, Enum):
+    FREE = "free"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
 
 
 class SubscriptionData(BaseModel):
@@ -12,7 +22,7 @@ class SubscriptionData(BaseModel):
     """
 
     isActive: bool = Field(default=False, description="Whether subscription is currently active")
-    type: str = Field(default="single", description="Subscription type: 'single' or 'pro'")
+    type: SubscriptionType = Field(default=SubscriptionType.FREE, description="Subscription type")
     credits: int = Field(default=0, description="Current available credits")
     monthlyCredits: int = Field(default=0, description="Credits allocated per month")
     expiresAt: Optional[datetime] = Field(None, description="When current subscription period ends")
@@ -23,27 +33,32 @@ class SubscriptionData(BaseModel):
     @property
     def is_pro(self) -> bool:
         """Check if user has an active pro subscription."""
-        return self.type == "pro" and self.isActive
+        return (
+            self.type == SubscriptionType.PRO
+            and self.isActive
+            and self.expiresAt > datetime.now(timezone.utc)
+            and self.credits > 0
+        )
+
+    @property
+    def is_enterprise(self) -> bool:
+        """Check if user has an active enterprise subscription."""
+        return (
+            self.type == SubscriptionType.ENTERPRISE
+            and self.isActive
+            and self.expiresAt > datetime.now(timezone.utc)
+            and self.credits > 0
+        )
+
+    @property
+    def is_free(self) -> bool:
+        """Check if user has an active free subscription."""
+        return not self.is_pro and not self.is_enterprise
 
     @field_validator("expiresAt", "lastRenewalAt", mode="before")
     @classmethod
     def ensure_utc(cls, v):
-        """Ensure datetime fields are in UTC timezone."""
-        if v is None:
-            return v
-        if isinstance(v, str):
-            try:
-                v = datetime.fromisoformat(v.replace("Z", "+00:00"))
-            except ValueError:
-                try:
-                    v = datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f%z")
-                except ValueError as e:
-                    raise ValueError("Invalid datetime format") from e
-        if isinstance(v, datetime):
-            if v.tzinfo is None:
-                v = v.replace(tzinfo=timezone.utc)
-            return v.astimezone(timezone.utc)
-        raise ValueError("Invalid datetime value")
+        return ensure_utc_datetime(v)
 
     class Config:
         json_encoders = {
@@ -112,12 +127,7 @@ class User(Document):
     @field_validator("createdAt", "updatedAt", mode="before")
     @classmethod
     def ensure_utc(cls, v):
-        """Ensure datetime fields are in UTC timezone."""
-        if isinstance(v, datetime):
-            if v.tzinfo is None:
-                v = v.replace(tzinfo=timezone.utc)
-            return v.astimezone(timezone.utc)
-        return v
+        return ensure_utc_datetime(v)
 
     @field_serializer("createdAt", "updatedAt")
     @classmethod
@@ -132,18 +142,14 @@ class User(Document):
         if not hasattr(self, "token_version"):
             await self.update({"$set": {"token_version": 0}})
 
-    async def has_active_subscription(self) -> bool:
-        """
-        Check if user has an active pro subscription with credits.
-        Returns False if subscription is expired or out of credits.
-        """
-        # pylint: disable=no-member
-        subscription: SubscriptionData = self.subscription
-        if not subscription.expiresAt:
-            return False
+    @property
+    def is_pro(self) -> bool:
+        return self.subscription.is_pro
 
-        return (
-            subscription.isActive
-            and subscription.expiresAt > datetime.now(timezone.utc)
-            and subscription.credits > 0
-        )
+    @property
+    def is_enterprise(self) -> bool:
+        return self.subscription.is_enterprise
+
+    @property
+    def is_free(self) -> bool:
+        return self.subscription.is_free

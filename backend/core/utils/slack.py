@@ -11,11 +11,11 @@ async def send_slack_message():
         stats_24h = await StatsService.get_24h_stats()
         text = f"""
         *Last 24 Hour updates:*
-        ─ Lines Scanned: {stats_24h["lines_of_code"]}
-        ─ New Users: {stats_24h["new_users"]}
-        ─ Total Scans: {stats_24h["total_scans_24h"]}
-        ─ Vulnerabilities Found: {stats_24h["vulnerabilities_found"]}
-        ─ External Scans: {stats_24h["paid_scans_24h"]}
+        ─ Lines Scanned: {stats_24h.lines_of_code}
+        ─ New Users: {stats_24h.new_users}
+        ─ Total Scans: {stats_24h.total_scans_24h}
+        ─ Vulnerabilities Found: {stats_24h.vulnerabilities_found}
+        ─ External Scans: {stats_24h.paid_scans_24h}
         """
 
         slack_client = slack.WebClient(token=SLACK_TOKEN)

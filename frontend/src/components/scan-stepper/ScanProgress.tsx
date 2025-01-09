@@ -28,9 +28,9 @@ export const ScanProgress: FC<ScanProgressProps> = ({ progress }) => {
   const gradientId = "progressGradient";
 
   return (
-    <Card className="w-full max-w-xl mx-auto p-6 space-y-4">
-      <div className="flex justify-center items-center">
-        <div style={{ width: "110px", height: "110px" }}>
+    <div className="flex flex-col items-center space-y-4 w-56">
+      <Card className="p-4">
+        <div style={{ width: "64px", height: "64px" }}>
           <GradientSVG />
           <CircularProgressbar
             value={progress}
@@ -47,12 +47,12 @@ export const ScanProgress: FC<ScanProgressProps> = ({ progress }) => {
             })}
           />
         </div>
-      </div>
+      </Card>
 
-      <div className="space-y-2">
-        <h2 className="text-xl font-semibold text-center">Analyzing Your Code...</h2>
-        <p className="text-center text-small text-default-500">Please wait. This may take several minutes.</p>
-      </div>
-    </Card>
+      <p className="font-medium">Analyzing Your Code...</p>
+      <p className="text-foreground-500 text-center text-sm">
+        Please wait, this may take several minutes. You&apos;ll receive an email once the scan is complete.
+      </p>
+    </div>
   );
 };

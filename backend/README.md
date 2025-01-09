@@ -31,83 +31,69 @@ This is the backend component of Audit Agent, providing the core functionality f
 
 ### Installation
 
-1. Clone the repository:
+Clone the repository:
 ```bash
 git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
 cd backend
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
 ### Configure environment variables
 
-If you are coming from the parent [readme](../README.md) and want to run both frontend and backend together, you just need to configure the environment variables below. No need to run the backend separately
+Copy the `.env.example` file to `.env` and set the following variables:
 
-1. ADMIN_API_KEY - Use the same value defined in the frontend
-2. OPENAI_API_KEY
-3. ANTHROPIC_API_KEY
-4. SECRET_KEY - Generate any UUID
-5. LANGFUSE_SECRET_KEY
-6. LANGFUSE_PUBLIC_KEY
-7. LANGFUSE_HOST
-8. MONGODB_URL
-10. GITHUB_CLIENT_ID
-11. GITHUB_CLIENT_SECRET
-12. GITHUB_INSTALLATION_URL
-13. SMTP_SERVER - SMTP server URL
-14. SMTP_PORT
-15. SMTP_USERNAME
-16. SMTP_PASSWORD
-17. STRIPE_API_KEY
-18. STRIPE_WEBHOOK
-19. STRIPE_SUBSCRIPTION_PRICE_ID
-20. SLACK_TOKEN - Optional
+> **NOTE: If you are coming from the parent [readme](../README.md) and want to run both frontend and backend together, you just need to configure the environment variables below. No need to run the backend separately**
 
-Copy the `.env.example` file to `.env` and set the variables:
 ```bash
-ADMIN_API_KEY
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-...
-SECRET_KEY= 12f671d3-c4be-4b0f-a2a7-e1e88ef6458a
+ADMIN_API_KEY="Use the same value defined in the frontend"
+SECRET_KEY="Any key for JWT token"
 
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_HOST=https://...
+# For AI services
+OPENAI_API_KEY="Your_openai_api_key"
+ANTHROPIC_API_KEY="Your_anthropic_api_key"
+GEMINI_API_KEY="Your_gemini_api_key"
 
-MONGODB_URL=your_mongodb_url
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
+# For Langfuse monitoring
+LANGFUSE_SECRET_KEY="Your_langfuse_secret_key"
+LANGFUSE_PUBLIC_KEY="Your_langfuse_public_key"
+LANGFUSE_HOST="Your_langfuse_host"
+
+# Create a MongoDB and get the URL
+MONGODB_URL="Your_mongodb_url"
+
+# Create a Github app and get the client ID and secret
+GITHUB_CLIENT_ID="Your_github_client_id"
+GITHUB_CLIENT_SECRET="Your_github_client_secret"
 GITHUB_INSTALLATION_URL=your_github_installation_url
 
-STRIPE_API_KEY=sk
+# Create a Stripe account and get the API keys
+STRIPE_API_KEY="sk..."
 STRIPE_WEBHOOK_SECRET=wk # Check readme for more details
-STRIPE_SUBSCRIPTION_PRICE_ID=price_yourPriceIdHere
+STRIPE_ENTERPRISE_PRICE_ID=price_yourPriceIdHere
+STRIPE_PRO_PRICE_ID=price_yourPriceIdHere
 
+# For email notifications
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USERNAME=
 SMTP_PASSWORD=
-
-SLACK_TOKEN = x123
-...
 ```
 
 ## How to run the backend separately
+
+### Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
 ### Run the server
 
 To launch a local development server (PDF generation not working):
 ```bash
-cd backend
 uvicorn main:app --reload
 ```
 
 To launch a local development server with Docker (PDF generation OK):
 ```bash
-cd backend
 docker build -t audit-agent-backend -f Dockerfile.backend.dev .
 ```
 
@@ -149,6 +135,9 @@ pytest backend/tests/ -v --cov=backend --cov-report=html
 ```
 
 ## API Endpoints
+
+In development mode, you can access the API endpoints and their descriptions using the following URL: http://localhost:8000/docs
+
 
 ### Authentication Endpoints
 

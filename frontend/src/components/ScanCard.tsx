@@ -1,8 +1,10 @@
 import { type FC } from "react";
 
-import { Card, CardBody, Chip } from "@nextui-org/react";
+import { Card, CardBody } from "@nextui-org/react";
 import { Hash, Calendar, AlertTriangle, type LucideIcon } from "lucide-react";
 import Image from "next/image";
+
+import { formatDate } from "@/utils/datetime";
 
 interface ScanCardProps {
   repository: RepositoriesData;
@@ -12,21 +14,7 @@ interface ScanCardProps {
 const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
   const { latestScan } = repository;
 
-  const formattedDate = new Date(latestScan?.startedAt + "Z").toLocaleString(navigator.language, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
-
-  const chipColor = repository.hasUnpaidScans ? "warning" : repository.hasActiveScans ? "primary" : "success";
-  const chipLabel = repository.hasUnpaidScans
-    ? "unpaid scans"
-    : repository.hasActiveScans
-      ? "active scans"
-      : "all paid";
+  const formattedDate = formatDate(latestScan?.startedAt + "Z", "MMM d, yyyy, HH:mm");
 
   return (
     <Card
@@ -37,20 +25,17 @@ const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
       <CardBody>
         <div className="flex items-center justify-between mb-4 border-b border-default-100 pb-4">
           <div className="flex items-center">
-            <div className="w-10 h-10 mr-3 bg-gray-700 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 mr-3 bg-default-100 rounded-lg flex items-center justify-center border border-default">
               <Image
-                src={repository.logo ?? "/svg/github.svg"}
+                src={repository.logo ?? "/svg/default_repo.svg"}
                 alt="logo"
-                width={24}
-                height={24}
+                width={22}
+                height={22}
                 className="rounded-sm"
               />
             </div>
             <span className="font-semibold">{repository.repositoryName ?? "Repo Name"}</span>
           </div>
-          <Chip color={chipColor} size="sm">
-            {chipLabel}
-          </Chip>
         </div>
         <div className="space-y-2">
           <InfoRow icon={Calendar} label="Last Scanned" value={formattedDate} />

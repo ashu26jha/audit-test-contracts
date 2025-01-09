@@ -10,7 +10,7 @@ class PaymentHandler:
     def __init__(self, context: ScanContext, total_findings: int = 0):
         self.user_id = context.user_id
         self.scan_id = context.scan_id
-        self.is_pro_scan = context.is_pro_scan
+        self.is_subscription_scan = context.is_subscription_scan
         self.total_findings = total_findings
         self.payment_repo = PaymentRepository()
 
@@ -35,7 +35,7 @@ class PaymentHandler:
                 discount_applied=False,
             )
             await self.payment_repo.update_failed_payment(self.scan_id, self.user_id)
-            if self.is_pro_scan:
+            if self.is_subscription_scan:
                 await CreditHelper.refund_credit(self.user_id, self.scan_id)
 
         # Handle free scans (0-1 findings)

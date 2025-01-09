@@ -55,12 +55,3 @@ class FullScanResultResponse(BaseModel):
     result: Optional[ScanResultResponse]
 
     model_config = ConfigDict(from_attributes=True)
-
-
-class PartialScanResultResponse(BaseModel):
-    """Partial scan result response including scan metadata and partial results."""
-
-    scan: ScanResponse
-    partial_result: Optional[ScanResultResponse]
-
-    model_config = ConfigDict(from_attributes=True)

@@ -62,7 +62,7 @@ async def github_callback(
         value=jwt_token,
         domain=settings.COOKIE_DOMAIN,
         httponly=True,
-        secure=True,
+        secure=settings.ENVIRONMENT == "production",
         samesite="strict",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",

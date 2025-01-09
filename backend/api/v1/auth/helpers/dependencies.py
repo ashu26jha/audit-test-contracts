@@ -38,6 +38,9 @@ async def get_current_user(request: Request) -> User:
             raise HTTPException(status_code=401, detail="Token version mismatch")
 
         # Verify GitHub token is still valid
+        if settings.ENVIRONMENT == "development":
+            return user
+
         try:
             await validate_github_token(user.accessToken)
         except HTTPException as e:

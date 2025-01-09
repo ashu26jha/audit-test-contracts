@@ -76,7 +76,7 @@ Refer to the complete list of backend environment variables in [here](./backend/
 #### Local Development
 
 ```bash
-docker-compose up --build
+docker-compose -f docker-compose.yml up --build
 
 # To reinstall the dependencies, run the following command first
 docker-compose down --volumes
@@ -114,4 +114,4 @@ We welcome contributions to Yokai Audit Agent. Please read our contributing guid
 
 ## Contact
 
-For any inquiries, please contact [Your Contact Information].
+For any inquiries, please contact **auditagent@nethermind.io**

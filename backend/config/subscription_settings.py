@@ -1,20 +1,30 @@
 from datetime import timedelta
 
-from config.settings import STRIPE_SUBSCRIPTION_PRICE_ID
+from config.settings import STRIPE_ENTERPRISE_PRICE_ID, STRIPE_PRO_PRICE_ID
+from core.models.user import SubscriptionType
 
 SUBSCRIPTION_SETTINGS = {
-    "single": {
-        "type": "single",
-        "max_contracts": 10,
-        "max_loc": 2000,
-        "price": 4900,  # $49.00
+    "free": {
+        "type": SubscriptionType.FREE,
+        "max_contracts": 3,
+        "max_loc": 500,
+        "monthly_credits": 0,
+        "price": 0,  # $0.00
     },
     "pro": {
-        "type": "pro",
-        "max_contracts": 40,
-        "max_loc": 8000,
-        "monthly_credits": 20,
+        "type": SubscriptionType.PRO,
+        "max_contracts": 10,
+        "max_loc": 2000,
+        "monthly_credits": 5,
         "credit_expiry_period": timedelta(days=30),
-        "price": STRIPE_SUBSCRIPTION_PRICE_ID,
+        "price": STRIPE_PRO_PRICE_ID,
+    },
+    "enterprise": {
+        "type": SubscriptionType.ENTERPRISE,
+        "max_contracts": 50,
+        "max_loc": 8000,
+        "monthly_credits": 10,
+        "credit_expiry_period": timedelta(days=30),
+        "price": STRIPE_ENTERPRISE_PRICE_ID,
     },
 }

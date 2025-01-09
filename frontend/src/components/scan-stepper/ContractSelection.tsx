@@ -5,7 +5,7 @@ import { Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
 import type { Selection } from "@nextui-org/react";
 import Image from "next/image";
 
-import { BASIC_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
+import { FREE_PLAN_DETAILS, ENTERPRISE_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
 import { HELP_DESCRIPTION } from "@/config/helpDescription";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepperStore } from "@/store/scanStepperStore";
@@ -53,6 +53,16 @@ export const ContractSelection: FC = () => {
     },
     [allPaths, setSelectedContracts],
   );
+
+  const getScanLimits = () => {
+    if (user?.subscription.type === "free") {
+      return FREE_PLAN_DETAILS;
+    }
+    if (user?.subscription.type === "pro") {
+      return PRO_PLAN_DETAILS;
+    }
+    return ENTERPRISE_PLAN_DETAILS;
+  };
 
   return (
     <div className="flex gap-8 w-3/4 min-w-[300px]">
@@ -130,9 +140,9 @@ export const ContractSelection: FC = () => {
       <div className="w-[30%]">
         <HelpGuide
           selectedLines={totalSelectedLines}
-          totalLines={user?.subscription.isActive ? PRO_PLAN_DETAILS.MAX_LINES : BASIC_PLAN_DETAILS.MAX_LINES}
+          totalLines={getScanLimits().MAX_LINES}
           selectedFiles={selectedContracts.length}
-          totalFiles={user?.subscription.isActive ? PRO_PLAN_DETAILS.MAX_FILES : BASIC_PLAN_DETAILS.MAX_FILES}
+          totalFiles={getScanLimits().MAX_FILES}
           description={HELP_DESCRIPTION.contract}
           variant="contract"
         />

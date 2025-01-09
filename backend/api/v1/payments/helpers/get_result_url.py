@@ -2,19 +2,16 @@ from config.settings import FRONTEND_URL
 
 PAYMENT_RESULT_BASE_URL = f"{FRONTEND_URL}/payment-result"
 PAYMENT_RESULT_URL = (
-    f"{PAYMENT_RESULT_BASE_URL}"
-    f"?session_id={{CHECKOUT_SESSION_ID}}"
-    f"&status={{status}}"
-    f"&scan_id={{scan_id}}"
+    f"{PAYMENT_RESULT_BASE_URL}?session_id={{CHECKOUT_SESSION_ID}}&status={{status}}"
 )
 
 
-def get_payment_urls(scan_id: str) -> tuple[str, str]:
+def get_payment_urls() -> tuple[str, str]:
     """Helper method to generate success and cancel URLs."""
     success_url = PAYMENT_RESULT_URL.format(
-        CHECKOUT_SESSION_ID="{CHECKOUT_SESSION_ID}", status="success", scan_id=scan_id
+        CHECKOUT_SESSION_ID="{CHECKOUT_SESSION_ID}", status="success"
     )
     cancel_url = PAYMENT_RESULT_URL.format(
-        CHECKOUT_SESSION_ID="{CHECKOUT_SESSION_ID}", status="error", scan_id=scan_id
+        CHECKOUT_SESSION_ID="{CHECKOUT_SESSION_ID}", status="error"
     )
     return success_url, cancel_url

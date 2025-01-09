@@ -12,7 +12,7 @@ class SubscriptionData(BaseModel):
     """Response model for subscription data"""
 
     isActive: bool = False
-    type: str = "single"
+    type: str = "free"
     credits: int = 0
     monthlyCredits: int = 0
     expiresAt: Optional[datetime] = None
