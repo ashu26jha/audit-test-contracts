@@ -131,7 +131,7 @@ class UserRepository:
             raise HTTPException(status_code=500, detail="Failed to update user") from e
 
     @staticmethod
-    async def increment_token_version(self, user: User) -> None:
+    async def increment_token_version(user: User) -> None:
         """Increment user's token version to invalidate all existing tokens"""
         await user.update({"$inc": {"token_version": 1}})
 
