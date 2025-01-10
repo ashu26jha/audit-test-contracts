@@ -131,4 +131,5 @@ if __name__ == "__main__":
         uvicorn.run(app, host="0.0.0.0", port=8000)
     else:
         # Use Gunicorn with config from gunicorn.conf.py
-        os.system("gunicorn 'main:app' --config backend/gunicorn.conf.py")
+        os.environ["GUNICORN_WORKER"] = "1"
+        os.system("gunicorn 'main:app' --config gunicorn.conf.py")

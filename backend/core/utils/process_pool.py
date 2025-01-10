@@ -2,8 +2,11 @@ import asyncio
 import importlib
 import inspect
 import multiprocessing
+import os
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
+
+from core.utils import logger
 
 
 def _import_and_run(module_name: str, func_name: str, *args, **kwargs):
@@ -35,8 +38,14 @@ class ProcessPoolManager:
 
     def __init__(self):
         if self._executor is None:
-            # Reserve 1 core for web workers, use the rest for processing
-            workers = max(1, multiprocessing.cpu_count() - 1)
+            # Adjust workers based on environment
+            if os.environ.get("GUNICORN_WORKER"):
+                # 1 worker per Gunicorn process
+                workers = 1
+            else:
+                # In development/single process, use CPU count - 1
+                workers = max(1, multiprocessing.cpu_count() - 1)
+            logger.info(f"Initializing ProcessPoolExecutor with {workers} workers")
             self._executor = ProcessPoolExecutor(max_workers=workers)
 
     @property

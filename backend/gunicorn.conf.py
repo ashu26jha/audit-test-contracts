@@ -6,7 +6,7 @@ bind = "0.0.0.0:8000"
 backlog = 2048
 
 # Worker processes
-workers = multiprocessing.cpu_count()  # Will use 4 in your case
+workers = multiprocessing.cpu_count()
 worker_class = "uvicorn.workers.UvicornWorker"
 worker_connections = 1000
 timeout = 1800  # 30 minutes for long-running scans
