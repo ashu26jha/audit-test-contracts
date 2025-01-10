@@ -1,17 +1,5 @@
 import multiprocessing
 import os
-from pathlib import Path
-
-
-def get_python_files(directory):
-    files = []
-    base_path = Path("backend")
-    search_path = base_path / directory
-    if search_path.exists():
-        for file in search_path.rglob("*.py"):
-            files.append(str(file))
-    return files
-
 
 # Server socket
 bind = "0.0.0.0:8000"
@@ -36,9 +24,6 @@ accesslog = "-"
 errorlog = "-"
 loglevel = "info"
 
-# Development settings
-reload = os.getenv("ENVIRONMENT", "development") == "development"
-reload_extra_files = get_python_files("api") + get_python_files("core") + get_python_files("config")
 
 # Process Management
 graceful_timeout = 120
