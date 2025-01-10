@@ -17,6 +17,7 @@ from core.models.scan import Finding, Scan
 from core.schemas.audit_agent_schema import SetupResult
 from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
+from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
@@ -38,6 +39,7 @@ class TaskManager:
         detected_profile: Profiles,
     ):
         self.scan_id = context.scan_id
+        self.user_email = context.user_email
         self.flattened_contracts = flattened_contracts
         self.selected_contracts = context.contract_files
         self.docs = context.formatted_docs
@@ -53,6 +55,9 @@ class TaskManager:
         self.static_analysis_task: Optional[asyncio.Task] = None
         self.fuzzing_task: Optional[asyncio.Task] = None
 
+        self.task_results = {}  # Store task results
+        self.error_email_sent = False  # Track if error email has been sent
+        self.process_pool = ProcessPoolManager.get_instance()
         self.max_concurrent_tasks = 6
         self.task_semaphore = Semaphore(self.max_concurrent_tasks)
         self.claude_semaphore = Semaphore(3)
@@ -139,29 +144,20 @@ class TaskManager:
 
     async def _execute_tasks(self):
         try:
-            # Start summary generation task
-            self.summary_task = asyncio.create_task(generate_summary(self.flattened_contracts))
+            # Start summary generation task in process pool
+            self.summary_task = self.process_pool.run_in_process(
+                generate_summary, self.flattened_contracts
+            )
 
             # Start static analysis task if setup_result is available
             if self.setup_result:
-                self.static_analysis_task = asyncio.create_task(
-                    run_static_analyzer(
-                        "",
-                        "",
-                        self.selected_contracts,
-                        self.setup_result,
-                    )
+                self.static_analysis_task = self.process_pool.run_in_process(
+                    run_static_analyzer,
+                    "",
+                    "",
+                    self.selected_contracts,
+                    self.setup_result,
                 )
-                # Uncomment when fuzzing is ready
-                # self.fuzzing_task = asyncio.create_task(
-                #     FuzzerService.run_fuzzer(
-                #         "",
-                #         "",
-                #         self.selected_contracts,
-                #         self.flattened_contracts,
-                #         self.setup_result,
-                #     )
-                # )
 
                 # Monitor static analysis completion
                 asyncio.create_task(
@@ -171,14 +167,24 @@ class TaskManager:
                     )
                 )
 
-                # Monitor fuzzing completion
-                if self.fuzzing_task:
-                    asyncio.create_task(
-                        self._monitor_task(
-                            self.fuzzing_task,
-                            "fuzzer",
-                        )
-                    )
+                # Uncomment when fuzzing is ready
+                # self.fuzzing_task = self.process_pool.run_in_process(
+                #     run_fuzzer_func,
+                #     "",
+                #     "",
+                #     self.selected_contracts,
+                #     self.flattened_contracts,
+                #     self.setup_result,
+                # )
+                #
+                # # Monitor fuzzing completion
+                # if self.fuzzing_task:
+                #     asyncio.create_task(
+                #         self._monitor_task(
+                #             self.fuzzing_task,
+                #             "fuzzer",
+                #         )
+                #     )
 
             # Await summary result to proceed with context scans
             try:
@@ -186,7 +192,7 @@ class TaskManager:
             except Exception as e:
                 logger.exception(f"Summary generation failed: {str(e)}")
                 await ScanRepository.update_scan_failure(self.scan_id, "Summary generation failed")
-                await send_error_email(self.scan.user.email, self.scan.scan_number)
+                await self._send_error_email_once()
                 raise HTTPException(
                     status_code=500, detail="Summary generation failed. Please try again."
                 ) from e
@@ -198,8 +204,7 @@ class TaskManager:
             logger.error(f"Scan {self.scan_id} exceeded maximum time of {TOTAL_SCAN_TIMEOUT}s")
             await self._cleanup_running_tasks()
             await ScanRepository.update_scan_failure(self.scan_id, "Scan timed out")
-            await send_error_email(self.scan.user.email, self.scan.scan_number)
-            # Re-raise to stop the flow
+            await self._send_error_email_once()
             raise HTTPException(
                 status_code=500, detail=f"Scan timed out after {TOTAL_SCAN_TIMEOUT}s"
             ) from e
@@ -207,29 +212,60 @@ class TaskManager:
     async def _monitor_task(self, task: asyncio.Task, detector_name: str):
         try:
             result = await task
+            # Store the result
+            self.task_results[detector_name] = result
             if isinstance(result, Exception):
                 await self.update_progress(detector_name, False)
             else:
                 await self.update_progress(detector_name, True)
         except Exception as e:
             logger.error(f"Task {detector_name} failed: {str(e)}")
+            self.task_results[detector_name] = e  # Store the error
             await self.update_progress(detector_name, False)
 
     async def start_context_scan_tasks(self):
+        tasks_with_metadata = []
+
+        # Prepare all tasks with their metadata
         for config in self.context_scan_configs:
             detector_name = config["detector_name"]
             self.task_metrics["started_at"][detector_name] = datetime.now()
+
+            # Create task with semaphore handling
+            task = asyncio.create_task(self._run_context_scan_with_semaphore(config))
+
+            # Store task with its metadata
+            tasks_with_metadata.append((task, detector_name))
+            self.context_scan_tasks.append(task)
+            self.task_detector_names.append(detector_name)
+
+            # Create monitoring task for progress tracking
+            asyncio.create_task(self._monitor_task(task, detector_name))
+
+        # Wait for all tasks to complete or timeout
+        try:
+            await asyncio.gather(*(task for task, _ in tasks_with_metadata), return_exceptions=True)
+        except Exception as e:
+            logger.error(f"Error during context scan batch processing: {str(e)}")
+            # Individual task errors are handled by _monitor_task
+
+    async def _run_context_scan_with_semaphore(self, config):
+        """Run context scan with proper semaphore handling"""
+        try:
             async with self.task_semaphore:
-                await asyncio.sleep(1)
-                task = asyncio.create_task(
-                    asyncio.wait_for(
-                        self.run_context_scan_with_retry(config), timeout=CONTEXT_SCANS_TIMEOUT
-                    )
+                # Small delay to prevent API rate limits
+                await asyncio.sleep(0.5)
+
+                # Run the context scan with timeout
+                return await asyncio.wait_for(
+                    self.run_context_scan_with_retry(config), timeout=CONTEXT_SCANS_TIMEOUT
                 )
-                # Monitor each context scan task individually
-                asyncio.create_task(self._monitor_task(task, detector_name))
-                self.context_scan_tasks.append(task)
-                self.task_detector_names.append(detector_name)
+        except asyncio.TimeoutError:
+            logger.error(f"Context scan timed out for detector: {config['detector_name']}")
+            raise
+        except Exception as e:
+            logger.error(f"Error in context scan for detector {config['detector_name']}: {str(e)}")
+            raise
 
     async def run_context_scan_with_retry(self, config):
         start_time = datetime.now()
@@ -246,7 +282,8 @@ class TaskManager:
                 # Use appropriate semaphore based on model
                 if "claude" in config["model"].lower():
                     async with self.claude_semaphore:
-                        return await run_context_scan(
+                        return await self.process_pool.run_in_process(
+                            run_context_scan,
                             self.summary_result,
                             self.docs,
                             self.flattened_contracts,
@@ -254,7 +291,8 @@ class TaskManager:
                             config["model"],
                         )
                 else:
-                    return await run_context_scan(
+                    return await self.process_pool.run_in_process(
+                        run_context_scan,
                         self.summary_result,
                         self.docs,
                         self.flattened_contracts,
@@ -278,13 +316,20 @@ class TaskManager:
         detected_type: Profiles
 
     async def gather_results(self) -> GatherResults:
-        tasks_to_await = self.context_scan_tasks
-        if self.static_analysis_task:
-            tasks_to_await.append(self.static_analysis_task)
-        if self.fuzzing_task:
-            tasks_to_await.append(self.fuzzing_task)
+        # Use stored results instead of awaiting tasks again
+        results = []
 
-        results = await asyncio.gather(*tasks_to_await, return_exceptions=True)
+        # Gather context scan results
+        for detector_name in self.task_detector_names:
+            results.append(self.task_results.get(detector_name))
+
+        # Add static analysis result if it exists
+        if "static_analyzer" in self.task_results:
+            results.append(self.task_results["static_analyzer"])
+
+        # Add fuzzing result if it exists
+        if "fuzzer" in self.task_results:
+            results.append(self.task_results["fuzzer"])
 
         combined_findings: List[Finding] = []
         result_index = 0
@@ -311,9 +356,8 @@ class TaskManager:
                 )
 
         # Handle static analysis result
-        if self.static_analysis_task:
-            static_result = results[result_index]
-            result_index += 1
+        if "static_analyzer" in self.task_results:
+            static_result = self.task_results["static_analyzer"]
             if isinstance(static_result, Exception):
                 logger.error(f"Static analysis failed: {static_result}")
                 detector_updates["static_analyzer"] = False
@@ -327,8 +371,8 @@ class TaskManager:
                 )
 
         # Handle fuzzing result
-        if self.fuzzing_task:
-            fuzzing_result = results[result_index]
+        if "fuzzer" in self.task_results:
+            fuzzing_result = self.task_results["fuzzer"]
             if isinstance(fuzzing_result, Exception):
                 logger.error(f"Fuzzing failed: {fuzzing_result}")
                 detector_updates["fuzzer"] = False
@@ -357,14 +401,34 @@ class TaskManager:
         }
 
     async def _cleanup_running_tasks(self):
-        """Clean up running tasks on timeout."""
+        """Clean up running tasks and ensure proper resource release."""
+        cleanup_errors = []
+
+        # Helper function to safely cancel a task
+        async def safe_cancel(task, task_name: str):
+            if task and not task.done():
+                try:
+                    task.cancel()
+                    await task
+                except (asyncio.CancelledError, Exception) as e:
+                    cleanup_errors.append(f"{task_name} cleanup error: {str(e)}")
+                    logger.error(f"Error during {task_name} cleanup: {str(e)}")
+
+        # Cancel context scan tasks
         for task in self.context_scan_tasks:
-            if not task.done():
-                task.cancel()
-        if self.static_analysis_task and not self.static_analysis_task.done():
-            self.static_analysis_task.cancel()
-        if self.fuzzing_task and not self.fuzzing_task.done():
-            self.fuzzing_task.cancel()
+            await safe_cancel(task, "context_scan")
+
+        # Cancel static analysis task
+        await safe_cancel(self.static_analysis_task, "static_analyzer")
+
+        # Cancel fuzzing task
+        await safe_cancel(self.fuzzing_task, "fuzzer")
+
+        # Log any cleanup errors
+        if cleanup_errors:
+            logger.warning(f"Cleanup completed with {len(cleanup_errors)} errors: {cleanup_errors}")
+        else:
+            logger.info("All tasks cleaned up successfully")
 
     async def update_progress(self, detector_name: str, success: bool):
         """Update scan progress when a detector completes."""
@@ -381,3 +445,9 @@ class TaskManager:
             self.scan.progress = max(self.scan.progress, current_progress)
 
             await self.scan.save()
+
+    async def _send_error_email_once(self):
+        """Send error email only if it hasn't been sent yet"""
+        if not self.error_email_sent:
+            await send_error_email(self.user_email, self.scan_id)
+            self.error_email_sent = True

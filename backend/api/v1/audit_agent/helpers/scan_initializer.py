@@ -111,7 +111,7 @@ class ScanInitializer:
 
         except HTTPException:
             await ScanRepository.update_scan_failure(self.scan_id, "Failed to fetch commit hash")
-            await send_error_email(self.user.email, self.scan_number)
+            await send_error_email(self.user.email, self.scan_id)
             raise
 
     async def flatten_contracts(self) -> str:

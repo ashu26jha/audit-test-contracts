@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 import certifi
@@ -23,6 +24,7 @@ from core.utils.error_handling import (
     validation_exception_handler,
 )
 from core.utils.logger import logger
+from core.utils.process_pool import ProcessPoolManager
 from core.utils.slack import send_slack_message
 
 # Create scheduler
@@ -31,6 +33,9 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize process pool
+    process_pool = ProcessPoolManager.get_instance()
+
     if settings.SLACK_TOKEN:
         scheduler.add_job(
             send_slack_message,
@@ -65,6 +70,10 @@ async def lifespan(app: FastAPI):
     logger.info("Closing MongoDB connection")
     client.close()
     logger.info("MongoDB connection closed")
+
+    # Cleanup process pool
+    process_pool.shutdown()
+    logger.info("Process pool shutdown complete")
 
 
 app = FastAPI(
@@ -117,4 +126,9 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    if settings.ENVIRONMENT == "development":
+        # Use standard Uvicorn in development
+        uvicorn.run(app, host="0.0.0.0", port=8000)
+    else:
+        # Use Gunicorn with config from gunicorn.conf.py
+        os.system("gunicorn 'main:app' --config backend/gunicorn.conf.py")

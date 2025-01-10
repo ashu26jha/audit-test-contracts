@@ -28,6 +28,7 @@ starlette==0.41.3
 tenacity==9.0.0
 tiktoken==0.7.0
 toml==0.10.2
-uvicorn==0.30.6
 stripe==10.11.0
 slackclient==2.9.4
+gunicorn==23.0.0
+uvicorn[standard]==0.34.0

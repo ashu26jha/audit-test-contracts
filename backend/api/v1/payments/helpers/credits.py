@@ -140,9 +140,22 @@ async def _update_user_credits(
     monthly_limit: Optional[int] = None,
 ) -> bool:
     """Helper function to update user's credit balance."""
-    update_query = {"$inc": {"subscription.credits": amount}}
-    if monthly_limit is not None:
-        update_query["$min"] = {"subscription.credits": monthly_limit}
+    try:
+        if amount > 0 and monthly_limit is not None:
+            # For refunds, first check if adding the credit would exceed the limit
+            new_credits = user.subscription.credits + amount
+            if new_credits > monthly_limit:
+                # If it would exceed, set to the limit instead
+                update_query = {"$set": {"subscription.credits": monthly_limit}}
+            else:
+                # If not, just add the credit
+                update_query = {"$inc": {"subscription.credits": amount}}
+        else:
+            # For deductions, simply decrease
+            update_query = {"$inc": {"subscription.credits": amount}}
 
-    result = await user.update(update_query)
-    return bool(result)
+        result = await user.update(update_query)
+        return bool(result)
+    except Exception as e:
+        logger.error(f"Failed to update credits: {str(e)}")
+        return False
