@@ -6,9 +6,9 @@ bind = "0.0.0.0:8000"
 backlog = 2048
 
 # Worker processes
-workers = multiprocessing.cpu_count()
+workers = 1 if os.environ.get("GUNICORN_WORKER") else multiprocessing.cpu_count()
 worker_class = "uvicorn.workers.UvicornWorker"
-worker_connections = 1000
+worker_connections = 100
 timeout = 1800  # 30 minutes for long-running scans
 keepalive = 2
 
@@ -27,7 +27,7 @@ loglevel = "info"
 
 # Process Management
 graceful_timeout = 120
-max_requests = 1000
+max_requests = 100
 max_requests_jitter = 50
 
 # Security

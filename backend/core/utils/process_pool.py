@@ -38,14 +38,13 @@ class ProcessPoolManager:
 
     def __init__(self):
         if self._executor is None:
-            # Adjust workers based on environment
-            if os.environ.get("GUNICORN_WORKER"):
-                # 1 worker per Gunicorn process
-                workers = 1
-            else:
-                # In development/single process, use CPU count - 1
-                workers = max(1, multiprocessing.cpu_count() - 1)
-            logger.info(f"Initializing ProcessPoolExecutor with {workers} workers")
+            # Both production and development use (cpu_count - 1) workers
+            workers = max(1, multiprocessing.cpu_count() - 1)
+
+            env_type = "production" if os.environ.get("GUNICORN_WORKER") else "development"
+            logger.info(
+                f"Initializing ProcessPoolExecutor with {workers} workers in {env_type} mode"
+            )
             self._executor = ProcessPoolExecutor(max_workers=workers)
 
     @property
