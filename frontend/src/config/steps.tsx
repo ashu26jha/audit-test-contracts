@@ -26,3 +26,10 @@ export const STEPS = [
     label: "Docs",
   },
 ];
+
+export const PLAN_STEP = {
+  notSelectedIcon: <Image src="/svg/repository.svg" alt="Repository" width={45} height={45} />,
+  selectingIcon: <Image src="/svg/subscription_selecting.svg" alt="Plans Selecting" width={45} height={45} />,
+  selectedIcon: <Image src="/svg/subscription_selected.svg" alt="Plans Selected" width={100} height={100} />,
+  label: "Plans",
+};

@@ -37,12 +37,12 @@ interface ScanStepperState {
   setIsValidURL: (isValidURL: boolean) => void;
   setIsLineExceeded: (isLineExceeded: boolean) => void;
   setIsFileLimitExceeded: (isLineExceeded: boolean) => void;
-  resetStepper: () => void;
+  resetStepper: (step: number) => void;
 }
 
 export const useScanStepperStore = create<ScanStepperState>((set) => ({
   showStepper: false,
-  currentStep: 1,
+  currentStep: 0,
   selectedOwner: null,
   selectedRepo: null,
   branches: [],
@@ -80,9 +80,9 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setIsLineExceeded: (isLineExceeded) => set({ isLineExceeded }),
   setIsFileLimitExceeded: (isLineExceeded) => set({ isFileLimitExceeded: isLineExceeded }),
   setRepoDocs: (docs) => set((state) => ({ repoDocs: { ...state.repoDocs, ...docs } })),
-  resetStepper: () =>
+  resetStepper: (step) =>
     set({
-      currentStep: 1,
+      currentStep: step,
       selectedOwner: null,
       selectedRepo: null,
       selectedBranch: "",

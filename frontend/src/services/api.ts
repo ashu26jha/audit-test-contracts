@@ -74,6 +74,11 @@ export const getScanHistory = async () => {
   return response.data.data;
 };
 
+export const isFreeScanAllowed = async () => {
+  const response = await api.get("/api/v1/is-free-scan-allowed");
+  return response.data.data;
+};
+
 // STRIPE ROUTES //
 
 export const createSubscriptionSession = async (

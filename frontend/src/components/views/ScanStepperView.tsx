@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FC } from "react";
+import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 
 import { Button } from "@nextui-org/react";
 import type { AxiosError } from "axios";
@@ -14,11 +14,12 @@ import {
   ContractSelection,
   RepositorySelection,
   StepperVisualization,
+  SubscriptionSelection,
 } from "@/components/scan-stepper";
 import { DocsSelection } from "@/components/scan-stepper/DocsSelection";
-import { STEPS } from "@/config/steps";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast, useScanStepper } from "@/hooks";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const ScanStepperView: FC = () => {
@@ -41,9 +42,18 @@ const ScanStepperView: FC = () => {
     setIsNextEnabled,
     resetStepper,
   } = useScanStepperStore();
-  const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess } = useScanStepper();
+  const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess, stepsData } = useScanStepper();
   const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
   const { user, refetchUser } = useAuth();
+  const { freeScanAllowed, checkIfFreeScanAllowed } = useSubscription();
+
+  const stepIndexIncrement = useMemo(() => {
+    const isSubscribed = user?.subscription.type !== "free";
+    if (isSubscribed) {
+      return 0;
+    }
+    return 1;
+  }, [user?.subscription.type]);
 
   useEffect(() => {
     if (selectedOwner) {
@@ -64,21 +74,36 @@ const ScanStepperView: FC = () => {
   }, [selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
 
   const isNextStepEnabled = useCallback(() => {
+    const isStep0Valid = currentStep === 0 && freeScanAllowed && user?.subscription.type === "free";
     const isStep1Valid =
       currentStep === 1 && selectedOwner !== null && selectedRepo !== null && (repositoryURL === "" || isValidURL);
     const isStep2Valid = currentStep === 2 && selectedBranch !== "";
     const isStep3Valid = currentStep === 3 && selectedContracts.length > 0;
     const isSetp4Valid = currentStep === 4;
-    return isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid;
-  }, [currentStep, selectedOwner, selectedRepo, selectedBranch, selectedContracts, repositoryURL, isValidURL]);
+    return isStep0Valid || isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid;
+  }, [
+    freeScanAllowed,
+    currentStep,
+    selectedOwner,
+    selectedRepo,
+    selectedBranch,
+    selectedContracts,
+    repositoryURL,
+    isValidURL,
+    user,
+  ]);
 
   useEffect(() => {
-    resetStepper();
-  }, [resetStepper]);
+    resetStepper(user?.subscription.type === "free" ? 0 : 1);
+  }, [resetStepper, user]);
 
   useEffect(() => {
     setIsNextEnabled(isNextStepEnabled());
   }, [isNextStepEnabled, setIsNextEnabled]);
+
+  useEffect(() => {
+    checkIfFreeScanAllowed();
+  }, [checkIfFreeScanAllowed]);
 
   const startScan = async () => {
     // prettier-ignore
@@ -104,7 +129,7 @@ const ScanStepperView: FC = () => {
   };
 
   const handleScan = async () => {
-    if (currentStep === STEPS.length) {
+    if (currentStep + stepIndexIncrement === stepsData.length) {
       if (user?.subscription.isActive && (user?.subscription.credits === 1 || user?.subscription.credits === 0)) {
         setOpenWarningDialog(true);
         return;
@@ -125,11 +150,13 @@ const ScanStepperView: FC = () => {
   };
 
   const handleBack = () => {
-    if (currentStep === 1) {
-      resetStepper();
+    if (user?.subscription.type === "free" && currentStep === 0) {
+      resetStepper(0);
       setShowStepper(false);
-    }
-    if (currentStep > 1) {
+    } else if (user?.subscription.type !== "free" && currentStep === 1) {
+      resetStepper(1);
+      setShowStepper(false);
+    } else {
       setCurrentStep(currentStep - 1);
     }
 
@@ -168,7 +195,7 @@ const ScanStepperView: FC = () => {
               endContent={<ArrowRight size={20} />}
               onPress={handleScan}
             >
-              {currentStep === STEPS.length ? "Scan Code" : "Next"}
+              {currentStep + stepIndexIncrement === stepsData.length ? "Scan Code" : "Next"}
             </Button>
           </div>
         }
@@ -178,6 +205,7 @@ const ScanStepperView: FC = () => {
         </div>
 
         <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto pt-8">
+          {currentStep === 0 && <SubscriptionSelection />}
           {currentStep === 1 && <RepositorySelection />}
           {currentStep === 2 && <BranchSelection />}
           {currentStep === 3 && <ContractSelection />}

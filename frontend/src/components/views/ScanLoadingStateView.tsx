@@ -28,7 +28,7 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
     {
       icon: <AlertTriangle size={22} />,
       label: "Vulnerabilities Found",
-      value: scanData.total_findings ?? 0,
+      value: isFailed ? "N/A" : (scanData.total_findings ?? 0),
     },
     {
       icon: <FileText size={22} />,
@@ -48,13 +48,13 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
   );
 
   const renderInProgress = () => (
-    <div className="h-full flex flex-col items-center justify-center space-y-8">
+    <div className="h-[calc(100%-6rem)] flex flex-col items-center justify-center space-y-8">
       <ScanProgress progress={scanData.scan.progress ?? 0} />
     </div>
   );
 
   const renderNoFindings = () => (
-    <div className="h-full flex flex-col items-center justify-center space-y-8">
+    <div className="h-64 flex flex-col items-center justify-center space-y-8">
       <div className="flex flex-col items-center space-y-4 w-56">
         <Card className="p-4">
           <ThumbsUp size={40} className="text-secondary" />
@@ -67,12 +67,12 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
   );
 
   useEffect(() => {
-    if (!isCompleted) {
+    if (isCompleted || isFailed) {
       setIsCollapsed(true);
     } else {
       setIsCollapsed(false);
     }
-  }, [isCompleted]);
+  }, [isCompleted, isFailed]);
 
   return (
     <Container

@@ -13,16 +13,12 @@ import { useUserDataStore } from "@/store/userDataStore";
 
 export const RepositorySelection: FC = () => {
   const { owners, repositories, isOrganizationLoading } = useUserDataStore();
-  const { isLoading, selectedOwner, setSelectedOwner, repositoryURL, isValidURL, setSelectedRepo, resetStepper } =
+  const { isLoading, selectedOwner, setSelectedOwner, repositoryURL, isValidURL, setSelectedRepo } =
     useScanStepperStore();
   const { inputURL, debouncedURL, setInputURL, validateAndSetUrl, resetUrl, errorMessage, isCheckingURL } =
     useRepositoryUrl();
   const [selectedOrg, setSelectedOrg] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
-
-  useEffect(() => {
-    resetStepper();
-  }, [resetStepper]);
 
   useEffect(() => {
     validateAndSetUrl(debouncedURL);

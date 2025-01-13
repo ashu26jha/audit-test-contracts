@@ -54,8 +54,6 @@ export const PRO_PLAN_DETAILS = {
       `Up to ${this.MAX_LINES} lines of code per scan`,
       `Up to ${this.MAX_FILES} contracts per scan`,
       "Priority in the scan queue",
-      "PDF report export",
-      "Crypto Payment (Get in touch with Sales)",
     ];
   },
 } as const;
@@ -77,6 +75,8 @@ export const ENTERPRISE_PLAN_DETAILS = {
       `Up to ${this.MAX_LINES} lines of code per scan`,
       `Up to ${this.MAX_FILES} contracts per scan`,
       "CI integration",
+      "Crypto Payments",
+      "Custom Extensions",
       "Additional context documentation",
       "Dedicated Telegram or Slack channel support",
     ];

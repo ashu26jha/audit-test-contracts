@@ -19,7 +19,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { BottomBanner } from "@/components/layout";
-import { PRO_PLAN_DETAILS } from "@/config/constants";
+import { ENTERPRISE_PLAN_DETAILS } from "@/config/constants";
 import { HELP_DESCRIPTION } from "@/config/helpDescription";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepper } from "@/hooks";
@@ -111,7 +111,7 @@ export const DocsSelection: FC = () => {
                     <Table
                       isHeaderSticky
                       aria-label="Readme files table"
-                      selectionMode={user?.subscription.isActive ? "multiple" : "none"}
+                      selectionMode={user?.subscription.type === "enterprise" ? "multiple" : "none"}
                       color="secondary"
                       onSelectionChange={handleSelectionChange}
                       selectedKeys={repoDocs.readme}
@@ -177,9 +177,9 @@ export const DocsSelection: FC = () => {
                 <div className="w-[30%]">
                   <HelpGuide
                     selectedLines={totalSelectedChars}
-                    totalLines={PRO_PLAN_DETAILS.MAX_DOCS_CHARS}
+                    totalLines={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_CHARS}
                     selectedFiles={repoDocs.readme.length}
-                    totalFiles={PRO_PLAN_DETAILS.MAX_DOCS_FILES}
+                    totalFiles={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_FILES}
                     description={HELP_DESCRIPTION.readme}
                     variant="readme"
                   />

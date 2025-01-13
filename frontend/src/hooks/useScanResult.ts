@@ -1,16 +1,16 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { createSubscriptionSession, getScanResults } from "@/services/api";
+import { getScanResults } from "@/services/api";
 import { usePaymentStore } from "@/store/paymentStore";
 
 export type PaymentType = "single" | "subscription";
 
-export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => {
+export const useScanResult = (scanId: string, pollingInterval = 5000) => {
   const { user } = useAuth();
-  const { isProcessing, error, shouldPoll, setIsProcessing, setError, setShouldPoll } = usePaymentStore();
+  const { isProcessing, error, shouldPoll, setError, setShouldPoll } = usePaymentStore();
 
   const {
     data: scanData,
@@ -45,34 +45,11 @@ export const usePaymentProcessing = (scanId: string, pollingInterval = 5000) => 
     };
   }, [scanData, setError, setShouldPoll]);
 
-  const handlePayment = useCallback(
-    async (paymentType: PaymentType = "single") => {
-      if (!user || !scanId) return;
-
-      try {
-        setIsProcessing(true);
-        setError(null);
-
-        // TODO: Handle the subscription type dynamically if needed
-        const res = await createSubscriptionSession("pro");
-
-        setIsProcessing(false);
-        window.location.assign(res.data.url);
-      } catch (err) {
-        console.error("Error creating checkout session:", err);
-        setError(`Failed to initiate ${paymentType} payment. Please try again.`);
-        setIsProcessing(false);
-      }
-    },
-    [user, scanId, setError, setIsProcessing],
-  );
-
   return {
     scanData,
     isProcessing,
     error,
     isLoading,
-    handlePayment,
     refetchScanResults: refetch,
   };
 };

@@ -1,5 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
+import { PLAN_STEP, STEPS } from "@/config/steps";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getRepositories,
@@ -36,7 +37,7 @@ export const useScanStepper = () => {
     async (owner: string, repo: string) => {
       const res = await getRepositoryDocs(owner, repo);
 
-      if (res?.docs && user?.subscription.type !== "free") {
+      if (res?.docs && user?.subscription.type === "enterprise") {
         // Set previous readme files and QA answers if they exist
         setRepoDocs(res.docs);
       } else {
@@ -162,6 +163,13 @@ export const useScanStepper = () => {
     [setSelectedOwner, setSelectedRepo, setRepositoryURL],
   );
 
+  const stepsData = useMemo(() => {
+    if (user?.subscription.type === "free") {
+      return [PLAN_STEP, ...STEPS];
+    }
+    return STEPS;
+  }, [user?.subscription.type]);
+
   return {
     fetchRepositories,
     fetchBranches,
@@ -170,5 +178,6 @@ export const useScanStepper = () => {
     fetchPreviousDocs,
     initiateScanProcess,
     extractOwnerAndRepo,
+    stepsData,
   };
 };

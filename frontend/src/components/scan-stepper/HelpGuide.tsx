@@ -68,7 +68,7 @@ export const HelpGuide: FC<{
               <p className="text-[#E4E4E7] text-xs mb-2">
                 {variant === "contract"
                   ? "The total lines of code is too large; please reduce the lines of code."
-                  : "The total characters exceedes the limit; please reduce the characters"}
+                  : "Too many characters in selected files; please reduce characters."}
               </p>
             </div>
           ) : (

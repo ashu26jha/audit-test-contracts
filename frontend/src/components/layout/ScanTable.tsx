@@ -15,6 +15,7 @@ import {
 } from "@nextui-org/react";
 import { ArrowRight } from "lucide-react";
 
+import { formatDate } from "@/utils/datetime";
 import { formatScanStatus, getScanStatusVariant } from "@/utils/formatters";
 
 const columns = [
@@ -72,9 +73,9 @@ const ScanTable: FC<ScanTableProps> = ({ scans, currentPage, totalPages, onPageC
                 {formatScanStatus(scan.status)}
               </Chip>
             </TableCell>
-            <TableCell>{scan.total_findings}</TableCell>
+            <TableCell>{scan.status === "failed" ? "N/A" : (scan.total_findings ?? 0)}</TableCell>
             <TableCell>{scan.contractFiles.length}</TableCell>
-            <TableCell>{new Date(scan.startedAt + "Z").toLocaleString()}</TableCell>
+            <TableCell>{formatDate(scan.startedAt, "MMM d, yyyy, HH:mm")}</TableCell>
             <TableCell>{scan.commitHash}</TableCell>
             <TableCell>
               <Button

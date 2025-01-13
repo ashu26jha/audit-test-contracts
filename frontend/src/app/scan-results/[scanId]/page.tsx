@@ -7,7 +7,7 @@ import { AlertTriangle } from "lucide-react";
 import { Loading, ProtectedRoute, StateMessage } from "@/components/layout";
 import { ScanResultsView, ScanLoadingStateView } from "@/components/views";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePaymentProcessing } from "@/hooks";
+import { useScanResult } from "@/hooks";
 
 interface ScanResultsPageProps {
   params: {
@@ -18,7 +18,7 @@ interface ScanResultsPageProps {
 const ScanResultsPage: FC<ScanResultsPageProps> = ({ params }) => {
   const { scanId } = params;
   const { user, loading, refetchUser } = useAuth();
-  const { scanData, isProcessing, error, isLoading } = usePaymentProcessing(scanId);
+  const { scanData, isProcessing, error, isLoading } = useScanResult(scanId);
 
   useEffect(() => {
     refetchUser(); // To updte credits in case of refund
