@@ -57,7 +57,9 @@ async def _analyze_code(
         include_string_count: Whether to include string_lines in output
     """
     try:
-        file_like_object = io.StringIO(content)
+        # Normalize line endings to LF before analysis
+        normalized_content = content.replace("\r\n", "\n")
+        file_like_object = io.StringIO(normalized_content)
         analysis = SourceAnalysis.from_file(
             filename,
             language,
