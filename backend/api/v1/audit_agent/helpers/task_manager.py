@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 from fastapi import HTTPException
 
 from api.v1.audit_agent.schema import ScanContext
+from api.v1.detectors.context_scan.schema import ContextScanResponse
 
 # from api.v1.detectors.fuzzer.service import FuzzerService
 from api.v1.detectors.context_scan.service import run_context_scan
@@ -282,7 +283,7 @@ class TaskManager:
                 # Use appropriate semaphore based on model
                 if "claude" in config["model"].lower():
                     async with self.claude_semaphore:
-                        return await self.process_pool.run_in_process(
+                        response_dict = await self.process_pool.run_in_process(
                             run_context_scan,
                             self.summary_result,
                             self.docs,
@@ -290,8 +291,9 @@ class TaskManager:
                             config["profile"],
                             config["model"],
                         )
+                        return ContextScanResponse.model_validate(response_dict)
                 else:
-                    return await self.process_pool.run_in_process(
+                    response_dict = await self.process_pool.run_in_process(
                         run_context_scan,
                         self.summary_result,
                         self.docs,
@@ -299,6 +301,7 @@ class TaskManager:
                         config["profile"],
                         config["model"],
                     )
+                    return ContextScanResponse.model_validate(response_dict)
 
             except Exception as e:
                 retry_count += 1

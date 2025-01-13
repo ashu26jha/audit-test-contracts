@@ -12,7 +12,7 @@ from openai import OpenAIError
 from pydantic import BaseModel, ValidationError
 
 from config.settings import SUPPORTED_MODELS
-from core.llm.llm_clients import CLAUDE_CLIENT, GEMINI_CLIENT
+from core.llm.llm_clients import get_claude_client, get_gemini_client
 from core.llm.parse_llm_response import parse_model_response
 from core.schemas.llm_schema import Message
 from core.utils.logger import logger
@@ -94,7 +94,8 @@ async def send_prompt_to_llm_async(
 
         elif model_type in SUPPORTED_MODELS["anthropic"]:
             try:
-                response = await CLAUDE_CLIENT.completions.create(
+                claude_client = get_claude_client()
+                response = await claude_client.completions.create(
                     model=model_type,
                     system=system_prompt if system_prompt else "",
                     messages=messages,
@@ -107,12 +108,15 @@ async def send_prompt_to_llm_async(
 
                 return response
             except AnthropicError as e:
-                logger.error(f"Anthropic API error for {model_type}: {e}")
+                logger.error(
+                    f"[LLMPrompt] Anthropic API error for {model_type}: {str(e)}", exc_info=True
+                )
                 raise HTTPException(status_code=500, detail="LLM API Error") from e
 
         elif model_type in SUPPORTED_MODELS["gemini"]:
             try:
-                gemini_model = GEMINI_CLIENT.GenerativeModel(model_type)
+                gemini_client = get_gemini_client()
+                gemini_model = gemini_client.GenerativeModel(model_type)
                 prompt = _build_gemini_prompt(
                     user_input, system_prompt, message_history, response_model
                 )

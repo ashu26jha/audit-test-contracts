@@ -20,7 +20,7 @@ async def run_context_scan(
     docs: Optional[str],
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_1,
-) -> ContextScanResponse:
+) -> dict:
     try:
         # 1. Load system prompt if profile is defined
         system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
@@ -53,17 +53,23 @@ async def run_context_scan(
             ContextScanResponse,
         )
         elapsed = time.time() - start_time
-        logger.info(f"LLM response time: {elapsed:.2f}s for model {model}")
 
         if not llm_response or not isinstance(llm_response, ContextScanResponse):
-            logger.error("LLM response was empty or invalid")
-            return ContextScanResponse(findings=[])
+            logger.error("[ContextScan] LLM response was empty or invalid")
+            return {"findings": []}
 
-        return llm_response
+        # Convert Pydantic model to dict for serialization
+        response_dict = {"findings": [finding.model_dump() for finding in llm_response.findings]}
+        logger.debug(
+            f"[ContextScan] Scan completed successfully for {model} with {len(response_dict['findings'])} findings in {elapsed:.2f}s"
+        )
+        return response_dict
 
     except Exception as e:
-        logger.error(f"Context scan failed for model {model}: {str(e)}")
-        return ContextScanResponse(findings=[])
+        logger.error(
+            f"[ContextScan] Context scan failed for model {model}: {str(e)}", exc_info=True
+        )
+        return {"findings": []}
 
 
 def _clean_backticks(text: Optional[str]) -> Optional[str]:
