@@ -109,8 +109,49 @@ def _clean_gemini_response(content: str) -> str:
         # Find the outermost JSON structure
         json_match = re.search(r"({[\s\S]*})", content)
         if json_match:
-            return json_match.group(1)
-    except Exception:
+            content = json_match.group(1)
+
+            code_blocks = []
+
+            def save_code_block(match):
+                code_blocks.append(match.group(0))
+                return f"__CODE_BLOCK_{len(code_blocks)-1}__"
+
+            content = re.sub(r"```(?:\w+)?[\s\S]*?```", save_code_block, content)
+
+            # 2. Clean and normalize the JSON structure
+            # Remove whitespace between properties
+            content = re.sub(r"\s+", " ", content)
+            # Remove spaces after colons and commas
+            content = re.sub(r":\s+", ":", content)
+            content = re.sub(r",\s+", ",", content)
+            # Remove spaces inside brackets
+            content = re.sub(r"{\s+", "{", content)
+            content = re.sub(r"\s+}", "}", content)
+
+            # 3. Handle multiline strings
+            def clean_string(match):
+                string_content = match.group(1)
+                # Join multiple lines and normalize whitespace
+                string_content = " ".join(
+                    line.strip() for line in string_content.split("\n") if line.strip()
+                )
+                return f'"{string_content}"'
+
+            content = re.sub(r'"([^"]*?(?:\n[^"]*?)*)"', clean_string, content)
+
+            # 4. Restore code blocks
+            for i, block in enumerate(code_blocks):
+                content = content.replace(
+                    f"__CODE_BLOCK_{i}__", block.replace("\n", "\\n").replace('"', '\\"')
+                )
+
+            # 5. Final cleanup of any remaining control characters
+            content = re.sub(r"[\x00-\x1F\x7F-\x9F]", "", content)
+
+            return content
+    except Exception as e:
+        logger.error(f"Error in cleaning JSON: {str(e)}")
         pass
 
     # If all else fails, return the original content
