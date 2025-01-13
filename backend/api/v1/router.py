@@ -14,6 +14,7 @@ from .utilities.stats import router as stats_router
 
 # Development-only imports
 if ENVIRONMENT in ["development", "test"]:
+    from .utilities.benchmark import router as benchmark_router
     from .utilities.critics import router as critics_router
     from .utilities.summary import router as summary_router
 
@@ -37,3 +38,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(static_analyzer_router)
     router.include_router(fuzzer_router)
     router.include_router(critics_router)
+    router.include_router(benchmark_router)

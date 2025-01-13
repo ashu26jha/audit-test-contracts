@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             send_slack_message,
             "cron",
-            hour=11,
+            hour=15,
             minute=30,
             timezone="Asia/Kolkata",
         )

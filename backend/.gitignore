@@ -166,3 +166,4 @@ final.pdf
 scripts/
 /temp/
 .coverage
+dump.rdb
