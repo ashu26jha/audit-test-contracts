@@ -11,6 +11,7 @@ export const SubscriptionSelection: FC = () => {
   return (
     <div className="w-full flex justify-center gap-x-4 mb-10 px-4">
       <SubscriptionCard
+        auditType={FREE_PLAN_DETAILS.AUDIT_TYPE}
         planName={FREE_PLAN_DETAILS.PLAN_NAME}
         price={FREE_PLAN_DETAILS.PRICE}
         description={FREE_PLAN_DETAILS.DESCRIPTION}
@@ -20,6 +21,7 @@ export const SubscriptionSelection: FC = () => {
         subscriptionType={FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
       />
       <SubscriptionCard
+        auditType={PRO_PLAN_DETAILS.AUDIT_TYPE}
         planName={PRO_PLAN_DETAILS.PLAN_NAME}
         price={PRO_PLAN_DETAILS.PRICE}
         description={PRO_PLAN_DETAILS.DESCRIPTION}
@@ -29,6 +31,7 @@ export const SubscriptionSelection: FC = () => {
         subscriptionType={PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
       />
       <SubscriptionCard
+        auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
         planName={ENTERPRISE_PLAN_DETAILS.PLAN_NAME}
         price={ENTERPRISE_PLAN_DETAILS.PRICE}
         description={ENTERPRISE_PLAN_DETAILS.DESCRIPTION}

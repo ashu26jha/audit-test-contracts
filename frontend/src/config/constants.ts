@@ -19,6 +19,7 @@ export const PAGES = {
 
 // Application Limits
 export const FREE_PLAN_DETAILS = {
+  AUDIT_TYPE: "LIMITED AUDIT",
   PLAN_NAME: "Free Plan",
   DESCRIPTION: "Suitable for small projects or testing purposes.",
   MAX_FILES: 3,
@@ -39,6 +40,7 @@ export const FREE_PLAN_DETAILS = {
 } as const;
 
 export const PRO_PLAN_DETAILS = {
+  AUDIT_TYPE: "STANDARD AUDIT",
   PLAN_NAME: "Professional Plan",
   DESCRIPTION: "Ideal for growing teams and active development.",
   MAX_FILES: 10,
@@ -59,6 +61,7 @@ export const PRO_PLAN_DETAILS = {
 } as const;
 
 export const ENTERPRISE_PLAN_DETAILS = {
+  AUDIT_TYPE: "ADVANCED AUDIT",
   PLAN_NAME: "Enterprise Plan",
   DESCRIPTION: "Perfect for large projects and active development.",
   MAX_FILES: 50,

@@ -23,6 +23,7 @@ const SubscriptionDetails: FC = () => {
     <div className="flex flex-col justify-center w-full max-w-[58rem] items-center gap-y-6">
       <div className="flex justify-between gap-x-6 h-full">
         <SubscriptionCard
+          auditType={PRO_PLAN_DETAILS.AUDIT_TYPE}
           planName={PRO_PLAN_DETAILS.PLAN_NAME}
           price={PRO_PLAN_DETAILS.PRICE}
           description={PRO_PLAN_DETAILS.DESCRIPTION}
@@ -34,6 +35,7 @@ const SubscriptionDetails: FC = () => {
           hasActiveSubscription={user.subscription.type !== "free"}
         />
         <SubscriptionCard
+          auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
           planName={ENTERPRISE_PLAN_DETAILS.PLAN_NAME}
           price={ENTERPRISE_PLAN_DETAILS.PRICE}
           description={ENTERPRISE_PLAN_DETAILS.DESCRIPTION}
@@ -47,9 +49,8 @@ const SubscriptionDetails: FC = () => {
       </div>
 
       {user.subscription.type !== "free" && (
-        <div className="flex justify-between gap-3 w-[28rem]">
+        <div className="flex justify-between gap-x-6 w-[28rem]">
           <Button
-            size="lg"
             className="flex-1 bg-transparent border border-default"
             as="a"
             href={PAGES.CONTACT}
@@ -59,13 +60,8 @@ const SubscriptionDetails: FC = () => {
             Contact Us
             <Image src="/svg/link.svg" alt="contact-sales" width={14} height={14} className="ml-2" />
           </Button>
-          <Button
-            size="lg"
-            className="flex-1 text-xs bg-default-100"
-            onPress={handleManageSubscription}
-            isLoading={isLoading}
-          >
-            Manage Plan/Upgrade Plan
+          <Button className="flex-1 text-xs bg-default-100" onPress={handleManageSubscription} isLoading={isLoading}>
+            Manage Plan
             <Image src="/svg/link.svg" alt="manage-plan" width={14} height={14} className="ml-2" />
           </Button>
         </div>

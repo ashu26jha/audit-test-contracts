@@ -2,7 +2,7 @@
 import { useState, type FC } from "react";
 
 import { Button } from "@nextui-org/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Container } from "@/components/layout";
 import { AllowedRepositories, SubscriptionDetails, UserDetails } from "@/components/profile";
@@ -10,8 +10,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const ProfileView: FC = () => {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedTab, setSelectedTab] = useState(searchParams.get("tab") || "details");
+
+  const handleTabChange = (tab: string) => {
+    setSelectedTab(tab);
+    router.push(`/profile?tab=${tab}`);
+  };
 
   if (!user) return null;
 
@@ -24,19 +30,19 @@ const ProfileView: FC = () => {
             selectedTab={selectedTab}
             tabName="details"
             label="User Details"
-            onClick={() => setSelectedTab("details")}
+            onClick={() => handleTabChange("details")}
           />
           <ButtonProfile
             selectedTab={selectedTab}
             tabName="repositories"
             label="Repositories"
-            onClick={() => setSelectedTab("repositories")}
+            onClick={() => handleTabChange("repositories")}
           />
           <ButtonProfile
             selectedTab={selectedTab}
             tabName="subscription"
             label="Subscription"
-            onClick={() => setSelectedTab("subscription")}
+            onClick={() => handleTabChange("subscription")}
           />
         </div>
       }

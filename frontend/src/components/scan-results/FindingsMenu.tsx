@@ -128,7 +128,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
                             onSelectFinding(finding);
                           }
                         }}
-                        className={`flex items-center cursor-pointer pl-6  hover:bg-gray-700 relative
+                        className={`flex items-center cursor-pointer pl-4  hover:bg-gray-700 relative
                           ${
                             selectedFinding?.Issue === finding.Issue
                               ? "text-white bg-[#18181B] before:absolute before:left-0 before:top-0 before:h-full before:w-[1px] before:bg-white"

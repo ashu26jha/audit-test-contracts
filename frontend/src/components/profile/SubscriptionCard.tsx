@@ -1,6 +1,6 @@
 import { type FC } from "react";
 
-import { Button, Card, CardBody, CardFooter } from "@nextui-org/react";
+import { Button, Card, CardBody, CardFooter, Chip } from "@nextui-org/react";
 import { ArrowUpRight, CircleCheck } from "lucide-react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
@@ -10,6 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { formatDate } from "@/utils/datetime";
 
 interface SubscriptionCardProps {
+  auditType: string;
   planName: string;
   price: number;
   description: string;
@@ -22,6 +23,7 @@ interface SubscriptionCardProps {
 }
 
 const SubscriptionCard: FC<SubscriptionCardProps> = ({
+  auditType,
   planName,
   price,
   description,
@@ -62,18 +64,25 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   };
 
   return (
-    <Card className={card({ hasActiveSubscription })} isPressable>
+    <Card className={card({ hasActiveSubscription })} isPressable onPress={handleSubscription}>
       <CardBody>
         <div>
           <div className="flex justify-between items-center mb-2">
-            <div className="font-medium text-base text-[#A1A1AA]">{planName}</div>
+            <div className="flex items-center gap-x-3">
+              <div className="font-medium text-base text-[#A1A1AA]">{planName}</div>
+              <Chip className="bg-default-100 text-default-600 text-xs" radius="sm">
+                {auditType}
+              </Chip>
+            </div>
             {isSubscribed && (
               <div className="bg-[#9353D333] px-2 py-1 rounded text-xs text-[#C9A9E9]">CURRENT PLAN</div>
             )}
           </div>
 
           <div className="flex items-baseline gap-1 mb-2">
-            <span className="text-3xl font-medium">{subscriptionType === "pro" ? `$${price}` : "Custom"}</span>
+            <span className="text-3xl font-medium">
+              {subscriptionType !== "enterprise" ? `$${price}` : "Get In Touch"}
+            </span>
             {subscriptionType === "pro" && <span className="text-gray-400 text-sm">/ month</span>}
           </div>
 
