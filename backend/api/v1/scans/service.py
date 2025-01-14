@@ -3,7 +3,7 @@ from uuid import UUID
 from api.v1.scans.schema import FullScanResultResponse, ScanResponse, ScanResultResponse
 from core.db.repositories.scan import ScanRepository
 from core.models.user import User
-from core.utils.validate import validate_scan_paid, validate_user_scan_access
+from core.utils.validate import validate_user_scan_access
 
 
 class ScanResultService:
@@ -11,7 +11,6 @@ class ScanResultService:
     async def get_full_result(scan_id: UUID, user: User) -> FullScanResultResponse:
         # Validate user access to scan and paid status
         await validate_user_scan_access(scan_id, user)
-        await validate_scan_paid(scan_id)
 
         scan = await ScanRepository.get_scan(scan_id)
         full_result = await ScanRepository.get_scan_result(scan_id)

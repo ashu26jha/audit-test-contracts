@@ -10,7 +10,6 @@ from api.v1.common.flatten_contracts import flatten_contracts
 from api.v1.common.lines_of_code import count_lines_of_code
 from api.v1.github.helpers.clone_repo import clone_repo
 from api.v1.github.service import GitHubService
-from config.settings import ENVIRONMENT
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import CodeAnalysisResult, Scan, ScanResult
 from core.models.user import User
@@ -20,7 +19,6 @@ from core.utils.validate import (
     validate_contract_files,
     validate_github_url,
     validate_no_in_progress_scans,
-    validate_no_unpaid_scans,
     validate_user_has_github_token,
 )
 
@@ -48,8 +46,6 @@ class ScanInitializer:
         validate_github_url(self.request.repositoryURL)
         validate_contract_files(self.request.contractFiles)
         await validate_no_in_progress_scans(self.user)
-        if ENVIRONMENT != "development":
-            await validate_no_unpaid_scans(self.user)
 
     async def clone_repository(self) -> None:
         # Create temporary directory for this scan

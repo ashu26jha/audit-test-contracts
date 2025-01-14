@@ -17,12 +17,11 @@ from api.v1.utilities.pdf.helpers.pdf_generation import (
     html_to_pdf,
     read_html,
 )
-from config.settings import ENVIRONMENT
 from core.db.repositories.scan import ScanRepository
 from core.models.user import User
 from core.utils.email_utils import send_pdf_email
 from core.utils.logger import logger
-from core.utils.validate import validate_scan_paid, validate_user_scan_access
+from core.utils.validate import validate_user_scan_access
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 TEMPLATE_DIR = BASE_DIR / "config" / "template"
@@ -35,10 +34,6 @@ async def generate_pdf_from_scan(user: User, scan_id: str):
     try:
         # Check if the scan exists and belongs to the user
         await validate_user_scan_access(scan_id, user)
-
-        # Check if scan has been paid for
-        if ENVIRONMENT == "production":
-            await validate_scan_paid(scan_id)
 
         scan = await ScanRepository.get_scan(scan_id)
         full_result = await ScanRepository.get_scan_result(scan_id)

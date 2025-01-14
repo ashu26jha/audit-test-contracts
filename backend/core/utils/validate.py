@@ -23,21 +23,6 @@ async def validate_user_scan_access(scan_id: UUID, current_user: User):
     return scan
 
 
-async def validate_scan_paid(scan_id: UUID):
-    """Validate that a specific scan has been paid for."""
-    scan = await ScanRepository.get_scan(scan_id)
-    if not scan.paid_status and scan.status != "failed":
-        raise HTTPException(status_code=400, detail="This scan has not been paid for yet.")
-
-
-async def validate_no_unpaid_scans(user: User):
-    """Validate that the user has no unpaid scans."""
-    scans = await ScanRepository.get_scan_history(user)
-    for scan in scans:
-        await validate_user_scan_access(scan.scan_id, user)
-        await validate_scan_paid(scan.scan_id)
-
-
 async def validate_no_in_progress_scans(user: User):
     """Validate that the user has no in-progress or pending scans."""
     scans = await ScanRepository.get_scan_history(user)
