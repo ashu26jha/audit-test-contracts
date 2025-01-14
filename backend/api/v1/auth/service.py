@@ -6,11 +6,7 @@ from fastapi import HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from api.v1.auth.helpers.auth_helpers import (
-    blacklist_token,
-    track_login_attempt,
-    verify_oauth_state,
-)
+from api.v1.auth.helpers.auth_helpers import blacklist_token, verify_oauth_state
 from api.v1.auth.schema import TestAuthResponse, UserResponse
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
@@ -186,11 +182,6 @@ async def handle_logout(request: Request) -> None:
 
         except Exception as e:
             logger.error(f"Error during logout: {str(e)}")
-
-
-async def track_login(request: Request) -> None:
-    """Track login attempts and handle security"""
-    await track_login_attempt(request)
 
 
 async def generate_test_token(username: str):

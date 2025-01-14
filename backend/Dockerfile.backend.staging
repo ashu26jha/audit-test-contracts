@@ -33,7 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     gnupg \
-    redis-server \
     && curl --proto "=https" --tlsv1.2 -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=20.* \
     && npm install -g --ignore-scripts npm@latest \
@@ -67,5 +66,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Start Redis and run the application with Doppler
-CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && doppler run -- python3 main.py"]
+# Start the application with Doppler
+CMD ["sh", "-c", "doppler run -- python3 main.py"]

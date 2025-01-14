@@ -1,23 +1,16 @@
 import os
 from contextlib import asynccontextmanager
 
-import certifi
 import uvicorn
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from beanie import init_beanie
 from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from motor.motor_asyncio import AsyncIOMotorClient
 
 from api.v1.router import router as api_v1_router
 from config import settings
-from core.models.credit_transaction import CreditTransaction
-from core.models.docs import ReadmeDocs
-from core.models.payment import Payment
-from core.models.scan import Scan, ScanResult
-from core.models.user import User
+from core.db.connection import cleanup_login_attempts, close_database, init_database
 from core.utils.error_handling import (
     general_exception_handler,
     http_exception_handler,
@@ -44,34 +37,24 @@ async def lifespan(app: FastAPI):
             minute=30,
             timezone="Asia/Kolkata",
         )
-        scheduler.start()
 
-    client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
-    if settings.ENVIRONMENT == "development":
-        db = client.audit_agent_dev
-    elif settings.ENVIRONMENT == "staging":
-        db = client.audit_agent_staging
-    else:
-        db = client.audit_agent
-    logger.info("Connecting to MongoDB...")
-    await init_beanie(
-        database=db,
-        document_models=[
-            User,
-            Scan,
-            ScanResult,
-            Payment,
-            CreditTransaction,
-            ReadmeDocs,
-        ],
+    scheduler.add_job(
+        cleanup_login_attempts,
+        "interval",
+        hours=24,
+        name="cleanup_login_attempts",
+        misfire_grace_time=3600,
     )
-    logger.info(f"Connected to MongoDB in {settings.ENVIRONMENT} environment.")
-    yield
-    logger.info("Closing MongoDB connection")
-    client.close()
-    logger.info("MongoDB connection closed")
 
-    # Cleanup process pool
+    scheduler.start()
+
+    # Initialize database
+    await init_database()
+
+    yield
+
+    # Cleanup
+    await close_database()
     process_pool.shutdown()
     logger.info("Process pool shutdown complete")
 

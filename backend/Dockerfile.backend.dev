@@ -38,7 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
-    redis-server \
     && curl --proto "=https" --tlsv1.2 -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=20.* \
     && npm install -g --ignore-scripts npm@latest \
@@ -68,5 +67,5 @@ COPY . .
 
 EXPOSE 8000
 
-# Start Redis, Stripe listener, and the application
-CMD ["sh", "-c", "redis-server --daemonize yes && redis-cli ping && node -v && (stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && python3 main.py"]
+# Start Stripe listener and the application
+CMD ["sh", "-c", "(stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook &) && python3 main.py"]

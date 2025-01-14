@@ -1,9 +1,10 @@
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from typing import Optional
 
 from fastapi import HTTPException, Request
 
-from config.redis_client import REDIS_CLIENT
+from core.models.throttling import ThrottleRecord
 from core.utils.logger import logger
 
 
@@ -11,11 +12,6 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
-            # If Redis is not available, skip throttling
-            if not REDIS_CLIENT:
-                logger.warning("Redis unavailable, throttling disabled")
-                return await func(*args, **kwargs)
-
             try:
                 if use_ip:
                     # Get IP from request
@@ -37,21 +33,29 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                         raise HTTPException(status_code=400, detail="User not found")
                     key = f"throttle:{func.__name__}:{current_user.id}"
 
-                # Get current request count
-                current_count = REDIS_CLIENT.get(key)
-                if current_count and int(current_count) >= max_requests:
-                    raise HTTPException(
-                        status_code=429,
-                        detail="Rate limit exceeded. Please try again later.",
-                    )
+                now = datetime.now(timezone.utc)
+                expires_at = now + timedelta(minutes=rate_limit_minutes)
 
-                # Increment counter or set initial value
-                if current_count:
-                    REDIS_CLIENT.incr(key)
+                # Get or create throttle record
+                record = await ThrottleRecord.find_one({"key": key})
+
+                if record:
+                    if record.count >= max_requests:
+                        raise HTTPException(
+                            status_code=429,
+                            detail="Rate limit exceeded. Please try again later.",
+                        )
+                    record.count += 1
+                    record.last_request = now
+                    await record.save()
                 else:
-                    REDIS_CLIENT.setex(key, rate_limit_minutes * 60, "1")
+                    await ThrottleRecord(
+                        key=key, count=1, last_request=now, expires_at=expires_at
+                    ).insert()
 
                 return await func(*args, **kwargs)
+            except HTTPException:
+                raise
             except Exception as e:
                 logger.error(f"Error in throttling: {str(e)}")
                 # Proceed without throttling on error
