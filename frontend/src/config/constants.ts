@@ -15,6 +15,7 @@ export const PAGES = {
   CONTACT: "https://auditagent.nethermind.io/contact-us",
   DISCLAIMER: "https://auditagent.nethermind.io/terms-of-use",
   PRIVACY_POLICY: "https://auditagent.nethermind.io/privacy-policy",
+  MANUAL_AUDIT: "https://auditagent.nethermind.io/pro-audit",
 } as const;
 
 // Application Limits

@@ -5,12 +5,12 @@ import type { FC } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
 import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
-import { Sparkles } from "lucide-react";
+import { FileSearch2 } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { tv } from "tailwind-variants";
 
+import { PAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
@@ -21,15 +21,6 @@ const Navbar: FC = () => {
   const { user, loading, logout } = useAuth();
   const { setShowStepper } = useScanStepperStore();
   const pathname = usePathname();
-
-  const scansRemainingIndicator = tv({
-    base: "h-10 bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg",
-    variants: {
-      isSubscribed: {
-        true: "bg-transparent border-default text-default-900",
-      },
-    },
-  });
 
   if (pathname === "/login-success") {
     return null;
@@ -57,36 +48,28 @@ const Navbar: FC = () => {
 
       <NavbarContent justify="end">
         <Button
-          className={scansRemainingIndicator({
-            isSubscribed: user.subscription.isActive && user.subscription.credits !== 0,
-          })}
-          startContent={<Sparkles size={14} />}
-          onPress={() => {
-            router.push("/profile?tab=subscription");
-          }}
+          as="a"
+          href={PAGES.MANUAL_AUDIT}
+          target="_blank"
+          className="h-10 bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg"
+          startContent={<FileSearch2 size={18} />}
         >
-          {/* TODO: Display 0 credits for now for clarity when no more scans left */}
-          {/* {user.subscription.isActive && user.subscription.credits !== 0 && ( */}
-          {user.subscription.isActive && (
-            <p className="text-sm">
-              {user.subscription.credits === 1 ? "1 Scan Left" : `${user.subscription.credits} Scans Left`}
-            </p>
-          )}
-
-          {/* {(!user.subscription.isActive || user.subscription.credits === 0) && <p className="text-sm"> Upgrade Plan</p>} */}
-          {!user.subscription.isActive && <p className="text-sm"> Upgrade Plan</p>}
+          Book a Security Review
         </Button>
 
         <div className="justify-start items-center gap-1.5 flex">
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
-              <div className="justify-center items-center gap-2 flex cursor-pointer">
+              <div className="justify-center items-center gap-3 flex cursor-pointer">
                 {user?.avatarUrl ? (
                   <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
                 ) : (
                   <></>
-                )}{" "}
-                <p className="text-neutral-50 text-base leading-normal">{user?.username ?? "Guest"}</p>
+                )}
+                <div>
+                  <p className="text-neutral-50 text-sm leading-normal">{user?.username ?? "Guest"}</p>
+                  <p className="text-xs">{`${user.subscription.credits} Scans Left`}</p>
+                </div>
                 <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
               </div>
             </DropdownTrigger>

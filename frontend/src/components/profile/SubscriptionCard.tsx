@@ -90,9 +90,10 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
 
           {!isSubscribed && subscriptionType !== "free" && !userSubscribedDifferentPlan && (
             <Button
+              as="div"
               isLoading={isSubscribing}
               onPress={handleSubscription}
-              className={`${button({ type: subscriptionType })} my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
+              className={`${button({ type: subscriptionType })} w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
               endContent={<ArrowUpRight />}
             >
               <span>{subscriptionType === "pro" ? "Subscribe" : "Contact us"}</span>
