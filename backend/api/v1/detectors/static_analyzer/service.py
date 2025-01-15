@@ -12,6 +12,7 @@ from api.v1.detectors.static_analyzer.helpers.improve_slither_findings import (
 from api.v1.detectors.static_analyzer.helpers.slither import run_slither
 from api.v1.detectors.static_analyzer.schema import StaticAnalysisOutput, StaticAnalyzerResponse
 from core.schemas.audit_agent_schema import SetupResult
+from core.utils import logger
 
 
 async def run_static_analyzer(
@@ -20,6 +21,8 @@ async def run_static_analyzer(
     selected_contracts: List[str] = None,
     setup_result: Optional[SetupResult] = None,
 ) -> StaticAnalyzerResponse:
+
+    logger.info("[Static Analyzer] Starting static analyzer task...")
 
     try:
         # 1. Setup environment
@@ -68,6 +71,8 @@ async def run_static_analyzer(
         # 6. Remove temporary directory if created locally
         if is_local_temp_dir:
             shutil.rmtree(temp_dir)
+
+        logger.info("[Static Analyzer] Static analyzer task completed successfully")
 
         return StaticAnalyzerResponse(
             message="Repository analyzed successfully.",

@@ -79,6 +79,7 @@ def get_project_structure(project_dir: str) -> str:
 def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
     """
     Copies Solidity contract files from the repository to the destination directory.
+    Uses batched operations for better performance.
     """
     # Try both src and contracts directories
     possible_src_dirs = ["src", "contracts"]
@@ -95,18 +96,54 @@ def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
     if not src_dir:
         raise ValueError(f"No valid source directory found in {repo_dir}")
 
-    files_copied = 0
+    # Collect files and their destinations
+    files_to_copy = []
+    directories_to_create = set()
+
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith(SOLIDITY_EXTENSION):
                 src_path = os.path.join(root, file)
                 rel_path = os.path.relpath(src_path, src_dir)
                 dst_path = os.path.join(dst_dir, rel_path)
-                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-                shutil.copy2(src_path, dst_path)
+                files_to_copy.append((src_path, dst_path))
+                directories_to_create.add(os.path.dirname(dst_path))
+
+    if not files_to_copy:
+        raise ValueError(f"No Solidity files found in {src_dir}")
+
+    # Create all necessary directories at once
+    try:
+        os.makedirs(dst_dir, exist_ok=True)
+        for dir_path in directories_to_create:
+            os.makedirs(dir_path, exist_ok=True)
+    except OSError as e:
+        logger.error(f"Failed to create directories: {str(e)}")
+        raise
+
+    # Copy files in batches of 10
+    BATCH_SIZE = 10
+    files_copied = 0
+    copy_errors = []
+
+    for i in range(0, len(files_to_copy), BATCH_SIZE):
+        batch = files_to_copy[i : i + BATCH_SIZE]  # noqa: E203
+
+        for src, dst in batch:
+            try:
+                shutil.copy2(src, dst)
                 files_copied += 1
+            except (IOError, OSError) as e:
+                error_msg = f"Failed to copy {src} to {dst}: {str(e)}"
+                logger.error(error_msg)
+                copy_errors.append(error_msg)
+                continue
+
+    # Report results
+    if copy_errors:
+        logger.warning(f"Encountered {len(copy_errors)} errors while copying files")
 
     if files_copied == 0:
         raise ValueError(f"No Solidity files found in {src_dir}")
 
-    logger.info(f"Copied {files_copied} Solidity files from {src_dir} to {dst_dir}")
+    logger.info(f"Successfully copied {files_copied} Solidity files from {src_dir} to {dst_dir}")

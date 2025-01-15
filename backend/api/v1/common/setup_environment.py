@@ -2,7 +2,6 @@ import os
 import shutil
 from pathlib import Path
 from typing import List, Optional, Tuple
-from uuid import UUID
 
 from pydantic import HttpUrl
 
@@ -16,7 +15,6 @@ from api.v1.common.project_detection import detect_project_config
 from api.v1.common.project_helpers import compile_project, get_project_structure
 from api.v1.github.helpers.clone_repo import clone_repo
 from config.solidity_settings import FORGE_INSTALL_COMMAND
-from core.db.repositories.scan import ScanRepository
 from core.schemas.audit_agent_schema import SetupResult
 from core.utils.logger import logger
 from core.utils.run_command import run_command
@@ -27,7 +25,6 @@ async def setup_environment(
     temp_dir: str,
     oauth_token: str = None,
     branch: str = "main",
-    scan_id: Optional[UUID] = None,
     contract_files: Optional[List[str]] = None,
 ) -> Optional[SetupResult]:
     """
@@ -38,9 +35,6 @@ async def setup_environment(
     remappings = None
     project_dir = temp_dir
     cloned_repo_dir = temp_dir
-
-    if scan_id:
-        await ScanRepository.update_scan_progress(scan_id, 5)
 
     try:
         # Step 1: Ensure temp_dir exists and clone the repo if needed
@@ -55,17 +49,15 @@ async def setup_environment(
         project_config = await detect_project_config(cloned_repo_dir, contract_files)
         project_type = project_config.project_type
         project_dir = project_config.root_dir
-        if scan_id:
-            await ScanRepository.update_scan_progress(scan_id, 10)
 
         # Step 3: Set up the environment based on the project type
         if project_type == "hardhat":
             project_dir, remappings = await setup_hardhat_environment(
-                scan_id, project_type, project_dir, cloned_repo_dir
+                project_type, project_dir, cloned_repo_dir
             )
 
         elif project_type == "foundry":
-            remappings = await setup_foundry_environment(scan_id, project_dir)
+            remappings = await setup_foundry_environment(project_dir)
         else:
             raise NotImplementedError("This framework is not supported.")
 
@@ -91,9 +83,6 @@ async def setup_environment(
     except Exception as e:
         logger.error(f"Environment setup failed: {str(e)}")
         return None
-    finally:
-        if scan_id:
-            await ScanRepository.update_scan_progress(scan_id, 25)
 
 
 async def cleanup_environment(temp_dir: str, project_dir: str):
@@ -124,7 +113,7 @@ async def cleanup_environment(temp_dir: str, project_dir: str):
 
 
 async def setup_hardhat_environment(
-    scan_id: UUID, project_type: str, project_dir: str, cloned_repo_dir: str
+    project_type: str, project_dir: str, cloned_repo_dir: str
 ) -> Tuple[str, List[str]]:
     # For Hardhat, create a new directory to initialize Foundry project
     foundry_dir = os.path.join(project_dir, "foundry_project")
@@ -132,13 +121,9 @@ async def setup_hardhat_environment(
 
     # Initialize Foundry project in the new directory
     await initialize_foundry_project(foundry_dir, project_dir, project_type)
-    if scan_id:
-        await ScanRepository.update_scan_progress(scan_id, 12)
 
     # Install NPM dependencies
     await install_npm_deps(foundry_dir, project_dir)
-    if scan_id:
-        await ScanRepository.update_scan_progress(scan_id, 17)
 
     # Update foundry.toml configuration and generate remappings
     update_foundry_config(foundry_dir)
@@ -164,22 +149,14 @@ async def setup_hardhat_environment(
             except Exception as e:
                 logger.warning(f"Failed to remove original repository: {str(e)}")
 
-    if scan_id:
-        await ScanRepository.update_scan_progress(scan_id, 20)
-
     logger.info("Hardhat project has been set up in Foundry.")
     return project_dir, remappings
 
 
-async def setup_foundry_environment(
-    scan_id: UUID,
-    project_dir: str,
-) -> Optional[List[str]]:
+async def setup_foundry_environment(project_dir: str) -> Optional[List[str]]:
     try:
         # Install Foundry dependencies
         await run_command(FORGE_INSTALL_COMMAND, project_dir)
-        if scan_id:
-            await ScanRepository.update_scan_progress(scan_id, 15)
 
         # Update foundry.toml configuration and generate remappings
         update_foundry_config(project_dir)
@@ -194,6 +171,3 @@ async def setup_foundry_environment(
     except Exception as e:
         logger.error(f"Error running forge install: {str(e)}")
         return None
-    finally:
-        if scan_id:
-            await ScanRepository.update_scan_progress(scan_id, 20)

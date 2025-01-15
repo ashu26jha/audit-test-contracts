@@ -13,7 +13,13 @@ from core.utils.logger import logger
 def _import_and_run(module_name: str, func_name: str, *args, **kwargs):
     """Import and run a function in the subprocess."""
     try:
-        module = importlib.import_module(module_name)
+        # Handle nested modules
+        module_parts = module_name.split(".")
+        module = importlib.import_module(module_parts[0])
+        for part in module_parts[1:]:
+            module = getattr(module, part)
+
+        # Get the function from the module
         func = getattr(module, func_name)
 
         # If the function is async, run it in a new event loop
@@ -23,21 +29,15 @@ def _import_and_run(module_name: str, func_name: str, *args, **kwargs):
             try:
                 result = loop.run_until_complete(func(*args, **kwargs))
                 return result
-            except Exception as e:
-                logger.error(
-                    f"[ProcessPool] Error executing {func_name} in event loop: {str(e)}",
-                    exc_info=True,
-                )
-                raise
             finally:
                 loop.close()
         else:
             return func(*args, **kwargs)
     except Exception as e:
         logger.error(
-            f"[ProcessPool] Unexpected error in subprocess for {func_name}: {str(e)}", exc_info=True
+            f"[ProcessPool] Error executing {func_name} in subprocess: {str(e)}", exc_info=True
         )
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        return None  # Fail silently
 
 
 class ProcessPoolManager:
@@ -47,75 +47,85 @@ class ProcessPoolManager:
     @classmethod
     def get_instance(cls):
         """Get the singleton instance of ProcessPoolManager."""
-
-        if cls._instance is None:
-            cls._instance = cls()
+        if not cls._instance:
+            cls._instance = ProcessPoolManager()
         return cls._instance
 
     def __init__(self):
-        """Initialize with a small, fixed process pool for context scans."""
+        """Initialize the manager but not the executor yet."""
+        pass
+
+    def initialize(self):
+        """Initialize the process pool executor."""
         if self._executor is None:
             try:
-                # 2 workers fixed pool for context scans
+                # Keep 2 workers for CPU-intensive tasks (context scans, setup)
                 workers = 2
                 env_type = "production" if os.environ.get("GUNICORN_WORKER") else "development"
                 logger.info(
-                    f"Initializing ProcessPoolExecutor with {workers} workers in {env_type} mode"
+                    f"Initializing ProcessPool with {workers} workers for CPU tasks in {env_type} mode"
                 )
                 self._executor = ProcessPoolExecutor(max_workers=workers)
             except Exception as e:
-                raise HTTPException(status_code=500, detail="Internal Server Error") from e
+                logger.error(f"Failed to initialize ProcessPool: {str(e)}")
+                # Don't raise, let it fail silently
+                self._executor = None
 
     @property
     def executor(self):
-        """Get the process pool executor."""
+        """Get the process pool executor, initialize if needed."""
+        if self._executor is None:
+            self.initialize()
         return self._executor
 
     async def run_in_process(self, func, *args, **kwargs):
-        """
-        Run a function in the process pool.
-
-        Args:
-            func: The function to run
-            *args: Positional arguments for the function
-            **kwargs: Keyword arguments for the function
-
-        Returns:
-            The result of the function
-        """
-        if not self._executor:
-            raise EnvironmentError(
-                message="Process pool is not initialized", details={"state": "shutdown"}
-            )
+        """Run a CPU-intensive function in the process pool."""
+        if not self.executor:
+            logger.error("ProcessPool is not initialized, running in main process")
+            try:
+                # If process pool is not available, run in main process
+                if inspect.iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed to run function in main process: {str(e)}")
+                return None
 
         try:
             loop = asyncio.get_event_loop()
 
-            # Get the module path and function name
-            module_name = func.__module__
-            func_name = func.__name__
+            # Get the full module path
+            if hasattr(func, "__module__"):
+                module_name = func.__module__
+            else:
+                # Handle bound methods
+                module_name = func.__self__.__class__.__module__
 
-            # Run the function in the process pool
-            return await loop.run_in_executor(
-                self._executor, _import_and_run, module_name, func_name, *args, **kwargs
+            # Get the function name, handling bound methods
+            if hasattr(func, "__name__"):
+                func_name = func.__name__
+            else:
+                func_name = func.__func__.__name__
+
+            result = await loop.run_in_executor(
+                self.executor, _import_and_run, module_name, func_name, *args, **kwargs
             )
+            return result
         except Exception as e:
             logger.error(
                 f"[ProcessPool] Failed to execute function in process pool: {str(e)}", exc_info=True
             )
-            raise HTTPException(status_code=500, detail="Internal Server Error") from e
+            return None
 
     def shutdown(self):
         """Shutdown the process pool."""
         if self._executor:
             try:
                 self._executor.shutdown(wait=True)
-                self._executor = None
             except Exception as e:
-                logger.error(
-                    f"[ProcessPool] Failed to shutdown process pool: {str(e)}", exc_info=True
-                )
-                raise HTTPException(status_code=500, detail="Internal Server Error") from e
+                logger.error(f"[ProcessPool] Failed to shutdown process pool: {str(e)}")
+            finally:
+                self._executor = None
 
 
 @asynccontextmanager

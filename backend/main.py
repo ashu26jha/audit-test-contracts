@@ -28,6 +28,7 @@ scheduler = AsyncIOScheduler()
 async def lifespan(app: FastAPI):
     # Initialize process pool
     process_pool = ProcessPoolManager.get_instance()
+    process_pool.initialize()
 
     if settings.SLACK_TOKEN:
         scheduler.add_job(

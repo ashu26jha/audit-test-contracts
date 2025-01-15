@@ -135,13 +135,10 @@ class TaskManager:
 
     async def _execute_tasks(self):
         """
-        Sequential flow:
-        1. Generate summary (await)
-        2. Run static analysis (await)
-        3. Run context scans in controlled batches
+        Sequential flow with strict ordering and verification
         """
         try:
-            # 1. Summary Generation (in main process)
+            # 1. Summary Generation
             try:
                 self.summary_result, self.detected_type = await generate_summary(
                     self.flattened_contracts
@@ -157,51 +154,81 @@ class TaskManager:
 
             # 2. Static Analysis & Fuzzing (if setup available)
             if self.setup_result:
-                # Create Static Analysis task
-                self.static_analysis_task = asyncio.create_task(
-                    run_static_analyzer(
-                        "",
-                        "",
-                        self.selected_contracts,
-                        self.setup_result,
-                    )
-                )
-
-                # Monitor Static Analysis task
-                asyncio.create_task(
-                    self._monitor_task(
-                        self.static_analysis_task,
-                        "static_analyzer",
-                    )
-                )
-
-                # Wait for completion
-                await self.static_analysis_task
-
-                # Create fuzzing task (TODO: Uncomment when fuzzing is ready)
-                # self.fuzzing_task = asyncio.create_task(
-                #     fuzzing_service.run_fuzzer(
-                #         "",
-                #         "",
-                #         self.selected_contracts,
-                #         self.flattened_contracts,
-                #         self.setup_result,
-                #     )
-                # )
-
-                # Monitor fuzzing task
-                if self.fuzzing_task:
-                    asyncio.create_task(
-                        self._monitor_task(
-                            self.fuzzing_task,
-                            "fuzzer",
+                # Static Analysis with silent failure
+                try:
+                    # Create and await static analysis
+                    self.static_analysis_task = asyncio.create_task(
+                        run_static_analyzer(
+                            "",
+                            "",
+                            self.selected_contracts,
+                            self.setup_result,
                         )
                     )
 
-                # Wait for completion
-                # await self.fuzzing_task
+                    # Monitor task
+                    monitor_task = asyncio.create_task(
+                        self._monitor_task(
+                            self.static_analysis_task,
+                            "static_analyzer",
+                        )
+                    )
 
-            # 3. Run context scans in batches
+                    # Wait for both execution and monitoring to complete with timeout
+                    await asyncio.wait(
+                        [self.static_analysis_task, monitor_task],
+                        timeout=300,  # 5 minutes timeout
+                        return_when=asyncio.ALL_COMPLETED,
+                    )
+                except Exception as e:
+                    logger.error(f"Static analysis failed silently: {str(e)}")
+                    # Store the error but continue execution
+                    self.task_results["static_analyzer"] = e
+                    await self.update_progress("static_analyzer", False)
+
+                # Force garbage collection after static analysis
+                gc.collect()
+                await asyncio.sleep(1)
+
+                # Fuzzing with silent failure (commented but handled)
+                try:
+                    # Create fuzzing task (TODO: Uncomment when fuzzing is ready)
+                    # self.fuzzing_task = asyncio.create_task(
+                    #     fuzzing_service.run_fuzzer(
+                    #         "",
+                    #         "",
+                    #         self.selected_contracts,
+                    #         self.flattened_contracts,
+                    #         self.setup_result,
+                    #     )
+                    # )
+
+                    # Monitor fuzzing task
+                    if self.fuzzing_task:
+                        monitor_task = asyncio.create_task(
+                            self._monitor_task(
+                                self.fuzzing_task,
+                                "fuzzer",
+                            )
+                        )
+
+                        # Wait for both execution and monitoring to complete with timeout
+                        await asyncio.wait(
+                            [self.fuzzing_task, monitor_task],
+                            timeout=300,  # 5 minutes timeout
+                            return_when=asyncio.ALL_COMPLETED,
+                        )
+                except Exception as e:
+                    logger.error(f"Fuzzing failed silently: {str(e)}")
+                    # Store the error but continue execution
+                    self.task_results["fuzzer"] = e
+                    await self.update_progress("fuzzer", False)
+
+                # Force garbage collection after fuzzing
+                gc.collect()
+                await asyncio.sleep(1)
+
+            # 3. Context Scans - Strict batching with verification
             await self._run_context_scans_in_batches()
 
         except asyncio.TimeoutError as e:
@@ -232,7 +259,7 @@ class TaskManager:
 
     async def _run_context_scans_in_batches(self):
         """Run context scans in batches of 2 using process pool."""
-        batch_size = 2
+        batch_size = 3
 
         # Process context scans in batches
         for i in range(0, len(self.context_scan_configs), batch_size):
@@ -252,14 +279,19 @@ class TaskManager:
                 self.task_detector_names.append(detector_name)
 
                 # Create monitoring task
-                asyncio.create_task(self._monitor_task(task, detector_name))
+                monitor_task = asyncio.create_task(self._monitor_task(task, detector_name))
+
+                # Add monitor task to batch tasks
+                batch_tasks.append((monitor_task, f"{detector_name}_monitor"))
 
             # Wait for current batch to complete before starting next batch
             try:
+                # Wait for all tasks in batch (both execution and monitoring)
                 await asyncio.gather(*(task for task, _ in batch_tasks), return_exceptions=True)
 
-                # Force garbage collection between batches
+                # Force cleanup between batches
                 gc.collect()
+
             except Exception as e:
                 logger.error(f"Error processing batch: {str(e)}")
                 continue
@@ -387,6 +419,7 @@ class TaskManager:
 
     async def _cleanup_running_tasks(self):
         """Clean up running tasks and ensure proper resource release."""
+        gc.collect()
         cleanup_errors = []
 
         # Helper function to safely cancel a task

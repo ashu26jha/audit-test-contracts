@@ -1,4 +1,3 @@
-from typing import Optional
 from uuid import UUID
 
 from fastapi import BackgroundTasks, HTTPException
@@ -20,9 +19,9 @@ from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
 from core.models.scan import Scan
 from core.models.user import User
-from core.schemas.audit_agent_schema import SetupResult
 from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
+from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 from core.utils.validate import validate_free_scan_limit, validate_subscription_limits
 
@@ -95,10 +94,9 @@ class AuditAgentService:
 
             # Start initialization in background
             background_tasks.add_task(
-                AuditAgentService._perform_scan_initialization,
+                AuditAgentService._perform_audit_agent_background,
                 context,
                 initializer,
-                background_tasks,
             )
 
         except HTTPException:
@@ -110,11 +108,13 @@ class AuditAgentService:
             raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
     @staticmethod
-    async def _perform_scan_initialization(
+    @observe(name="audit_agent_background")
+    async def _perform_audit_agent_background(
         context: ScanContext,
         initializer: ScanInitializer,
-        background_tasks: BackgroundTasks,
     ):
+        logger.info(f"Starting background audit scan with ID: {context.scan_id}")
+
         try:
             # Create initial payment record
             payment_handler = PaymentHandler(context)
@@ -129,6 +129,8 @@ class AuditAgentService:
                 except HTTPException as e:
                     logger.error(f"Failed to deduct credit: {str(e)}")
                     raise e
+
+            await ScanRepository.update_scan_progress(context.scan_id, 5)
 
             # Setup environment
             await initializer.clone_repository()
@@ -150,60 +152,31 @@ class AuditAgentService:
                 await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
                 return
 
-            await ScanRepository.update_scan_progress(context.scan_id, 10)
-
-            # Start the main audit task
-            background_tasks.add_task(
-                AuditAgentService._perform_audit_agent_background,
-                context,
-                flattened_contracts,
-                initializer.temp_dir,
-                initializer.repo_dir,
-            )
-        except Exception as e:
-            logger.exception(f"Error during scan initialization: {str(e)}")
-            await ScanRepository.update_scan_failure(
-                context.scan_id, "Failed during scan initialization"
-            )
-            if context.is_subscription_scan:
-                await CreditHelper.refund_credit(context.user_id, context.scan_id)
-            await send_error_email(context.user_email, context.scan_id)
-            await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
-            raise
-
-    @staticmethod
-    @observe()
-    async def _perform_audit_agent_background(
-        context: ScanContext,
-        flattened_contracts: str,
-        temp_dir: str,
-        repo_dir: str,
-    ):
-        logger.info(f"Starting background audit scan with ID: {context.scan_id}")
-
-        try:
-            if not temp_dir or not repo_dir:
-                raise HTTPException(status_code=500, detail="Internal error: Missing directories.")
-
-            setup_result: Optional[SetupResult] = None
-            original_temp_dir = temp_dir  # Store for cleanup
-
             # Update scan status to 'in_progress'
             await ScanRepository.update_scan_status(context.scan_id, "in_progress")
+            await ScanRepository.update_scan_progress(context.scan_id, 12)
 
-            # Attempt to set up the environment using the existing repo_dir
+            # Get process pool instance
+            process_pool = ProcessPoolManager.get_instance()
+
+            # Attempt to set up the environment using the process pool
+            # This runs CPU-intensive operations (compilation, dependency installation) in a separate process
+            # to avoid blocking the main worker and reduce CPU spikes
             setup_result = None
             try:
-                setup_result = await setup_environment(
+                setup_result = await process_pool.run_in_process(
+                    setup_environment,
                     context.repository_url,
-                    repo_dir,
+                    initializer.repo_dir,
                     context.user_access_token,
                     context.branch_name,
-                    context.scan_id,
                     context.contract_files,
                 )
+
+                # Update progress after successful setup (25%)
+                await ScanRepository.update_scan_progress(context.scan_id, 25)
             except Exception as e:
-                logger.error(f"Environment setup failed: {str(e)}")
+                logger.error(f"Environment setup failed in process pool: {str(e)}")
                 # Continue with setup_result as None
 
             # Initialize TaskManager
@@ -275,4 +248,4 @@ class AuditAgentService:
             await send_error_email(context.user_email, context.scan_id)
             raise HTTPException(status_code=500, detail=error_msg) from e
         finally:
-            await cleanup_environment(original_temp_dir, repo_dir)
+            await cleanup_environment(initializer.temp_dir, initializer.repo_dir)

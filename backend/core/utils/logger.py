@@ -1,14 +1,32 @@
 import logging
 import sys
 
+import colorlog
+
 # Create a logger
 logger = logging.getLogger("Audit Agent")
 
 # Set the logging level to DEBUG
 logger.setLevel(logging.DEBUG)
 
-# Create a formatter
-formatter = logging.Formatter("%(levelname)s: %(asctime)s - %(name)s - %(message)s")
+# Define primary log level colors
+log_colors = {
+    "DEBUG": "cyan",
+    "INFO": "green",
+    "WARNING": "yellow",
+    "ERROR": "red",
+    "CRITICAL": "bold_red",
+}
+
+
+# Create a color formatter
+formatter = colorlog.ColoredFormatter(
+    "%(log_color)s%(levelname)s%(reset)s: %(asctime)s - %(name)s - "
+    "%(message_log_color)s%(message)s%(reset)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    log_colors=log_colors,
+    reset=True,
+)
 
 # Create a stream handler (for console output)
 stream_handler = logging.StreamHandler(sys.stdout)

@@ -32,7 +32,7 @@ async def improve_slither_findings(
     Returns:
         List[TransformedSlitherResult]: A list of improved findings.
     """
-    logger.info(f"Improving descriptions for {len(findings)} findings...")
+    logger.info(f"[Improve Findings] Improving descriptions for {len(findings)} findings...")
 
     prompt = IMPROVE_SLITHER_PROMPT.format(vulnerabilities=findings)
 
@@ -46,6 +46,9 @@ async def improve_slither_findings(
                 return findings
             await asyncio.sleep(DELAY)
 
+    logger.info(
+        f"[Improve Findings] Successfully improved descriptions for {len(findings)} findings"
+    )
     return findings
 
 
