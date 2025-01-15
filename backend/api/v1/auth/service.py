@@ -98,7 +98,7 @@ async def handle_github_callback(
     if installation_id is not None:
         if setup_action not in ["install", "update"]:
             raise HTTPException(status_code=400, detail="Invalid setup_action parameter")
-    elif state and not verify_oauth_state(state):
+    elif state and not await verify_oauth_state(state):
         raise HTTPException(status_code=400, detail="Invalid state parameter")
     elif not state and not installation_id:
         raise HTTPException(status_code=400, detail="State parameter required for OAuth flow")

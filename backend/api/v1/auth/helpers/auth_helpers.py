@@ -54,15 +54,23 @@ async def track_login_attempt(request: Request) -> None:
     attempt = await LoginAttempt.find_one({"ip_address": ip})
 
     if attempt:
-        # Check if the last attempt was within the last minute
-        if (now - attempt.last_attempt).total_seconds() > 60:
+        # Ensure last_attempt is UTC-aware when comparing
+        last_attempt = attempt.last_attempt
+        if not last_attempt.tzinfo:
+            last_attempt = last_attempt.replace(tzinfo=timezone.utc)
+
+        if (now - last_attempt).total_seconds() > 60:
             attempt.attempts = 1
         else:
             attempt.attempts += 1
         attempt.last_attempt = now
         await attempt.save()
     else:
-        attempt = LoginAttempt(ip_address=ip, attempts=1, last_attempt=now)
+        attempt = LoginAttempt(
+            ip_address=ip,
+            attempts=1,
+            last_attempt=now,  # This is UTC-aware
+        )
         await attempt.insert()
 
     if attempt.attempts > MAX_ATTEMPTS:

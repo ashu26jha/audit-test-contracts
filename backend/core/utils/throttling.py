@@ -33,6 +33,7 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                         raise HTTPException(status_code=400, detail="User not found")
                     key = f"throttle:{func.__name__}:{current_user.id}"
 
+                # Ensure UTC timezone
                 now = datetime.now(timezone.utc)
                 expires_at = now + timedelta(minutes=rate_limit_minutes)
 
@@ -40,17 +41,20 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                 record = await ThrottleRecord.find_one({"key": key})
 
                 if record:
-                    if record.count >= max_requests:
+                    if record.request_count >= max_requests:
                         raise HTTPException(
                             status_code=429,
                             detail="Rate limit exceeded. Please try again later.",
                         )
-                    record.count += 1
+                    record.request_count += 1
                     record.last_request = now
                     await record.save()
                 else:
                     await ThrottleRecord(
-                        key=key, count=1, last_request=now, expires_at=expires_at
+                        key=key,
+                        request_count=1,
+                        last_request=now,
+                        expires_at=expires_at,
                     ).insert()
 
                 return await func(*args, **kwargs)

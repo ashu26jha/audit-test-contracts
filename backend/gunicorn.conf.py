@@ -1,15 +1,15 @@
-import multiprocessing
 import os
 
 # Server socket
 bind = "0.0.0.0:8000"
-backlog = 2048
+backlog = 1024
 
 # Worker processes
-workers = 1 if os.environ.get("GUNICORN_WORKER") else multiprocessing.cpu_count()
 worker_class = "uvicorn.workers.UvicornWorker"
-worker_connections = 100
-timeout = 1800  # 30 minutes for long-running scans
+workers = 2  # Fixed at 2 workers
+threads = 1  # Single thread per worker
+worker_connections = 50
+timeout = 300
 keepalive = 2
 
 # Process naming
@@ -23,12 +23,13 @@ certfile = os.getenv("SSL_CERTFILE", None)
 accesslog = "-"
 errorlog = "-"
 loglevel = "info"
-
+access_log_format = '%({x-forwarded-for}i)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 # Process Management
 graceful_timeout = 120
-max_requests = 100
+max_requests = 250
 max_requests_jitter = 50
+worker_tmp_dir = "/dev/shm"
 
 # Security
 limit_request_line = 4096

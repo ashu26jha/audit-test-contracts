@@ -1,7 +1,6 @@
 import asyncio
 import importlib
 import inspect
-import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
@@ -54,12 +53,11 @@ class ProcessPoolManager:
         return cls._instance
 
     def __init__(self):
-        """Initialize the process pool."""
+        """Initialize with a small, fixed process pool for context scans."""
         if self._executor is None:
             try:
-                # Both production and development use (cpu_count - 1) workers
-                workers = max(1, multiprocessing.cpu_count() - 1)
-
+                # 2 workers fixed pool for context scans
+                workers = 2
                 env_type = "production" if os.environ.get("GUNICORN_WORKER") else "development"
                 logger.info(
                     f"Initializing ProcessPoolExecutor with {workers} workers in {env_type} mode"

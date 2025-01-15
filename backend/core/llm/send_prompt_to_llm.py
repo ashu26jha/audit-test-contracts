@@ -1,5 +1,6 @@
 import json
 from asyncio import Semaphore, sleep
+from collections import defaultdict
 from typing import List, Optional, Type, TypeVar
 
 import google.generativeai as genai
@@ -18,11 +19,14 @@ from core.schemas.llm_schema import Message
 from core.utils.logger import logger
 from core.utils.token_count import count_tokens
 
-# Limit concurrent OpenAI requests
-OPENAI_SEMAPHORE = Semaphore(4)
-REQUEST_DELAY = 0.5  # seconds
+# Global limit of 6 concurrent requests across *all* models
+GLOBAL_SEMAPHORE = Semaphore(6)
+
+# Per-model limit of 2 concurrent requests
+MODEL_SEMAPHORES = defaultdict(lambda: Semaphore(2))
 
 # Per-request timeout
+REQUEST_DELAY = 0.5  # seconds
 REQUEST_TIMEOUT = 240.0  # 4 minutes per request
 CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 
@@ -58,10 +62,10 @@ async def send_prompt_to_llm_async(
 
         messages = _build_messages(model_type, user_input, system_prompt, message_history)
         token_count = count_tokens(str(messages))
-        logger.debug(f"Message length: {token_count} tokens")
+        logger.debug(f"[LLMPrompt] Message length: {token_count} tokens for {model_type}")
 
         if model_type in SUPPORTED_MODELS["openai"]:
-            async with OPENAI_SEMAPHORE:
+            async with GLOBAL_SEMAPHORE, MODEL_SEMAPHORES[model_type]:
                 await sleep(REQUEST_DELAY)
                 timeout = httpx.Timeout(REQUEST_TIMEOUT, connect=CONNECT_TIMEOUT)
 
@@ -93,74 +97,76 @@ async def send_prompt_to_llm_async(
                         raise
 
         elif model_type in SUPPORTED_MODELS["anthropic"]:
-            try:
-                claude_client = get_claude_client()
-                response = await claude_client.completions.create(
-                    model=model_type,
-                    system=system_prompt if system_prompt else "",
-                    messages=messages,
-                    max_tokens=8192,
-                    response_model=response_model,
-                    timeout=REQUEST_TIMEOUT,
-                )
+            async with GLOBAL_SEMAPHORE, MODEL_SEMAPHORES[model_type]:
+                try:
+                    claude_client = get_claude_client()
+                    response = await claude_client.completions.create(
+                        model=model_type,
+                        system=system_prompt if system_prompt else "",
+                        messages=messages,
+                        max_tokens=8192,
+                        response_model=response_model,
+                        timeout=REQUEST_TIMEOUT,
+                    )
 
-                _update_langfuse(model_type, token_count, count_tokens(str(response)))
+                    _update_langfuse(model_type, token_count, count_tokens(str(response)))
 
-                return response
-            except AnthropicError as e:
-                logger.error(
-                    f"[LLMPrompt] Anthropic API error for {model_type}: {str(e)}", exc_info=True
-                )
-                raise HTTPException(status_code=500, detail="LLM API Error") from e
+                    return response
+                except AnthropicError as e:
+                    logger.error(
+                        f"[LLMPrompt] Anthropic API error for {model_type}: {str(e)}", exc_info=True
+                    )
+                    raise HTTPException(status_code=500, detail="LLM API Error") from e
 
         elif model_type in SUPPORTED_MODELS["gemini"]:
-            try:
-                gemini_client = get_gemini_client()
-                gemini_model = gemini_client.GenerativeModel(model_type)
-                prompt = _build_gemini_prompt(
-                    user_input, system_prompt, message_history, response_model
-                )
-
-                response = await gemini_model.generate_content_async(
-                    prompt,
-                    generation_config=genai.GenerationConfig(
-                        response_mime_type="application/json",
-                        temperature=0.1,
-                    ),
-                )
-
+            async with GLOBAL_SEMAPHORE, MODEL_SEMAPHORES[model_type]:
                 try:
-                    parsed_json = json.loads(response.text)
-                    structured_response = response_model.model_validate(parsed_json)
-                except (json.JSONDecodeError, ValidationError):
-                    logger.info(
-                        "Initial Gemini structured output failed, trying to parse model response..."
-                    )
-                    structured_response = parse_model_response(
-                        response.text, response_model, model_type=model_type
+                    gemini_client = get_gemini_client()
+                    gemini_model = gemini_client.GenerativeModel(model_type)
+                    prompt = _build_gemini_prompt(
+                        user_input, system_prompt, message_history, response_model
                     )
 
-                # Extract token usage from Gemini's response
-                usage = response._result.usage_metadata
-                if not usage:
-                    logger.warning(
-                        f"No usage metadata available for {model_type}, falling back to estimates"
+                    response = await gemini_model.generate_content_async(
+                        prompt,
+                        generation_config=genai.GenerationConfig(
+                            response_mime_type="application/json",
+                            temperature=0.1,
+                        ),
                     )
 
-                prompt_tokens = usage.prompt_token_count if usage else token_count
-                completion_tokens = (
-                    usage.candidates_token_count
-                    if usage
-                    else count_tokens(str(structured_response))
-                )
-                total_tokens = usage.total_token_count if usage else None
+                    try:
+                        parsed_json = json.loads(response.text)
+                        structured_response = response_model.model_validate(parsed_json)
+                    except (json.JSONDecodeError, ValidationError):
+                        logger.info(
+                            "Initial Gemini structured output failed, trying to parse model response..."
+                        )
+                        structured_response = parse_model_response(
+                            response.text, response_model, model_type=model_type
+                        )
 
-                _update_langfuse(model_type, prompt_tokens, completion_tokens, total_tokens)
+                    # Extract token usage from Gemini's response
+                    usage = response._result.usage_metadata
+                    if not usage:
+                        logger.warning(
+                            f"No usage metadata available for {model_type}, falling back to estimates"
+                        )
 
-                return structured_response
-            except Exception as e:
-                logger.error(f"Gemini API error for {model_type}: {e}")
-                raise HTTPException(status_code=500, detail="LLM API Error") from e
+                    prompt_tokens = usage.prompt_token_count if usage else token_count
+                    completion_tokens = (
+                        usage.candidates_token_count
+                        if usage
+                        else count_tokens(str(structured_response))
+                    )
+                    total_tokens = usage.total_token_count if usage else None
+
+                    _update_langfuse(model_type, prompt_tokens, completion_tokens, total_tokens)
+
+                    return structured_response
+                except Exception as e:
+                    logger.error(f"Gemini API error for {model_type}: {e}")
+                    raise HTTPException(status_code=500, detail="LLM API Error") from e
 
         else:
             raise HTTPException(status_code=500, detail=f"Unsupported model type: {model_type}")
