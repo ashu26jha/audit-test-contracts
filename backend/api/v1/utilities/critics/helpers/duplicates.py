@@ -25,8 +25,8 @@ async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
 
         # Send the prompt to LLM
         llm_response: FindingList = await send_prompt_to_llm_async(
-            LLM_UTILITY,
-            prompt,
+            model_type=LLM_UTILITY,
+            messages=prompt,
             response_model=FindingList,
         )
 

@@ -33,11 +33,12 @@ CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 T = TypeVar("T", bound=BaseModel)
 
 
-@observe(as_type="generation")
+@observe(name="llm_call", as_type="generation")
 async def send_prompt_to_llm_async(
     model_type: str,
     messages: Union[str, List[Message]],
     response_model: Optional[Type[T]] = None,
+    langfuse_parent_trace_id: Optional[str] = None,
 ) -> Optional[T]:
     """
     Send pre-formatted messages to the specified LLM model asynchronously.
@@ -46,10 +47,17 @@ async def send_prompt_to_llm_async(
         model_type (str): The model type to use.
         messages (Union[str, List[Message]]): Pre-formatted messages or prompt string.
         response_model (Optional[Type[T]]): The Pydantic model to enforce strict JSON output.
+        langfuse_parent_trace_id (Optional[str]): The parent trace ID to link this call to.
 
     Returns:
         Optional[T]: The structured response from the LLM.
     """
+    parent_trace = langfuse_parent_trace_id
+    if parent_trace:
+        langfuse_context.update_current_trace(
+            metadata={"parent_trace_id": parent_trace}, tags=["subprocess", model_type]
+        )
+
     try:
         async with GLOBAL_SEMAPHORE:
             async with MODEL_SEMAPHORES[model_type]:

@@ -14,7 +14,9 @@ async def generate_summary(contracts: str) -> Tuple[str, str]:
     try:
         prompt = SUMMARY_PROMPT.format(contracts=contracts)
         llm_response = await send_prompt_to_llm_async(
-            LLM_UTILITY, prompt, response_model=SummaryResponse
+            model_type=LLM_UTILITY,
+            messages=prompt,
+            response_model=SummaryResponse,
         )
 
         if not llm_response or not isinstance(llm_response, SummaryResponse):

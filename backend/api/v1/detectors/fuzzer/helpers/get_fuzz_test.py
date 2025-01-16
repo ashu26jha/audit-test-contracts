@@ -96,8 +96,8 @@ async def generate_initial_fuzz_test(
 
     try:
         llm_response = await send_prompt_to_llm_async(
-            model,
-            messages,
+            model_type=model,
+            messages=messages,
         )
 
         if not llm_response or not isinstance(llm_response, str):
@@ -180,7 +180,10 @@ async def validate_fuzz_test(
     )
 
     try:
-        llm_response = await send_prompt_to_llm_async(model, validation_prompt)
+        llm_response = await send_prompt_to_llm_async(
+            model_type=model,
+            messages=validation_prompt,
+        )
         validated_fuzz_test = extract_code_from_response(llm_response, language="solidity")
         logger.info("Fuzz test validation and fixing successful.")
         return validated_fuzz_test

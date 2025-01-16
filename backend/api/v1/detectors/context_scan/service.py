@@ -3,6 +3,8 @@ import gc
 import time
 from typing import Dict, List, Optional
 
+from langfuse.decorators import observe
+
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 from config.settings import LLM_SCAN_1
 from core.llm.prompt_builder import PromptBuilder
@@ -21,6 +23,7 @@ async def run_context_scan(
     docs: Optional[str],
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_1,
+    langfuse_parent_trace_id: Optional[str] = None,
 ) -> dict:
     try:
         # Build context scan specific prompt
@@ -42,9 +45,10 @@ async def run_context_scan(
         logger.info(f"[ContextScan] Starting LLM call for {model}")
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
             send_prompt_to_llm_async,
-            model,
-            messages,
+            model_type=model,
+            messages=messages,
             response_model=ContextScanResponse,
+            langfuse_parent_trace_id=langfuse_parent_trace_id,
         )
         elapsed = time.time() - start_time
 
@@ -66,23 +70,25 @@ async def run_context_scan(
         return {"findings": []}
 
 
+@observe(name="context_scan_batch")
 async def run_context_scan_batch(
     contracts: str,
     summary: Optional[str],
     docs: Optional[str],
     batch_configs: List[Dict],
+    trace_id: Optional[str] = None,
 ) -> List[dict]:
     """Run multiple context scans in a batch"""
     try:
         tasks = []
         for config in batch_configs:
-            # Create tasks for all configs in batch
             task = run_context_scan(
                 contracts,
                 summary,
                 docs,
                 config["profile"],
                 config["model"],
+                langfuse_parent_trace_id=trace_id,
             )
             tasks.append(task)
 

@@ -39,7 +39,11 @@ async def generate_report(
     )
 
     # Send prompt to LLM
-    report = await send_prompt_to_llm_async(LLM_UTILITY, report_prompt, response_model=FindingList)
+    report = await send_prompt_to_llm_async(
+        model_type=LLM_UTILITY,
+        messages=report_prompt,
+        response_model=FindingList,
+    )
 
     logger.info(f"Report generated with {len(report.findings)} findings.")
     return report

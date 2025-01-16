@@ -36,7 +36,9 @@ async def generate_invariants(
 
     # Send the invariant prompt to the LLM
     invariants = await send_prompt_to_llm_async(
-        LLM_UTILITY, invariant_prompt, response_model=InvariantsList
+        model_type=LLM_UTILITY,
+        messages=invariant_prompt,
+        response_model=InvariantsList,
     )
 
     logger.info(f"{len(invariants.invariants)} invariants generated")

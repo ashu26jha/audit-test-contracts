@@ -10,7 +10,7 @@ from core.utils.run_command import run_command
 
 async def run_aderyn(temp_dir: str, contracts: List[str]):
     if not await check_aderyn_installation():
-        raise ValueError("Aderyn is not installed or not working correctly")
+        raise ValueError("[Aderyn] Aderyn is not installed or not working correctly")
 
     # It runs aderyn, writes to report.md file
     # Not using --includes parameter because directory structure changes when using Hardhat
@@ -19,10 +19,8 @@ async def run_aderyn(temp_dir: str, contracts: List[str]):
     # Check if report.md file exists
     report_path = os.path.join(temp_dir, "report.md")
     if not os.path.exists(report_path):
-        logger.info("Aderyn report.md file not found")
+        logger.info("[Aderyn] Aderyn report.md file not found")
         return {"findings": [], "total_findings": 0, "severity_counts": {}}
-
-    logger.info("Aderyn generated report.md file")
 
     with open(report_path, "r", encoding="utf-8") as file:
         report_content = file.read()
@@ -54,7 +52,7 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
     # Find all vulnerabilities
     vulnerabilities = list(re.finditer(vulnerability_pattern, report_content, re.DOTALL))
 
-    logger.info(f"Parsing {len(vulnerabilities)} Aderyn vulnerabilities...")
+    logger.info(f"[Aderyn] Parsing {len(vulnerabilities)} Aderyn vulnerabilities...")
     parsed_results = []
 
     for vuln in vulnerabilities:
@@ -73,10 +71,7 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
             new_title = ADERYN_DETECTORS_TITLE[title]["title"]
 
         except KeyError:
-            logger.info(f"Title not found in ADERYN_DETECTORS_TITLE: {title}")
             continue
-
-        logger.info(f"Title found in ADERYN_DETECTORS_TITLE: {title}")
 
         severity = "High" if "H-" in severity else "Low"
 
@@ -132,11 +127,11 @@ async def check_aderyn_installation():
     try:
         returncode, stdout, stderr = await run_command(["aderyn", "--version"], ".")
         if returncode == 0:
-            logger.info(f"Running Aderyn version: {stdout.strip()}...")
+            logger.info(f"[Aderyn] Running Aderyn version: {stdout.strip()}...")
             return True
 
-        logger.error(f"Aderyn not found or error checking version: {stderr}")
+        logger.error(f"[Aderyn] Aderyn not found or error checking version: {stderr}")
         return False
     except Exception as e:
-        logger.exception(f"Error checking Slither installation: {str(e)}")
+        logger.exception(f"[Aderyn] Error checking Slither installation: {str(e)}")
         return False

@@ -3,6 +3,8 @@ import gc
 from http.client import HTTPException
 from typing import Any, Dict, List, Optional, TypedDict
 
+from langfuse.decorators import langfuse_context
+
 from api.v1.audit_agent.schema import ScanContext
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 
@@ -335,12 +337,14 @@ class TaskManager:
             logger.info(
                 f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
             )
+            trace_id = langfuse_context.get_current_trace_id()
             response_dicts = await self.process_pool.run_in_process(
                 run_context_scan_batch,
+                self.flattened_contracts,
                 self.summary_result,
                 self.docs,
-                self.flattened_contracts,
                 batch_configs,
+                trace_id,
             )
             return response_dicts
         except Exception as e:

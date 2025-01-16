@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from config.settings import ENVIRONMENT
 
+from .agentic import router as agentic_router
 from .audit_agent import router as audit_agent_router
 from .auth import router as auth_router
 from .detectors import context_scan_router, fuzzer_router, static_analyzer_router
@@ -39,3 +40,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(fuzzer_router)
     router.include_router(critics_router)
     router.include_router(benchmark_router)
+    router.include_router(agentic_router)

@@ -72,13 +72,13 @@ class AuditAgentService:
             await initializer.fetch_repository_info()
 
             # Create scan record
-            await initializer.create_scan_record()
+            scan_number = await Scan.get_next_scan_number(user.githubId)
+            await initializer.create_scan_record(scan_number)
 
             # Fetch commit hash
             await initializer.fetch_commit_hash()
 
             # Create scan context
-            scan_number = await Scan.get_next_scan_number(user.githubId)
             context = ScanContext(
                 scan_id=scan_id,
                 user_id=str(user.githubId),
@@ -222,7 +222,7 @@ class AuditAgentService:
                 context.scan_id, "completed", total_findings_after_dedup
             )
 
-            # Send PDF email
+            # Generate PDF without blocking scan completion
             if context.user_email:
                 user = await UserRepository.get_by_github_id(context.user_id)
                 await generate_pdf_from_scan(user, context.scan_id)

@@ -33,8 +33,8 @@ async def test_generate_summary_success(mock_send_prompt_to_llm_async):
     assert contract_type in ["DEFAULT", "DEFI", "NFT", "DAO", "UTILITY"]
 
     mock_send_prompt_to_llm_async.assert_awaited_once()
-    called_args = mock_send_prompt_to_llm_async.call_args[0]
-    assert isinstance(called_args[1], str)
+    called_kwargs = mock_send_prompt_to_llm_async.call_args.kwargs
+    assert isinstance(called_kwargs["messages"], (str, list))
 
     # Test the API response format
     response = client.post("/api/v1/generate-summary", json={"contracts": "Test Contracts"})

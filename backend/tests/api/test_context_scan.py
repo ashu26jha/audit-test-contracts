@@ -128,9 +128,9 @@ async def test_run_context_scan_claude_model(mock_send_prompt_to_llm_async):
     assert finding["Recommendation"] == "Test Recommendation Claude"
 
     mock_send_prompt_to_llm_async.assert_awaited_once()
-    called_args = mock_send_prompt_to_llm_async.call_args[0]
-    model_used = called_args[0]
-    assert model_used == "claude-3-5-sonnet-latest"
+    called_kwargs = mock_send_prompt_to_llm_async.call_args.kwargs
+    assert called_kwargs["model_type"] == "claude-3-5-sonnet-latest"
+    assert isinstance(called_kwargs["messages"], list)
 
 
 @pytest.mark.asyncio
@@ -159,9 +159,10 @@ async def test_run_context_scan_no_profile(mock_send_prompt_to_llm_async):
     assert finding["Recommendation"] == "Test Recommendation No Profile"
 
     mock_send_prompt_to_llm_async.assert_awaited_once()
-    called_args = mock_send_prompt_to_llm_async.call_args[0]
-    assert len(called_args) == 2  # model_type and messages
-    assert isinstance(called_args[1], (str, list))  # messages can be string or list
+    called_kwargs = mock_send_prompt_to_llm_async.call_args.kwargs
+    assert "model_type" in called_kwargs
+    assert "messages" in called_kwargs
+    assert isinstance(called_kwargs["messages"], (str, list))
 
 
 def test_context_scan_endpoint(mock_send_prompt_to_llm_async):

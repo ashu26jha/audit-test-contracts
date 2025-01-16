@@ -55,7 +55,9 @@ async def improve_slither_findings(
 async def process_llm_response(vulns: List[Finding], prompt: str) -> List[Finding]:
     """Process the LLM response and create improved findings."""
 
-    llm_response = await send_prompt_to_llm_async(LLM_UTILITY, prompt, response_model=FindingList)
+    llm_response = await send_prompt_to_llm_async(
+        model_type=LLM_UTILITY, messages=prompt, response_model=FindingList
+    )
 
     if not isinstance(llm_response, FindingList):
         raise ValueError("LLM response is not a FindingList")

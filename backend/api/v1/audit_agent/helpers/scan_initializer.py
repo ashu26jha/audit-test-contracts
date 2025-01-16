@@ -35,7 +35,6 @@ class ScanInitializer:
         self.user = user
         self.request = request
         self.scan_id = scan_id
-        self.scan_number: Optional[int] = None
         self.repo_dir: Optional[str] = None
         self.temp_dir: Optional[str] = None
         self.repo_info = None
@@ -65,14 +64,11 @@ class ScanInitializer:
             self.user.accessToken, self.request.repositoryURL
         )
 
-    async def create_scan_record(self):
-        # Get the next scan_number for this user
-        self.scan_number = await Scan.get_next_scan_number(self.user.githubId)
-
+    async def create_scan_record(self, scan_number: int):
         # Create and store the new scan with initial status 'pending'
         new_scan = Scan(
             scan_id=self.scan_id,
-            scan_number=self.scan_number,
+            scan_number=scan_number,
             user_id=self.user.githubId,
             status="pending",
             startedAt=datetime.now(timezone.utc),
@@ -86,7 +82,7 @@ class ScanInitializer:
         # Create and store an initial empty scan result
         initial_scan_result = ScanResult(
             scan_id=self.scan_id,
-            scan_number=self.scan_number,
+            scan_number=scan_number,
             summary=None,
             info_message="Scan in progress",
             type=Profiles.NONE,

@@ -31,8 +31,8 @@ async def mitigate_findings_async(
 
         # Send to LLM
         mitigated_response = await send_prompt_to_llm_async(
-            LLM_UTILITY,
-            mitigation_prompt,
+            model_type=LLM_UTILITY,
+            messages=mitigation_prompt,
             response_model=FindingList,
         )
 

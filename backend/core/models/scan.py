@@ -163,6 +163,17 @@ class Scan(Document):
         last_scan = await cls.find(cls.user_id == user_id).sort("-scan_number").limit(1).to_list()
         return (last_scan[0].scan_number + 1) if last_scan else 1
 
+    @classmethod
+    async def get_next_agentic_scan_number(cls, contract_address: str) -> int:
+        """Get the next sequential scan number for a user."""
+        last_scan = (
+            await cls.find(cls.contract_address == contract_address)
+            .sort("-scan_number")
+            .limit(1)
+            .to_list()
+        )
+        return (last_scan[0].scan_number + 1) if last_scan else 1
+
     class Settings:
         name = "scans"
         validate_on_save = True

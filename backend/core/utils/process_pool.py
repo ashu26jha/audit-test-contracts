@@ -13,6 +13,19 @@ from core.utils.logger import logger
 def _import_and_run(module_name: str, func_name: str, *args, **kwargs):
     """Import and run a function in the subprocess."""
     try:
+        # Initialize environment for subprocess
+        from dotenv import load_dotenv
+        from langfuse.decorators import langfuse_context
+
+        load_dotenv()
+
+        # Configure Langfuse in subprocess
+        langfuse_context.configure(
+            public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+            secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+            host=os.getenv("LANGFUSE_HOST", "https://cloud.langfuse.com"),
+        )
+
         # Handle nested modules
         module_parts = module_name.split(".")
         module = importlib.import_module(module_parts[0])
