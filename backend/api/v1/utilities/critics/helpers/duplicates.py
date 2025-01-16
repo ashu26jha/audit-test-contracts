@@ -9,34 +9,35 @@ from core.models.scan import Finding
 from core.utils.logger import logger
 
 
-async def remove_duplicates_async(vulns: List[Finding]) -> List[Finding]:
-    """
-    Returns:
-        List[Finding]: Findings with duplicates removed, or original findings if deduplication fails
-    """
+async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
+    """Remove duplicate findings using LLM."""
+
+    logger.info(f"Removing duplicates from {len(findings)} findings...")
+
     try:
-        if not vulns:
+
+        if not findings:
             return []
 
-        # Cache model dumps to avoid redundant serialization
-        findings_dumps = {id(finding): finding.model_dump() for finding in vulns}
-        vulns_json = {"findings": [findings_dumps[id(f)] for f in vulns]}
-
-        prompt = DUPLICATE_PROMPT.format(vulnerabilities=json.dumps(vulns_json, indent=2))
-        logger.info(f"Removing duplicates from {len(vulns)} findings...")
+        # Format findings for LLM
+        formatted_findings = json.dumps([finding.model_dump() for finding in findings])
+        prompt = DUPLICATE_PROMPT.format(vulnerabilities=formatted_findings)
 
         # Send the prompt to LLM
         llm_response: FindingList = await send_prompt_to_llm_async(
-            model_type=LLM_UTILITY,
-            user_input=prompt,
+            LLM_UTILITY,
+            prompt,
             response_model=FindingList,
         )
 
-        logger.info(f"Total findings after duplicate removal: {len(llm_response.findings)}")
+        if not llm_response or not llm_response.findings:
+            logger.warning("No findings returned from LLM, returning original findings")
+            return findings
 
+        logger.info(f"Total findings after duplicate removal: {len(llm_response.findings)}")
         return llm_response.findings
 
     except Exception as e:
         logger.exception(f"Failed to remove duplicates: {str(e)}")
         logger.warning("Returning original vulnerabilities.")
-        return vulns
+        return findings

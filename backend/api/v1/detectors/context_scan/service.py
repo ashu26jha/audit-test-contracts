@@ -1,17 +1,18 @@
+import asyncio
+import gc
 import time
-from typing import Optional
+from typing import Dict, List, Optional
 
 from api.v1.detectors.context_scan.schema import ContextScanResponse
-from config.prompts.context_scan_prompts import (
-    CONTEXT_PROMPT,
-    CONTEXT_PROMPT_WITH_DOCS,
-    SYSTEM_PROMPT,
-)
 from config.settings import LLM_SCAN_1
+from core.llm.prompt_builder import PromptBuilder
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
-from core.utils.profiles import Profiles, load_profile
+from core.utils.profiles import Profiles
 from core.utils.retry_helper import retry_async_operation
+
+# Create singleton instance
+_prompt_builder = PromptBuilder()
 
 
 async def run_context_scan(
@@ -22,35 +23,28 @@ async def run_context_scan(
     model: str = LLM_SCAN_1,
 ) -> dict:
     try:
-        # 1. Load system prompt if profile is defined
-        system_prompt = SYSTEM_PROMPT if profile != Profiles.NONE else None
-
-        # 2. Clean inputs
-        clean_summary = _clean_backticks(summary)
-        clean_docs = _clean_backticks(docs)
-        clean_contracts = _clean_backticks(contracts)
-
-        # 3. Generate prompt
-        prompt = (
-            CONTEXT_PROMPT_WITH_DOCS.format(
-                summary=clean_summary, docs=clean_docs, flattened_contracts=clean_contracts
-            )
-            if docs
-            else CONTEXT_PROMPT.format(summary=clean_summary, flattened_contracts=clean_contracts)
+        # Build context scan specific prompt
+        formatted_prompt = _prompt_builder.build_context_scan_prompt(
+            contracts,
+            summary,
+            docs,
         )
 
-        # 4. Load message history if profile is defined
-        message_history = load_profile(profile)
+        # Build full messages with profile
+        messages = _prompt_builder.build_messages(
+            model,
+            formatted_prompt,
+            profile=profile,
+        )
 
-        # 5. Send prompt to LLM
+        # Send prompt to LLM
         start_time = time.time()
+        logger.info(f"[ContextScan] Starting LLM call for {model}")
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
             send_prompt_to_llm_async,
             model,
-            prompt,
-            system_prompt,
-            message_history,
-            ContextScanResponse,
+            messages,
+            response_model=ContextScanResponse,
         )
         elapsed = time.time() - start_time
 
@@ -72,8 +66,37 @@ async def run_context_scan(
         return {"findings": []}
 
 
-def _clean_backticks(text: Optional[str]) -> Optional[str]:
-    """Remove triple backticks from text to avoid formatting issues."""
-    if text is None:
-        return None
-    return text.replace("```", "")
+async def run_context_scan_batch(
+    contracts: str,
+    summary: Optional[str],
+    docs: Optional[str],
+    batch_configs: List[Dict],
+) -> List[dict]:
+    """Run multiple context scans in a batch"""
+    try:
+        tasks = []
+        for config in batch_configs:
+            # Create tasks for all configs in batch
+            task = run_context_scan(
+                contracts,
+                summary,
+                docs,
+                config["profile"],
+                config["model"],
+            )
+            tasks.append(task)
+
+        # Run all tasks concurrently and gather results
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return [
+            result if not isinstance(result, Exception) else {"findings": []} for result in results
+        ]
+    finally:
+        # Cleanup after batch completion
+        gc.collect()  # Force garbage collection
+        tasks.clear()  # Clear task references
+
+        # Clear large strings that were used for this batch
+        contracts = None
+        summary = None
+        docs = None

@@ -28,7 +28,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 
 @router.get("/github-login")
-@throttle(rate_limit_minutes=1, max_requests=10, use_ip=True)
+@throttle(rate_limit_minutes=1, max_requests=20, use_ip=True)
 async def github_login(request: Request):
     """
     Redirect the user to the GitHub OAuth authorization page.

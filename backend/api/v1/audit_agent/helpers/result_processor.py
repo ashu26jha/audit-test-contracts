@@ -49,9 +49,9 @@ class ResultProcessor:
             findings=self.combined_findings,
             flattened_contracts=self.flattened_contracts,
         )
+        await ScanRepository.update_scan_progress(self.scan_id, 100)
         self.flattened_contracts = None
         gc.collect()
-        await ScanRepository.update_scan_progress(self.scan_id, 100)
 
         # 4. Update scan result in database
         result = await self._get_scan_result()

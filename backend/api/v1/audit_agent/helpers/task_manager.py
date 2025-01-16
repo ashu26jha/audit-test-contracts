@@ -1,6 +1,5 @@
 import asyncio
 import gc
-from datetime import datetime
 from http.client import HTTPException
 from typing import Any, Dict, List, Optional, TypedDict
 
@@ -8,7 +7,7 @@ from api.v1.audit_agent.schema import ScanContext
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 
 # from api.v1.detectors.fuzzer.service import FuzzerService
-from api.v1.detectors.context_scan.service import run_context_scan
+from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.detectors.static_analyzer.service import run_static_analyzer
 from api.v1.utilities.summary.service import generate_summary
 from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
@@ -47,9 +46,7 @@ class TaskManager:
         self.detected_profile = detected_profile
         self.scan: Optional[Scan] = None
         self.context_scan_configs: List[Dict[str, Any]] = []
-        self.context_scan_tasks: List[asyncio.Task] = []
         self.task_detector_names: List[str] = []
-        self.result_index: int = 0
 
         # Initialize optional tasks
         self.static_analysis_task: Optional[asyncio.Task] = None
@@ -258,77 +255,97 @@ class TaskManager:
             await self.update_progress(detector_name, False)
 
     async def _run_context_scans_in_batches(self):
-        """Run context scans in batches of 2 using process pool."""
+        """Run context scans in batches, ensuring model distribution."""
         batch_size = 3
+        configs = self.context_scan_configs
+        total_configs = len(configs)
 
-        # Process context scans in batches
-        for i in range(0, len(self.context_scan_configs), batch_size):
-            batch = self.context_scan_configs[i : i + batch_size]
-            batch_tasks = []
+        # Process configs in pairs of batches
+        for i in range(0, total_configs, batch_size * 2):
+            # Create two batches of 3 configs each
+            batch1 = configs[i : i + batch_size]
+            batch2 = configs[i + batch_size : i + (batch_size * 2)]
 
-            # Create tasks for current batch
-            for config in batch:
+            # Process both batches simultaneously
+            tasks = []
+            for batch_num, batch in enumerate([batch1, batch2], 1):
+                if batch:
+                    logger.info(
+                        f"Starting batch {batch_num} with models: {[c['model'] for c in batch]}"
+                    )
+                    # Create task and monitor task for the batch
+                    task = asyncio.create_task(self.run_context_scan_with_batch(batch))
+                    monitor_task = asyncio.create_task(self._monitor_batch_task(task, batch))
+                    tasks.extend([task, monitor_task])
+
+            # Wait for all tasks to complete
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _monitor_batch_task(self, task: asyncio.Task, batch_configs: List[Dict]):
+        """Monitor a batch of context scans and update results"""
+        try:
+            batch_results = await task
+            # Store results for each config in the batch
+            for config, result in zip(batch_configs, batch_results):
                 detector_name = config["detector_name"]
-
-                # Create task for the context scan
-                task = asyncio.create_task(self.run_context_scan_with_retry(config))
-
-                # Store task metadata
-                batch_tasks.append((task, detector_name))
-                self.context_scan_tasks.append(task)
+                self.task_results[detector_name] = ContextScanResponse.model_validate(result)
                 self.task_detector_names.append(detector_name)
 
-                # Create monitoring task
-                monitor_task = asyncio.create_task(self._monitor_task(task, detector_name))
+                # Update progress for each completed detector
+                if self.scan:
+                    self.scan.completed_detectors += 1
+                    self.scan.detectors[detector_name] = True
 
-                # Add monitor task to batch tasks
-                batch_tasks.append((monitor_task, f"{detector_name}_monitor"))
+                    # Calculate incremental progress
+                    current_progress = PRE_DETECTOR_WEIGHT
+                    for name, completed in self.scan.detectors.items():
+                        if completed is not None:
+                            weight = self.detector_weights.get(name, 7.5)
+                            current_progress += weight
 
-            # Wait for current batch to complete before starting next batch
-            try:
-                # Wait for all tasks in batch (both execution and monitoring)
-                await asyncio.gather(*(task for task, _ in batch_tasks), return_exceptions=True)
+                    self.scan.progress = max(self.scan.progress, current_progress)
+                    await self.scan.save()
 
-                # Force cleanup between batches
-                gc.collect()
+        except Exception as e:
+            logger.error(f"Batch task failed: {str(e)}")
+            # Mark all detectors in the batch as failed
+            for config in batch_configs:
+                detector_name = config["detector_name"]
+                self.task_results[detector_name] = e
+                self.task_detector_names.append(detector_name)
 
-            except Exception as e:
-                logger.error(f"Error processing batch: {str(e)}")
-                continue
+                # Update progress for each failed detector
+                if self.scan:
+                    self.scan.completed_detectors += 1
+                    self.scan.detectors[detector_name] = False
 
-    async def run_context_scan_with_retry(self, config):
-        """Run a single context scan with retry logic"""
-        start_time = datetime.now()
-        retry_count = 0
-        max_retries = 2
+                    # Calculate incremental progress
+                    current_progress = PRE_DETECTOR_WEIGHT
+                    for name, completed in self.scan.detectors.items():
+                        if completed is not None:
+                            weight = self.detector_weights.get(name, 7.5)
+                            current_progress += weight
 
-        while retry_count < max_retries:
-            try:
-                # Check remaining time for this context scan
-                elapsed = (datetime.now() - start_time).total_seconds()
-                if elapsed >= CONTEXT_SCANS_TIMEOUT:
-                    raise TimeoutError("Context scan exceeded maximum time")
+                    self.scan.progress = max(self.scan.progress, current_progress)
+                    await self.scan.save()
 
-                response_dict = await self.process_pool.run_in_process(
-                    run_context_scan,
-                    self.summary_result,
-                    self.docs,
-                    self.flattened_contracts,
-                    config["profile"],
-                    config["model"],
-                )
-
-                return ContextScanResponse.model_validate(response_dict)
-
-            except Exception as e:
-                retry_count += 1
-                if retry_count >= max_retries:
-                    raise
-                logger.warning(
-                    f"Context scan attempt {retry_count}/{max_retries} failed for {config['profile']} with {config['model']}"
-                    f"Error: {str(e)}"
-                )
-                await asyncio.sleep(5)
+    async def run_context_scan_with_batch(self, batch_configs):
+        """Run a batch of context scans using process pool"""
+        try:
+            logger.info(
+                f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
+            )
+            response_dicts = await self.process_pool.run_in_process(
+                run_context_scan_batch,
+                self.summary_result,
+                self.docs,
+                self.flattened_contracts,
+                batch_configs,
+            )
+            return response_dicts
+        except Exception as e:
+            logger.error(f"Batch context scan failed: {str(e)}")
+            raise
 
     class GatherResults(TypedDict):
         combined_findings: List[Finding]
@@ -338,10 +355,13 @@ class TaskManager:
     async def gather_results(self) -> GatherResults:
         # Use stored results instead of awaiting tasks again
         results = []
+        detector_name_to_result = {}
 
-        # Gather context scan results
+        # Gather context scan results and create mapping
         for detector_name in self.task_detector_names:
-            results.append(self.task_results.get(detector_name))
+            result = self.task_results.get(detector_name)
+            results.append(result)
+            detector_name_to_result[detector_name] = result
 
         # Add static analysis result if it exists
         if "static_analyzer" in self.task_results:
@@ -352,15 +372,12 @@ class TaskManager:
             results.append(self.task_results["fuzzer"])
 
         combined_findings: List[Finding] = []
-        result_index = 0
-
         detector_updates = {}
         findings_by_detector = {}
 
         # Handle context scan results
-        for _, detector_name in enumerate(self.task_detector_names):
-            context_scan_result = results[result_index]
-            result_index += 1
+        for detector_name in self.task_detector_names:
+            context_scan_result = detector_name_to_result[detector_name]
 
             if isinstance(context_scan_result, (Exception, asyncio.TimeoutError)):
                 detector_updates[detector_name] = False

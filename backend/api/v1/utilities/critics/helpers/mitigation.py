@@ -29,7 +29,7 @@ async def mitigate_findings_async(
             flattened_contracts=flattened_contracts,
         )
 
-        # Get response from LLM
+        # Send to LLM
         mitigated_response = await send_prompt_to_llm_async(
             LLM_UTILITY,
             mitigation_prompt,

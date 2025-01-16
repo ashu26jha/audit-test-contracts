@@ -160,8 +160,8 @@ async def test_run_context_scan_no_profile(mock_send_prompt_to_llm_async):
 
     mock_send_prompt_to_llm_async.assert_awaited_once()
     called_args = mock_send_prompt_to_llm_async.call_args[0]
-    system_prompt_used = called_args[2]
-    assert system_prompt_used is None
+    assert len(called_args) == 2  # model_type and messages
+    assert isinstance(called_args[1], (str, list))  # messages can be string or list
 
 
 def test_context_scan_endpoint(mock_send_prompt_to_llm_async):

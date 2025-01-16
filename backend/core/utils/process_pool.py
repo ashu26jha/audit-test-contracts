@@ -82,34 +82,15 @@ class ProcessPoolManager:
         """Run a CPU-intensive function in the process pool."""
         if not self.executor:
             logger.error("ProcessPool is not initialized, running in main process")
-            try:
-                # If process pool is not available, run in main process
-                if inspect.iscoroutinefunction(func):
-                    return await func(*args, **kwargs)
-                return func(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Failed to run function in main process: {str(e)}")
-                return None
+            return None
 
         try:
             loop = asyncio.get_event_loop()
-
-            # Get the full module path
-            if hasattr(func, "__module__"):
-                module_name = func.__module__
-            else:
-                # Handle bound methods
-                module_name = func.__self__.__class__.__module__
-
-            # Get the function name, handling bound methods
-            if hasattr(func, "__name__"):
-                func_name = func.__name__
-            else:
-                func_name = func.__func__.__name__
-
+            logger.info(f"[ProcessPool] Delegating {func.__name__} to worker")
             result = await loop.run_in_executor(
-                self.executor, _import_and_run, module_name, func_name, *args, **kwargs
+                self.executor, _import_and_run, func.__module__, func.__name__, *args, **kwargs
             )
+            logger.info(f"[ProcessPool] Worker completed {func.__name__}")
             return result
         except Exception as e:
             logger.error(

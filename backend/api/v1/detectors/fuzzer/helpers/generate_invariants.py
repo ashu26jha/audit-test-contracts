@@ -27,8 +27,6 @@ async def generate_invariants(
     """
     logger.info("Generating invariants with LLM...")
 
-    model = LLM_UTILITY
-
     # Generate the invariant prompt
     invariant_prompt = FUZZER_INVARIANT_PROMPT.format(
         project_structure=project_structure,
@@ -38,7 +36,7 @@ async def generate_invariants(
 
     # Send the invariant prompt to the LLM
     invariants = await send_prompt_to_llm_async(
-        model, invariant_prompt, response_model=InvariantsList
+        LLM_UTILITY, invariant_prompt, response_model=InvariantsList
     )
 
     logger.info(f"{len(invariants.invariants)} invariants generated")

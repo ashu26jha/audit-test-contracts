@@ -6,9 +6,10 @@ from api.v1.detectors.fuzzer.helpers.save_fuzz_test import save_fuzz_test
 from config.prompts.fuzzer_prompts import FUZZ_TEST_VALIDATION_PROMPT
 from config.settings import LLM_SCAN_1, MAX_RETRIES
 from core.llm.parse_llm_response import extract_code_from_response
+from core.llm.prompt_builder import PromptBuilder
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
-from core.utils.profiles import Profiles, load_profile
+from core.utils.profiles import Profiles
 
 
 class CompilationError(Exception):
@@ -84,10 +85,20 @@ async def generate_initial_fuzz_test(
     prompt: str, system_prompt: str, detected_profile: Profiles
 ) -> str:
     model = LLM_SCAN_1
-    message_history = load_profile(detected_profile)
+    # Use PromptBuilder to format messages
+    prompt_builder = PromptBuilder()
+    messages = prompt_builder.build_messages(
+        model,
+        prompt,
+        system_prompt=system_prompt,
+        profile=detected_profile,
+    )
 
     try:
-        llm_response = await send_prompt_to_llm_async(model, prompt, system_prompt, message_history)
+        llm_response = await send_prompt_to_llm_async(
+            model,
+            messages,
+        )
 
         if not llm_response or not isinstance(llm_response, str):
             raise ValueError("LLM response was empty or invalid")
