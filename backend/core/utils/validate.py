@@ -10,6 +10,7 @@ from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
 from core.models.scan import Scan
 from core.models.user import User
+from core.schemas.audit_agent_schema import FreeScanStatus
 from core.utils.logger import logger
 
 # Regular expression for GitHub repository URL validation
@@ -59,7 +60,7 @@ def validate_contract_files(contract_files: List[str]):
         )
 
 
-async def validate_free_scan_limit(user_id: str) -> bool:
+async def validate_free_scan_limit(user_id: str) -> FreeScanStatus:
     """
     Checks if a user can perform a free scan based on their scan history.
     A user is allowed one free scan per month if they are not a subscriber.
@@ -68,7 +69,7 @@ async def validate_free_scan_limit(user_id: str) -> bool:
         user_id: The GitHub ID of the user
 
     Returns:
-        bool: True if user can perform a free scan, False otherwise
+        FreeScanStatus: Object containing whether scan is allowed and when next scan will be available
 
     Raises:
         HTTPException: If user is not found or other server errors occur
@@ -90,7 +91,17 @@ async def validate_free_scan_limit(user_id: str) -> bool:
             }
         ).to_list()
 
-        return len(recent_scans) == 0
+        if not recent_scans:
+            return FreeScanStatus(is_allowed=True, next_available_at=None)
+
+        # Get the most recent scan's date and calculate next available date
+        most_recent_scan = max(recent_scans, key=lambda x: x.createdAt)
+        next_available_at = most_recent_scan.createdAt + timedelta(days=30)
+
+        return FreeScanStatus(
+            is_allowed=False,
+            next_available_at=next_available_at,
+        )
 
     except HTTPException:
         raise

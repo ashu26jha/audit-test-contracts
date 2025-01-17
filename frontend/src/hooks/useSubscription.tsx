@@ -1,16 +1,24 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
 import type { AxiosError } from "axios";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { createPortalSession, createSubscriptionSession, isFreeScanAllowed } from "@/services/api";
+import { useSubscriptionStore } from "@/store/subscriptonStore";
 
 import { useToast } from "./useToast";
 
 export const useSubscription = () => {
-  const [freeScanAllowed, setFreeScanAllowed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    freeScanAllowed,
+    isLoading,
+    error,
+    setFreeScanAllowed,
+    setIsLoading,
+    setError,
+    nextAvailableScanDate,
+    setNextAvailableScanDate,
+  } = useSubscriptionStore();
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -22,7 +30,8 @@ export const useSubscription = () => {
     }
     const response = await isFreeScanAllowed();
     setFreeScanAllowed(response.is_allowed);
-  }, [user?.subscription.type, setFreeScanAllowed]);
+    setNextAvailableScanDate(response.next_available_at);
+  }, [user?.subscription.type, setFreeScanAllowed, setNextAvailableScanDate]);
 
   const handleSubscribe = useCallback(
     async (subscriptionType: Exclude<SubscriptionType, "free">) => {
@@ -79,6 +88,7 @@ export const useSubscription = () => {
     checkIfFreeScanAllowed,
     handleSubscribe,
     handleCustomerPortalSession,
+    nextAvailableScanDate,
     isLoading,
     error,
   };

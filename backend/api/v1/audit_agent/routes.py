@@ -57,10 +57,13 @@ async def is_free_scan_allowed(current_user: User = Depends(get_current_user)):
     - User is a subscriber
     - User hasn't used their free scan in the last 30 days
     """
-    is_allowed = await validate_free_scan_limit(current_user.githubId)
+    free_scan_status = await validate_free_scan_limit(current_user.githubId)
     return SuccessResponse(
         data=IsFreeScanAllowedResponse(
-            is_allowed=is_allowed,
-            message="Free scan available" if is_allowed else "Free scan not available",
+            is_allowed=free_scan_status.is_allowed,
+            next_available_at=free_scan_status.next_available_at,
+            message=(
+                "Free scan available" if free_scan_status.is_allowed else "Free scan not available"
+            ),
         ),
     )

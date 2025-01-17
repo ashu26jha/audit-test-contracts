@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
@@ -57,4 +58,5 @@ class AuditAgentInitiateResponse(BaseModel):
 
 class IsFreeScanAllowedResponse(BaseModel):
     is_allowed: bool
+    next_available_at: datetime | None = None
     message: str

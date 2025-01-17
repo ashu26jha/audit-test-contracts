@@ -19,6 +19,7 @@ interface ScanStepperState {
   isValidURL: boolean;
   isLineExceeded: boolean;
   isFileLimitExceeded: boolean;
+  selectedPlan: string | null;
   setShowStepper: (show: boolean) => void;
   setCurrentStep: (step: number) => void;
   setSelectedOwner: (owner: Owner | null) => void;
@@ -37,6 +38,7 @@ interface ScanStepperState {
   setIsValidURL: (isValidURL: boolean) => void;
   setIsLineExceeded: (isLineExceeded: boolean) => void;
   setIsFileLimitExceeded: (isLineExceeded: boolean) => void;
+  setSelectedPlan: (plan: string) => void;
   resetStepper: (step: number) => void;
 }
 
@@ -62,6 +64,8 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   isValidURL: false,
   isLineExceeded: false,
   isFileLimitExceeded: false,
+  selectedPlan: null,
+  setSelectedPlan: (plan) => set({ selectedPlan: plan }),
   setShowStepper: (show) => set({ showStepper: show }),
   setCurrentStep: (step) => set({ currentStep: step }),
   setSelectedOwner: (owner) => set({ selectedOwner: owner }),
@@ -98,6 +102,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
       isValidURL: false,
       isLineExceeded: false,
       isFileLimitExceeded: false,
+      selectedPlan: null,
       repoDocs: {
         readme: [],
         qa: {},

@@ -1,12 +1,13 @@
 import { type FC } from "react";
 
 import { Button, Card, CardBody, CardFooter, Chip } from "@nextui-org/react";
-import { ArrowUpRight, CircleCheck } from "lucide-react";
+import { ArrowUpRight, Circle, CircleCheck } from "lucide-react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
 
 import { PAGES } from "@/config/constants";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 import { formatDate } from "@/utils/datetime";
 
 interface SubscriptionCardProps {
@@ -20,6 +21,10 @@ interface SubscriptionCardProps {
   subscriptionType: SubscriptionType;
   userSubscribedDifferentPlan?: boolean;
   hasActiveSubscription?: boolean;
+  isSelectable: boolean;
+  isSelected?: boolean;
+  variant: "profile" | "scan-now";
+  isFreeScanUsed?: boolean;
 }
 
 const SubscriptionCard: FC<SubscriptionCardProps> = ({
@@ -33,10 +38,15 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   subscriptionType,
   userSubscribedDifferentPlan,
   hasActiveSubscription = false,
+  isSelectable,
+  isSelected,
+  variant,
+  isFreeScanUsed,
 }) => {
   const { handleSubscribe, isLoading: isSubscribing } = useSubscription();
+  const { setSelectedPlan } = useScanStepperStore();
   const button = tv({
-    base: "mt-5 mr-auto text-white",
+    base: "mr-auto text-white",
     variants: {
       type: {
         pro: "bg-secondary",
@@ -51,20 +61,27 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
       hasActiveSubscription: {
         false: "hover:scale-[1.01] hover:shadow-lg group hover:border-secondary",
       },
+      isSelected: {
+        true: "border-secondary",
+      },
     },
   });
 
   const handleSubscription = async () => {
-    if (subscriptionType === "pro") {
-      await handleSubscribe(subscriptionType);
-    }
-    if (subscriptionType === "enterprise") {
-      window.open(PAGES.CONTACT, "_blank");
+    if (isSelectable) {
+      setSelectedPlan(subscriptionType);
+    } else {
+      if (subscriptionType === "pro") {
+        await handleSubscribe(subscriptionType);
+      }
+      if (subscriptionType === "enterprise") {
+        window.open(PAGES.CONTACT, "_blank");
+      }
     }
   };
 
   return (
-    <Card className={card({ hasActiveSubscription })} isPressable onPress={handleSubscription}>
+    <Card className={card({ hasActiveSubscription, isSelected })} isPressable onPress={handleSubscription}>
       <CardBody>
         <div>
           <div className="flex justify-between items-center mb-2">
@@ -77,18 +94,34 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
             {isSubscribed && (
               <div className="bg-[#9353D333] px-2 py-1 rounded text-xs text-[#C9A9E9]">CURRENT PLAN</div>
             )}
+            {isSelectable && !isSelected && <Circle className="text-default-400" />}
+            {isSelectable && isSelected && (
+              <Image src="/svg/radio_selected.svg" alt="selected" width={23} height={23} />
+            )}
           </div>
 
-          <div className="flex items-baseline gap-1 mb-2">
+          <div className="flex items-center gap-1 mb-2">
             <span className="text-3xl font-medium">
               {subscriptionType !== "enterprise" ? `$${price}` : "Get In Touch"}
             </span>
             {subscriptionType === "pro" && <span className="text-gray-400 text-sm">/ month</span>}
+            {variant === "scan-now" && subscriptionType === "enterprise" && (
+              <Button
+                size="sm"
+                as="div"
+                isLoading={isSubscribing}
+                onPress={handleSubscription}
+                className={`${button({ type: subscriptionType })} ml-4 w-28 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
+                endContent={<ArrowUpRight />}
+              >
+                <span>Contact us</span>
+              </Button>
+            )}
           </div>
 
           <div className="text-[#A1A1AA] font-normal text-sm my-6">{description}</div>
 
-          {!isSubscribed && subscriptionType !== "free" && !userSubscribedDifferentPlan && (
+          {variant === "profile" && !isSubscribed && subscriptionType !== "free" && !userSubscribedDifferentPlan && (
             <Button
               as="div"
               isLoading={isSubscribing}
@@ -116,6 +149,15 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
           <div className="mt-6 text-[#F59E0B] text-sm flex items-center gap-2">
             <Image src="/svg/payment-circle.svg" alt="payment" width={16} height={16} />
             Next payment is on {formatDate(nextPaymentDate)}
+          </div>
+        </CardFooter>
+      )}
+
+      {isFreeScanUsed && (
+        <CardFooter>
+          <div className="mt-6 text-[#F59E0B] text-sm flex items-center gap-2">
+            <Image src="/svg/payment-circle.svg" alt="payment" width={16} height={16} />
+            Free Plan Used. Refreshes on {formatDate(nextPaymentDate)}
           </div>
         </CardFooter>
       )}

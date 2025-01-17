@@ -33,6 +33,8 @@ const SubscriptionDetails: FC = () => {
           subscriptionType={PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
           userSubscribedDifferentPlan={user.subscription.type !== "pro" && user.subscription.type !== "free"}
           hasActiveSubscription={user.subscription.type !== "free"}
+          variant="profile"
+          isSelectable={false}
         />
         <SubscriptionCard
           auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
@@ -45,6 +47,8 @@ const SubscriptionDetails: FC = () => {
           subscriptionType={ENTERPRISE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
           userSubscribedDifferentPlan={user.subscription.type !== "enterprise" && user.subscription.type !== "free"}
           hasActiveSubscription={user.subscription.type !== "free"}
+          variant="profile"
+          isSelectable={false}
         />
       </div>
 

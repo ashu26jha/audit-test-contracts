@@ -43,7 +43,12 @@ class AuditAgentService:
             is_subscription_scan = not user.is_free
 
             if not is_subscription_scan:
-                await validate_free_scan_limit(user.githubId)
+                free_scan_status = await validate_free_scan_limit(user.githubId)
+                if not free_scan_status.is_allowed:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Free scan limit reached. Please wait for the next available scan or upgrade your subscription.",
+                    )
 
             await initializer.validate_request()
 

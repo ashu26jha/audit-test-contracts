@@ -2,11 +2,15 @@ import { type FC } from "react";
 
 import { ENTERPRISE_PLAN_DETAILS, FREE_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useScanStepperStore } from "@/store/scanStepperStore";
 
 import { SubscriptionCard } from "../profile";
 
 export const SubscriptionSelection: FC = () => {
   const { user } = useAuth();
+  const { selectedPlan } = useScanStepperStore();
+  const { freeScanAllowed, nextAvailableScanDate } = useSubscription();
 
   return (
     <div className="w-full flex justify-center gap-x-4 mb-10 px-4">
@@ -16,9 +20,13 @@ export const SubscriptionSelection: FC = () => {
         price={FREE_PLAN_DETAILS.PRICE}
         description={FREE_PLAN_DETAILS.DESCRIPTION}
         features={FREE_PLAN_DETAILS.features}
-        nextPaymentDate={new Date()} // We can pass any date here because it wont be displayed
+        nextPaymentDate={nextAvailableScanDate ?? new Date()} // We are passing the next available scan date
         isSubscribed={user?.subscription.type === "free"}
         subscriptionType={FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
+        isSelectable={freeScanAllowed}
+        variant="scan-now"
+        isSelected={selectedPlan === FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
+        isFreeScanUsed={!freeScanAllowed}
       />
       <SubscriptionCard
         auditType={PRO_PLAN_DETAILS.AUDIT_TYPE}
@@ -29,6 +37,9 @@ export const SubscriptionSelection: FC = () => {
         nextPaymentDate={new Date()} // We can pass any date here because it wont be displayed
         isSubscribed={false} // This will always be false because the cards will only be shown if the user is not subscribed
         subscriptionType={PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
+        isSelectable={true}
+        isSelected={selectedPlan === PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
+        variant="scan-now"
       />
       <SubscriptionCard
         auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
@@ -39,6 +50,8 @@ export const SubscriptionSelection: FC = () => {
         nextPaymentDate={new Date()} // We can pass any date here because it wont be displayed
         isSubscribed={false} // This will always be false because the cards will only be shown if the user is not subscribed
         subscriptionType={ENTERPRISE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
+        isSelectable={false}
+        variant="scan-now"
       />
     </div>
   );

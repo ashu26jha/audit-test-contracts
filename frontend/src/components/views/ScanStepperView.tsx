@@ -37,6 +37,7 @@ const ScanStepperView: FC = () => {
     isValidURL,
     isLineExceeded,
     isFileLimitExceeded,
+    selectedPlan,
     setCurrentStep,
     setIsScanning,
     setIsNextEnabled,
@@ -45,7 +46,7 @@ const ScanStepperView: FC = () => {
   const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess, stepsData } = useScanStepper();
   const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
   const { user, refetchUser } = useAuth();
-  const { freeScanAllowed, checkIfFreeScanAllowed } = useSubscription();
+  const { freeScanAllowed, checkIfFreeScanAllowed, handleSubscribe } = useSubscription();
 
   const stepIndexIncrement = useMemo(() => {
     const isSubscribed = user?.subscription.type !== "free";
@@ -74,7 +75,13 @@ const ScanStepperView: FC = () => {
   }, [selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
 
   const isNextStepEnabled = useCallback(() => {
-    const isStep0Valid = currentStep === 0 && freeScanAllowed && user?.subscription.type === "free";
+    let isStep0Valid =
+      currentStep === 0 && selectedPlan !== null && freeScanAllowed && user?.subscription.type === "free";
+
+    if (!freeScanAllowed && selectedPlan === "pro") {
+      isStep0Valid = true;
+    }
+
     const isStep1Valid =
       currentStep === 1 && selectedOwner !== null && selectedRepo !== null && (repositoryURL === "" || isValidURL);
     const isStep2Valid = currentStep === 2 && selectedBranch !== "";
@@ -90,6 +97,7 @@ const ScanStepperView: FC = () => {
     selectedContracts,
     repositoryURL,
     isValidURL,
+    selectedPlan,
     user,
   ]);
 
@@ -129,6 +137,11 @@ const ScanStepperView: FC = () => {
   };
 
   const handleScan = async () => {
+    if (currentStep === 0 && selectedPlan === "pro") {
+      await handleSubscribe("pro");
+      return;
+    }
+
     if (currentStep + stepIndexIncrement === stepsData.length) {
       if (user?.subscription.isActive && (user?.subscription.credits === 1 || user?.subscription.credits === 0)) {
         setOpenWarningDialog(true);
@@ -195,7 +208,8 @@ const ScanStepperView: FC = () => {
               endContent={<ArrowRight size={20} />}
               onPress={handleScan}
             >
-              {currentStep + stepIndexIncrement === stepsData.length ? "Scan Code" : "Next"}
+              {currentStep === 0 && (freeScanAllowed && selectedPlan === "free" ? "Continue" : "Pay & continue")}
+              {currentStep > 0 && (currentStep + stepIndexIncrement === stepsData.length ? "Scan Code" : "Next")}
             </Button>
           </div>
         }
