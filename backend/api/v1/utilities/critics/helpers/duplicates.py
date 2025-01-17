@@ -1,6 +1,8 @@
 import json
 from typing import List
 
+from langfuse.decorators import observe
+
 from api.v1.detectors.context_scan.schema import FindingList
 from config.prompts.duplicate_prompts import DUPLICATE_PROMPT
 from config.settings import LLM_UTILITY
@@ -9,6 +11,7 @@ from core.models.scan import Finding
 from core.utils.logger import logger
 
 
+@observe(name="remove_duplicates")
 async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
     """Remove duplicate findings using LLM."""
 

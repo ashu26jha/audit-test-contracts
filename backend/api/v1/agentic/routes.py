@@ -25,7 +25,6 @@ async def scan_per_address(
     Args:
         contractAddress (str): The address of the contract to scan
         chainID (int): The chain ID of the contract to scan
-        contractFiles (List[str]): The files to scan
 
     Returns:
         scan_id (UUID): Unique identifier for the scan

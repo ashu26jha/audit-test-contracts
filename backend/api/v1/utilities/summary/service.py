@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from fastapi import HTTPException
+from langfuse.decorators import observe
 
 from api.v1.utilities.summary.schema import SummaryResponse
 from config.prompts.summary_prompts import SUMMARY_PROMPT
@@ -9,6 +10,7 @@ from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
 
 
+@observe(name="summary_generation")
 async def generate_summary(contracts: str) -> Tuple[str, str]:
     logger.info("[Summary] Starting summary generation task...")
     try:

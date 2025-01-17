@@ -1,3 +1,4 @@
+# pylint: disable=unnecessary-pass
 """
 Custom exceptions for the Audit Agent application.
 These exceptions represent different types of errors that can occur during the audit process.

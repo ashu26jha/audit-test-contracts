@@ -8,7 +8,7 @@ from core.models.scan import CodeAnalysisResult, Scan, ScanResult
 from core.utils.profiles import Profiles
 
 
-class ScanInitializer:
+class AgenticScanInitializer:
     def __init__(
         self,
         request: PerAddressAgenticRequest,

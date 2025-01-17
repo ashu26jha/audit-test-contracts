@@ -38,7 +38,6 @@ async def send_prompt_to_llm_async(
     model_type: str,
     messages: Union[str, List[Message]],
     response_model: Optional[Type[T]] = None,
-    langfuse_parent_trace_id: Optional[str] = None,
 ) -> Optional[T]:
     """
     Send pre-formatted messages to the specified LLM model asynchronously.
@@ -52,11 +51,6 @@ async def send_prompt_to_llm_async(
     Returns:
         Optional[T]: The structured response from the LLM.
     """
-    parent_trace = langfuse_parent_trace_id
-    if parent_trace:
-        langfuse_context.update_current_trace(
-            metadata={"parent_trace_id": parent_trace}, tags=["subprocess", model_type]
-        )
 
     try:
         async with GLOBAL_SEMAPHORE:

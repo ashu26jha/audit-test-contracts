@@ -337,14 +337,12 @@ class TaskManager:
             logger.info(
                 f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
             )
-            trace_id = langfuse_context.get_current_trace_id()
             response_dicts = await self.process_pool.run_in_process(
                 run_context_scan_batch,
                 self.flattened_contracts,
                 self.summary_result,
                 self.docs,
                 batch_configs,
-                trace_id,
             )
             return response_dicts
         except Exception as e:

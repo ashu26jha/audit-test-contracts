@@ -4,7 +4,7 @@ from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.agentic.helpers.result_processor import ResultProcessor
-from api.v1.agentic.helpers.scan_initializer import ScanInitializer
+from api.v1.agentic.helpers.scan_initializer import AgenticScanInitializer
 from api.v1.agentic.helpers.task_manager import TaskManager
 from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
 from core.db.repositories.scan import ScanRepository
@@ -25,12 +25,12 @@ class AgenticService:
 
         # TODO: Add logic to fetch contract code from address
         # TODO: Add logic to remove libraries from contract code
-        initializer = ScanInitializer(request, scan_id)
+        initializer = AgenticScanInitializer(request, scan_id)
 
         try:
             # Create scan record
             scan_number = await Scan.get_next_agentic_scan_number(request.contractAddress)
-            await initializer.create_agentic_scan_record(scan_number)
+            await initializer.create_agentic_scan_record(scan_number or 1)
 
             # Create agentic scan context
             context = AgenticScanContext(
@@ -85,7 +85,7 @@ class AgenticService:
             result_processor = ResultProcessor(
                 context=context,
                 combined_findings=combined_findings,
-                flattened_contracts="flattened_contracts",
+                flattened_contracts=context.flattened_contracts,
                 summary_result=summary_result,
                 detected_type=detected_type,
             )

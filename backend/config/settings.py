@@ -111,3 +111,11 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
 MAX_RETRIES = 3
 DELAY = 2
+
+##################################################
+#                  LANGFUSE
+##################################################
+
+LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
+LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
+LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")

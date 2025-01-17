@@ -1,6 +1,8 @@
 import asyncio
 from typing import List
 
+from langfuse.decorators import observe
+
 from api.v1.detectors.context_scan.schema import FindingList
 from api.v1.detectors.static_analyzer.schema import TransformedSlitherResult
 from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
@@ -20,6 +22,7 @@ SEVERITY_TO_SLITHER = {
 }
 
 
+@observe(name="improve_slither_findings")
 async def improve_slither_findings(
     findings: List[TransformedSlitherResult],
 ) -> List[TransformedSlitherResult]:

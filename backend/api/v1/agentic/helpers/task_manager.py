@@ -126,10 +126,8 @@ class TaskManager:
                     logger.info(
                         f"Starting batch {batch_num} with models: {[c['model'] for c in batch]}"
                     )
-                    # Create task and monitor task for the batch
                     task = asyncio.create_task(self.run_context_scan_with_batch(batch))
-                    monitor_task = asyncio.create_task(self._monitor_batch_task(task, batch))
-                    tasks.extend([task, monitor_task])
+                    tasks.append(task)
 
             # Wait for all tasks to complete
             await asyncio.gather(*tasks, return_exceptions=True)
@@ -221,12 +219,6 @@ class TaskManager:
         # Cancel context scan tasks
         for task in self.context_scan_tasks:
             await safe_cancel(task, "context_scan")
-
-        # Cancel static analysis task
-        await safe_cancel(self.static_analysis_task, "static_analyzer")
-
-        # Cancel fuzzing task
-        await safe_cancel(self.fuzzing_task, "fuzzer")
 
         # Log any cleanup errors
         if cleanup_errors:

@@ -10,17 +10,13 @@ class PerAddressAgenticRequest(BaseModel):
 
     contractAddress: str = Field(..., description="Contract address to scan")
     chainID: int = Field(..., description="Chain ID to scan")
-    contractFiles: List[str] = Field(
-        ...,
-        description="Array of relative file paths within the repository (e.g., 'contracts/MyContract.sol')",
-    )
 
     @field_validator("contractAddress")
     @classmethod
     def validate_ethereum_address(cls, value):
         if not Web3.is_address(value):  # Ensures it's a valid Ethereum address
             raise ValueError("Invalid Ethereum address format")
-        return Web3.toChecksumAddress(value)  # Convert to checksum format
+        return Web3.to_checksum_address(value)
 
 
 class PerAddressAgenticResponse(BaseModel):

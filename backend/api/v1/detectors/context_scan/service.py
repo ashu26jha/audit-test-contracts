@@ -17,13 +17,13 @@ from core.utils.retry_helper import retry_async_operation
 _prompt_builder = PromptBuilder()
 
 
+@observe(name="context_scan")
 async def run_context_scan(
     contracts: str,
     summary: Optional[str],
     docs: Optional[str],
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_1,
-    langfuse_parent_trace_id: Optional[str] = None,
 ) -> dict:
     try:
         # Build context scan specific prompt
@@ -48,7 +48,6 @@ async def run_context_scan(
             model_type=model,
             messages=messages,
             response_model=ContextScanResponse,
-            langfuse_parent_trace_id=langfuse_parent_trace_id,
         )
         elapsed = time.time() - start_time
 
@@ -70,13 +69,11 @@ async def run_context_scan(
         return {"findings": []}
 
 
-@observe(name="context_scan_batch")
 async def run_context_scan_batch(
     contracts: str,
     summary: Optional[str],
     docs: Optional[str],
     batch_configs: List[Dict],
-    trace_id: Optional[str] = None,
 ) -> List[dict]:
     """Run multiple context scans in a batch"""
     try:
@@ -88,7 +85,6 @@ async def run_context_scan_batch(
                 docs,
                 config["profile"],
                 config["model"],
-                langfuse_parent_trace_id=trace_id,
             )
             tasks.append(task)
 
