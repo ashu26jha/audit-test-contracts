@@ -7,6 +7,7 @@ from api.v1.agentic.helpers.result_processor import ResultProcessor
 from api.v1.agentic.helpers.scan_initializer import AgenticScanInitializer
 from api.v1.agentic.helpers.task_manager import TaskManager
 from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
+from api.v1.utilities.pdf.service import generate_pdf_from_scan
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Scan
 from core.utils.email_utils import send_error_email
@@ -100,6 +101,11 @@ class AgenticService:
             )
 
             # TODO: Generate PDF and send back to ELIZA BOT
+            # Generate PDF without blocking scan completion
+            if TWITTER_BOT_EMAIL:
+                await generate_pdf_from_scan(None, context.scan_id, TWITTER_BOT_EMAIL)
+            else:
+                logger.warning(f"User {context.user_id} does not have an email address.")
 
             logger.info(f"Completed agentic audit scan with ID: {context.scan_id}")
         except HTTPException as e:

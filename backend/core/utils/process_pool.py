@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import inspect
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
@@ -73,6 +74,7 @@ class ProcessPoolManager:
                 # Keep 2 workers for CPU-intensive tasks (context scans, setup)
                 workers = 2
                 env_type = "production" if os.environ.get("GUNICORN_WORKER") else "development"
+                logger.info(f"Max available workers: {multiprocessing.cpu_count()}")
                 logger.info(
                     f"Initializing ProcessPool with {workers} workers for CPU tasks in {env_type} mode"
                 )
