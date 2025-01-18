@@ -206,7 +206,7 @@ class UserRepository:
             raise HTTPException(status_code=500, detail="Failed to deactivate subscription") from e
 
     @staticmethod
-    async def renew_subscription_credits(user: User) -> User:
+    async def renew_subscription_credits(user: User, expire: int) -> User:
         """
         Renew subscription credits for the current billing period.
         """
@@ -222,7 +222,7 @@ class UserRepository:
                 "$set": {
                     "subscription.credits": subscription["monthly_credits"],
                     "subscription.lastRenewalAt": now,
-                    "subscription.expiresAt": now + subscription["credit_expiry_period"],
+                    "subscription.expiresAt": datetime.fromtimestamp(expire, timezone.utc),
                 }
             }
 

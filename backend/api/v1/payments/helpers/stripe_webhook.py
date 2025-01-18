@@ -102,13 +102,11 @@ class StripeWebhookHelper:
             if subscription_type not in SUBSCRIPTION_SETTINGS:
                 logger.error(f"Invalid subscription type: {subscription_type}")
                 return
-
             # Check if we already have this subscription
             existing_subscription = await UserRepository.get_by_subscription_id(subscription_id)
             if existing_subscription:
                 logger.info(f"Subscription {subscription_id} already processed")
                 return
-
             # Find user using utility function
             user = await find_user(
                 customer_id=customer_id, subscription_id=subscription_id, user_id=user_id
@@ -147,6 +145,7 @@ class StripeWebhookHelper:
         invoice = event["data"]["object"]
         subscription_id = invoice.get("subscription")
         customer_id = invoice.get("customer")
+        expire = invoice["lines"]["data"][0]["period"]["end"]
 
         if not subscription_id or not customer_id:
             logger.error(StripeWebhookHelper.ERROR_MESSAGES["MISSING_DATA"])
@@ -172,7 +171,7 @@ class StripeWebhookHelper:
             await sync_stripe_metadata(subscription_id, user.githubId, subscription_type)
 
             # Renew subscription credits
-            await UserRepository.renew_subscription_credits(user)
+            await UserRepository.renew_subscription_credits(user, expire)
             logger.info(f"Subscription renewed for user {user.githubId}")
 
         except Exception as e:
