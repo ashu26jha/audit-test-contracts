@@ -9,7 +9,7 @@ env:
   DOCKER_REGISTRY: nethermind.jfrog.io
   JFROG_REPOSITORY: kyoto-oci-local-staging
   AGENT_NAME: code-auditor-frontend
-  NEXT_PUBLIC_API_URL: https://api.audit-agent.kyoto-audit.staging-nethermind.xyz 
+  NEXT_PUBLIC_API_URL: https://api.auditagent.staging-nethermind.xyz
   NEXT_PUBLIC_GITHUB_APP_URL: https://github.com/apps/auditagent-staging/installations/new
 
 
