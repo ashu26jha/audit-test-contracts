@@ -126,13 +126,17 @@ class StripeWebhookHelper:
                 customer_id,
             )
 
-            # Update scan if present
+            # Update scan if present and valid UUID
             if scan_id:
-                await StripeWebhookHelper.scan_repo.update_scan_paid_status(
-                    UUID(scan_id), True, True
-                )
-                await PaymentRepository.update_subscription_payment(UUID(scan_id), user_id)
-                logger.info(f"Updated scan {scan_id} payment status")
+                try:
+                    scan_uuid = UUID(scan_id)
+                    await StripeWebhookHelper.scan_repo.update_scan_paid_status(
+                        scan_uuid, True, True
+                    )
+                    await PaymentRepository.update_subscription_payment(scan_uuid, user_id)
+                    logger.info(f"Updated scan {scan_id} payment status")
+                except ValueError:
+                    logger.error(f"Invalid scan ID format: {scan_id}")
 
             logger.info(f"Subscription created for user {user.githubId}")
 
@@ -269,13 +273,17 @@ class StripeWebhookHelper:
                 customer_id,
             )
 
-            # Update scan if present
+            # Update scan if present and valid UUID
             if scan_id:
-                await StripeWebhookHelper.scan_repo.update_scan_paid_status(
-                    UUID(scan_id), True, True
-                )
-                await PaymentRepository.update_subscription_payment(UUID(scan_id), user_id)
-                logger.info(f"Updated scan {scan_id} payment status")
+                try:
+                    scan_uuid = UUID(scan_id)
+                    await StripeWebhookHelper.scan_repo.update_scan_paid_status(
+                        scan_uuid, True, True
+                    )
+                    await PaymentRepository.update_subscription_payment(scan_uuid, user_id)
+                    logger.info(f"Updated scan {scan_id} payment status")
+                except ValueError:
+                    logger.error(f"Invalid scan ID format: {scan_id}")
 
             logger.info(f"Subscription updated for user {user.githubId} - Status: {status}")
 

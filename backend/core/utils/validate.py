@@ -127,3 +127,23 @@ async def validate_subscription_limits(user_id: str, contract_files: List[str], 
         raise HTTPException(
             status_code=400, detail=f"Maximum {limits['max_loc']} lines of code allowed"
         )
+
+
+def is_valid_eth_address(address: str) -> bool:
+    """Validates basic Ethereum address format.
+
+    Only checks if the address:
+    1. Starts with '0x'
+    2. Is followed by 40 hexadecimal characters
+    3. Has total length of 42 characters
+    """
+    # Check if it's a string and has basic format (0x followed by 40 chars)
+    if not isinstance(address, str) or not address.startswith("0x") or len(address) != 42:
+        return False
+
+    # Check if all characters after 0x are valid hex
+    try:
+        int(address[2:], 16)
+        return True
+    except ValueError:
+        return False

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import aiohttp
 from fastapi import HTTPException
 
@@ -18,7 +16,7 @@ class EtherscanService:
     async def get_contract_source(
         contract_address: str,
         chain_id: int,
-    ) -> Optional[ContractSourceCodeResponse]:
+    ) -> ContractSourceCodeResponse:
         """
         Fetch smart contract source code from Etherscan using v2 API
 
@@ -27,7 +25,10 @@ class EtherscanService:
             chain_id: Chain ID
 
         Returns:
-            ContractSourceCodeResponse: Mapping of .sol file names to their content, or None if failed
+            ContractSourceCodeResponse: Mapping of .sol file names to their content
+
+        Raises:
+            HTTPException: If there is an error fetching or parsing the source code
         """
         try:
             logger.info(
@@ -46,7 +47,10 @@ class EtherscanService:
                 async with session.get(BASE_ETHERSCAN_URL, params=params) as response:
                     if response.status != 200:
                         logger.error(f"[Etherscan] Etherscan API error: {response.status}")
-                        return None
+                        raise HTTPException(
+                            status_code=response.status,
+                            detail=f"Etherscan API returned status {response.status}",
+                        )
 
                     data = await response.json()
 
@@ -54,7 +58,10 @@ class EtherscanService:
                         logger.error(
                             f"[Etherscan] Etherscan API error: {data.get('message', 'Unknown error')}"
                         )
-                        return None
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Etherscan API error: {data.get('message', 'Unknown error')}",
+                        )
 
                     result = data["result"][0]
 
@@ -73,6 +80,8 @@ class EtherscanService:
                         f"[Etherscan] Source code fetched and cleaned for contract {contract_address}"
                     )
                     return cleaned_source_code
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(f"[Etherscan] Error fetching contract source code: {str(e)}")
             raise HTTPException(

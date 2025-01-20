@@ -45,6 +45,8 @@ Copy the `.env.example` file to `.env` and set the following variables:
 
 ```bash
 ADMIN_API_KEY="Use the same value defined in the frontend"
+AGENTIC_API_KEY="Your_agentic_api_key" # Only needed for Agentic scans
+ETHERSCAN_API_KEY="Your_etherscan_api_key" # Only needed for Agentic scans
 SECRET_KEY="Any key for JWT token"
 
 # For AI services
@@ -52,12 +54,12 @@ OPENAI_API_KEY="Your_openai_api_key"
 ANTHROPIC_API_KEY="Your_anthropic_api_key"
 GEMINI_API_KEY="Your_gemini_api_key"
 
-# For Langfuse monitoring
+# For Langfuse monitoring (Ask for the keys)
 LANGFUSE_SECRET_KEY="Your_langfuse_secret_key"
 LANGFUSE_PUBLIC_KEY="Your_langfuse_public_key"
 LANGFUSE_HOST="Your_langfuse_host"
 
-# Create a MongoDB and get the URL
+# Create a MongoDB and get the URL (Create your own to mess with)
 MONGODB_URL="Your_mongodb_url"
 
 # Create a Github app and get the client ID and secret
@@ -81,8 +83,15 @@ SMTP_PASSWORD=
 ## How to run the backend separately
 
 ### Install dependencies:
+
+For production environment:
 ```bash
 pip install -r requirements.txt
+```
+
+For development environment (includes testing and linting tools):
+```bash
+pip install -r requirements.dev.txt
 ```
 
 ### Run the server
@@ -117,9 +126,15 @@ To run the test suite (Make sure you have launched the local development server)
 pytest backend/tests/ -v
 ```
 
-To run the test setup environment (Add repos as needed into `repo_samples.py` file):
+To run the test setup environment only (Add repos as needed into `repo_samples.py` file):
 ```bash
 pytest backend/tests/setup_environment/test_setup_environment.py -v
+```
+
+To run the hypothesis tests only:
+
+```bash
+pytest backend/tests/test_schemathesis.py -v
 ```
 
 To run tests with coverage:

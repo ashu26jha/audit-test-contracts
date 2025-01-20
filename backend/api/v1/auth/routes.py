@@ -93,7 +93,7 @@ async def logout(request: Request):
     return response
 
 
-@router.get(
+@router.post(
     "/test-auth/token", response_model=Union[SuccessResponse[TestAuthResponse], ErrorResponse]
 )
 async def test_auth(request: UsernameRequest):

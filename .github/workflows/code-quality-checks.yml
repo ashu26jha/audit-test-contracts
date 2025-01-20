@@ -22,7 +22,7 @@ jobs:
       run:
         working-directory: backend
     env:
-      ENVIRONMENT: 'test'
+      ENVIRONMENT: 'development'
       ADMIN_API_KEY: 'test-admin-api-key'
       OPENAI_API_KEY: 'test-openai-api-key'
       GEMINI_API_KEY: 'test-gemini-api-key'
@@ -50,7 +50,7 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -r requirements.dev.txt
         pip install black isort flake8 pytest
 
     - name: Run Black
@@ -64,6 +64,9 @@ jobs:
 
     - name: Run Tests
       run: pytest
+      env:
+        CI: "true"  # This will set VCR to 'none' mode
+        VCR_RECORD_MODE: "none"  # Explicit setting for VCR
 
   frontend-checks:
     runs-on: ubuntu-latest

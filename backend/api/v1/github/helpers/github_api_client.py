@@ -125,9 +125,23 @@ class GitHubAPIClient:
         Raises:
             HTTPException: On API errors or invalid responses
         """
-        headers = self._create_headers(access_token)
-        sanitized_endpoint = self._sanitize_endpoint(endpoint)
+        # First sanitize the endpoint parts to handle invalid characters
+        endpoint_parts = endpoint.split("/")
+        safe_endpoint_parts = [re.sub(r"[^\x20-\x7E]", "", part) for part in endpoint_parts]
+        sanitized_endpoint = "/".join(safe_endpoint_parts)
+
+        # Then apply our standard endpoint sanitization
+        sanitized_endpoint = self._sanitize_endpoint(sanitized_endpoint)
         url = urljoin(f"{GITHUB_API_URL}/", sanitized_endpoint)
+
+        headers = self._create_headers(access_token)
+
+        # Sanitize query parameters if they exist
+        if params:
+            params = {
+                k: re.sub(r"[^\x20-\x7E]", "", str(v)) if isinstance(v, str) else v
+                for k, v in params.items()
+            }
 
         response = await self.client.get(url, headers=headers, params=params)
         await self._handle_response(response, f"Failed to fetch data from {sanitized_endpoint}")

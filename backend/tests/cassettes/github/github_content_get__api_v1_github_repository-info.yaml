@@ -1,0 +1,100 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/vnd.github.v3+json
+      accept-encoding:
+      - gzip, deflate, br
+      connection:
+      - keep-alive
+      host:
+      - api.github.com
+      user-agent:
+      - python-httpx/0.27.2
+    method: GET
+    uri: https://api.github.com/repos/test-owner/test-repo
+  response:
+    body:
+      string: '{"message":"Bad credentials","documentation_url":"https://docs.github.com/rest","status":"401"}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining,
+        X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes,
+        X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO,
+        X-GitHub-Request-Id, Deprecation, Sunset
+      Content-Length:
+      - '95'
+      Content-Security-Policy:
+      - default-src 'none'
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Sun, 19 Jan 2025 09:02:40 GMT
+      Referrer-Policy:
+      - origin-when-cross-origin, strict-origin-when-cross-origin
+      Server:
+      - github.com
+      Strict-Transport-Security:
+      - max-age=31536000; includeSubdomains; preload
+      Vary:
+      - Accept-Encoding, Accept, X-Requested-With
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - deny
+      X-GitHub-Media-Type:
+      - github.v3; format=json
+      X-GitHub-Request-Id:
+      - F436:10A41C:13880:197B7:678CBFB0
+      X-RateLimit-Limit:
+      - '60'
+      X-RateLimit-Remaining:
+      - '0'
+      X-RateLimit-Reset:
+      - '1737277824'
+      X-RateLimit-Resource:
+      - core
+      X-RateLimit-Used:
+      - '72'
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, br
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - testserver
+      user-agent:
+      - schemathesis/3.39.5
+      x-api-key:
+      - sk-test-key
+      x-schemathesis-testcaseid:
+      - iwkPHD
+    method: GET
+    uri: http://testserver/api/v1/github/repository-info?repo_url=https%3A%2F%2Fgithub.com%2Ftest-owner%2Ftest-repo
+  response:
+    body:
+      string: '{"success":false,"code":401,"message":"Unauthorized access. Access
+        token required.","details":null}'
+    headers:
+      content-length:
+      - '99'
+      content-type:
+      - application/json
+    status:
+      code: 401
+      message: Unauthorized
+version: 1

@@ -1,0 +1,34 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, br
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - testserver
+      user-agent:
+      - schemathesis/3.39.5
+      x-api-key:
+      - sk-test-key
+      x-schemathesis-testcaseid:
+      - JPyaY6
+    method: GET
+    uri: http://testserver/api/v1/github/organizations
+  response:
+    body:
+      string: '{"success":false,"code":401,"message":"No token found","details":null}'
+    headers:
+      content-length:
+      - '70'
+      content-type:
+      - application/json
+    status:
+      code: 401
+      message: Unauthorized
+version: 1

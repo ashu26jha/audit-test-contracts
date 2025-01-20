@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.models.docs import QAResponse
 
@@ -48,8 +48,7 @@ class ScanContext(BaseModel):
     is_subscription_scan: bool = False
     formatted_docs: Optional[str] = None
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class AuditAgentInitiateResponse(BaseModel):

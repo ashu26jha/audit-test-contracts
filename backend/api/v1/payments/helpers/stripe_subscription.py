@@ -26,7 +26,11 @@ class StripeSubscriptionHelper:
 
         # Check if the scan exists and belongs to the user
         if scan_id:
-            await validate_user_scan_access(UUID(scan_id), user)
+            try:
+                scan_uuid = UUID(scan_id)
+                await validate_user_scan_access(scan_uuid, user)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail="Invalid scan ID format") from e
 
         subscription = SUBSCRIPTION_SETTINGS[subscription_type]
 

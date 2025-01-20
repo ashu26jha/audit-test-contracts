@@ -1,6 +1,8 @@
 from typing import Dict, List
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from core.utils.validate import is_valid_eth_address
 
 
 class GetContractSourceCodeRequest(BaseModel):
@@ -9,6 +11,13 @@ class GetContractSourceCodeRequest(BaseModel):
     contractAddress: str = Field(..., description="Contract address to fetch source code for")
     chainId: int = Field(None, description="Chain ID of the network")
     userEmail: str = Field(None, description="User email to send the source code to")
+
+    @field_validator("contractAddress")
+    @classmethod
+    def validate_ethereum_address(cls, value: str) -> str:
+        if not is_valid_eth_address(value):
+            raise ValueError("Invalid Ethereum address format")
+        return value
 
 
 class RemoveLibraryResponse(BaseModel):

@@ -58,6 +58,16 @@ class Payment(Document):
     def ensure_utc(cls, v):
         return ensure_utc_datetime(v)
 
+    @field_validator("scan_id", mode="before")
+    @classmethod
+    def validate_uuid(cls, v):
+        if isinstance(v, str):
+            try:
+                return UUID(v)
+            except ValueError as e:
+                raise ValueError("Invalid UUID format for scan_id") from e
+        return v
+
     class Settings:
         name = "payments"
         validate_on_save = True

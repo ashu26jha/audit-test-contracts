@@ -50,9 +50,7 @@ class Finding(BaseModel):
         # Use the centralized Severity enum
         return Severity.from_str(v).value
 
-    class Config:
-        # Allow population by field name for backward compatibility
-        populate_by_name = True
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class CodeAnalysisResult(BaseModel):
