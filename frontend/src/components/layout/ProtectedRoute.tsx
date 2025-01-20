@@ -30,7 +30,7 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({ children }) => {
     return null;
   }
 
-  return <>{children}</>;
+  return children;
 };
 
 ProtectedRoute.displayName = "ProtectedRoute";

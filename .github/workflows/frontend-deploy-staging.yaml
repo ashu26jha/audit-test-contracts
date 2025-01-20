@@ -10,7 +10,7 @@ env:
   ECS_CLUSTER: code-auditor-ecs-cluster
   CONTAINER_NAME: code-auditor-frontend
   TASK_NAME: code-auditor-frontend-app
-  NEXT_PUBLIC_API_URL: "https://api.auditagent.nethermind.dev"
+  NEXT_PUBLIC_API_URL: "https://api.audit-agent.kyoto-audit.staging-nethermind.xyz"
   NEXT_PUBLIC_GITHUB_APP_URL: "https://github.com/apps/auditagent-staging/installations/new"
 
 permissions:
