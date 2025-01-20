@@ -65,3 +65,12 @@ def get_api_key(x_api_key: str = Header(...)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authorized",
         )
+
+
+def get_agentic_api_key(x_api_key: str = Header(...)):
+    if x_api_key != settings.AGENTIC_API_KEY:
+        logger.warning(f"Unauthorized access attempt with API key: {x_api_key}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authorized",
+        )

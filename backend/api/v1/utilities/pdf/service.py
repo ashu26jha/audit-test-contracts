@@ -76,7 +76,7 @@ async def generate_pdf_from_scan(user: Optional[User], scan_id: str, email: Opti
                     scan.linesOfCode.total_lines,
                     scan.scan_number,
                     scan_id,
-                    user.email,
+                    recipient_email,
                 )
                 success = await asyncio.wait_for(task, timeout=300)  # 5 minutes timeout
 
@@ -85,9 +85,9 @@ async def generate_pdf_from_scan(user: Optional[User], scan_id: str, email: Opti
                         status_code=500, detail="Failed to generate and send PDF report"
                     )
 
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
                 logger.error(f"PDF generation and email sending timed out for scan ID: {scan_id}")
-                raise HTTPException(status_code=500, detail="Operation timed out")
+                raise HTTPException(status_code=500, detail="Operation timed out") from e
 
     except HTTPException:
         raise

@@ -4,11 +4,11 @@ from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.audit_agent.helpers.payment_handler import PaymentHandler
-from api.v1.audit_agent.helpers.result_processor import ResultProcessor
 from api.v1.audit_agent.helpers.scan_initializer import ScanInitializer
 from api.v1.audit_agent.helpers.task_manager import TaskManager
 from api.v1.audit_agent.schema import AuditAgentRequest, ScanContext
 from api.v1.common.docs_helpers import format_docs_for_prompt
+from api.v1.common.result_processor import ResultProcessor
 from api.v1.common.setup_environment import cleanup_environment, setup_environment
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
@@ -207,7 +207,9 @@ class AuditAgentService:
 
             # Process results using ResultProcessor
             result_processor = ResultProcessor(
-                context=context,
+                scan_id=context.scan_id,
+                user_id=context.user_id,
+                contract_files=context.contract_files,
                 combined_findings=combined_findings,
                 flattened_contracts=flattened_contracts,
                 summary_result=summary_result,

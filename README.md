@@ -65,7 +65,6 @@ Refer to the complete list of frontend environment variables in [here](./fronten
 ```bash
 ENVIRONMENT=development
 FRONTEND_URL=http://localhost:3000
-BASE_URL=http://localhost:8000
 COOKIE_DOMAIN=localhost
 ...
 ```

@@ -3,8 +3,6 @@ import gc
 from http.client import HTTPException
 from typing import Any, Dict, List, Optional, TypedDict
 
-from langfuse.decorators import langfuse_context
-
 from api.v1.audit_agent.schema import ScanContext
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 
@@ -22,7 +20,6 @@ from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
-CONTEXT_SCANS_TIMEOUT = 300  # 10 minutes per context scan
 
 # Progress stage weights
 PRE_DETECTOR_WEIGHT = 25  # Setup, cloning, etc. (0-25%)

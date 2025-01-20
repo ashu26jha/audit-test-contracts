@@ -6,13 +6,14 @@ load_dotenv()
 
 TITLE = "AuditAgent - APIs"
 DESCRIPTION = "API for auditing smart contracts and detecting vulnerabilities"
-VERSION = "0.3.0"
+VERSION = "1.0.0"
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")
-BASE_URL: str = os.getenv("BASE_URL")
 COOKIE_DOMAIN: str = os.getenv("COOKIE_DOMAIN")
 ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY")
+AGENTIC_API_KEY: str = os.getenv("AGENTIC_API_KEY")
+
 
 ##################################################
 #                 LLMs CONFIG
@@ -54,6 +55,8 @@ TOKENS_ENCODING = "cl100k_base"
 
 # Specify the temperature for the LLM - From 0.0 to 1.0
 TEMPERATURE = 0.3
+MAX_RETRIES = 3
+DELAY = 2
 
 
 ##################################################
@@ -64,6 +67,7 @@ STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
 STRIPE_WEBHOOK_KEY = os.getenv("STRIPE_WEBHOOK_SECRET")
 STRIPE_ENTERPRISE_PRICE_ID = os.getenv("STRIPE_ENTERPRISE_PRICE_ID")
 STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
+
 
 ##################################################
 #                   MONGODB
@@ -89,12 +93,6 @@ GITHUB_APP_URL: str = (
     f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=user:email"
 )
 
-##################################################
-#                   SLACK
-##################################################
-
-SLACK_TOKEN = os.getenv("SLACK_TOKEN")
-
 
 ##################################################
 #                   EMAIL
@@ -105,12 +103,6 @@ SMTP_PORT = os.getenv("SMTP_PORT", "587")
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
-##################################################
-#                   RETRIES
-##################################################
-
-MAX_RETRIES = 3
-DELAY = 2
 
 ##################################################
 #                  LANGFUSE
@@ -119,3 +111,18 @@ DELAY = 2
 LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")
 LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")
 LANGFUSE_HOST = os.getenv("LANGFUSE_HOST")
+
+
+##################################################
+#                  ETHERSCAN
+##################################################
+
+ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY")
+BASE_ETHERSCAN_URL = "https://api.etherscan.io/v2/api"
+
+
+##################################################
+#               SLACK (Optional)
+##################################################
+
+SLACK_TOKEN = os.getenv("SLACK_TOKEN")

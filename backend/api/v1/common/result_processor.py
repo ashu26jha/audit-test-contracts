@@ -1,7 +1,7 @@
 import gc
-from typing import List
+from typing import List, Optional
+from uuid import UUID
 
-from api.v1.audit_agent.schema import ScanContext
 from api.v1.common import contract_utils
 from api.v1.utilities.critics.service import CriticService
 from core.db.repositories.scan import ScanRepository
@@ -13,17 +13,19 @@ from core.utils.profiles import Profiles
 class ResultProcessor:
     def __init__(
         self,
-        context: ScanContext,
+        scan_id: UUID,
+        user_id: Optional[str],  # Optional because agentic scans don't have a user_id
+        contract_files: List[str],
         combined_findings: List[Finding],
         flattened_contracts: str,
         summary_result: str,
         detected_type: Profiles,
     ):
-        self.scan_id = context.scan_id
-        self.user_id = context.user_id
+        self.scan_id = scan_id
+        self.user_id = user_id
         self.combined_findings: List[Finding] = []  # Initialize empty
         self.findings_before_removal = combined_findings  # Store initial findings
-        self.selected_contracts = context.contract_files
+        self.selected_contracts = contract_files
         self.flattened_contracts = flattened_contracts
         self.summary_result = summary_result
         self.detected_type = detected_type
@@ -38,15 +40,20 @@ class ResultProcessor:
         logger.logger.info(
             f"Filtered out {initial_count - len(self.findings_before_removal)} findings that didn't match selected contracts"
         )
+        await ScanRepository.update_scan_progress(self.scan_id, 80)
 
-        # 2. Perform deduplication and mitigation
+        # 2. Perform deduplication
         self.combined_findings = await CriticService.remove_duplicates(self.findings_before_removal)
+        await ScanRepository.update_scan_progress(self.scan_id, 90)
 
         # 3. Perform mitigation
         self.combined_findings = await CriticService.mitigate_findings(
             findings=self.combined_findings,
             flattened_contracts=self.flattened_contracts,
         )
+        await ScanRepository.update_scan_progress(self.scan_id, 100)
+
+        # Clear memory
         self.flattened_contracts = None
         gc.collect()
 

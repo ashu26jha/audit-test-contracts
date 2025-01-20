@@ -75,11 +75,12 @@ class Scan(Document):
     """
     Main scan document model for database storage.
     Handles scan metadata, progress tracking, and results management.
+    Can store both GitHub repository scans and contract address scans.
     """
 
     scan_id: UUID = Field(default_factory=uuid4, description="Unique identifier for the scan")
     scan_number: int = Field(default=0, description="Sequential number for user's scans")
-    user_id: str = Indexed(description="GitHub ID of the user who initiated the scan")
+    user_id: str = Indexed(description="GitHub ID or email of the user who initiated the scan")
     status: str = Field(..., description="Current status of the scan")
     startedAt: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), description="When the scan was started"
@@ -92,6 +93,9 @@ class Scan(Document):
     repositoryURL: Optional[str] = Field(None, description="URL of the GitHub repository")
     repositoryName: Optional[str] = Field(None, description="Name of the repository")
     branchName: str = Field(default="main", description="Branch being scanned")
+    contract_address: Optional[str] = Field(None, description="Contract address for agentic scans")
+    chain_id: Optional[str] = Field(None, description="Chain ID for agentic scans")
+    scan_type: Optional[str] = Field(None, description="Type of scan for agentic scans")
     commitHash: Optional[str] = Field(None, description="Commit hash being scanned")
     paid_status: bool = Field(default=False, description="Whether the scan has been paid for")
     discount_applied: bool = Field(default=False, description="Whether a discount was applied")
@@ -167,7 +171,7 @@ class Scan(Document):
     async def get_next_agentic_scan_number(cls, contract_address: str) -> int:
         """Get the next sequential scan number for a user."""
         last_scan = (
-            await cls.find(cls.contract_address == contract_address)
+            await cls.find(cls.repositoryURL == contract_address)
             .sort("-scan_number")
             .limit(1)
             .to_list()

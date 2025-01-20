@@ -33,6 +33,7 @@ jobs:
       GITHUB_CLIENT_SECRET: 'testclientsecret'
       STRIPE_API_KEY: 'teststripeapikey'
       STRIPE_WEBHOOK_SECRET: 'teststripewebhooksecret'
+      ETHERSCAN_API_KEY: 'testetherscanapikey'
     steps:
     - uses: actions/checkout@v4
       with:

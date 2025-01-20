@@ -86,11 +86,18 @@ class PromptBuilder:
     ) -> str:
         """Build the context scan specific prompt"""
         template = self._prompt_templates["with_docs" if docs else "without_docs"]
-        clean_docs = docs.replace("```", "") if docs else None
+
+        if docs:
+            clean_docs = docs.replace("```", "")
+
+            return template.format(
+                summary=summary,
+                docs=clean_docs,
+                flattened_contracts=contracts,
+            )
 
         return template.format(
             summary=summary,
-            docs=clean_docs,
             flattened_contracts=contracts,
         )
 

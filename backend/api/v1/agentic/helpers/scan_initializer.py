@@ -14,12 +14,12 @@ class AgenticScanInitializer:
         request: PerAddressAgenticRequest,
         scan_id: UUID,
     ):
-        self.scan_id = scan_id
-        self.chain_id = request.chainID
+        self.contract_files = []
         self.contract_address = request.contractAddress
-        self.contract_files = request.contractFiles
+        self.chain_id = request.chainId
+        self.scan_id = scan_id
+        self.user_id = request.userEmail
 
-    @staticmethod
     async def create_agentic_scan_record(self, scan_number: int):
         # Create and store the new scan with initial status 'pending'
         new_scan = Scan(
@@ -28,9 +28,13 @@ class AgenticScanInitializer:
             status="pending",
             startedAt=datetime.now(timezone.utc),
             contractFiles=self.contract_files,
-            repositoryURL=self.contract_address,
-            repositoryName=self.chain_id,
+            user_id=self.user_id,
+            repositoryURL=self.contract_address,  # TODO: Remove after PDF changes
+            repositoryName=str(self.chain_id),  # TODO: Remove after PDF changes
             branchName="Agentic Scan Per Address",
+            contract_address=self.contract_address,
+            chain_id=str(self.chain_id),
+            scan_type="Agentic Scan Per Address",
         )
         await ScanRepository.store_scan(new_scan)
 
@@ -46,7 +50,6 @@ class AgenticScanInitializer:
         )
         await ScanRepository.store_scan_result(initial_scan_result)
 
-    @staticmethod
     async def count_lines_of_code(self, flattened_contracts: str) -> CodeAnalysisResult:
         # Count lines of code
         lines_of_code = await count_lines_of_code(flattened_contracts)

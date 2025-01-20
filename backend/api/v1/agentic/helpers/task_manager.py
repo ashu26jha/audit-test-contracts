@@ -2,9 +2,9 @@ import asyncio
 from typing import Any, Dict, List, Optional, TypedDict
 
 from fastapi import HTTPException
-from langfuse.decorators import langfuse_context
 
 from api.v1.agentic.schema import AgenticScanContext
+from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.utilities.summary.service import generate_summary
 from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
@@ -15,7 +15,6 @@ from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
-CONTEXT_SCANS_TIMEOUT = 300  # 10 minutes per context scan
 
 
 class TaskManager:
@@ -27,10 +26,13 @@ class TaskManager:
         self.scan_id = context.scan_id
         self.flattened_contracts = context.flattened_contracts
         self.selected_contracts = context.contract_files
+        self.detected_type: Optional[Profiles] = None
         self.scan: Optional[Scan] = None
         self.context_scan_configs: List[Dict[str, Any]] = []
         self.task_detector_names: List[str] = []
+        self.summary_result: Optional[str] = None
 
+        # Initialize task tracking
         self.task_results = {}  # Store task results
         self.process_pool = ProcessPoolManager.get_instance()
 
@@ -97,7 +99,6 @@ class TaskManager:
 
         except asyncio.TimeoutError as e:
             logger.error(f"Scan {self.scan_id} exceeded maximum time of {TOTAL_SCAN_TIMEOUT}s")
-            await self._cleanup_running_tasks()
             await ScanRepository.update_scan_failure(self.scan_id, "Scan timed out")
             # TODO: Send error email to ELIZA BOT
             raise HTTPException(
@@ -127,10 +128,41 @@ class TaskManager:
                         f"Starting batch {batch_num} with models: {[c['model'] for c in batch]}"
                     )
                     task = asyncio.create_task(self.run_context_scan_with_batch(batch))
-                    tasks.append(task)
+                    monitor_task = asyncio.create_task(self._monitor_batch_task(task, batch))
+                    tasks.extend([task, monitor_task])
 
             # Wait for all tasks to complete
             await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _monitor_batch_task(self, task: asyncio.Task, batch_configs: List[Dict]):
+        """Monitor a batch of context scans and update results"""
+        try:
+            batch_results = await task
+            # Store results for each config in the batch
+            for config, result in zip(batch_configs, batch_results):
+                detector_name = config["detector_name"]
+                self.task_results[detector_name] = ContextScanResponse.model_validate(result)
+                self.task_detector_names.append(detector_name)
+
+                # Update progress for each completed detector
+                if self.scan:
+                    self.scan.completed_detectors += 1
+                    self.scan.detectors[detector_name] = True
+                    await self.scan.save()
+
+        except Exception as e:
+            logger.error(f"Batch task failed: {str(e)}")
+            # Mark all detectors in the batch as failed
+            for config in batch_configs:
+                detector_name = config["detector_name"]
+                self.task_results[detector_name] = e
+                self.task_detector_names.append(detector_name)
+
+                # Update progress for each failed detector
+                if self.scan:
+                    self.scan.completed_detectors += 1
+                    self.scan.detectors[detector_name] = False
+                    await self.scan.save()
 
     async def run_context_scan_with_batch(self, batch_configs):
         """Run a batch of context scans using process pool"""
@@ -138,17 +170,19 @@ class TaskManager:
             logger.info(
                 f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
             )
-            trace_id = langfuse_context.get_current_trace_id()
+
             response_dicts = await self.process_pool.run_in_process(
                 run_context_scan_batch,
                 self.flattened_contracts,
                 self.summary_result,
+                None,  # docs parameter
                 batch_configs,
-                trace_id,
             )
+
             return response_dicts
         except Exception as e:
-            logger.error(f"Batch context scan failed: {str(e)}")
+            error_msg = f"Batch context scan failed: {str(e)}"
+            logger.error(error_msg, exc_info=True)
             raise
 
     class GatherResults(TypedDict):
@@ -201,27 +235,3 @@ class TaskManager:
             "summary_result": self.summary_result,
             "detected_type": self.detected_type,
         }
-
-    async def _cleanup_running_tasks(self):
-        """Clean up running tasks and ensure proper resource release."""
-        cleanup_errors = []
-
-        # Helper function to safely cancel a task
-        async def safe_cancel(task, task_name: str):
-            if task and not task.done():
-                try:
-                    task.cancel()
-                    await task
-                except (asyncio.CancelledError, Exception) as e:
-                    cleanup_errors.append(f"{task_name} cleanup error: {str(e)}")
-                    logger.error(f"Error during {task_name} cleanup: {str(e)}")
-
-        # Cancel context scan tasks
-        for task in self.context_scan_tasks:
-            await safe_cancel(task, "context_scan")
-
-        # Log any cleanup errors
-        if cleanup_errors:
-            logger.warning(f"Cleanup completed with {len(cleanup_errors)} errors: {cleanup_errors}")
-        else:
-            logger.info("All tasks cleaned up successfully")

@@ -3,17 +3,16 @@ from uuid import UUID
 from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
-from api.v1.agentic.helpers.result_processor import ResultProcessor
 from api.v1.agentic.helpers.scan_initializer import AgenticScanInitializer
 from api.v1.agentic.helpers.task_manager import TaskManager
 from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
+from api.v1.common.result_processor import ResultProcessor
+from api.v1.utilities.etherscan.service import EtherscanService
 from api.v1.utilities.pdf.service import generate_pdf_from_scan
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Scan
 from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
-
-TWITTER_BOT_EMAIL = "auditagent@nethermind.io"
 
 
 class AgenticService:
@@ -23,45 +22,80 @@ class AgenticService:
         request: PerAddressAgenticRequest,
         background_tasks: BackgroundTasks,
     ):
-
-        # TODO: Add logic to fetch contract code from address
-        # TODO: Add logic to remove libraries from contract code
-        initializer = AgenticScanInitializer(request, scan_id)
-
         try:
-            # Create scan record
-            scan_number = await Scan.get_next_agentic_scan_number(request.contractAddress)
-            await initializer.create_agentic_scan_record(scan_number or 1)
-
-            # Create agentic scan context
-            context = AgenticScanContext(
-                scan_id=scan_id,
-                contract_address=request.contractAddress,
-                chain_id=request.chainID,
-                contract_files=request.contractFiles,
-                flattened_contracts="flattened_contracts",
+            # fetch contract code from address
+            contracts_dict = await EtherscanService.get_contract_source(
+                request.contractAddress, request.chainId
             )
 
-            # Start initialization in background
-            background_tasks.add_task(
-                AgenticService._perform_audit_agent_background,
-                context,
-            )
+            if not contracts_dict:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Could not fetch source code for contract {request.contractAddress} on chain {request.chainId}. Contract might not be verified.",
+                )
+
+            flattened_contracts = ""
+            for _, contract in contracts_dict.items():
+                flattened_contracts += contract.content
+
+            if not flattened_contracts.strip():
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"No source code content found for contract {request.contractAddress}",
+                )
+
+            initializer = AgenticScanInitializer(request, scan_id)
+
+            try:
+                # Create scan record
+                scan_number = await Scan.get_next_agentic_scan_number(request.contractAddress)
+                scan_number = scan_number or 1
+
+                # Correctly call the instance method
+                await initializer.create_agentic_scan_record(scan_number)
+                await initializer.count_lines_of_code(flattened_contracts)
+
+                # Create agentic scan context
+                context = AgenticScanContext(
+                    scan_id=scan_id,
+                    user_email=request.userEmail,
+                    contract_address=request.contractAddress,
+                    chain_id=request.chainId,
+                    contract_files=list(contracts_dict.keys()),
+                    flattened_contracts=flattened_contracts,
+                )
+
+                # Start initialization in background
+                background_tasks.add_task(
+                    AgenticService._perform_audit_agent_background,
+                    context,
+                )
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.exception(f"[Agentic] Unexpected error during scan initiation: {str(e)}")
+                await ScanRepository.update_scan_failure(scan_id, "Failed to initiate audit scan")
+                # TODO: Send error status to ELIZA BOT instead
+                await send_error_email(request.userEmail, scan_id)
+                raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
         except HTTPException:
             raise
         except Exception as e:
-            logger.exception(f"Unexpected error during scan initiation: {str(e)}")
-            await ScanRepository.update_scan_failure(scan_id, "Failed to initiate audit scan")
-            await send_error_email(TWITTER_BOT_EMAIL, scan_id)
-            raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
+            logger.exception(
+                f"[Agentic] Error processing contract {request.contractAddress}: {str(e)}"
+            )
+            raise HTTPException(
+                status_code=500, detail=f"Failed to process contract {request.contractAddress}"
+            ) from e
 
     @staticmethod
     @observe(name="agentic_background_scan")
     async def _perform_audit_agent_background(
         context: AgenticScanContext,
     ):
-        logger.info(f"Starting agentic background audit scan with ID: {context.scan_id}")
+        logger.info(f"[Agentic] Starting agentic background audit scan with ID: {context.scan_id}")
 
         try:
             # Initialize TaskManager
@@ -84,7 +118,9 @@ class AgenticService:
 
             # Process results using ResultProcessor
             result_processor = ResultProcessor(
-                context=context,
+                scan_id=context.scan_id,
+                user_id=None,
+                contract_files=context.contract_files,
                 combined_findings=combined_findings,
                 flattened_contracts=context.flattened_contracts,
                 summary_result=summary_result,
@@ -102,22 +138,24 @@ class AgenticService:
 
             # TODO: Generate PDF and send back to ELIZA BOT
             # Generate PDF without blocking scan completion
-            if TWITTER_BOT_EMAIL:
-                await generate_pdf_from_scan(None, context.scan_id, TWITTER_BOT_EMAIL)
+            if context.user_email:
+                await generate_pdf_from_scan(None, context.scan_id, context.user_email)
             else:
-                logger.warning(f"User {context.user_id} does not have an email address.")
+                logger.warning("User email not configured, skipping PDF generation.")
 
-            logger.info(f"Completed agentic audit scan with ID: {context.scan_id}")
+            logger.info(f"[Agentic] Completed agentic audit scan with ID: {context.scan_id}")
         except HTTPException as e:
-            error_msg = f"Error in agentic audit scan {context.scan_id}: {str(e)}"
+            error_msg = f"[Agentic] Error in agentic audit scan {context.scan_id}: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            await send_error_email(TWITTER_BOT_EMAIL, context.scan_id)
+            # TODO: Send error status to ELIZA BOT instead
+            await send_error_email(context.user_email, context.scan_id)
             raise
 
         except Exception as e:
-            error_msg = f"Unexpected error: {str(e)}"
+            error_msg = f"[Agentic] Unexpected error: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            await send_error_email(TWITTER_BOT_EMAIL, context.scan_id)
+            # TODO: Send error status to ELIZA BOT instead
+            await send_error_email(context.user_email, context.scan_id)
             raise HTTPException(status_code=500, detail=error_msg) from e

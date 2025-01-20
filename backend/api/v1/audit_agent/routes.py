@@ -20,7 +20,7 @@ router = APIRouter()
 @router.post(
     "/audit-agent",
     dependencies=[Depends(get_api_key)],
-    response_model=SuccessResponse,
+    response_model=Union[SuccessResponse[AuditAgentInitiateResponse], ErrorResponse],
     status_code=status.HTTP_202_ACCEPTED,
     description="Initiate an audit agent scan",
 )

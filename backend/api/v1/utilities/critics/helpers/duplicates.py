@@ -15,7 +15,7 @@ from core.utils.logger import logger
 async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
     """Remove duplicate findings using LLM."""
 
-    logger.info(f"Removing duplicates from {len(findings)} findings...")
+    logger.info(f"[Critics] Removing duplicates from {len(findings)} findings...")
 
     try:
 
@@ -34,13 +34,15 @@ async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
         )
 
         if not llm_response or not llm_response.findings:
-            logger.warning("No findings returned from LLM, returning original findings")
+            logger.warning("[Critics] No findings returned from LLM, returning original findings")
             return findings
 
-        logger.info(f"Total findings after duplicate removal: {len(llm_response.findings)}")
+        logger.info(
+            f"[Critics] Total findings after duplicate removal: {len(llm_response.findings)}"
+        )
         return llm_response.findings
 
     except Exception as e:
-        logger.exception(f"Failed to remove duplicates: {str(e)}")
-        logger.warning("Returning original vulnerabilities.")
+        logger.exception(f"[Critics] Failed to remove duplicates: {str(e)}")
+        logger.warning("[Critics] Returning original vulnerabilities.")
         return findings

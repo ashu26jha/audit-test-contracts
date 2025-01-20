@@ -7,24 +7,14 @@ from concurrent.futures import ProcessPoolExecutor
 from contextlib import asynccontextmanager
 
 from fastapi import HTTPException
+from langfuse.decorators import observe
 
-from config.settings import LANGFUSE_HOST, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
 from core.utils.logger import logger
 
 
 def _import_and_run(module_name: str, func_name: str, *args, **kwargs):
     """Import and run a function in the subprocess."""
     try:
-        # Initialize environment for subprocess
-        from langfuse.decorators import langfuse_context
-
-        # Configure Langfuse in subprocess
-        langfuse_context.configure(
-            public_key=LANGFUSE_PUBLIC_KEY,
-            secret_key=LANGFUSE_SECRET_KEY,
-            host=LANGFUSE_HOST,
-        )
-
         # Handle nested modules
         module_parts = module_name.split(".")
         module = importlib.import_module(module_parts[0])
@@ -91,6 +81,7 @@ class ProcessPoolManager:
             self.initialize()
         return self._executor
 
+    @observe(name="run_in_process")
     async def run_in_process(self, func, *args, **kwargs):
         """Run a CPU-intensive function in the process pool."""
         if not self.executor:

@@ -9,6 +9,7 @@ from .detectors import context_scan_router, fuzzer_router, static_analyzer_route
 from .github import router as github_router
 from .payments import router as payments_router
 from .scans import router as scans_router
+from .utilities.etherscan import router as etherscan_router
 from .utilities.health_check import router as health_check_router
 from .utilities.pdf import router as pdf_router
 from .utilities.stats import router as stats_router
@@ -31,6 +32,8 @@ router.include_router(scans_router)
 router.include_router(payments_router)
 router.include_router(pdf_router)
 router.include_router(stats_router)
+router.include_router(agentic_router)
+
 
 # Register development-only routers
 if ENVIRONMENT in ["development", "test"]:
@@ -40,4 +43,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(fuzzer_router)
     router.include_router(critics_router)
     router.include_router(benchmark_router)
-    router.include_router(agentic_router)
+    router.include_router(etherscan_router)
