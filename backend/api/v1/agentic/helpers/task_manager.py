@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, TypedDict
 
 from fastapi import HTTPException
 
+from api.v1.agentic.helpers.eliza_callback import send_callback_status
 from api.v1.agentic.schema import AgenticScanContext
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan_batch
@@ -88,7 +89,9 @@ class TaskManager:
             except Exception as e:
                 logger.exception(f"Summary generation failed: {str(e)}")
                 await ScanRepository.update_scan_failure(self.scan_id, "Summary generation failed")
-                # TODO: Send error email to ELIZA BOT
+                await send_callback_status(
+                    self.scan_id, success=False, message="Summary generation failed"
+                )
                 raise HTTPException(
                     status_code=500,
                     detail="Internal server error during summary generation.",
@@ -100,7 +103,9 @@ class TaskManager:
         except asyncio.TimeoutError as e:
             logger.error(f"Scan {self.scan_id} exceeded maximum time of {TOTAL_SCAN_TIMEOUT}s")
             await ScanRepository.update_scan_failure(self.scan_id, "Scan timed out")
-            # TODO: Send error email to ELIZA BOT
+            await send_callback_status(
+                self.scan_id, success=False, message="Scan timed out after 15 minutes"
+            )
             raise HTTPException(
                 status_code=500, detail=f"Scan timed out after {TOTAL_SCAN_TIMEOUT}s"
             ) from e

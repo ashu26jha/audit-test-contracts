@@ -13,7 +13,7 @@ from api.v1.common.setup_environment import cleanup_environment, setup_environme
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
 from api.v1.payments.helpers.credits import CreditHelper
-from api.v1.utilities.pdf.service import generate_pdf_from_scan
+from api.v1.utilities.pdf.service import generate_and_send_pdf_from_scan
 from core.db.repositories.docs import DocsRepository
 from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
@@ -232,7 +232,7 @@ class AuditAgentService:
             # Generate PDF without blocking scan completion
             if context.user_email:
                 user = await UserRepository.get_by_github_id(context.user_id)
-                await generate_pdf_from_scan(user, context.scan_id)
+                await generate_and_send_pdf_from_scan(user, context.scan_id)
             else:
                 logger.warning(f"User {context.user_id} does not have an email address.")
 

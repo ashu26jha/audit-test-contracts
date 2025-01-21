@@ -62,7 +62,7 @@ async def send_prompt_to_llm_async(
                     messages = [{"role": "user", "content": messages}]
 
                 token_count = count_tokens(str(messages))
-                logger.debug(f"[LLMPrompt] Message length: {token_count} tokens for {model_type}")
+                logger.info(f"[LLMPrompt] Message length: {token_count} tokens for {model_type}")
 
                 if model_type in SUPPORTED_MODELS["openai"]:
                     await sleep(REQUEST_DELAY)

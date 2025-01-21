@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import List
 from uuid import UUID
 
 from api.v1.agentic.schema import PerAddressAgenticRequest
@@ -20,17 +21,15 @@ class AgenticScanInitializer:
         self.scan_id = scan_id
         self.user_id = request.userEmail
 
-    async def create_agentic_scan_record(self, scan_number: int):
+    async def create_agentic_scan_record(self, scan_number: int, contract_files: List[str]):
         # Create and store the new scan with initial status 'pending'
         new_scan = Scan(
             scan_id=self.scan_id,
             scan_number=scan_number,
             status="pending",
             startedAt=datetime.now(timezone.utc),
-            contractFiles=self.contract_files,
+            contractFiles=contract_files,
             user_id=self.user_id,
-            repositoryURL=self.contract_address,  # TODO: Remove after PDF changes
-            repositoryName=str(self.chain_id),  # TODO: Remove after PDF changes
             branchName="Agentic Scan Per Address",
             contract_address=self.contract_address,
             chain_id=str(self.chain_id),

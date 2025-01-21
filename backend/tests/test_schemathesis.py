@@ -180,7 +180,6 @@ def test_schema_validation(case, auth_token):
 @schema.parametrize()
 @hypothesis_settings
 @pytest.mark.usefixtures("setup_db")
-# @pytest.mark.asyncio(scope="function")
 def test_input_validation(case, auth_token):
     """
     Test input validation without executing the actual operations
@@ -214,7 +213,6 @@ def test_input_validation(case, auth_token):
 @schema.parametrize()
 @hypothesis_settings
 @pytest.mark.usefixtures("setup_db")
-# @pytest.mark.asyncio(scope="function")
 def test_response_time(case, auth_token):
     """Test that all endpoints respond within a reasonable time."""
     if case.path in LLM_ENDPOINTS:
@@ -246,7 +244,6 @@ def test_response_time(case, auth_token):
 @schema.parametrize()
 @hypothesis_settings
 @pytest.mark.usefixtures("setup_db")
-# @pytest.mark.asyncio(scope="function")
 def test_content_type(case, auth_token):
     """Test that responses have correct content type."""
     if case.path in LLM_ENDPOINTS:
@@ -273,7 +270,6 @@ def test_content_type(case, auth_token):
 @schema.parametrize()
 @hypothesis_settings
 @pytest.mark.usefixtures("setup_db")
-# @pytest.mark.asyncio(scope="function")
 def test_error_response_format(case, auth_token):
     """Test that error responses follow the standard format."""
     if case.path in LLM_ENDPOINTS or case.path in PUBLIC_ENDPOINTS:

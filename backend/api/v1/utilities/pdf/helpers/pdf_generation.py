@@ -1,151 +1,114 @@
-from urllib.parse import urlparse
+import os
+from pathlib import Path
+from typing import Union
 
-import markdown
-from markdown.extensions.attr_list import AttrListExtension
-from markdown.extensions.codehilite import CodeHiliteExtension
-from markdown.extensions.fenced_code import FencedCodeExtension
-from markdown.extensions.nl2br import Nl2BrExtension
-from markdown.extensions.sane_lists import SaneListExtension
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import async_playwright
 
+from core.utils.logger import logger
 
-def extract_organization_name(url):
-    parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip("/").split("/")
-
-    if len(path_parts) > 0:
-        organization_name = path_parts[0]
-        return organization_name
-
-    return None
+from ..config import TEMPLATE_DIR
 
 
-def read_html(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        html_content = file.read()
-
-    html_lines = [line.lstrip() for line in html_content.splitlines()]
-    processed_html_content = "\n".join(html_lines)
-    return processed_html_content
-
-
-def create_finding_section(
-    index, total_findings, risk_level, issue_title, contract_files, description
-):
-    contract_files_html = "".join(
-        f"""<span class="file-name">{file}</span>""" for file in contract_files
-    )
-
-    # Get the severity text based on chip number
-    severity_text_map = {
-        "chip1": "Critical",
-        "chip2": "High Risk",
-        "chip3": "Medium Risk",
-        "chip4": "Low Risk",
-        "chip5": "Info",
-        "chip6": "Best Practices",
-    }
-    severity_text = severity_text_map.get(risk_level, "Unknown")
-
-    # Convert markdown description to HTML with code highlighting and fenced code handling
-    description_html = markdown.markdown(
-        description,
-        extensions=[
-            FencedCodeExtension(),
-            CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
-            SaneListExtension(),
-            Nl2BrExtension(),
-            AttrListExtension(),
-        ],
-    )
-
-    # Same for issue title
-    issue_title_html = markdown.markdown(
-        issue_title,
-        extensions=[
-            FencedCodeExtension(),
-            CodeHiliteExtension(linenums=False, css_class="codehilite", pygments_style="default"),
-            Nl2BrExtension(),
-            AttrListExtension(),
-        ],
-    )
-
-    # Add the custom class to all paragraphs in the issue title
-    issue_title_html = issue_title_html.replace("<p>", '<p class="finding-issue-text">')
-
-    # Store the final HTML content
-    final_html = f"""
-    <div class="findings-section">
-      <div class="finding-header">
-        <div class="info-row">
-          <span class="finding-title">
-            <img
-              alt="Findings stars"
-              src="public/findings_stars.svg"
-            />
-            <span> {index} of {total_findings} Findings </span>
-          </span>
-
-          <div class="info-row">
-            <span class="finding-title">
-              <img
-                alt="Folder icon"
-                src="public/folder_icon.svg"
-              />
-
-              <div class="contracts-list">
-                {contract_files_html}
-              </div>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="finding-content">
-        <span class="finding-issue">
-          {issue_title_html}
-        </span>
-        <div class="severity-chip {risk_level}">
-          <span class="elipsis"></span>
-          <span class="severity-text">{severity_text}</span>
-        </div>
-      </div>
-
-      <div class="horizontal-divider"></div>
-
-      <div class="finding-description">
-        <div class="description-text">
-          {description_html}
-        </div>
-      </div>
-    </div>
+async def html_to_pdf(html_file: Union[str, Path], pdf_file: Union[str, Path]) -> None:
     """
+    Convert HTML file to PDF using Playwright.
 
-    return final_html
+    Args:
+        html_file: Path to the source HTML file
+        pdf_file: Path where the PDF should be saved
+
+    Raises:
+        PlaywrightError: If there's an error during PDF generation
+        FileNotFoundError: If the HTML file doesn't exist
+    """
+    if not os.path.exists(html_file):
+        raise FileNotFoundError(f"HTML file not found: {html_file}")
+
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+
+            # Set viewport width larger to accommodate code
+            await page.set_viewport_size({"width": 1200, "height": 800})
+
+            await page.goto(f"file://{html_file}")
+            await page.wait_for_load_state("networkidle")
+
+            # Ensure styles are loaded
+            await page.wait_for_timeout(1000)
+
+            pdf_options = {
+                "path": pdf_file,
+                "format": "A4",
+                "print_background": True,
+                "display_header_footer": False,
+                "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
+                "prefer_css_page_size": True,
+            }
+
+            await page.pdf(**pdf_options)
+            await browser.close()
+    except PlaywrightError as e:
+        logger.error(f"Error during PDF generation: {str(e)}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during PDF generation: {str(e)}")
+        raise
 
 
-async def html_to_pdf(html_file, pdf_file):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
+async def generate_pdf_from_html(html_content: str, pdf_filename: str) -> Path:
+    """
+    Convert HTML content to PDF and handle temporary file cleanup.
 
-        # Set viewport width larger to accommodate code
-        await page.set_viewport_size({"width": 1200, "height": 800})
+    Args:
+        html_content: The HTML content to convert
+        pdf_filename: Name for the generated PDF file
 
-        await page.goto(f"file://{html_file}")
-        await page.wait_for_load_state("networkidle")
+    Returns:
+        Path to the generated PDF file
 
-        # Ensure styles are loaded
-        await page.wait_for_timeout(1000)
+    Raises:
+        IOError: If there's an error writing the temporary HTML file
+        PlaywrightError: If there's an error during PDF generation
 
-        pdf_options = {
-            "path": pdf_file,
-            "format": "A4",
-            "print_background": True,
-            "display_header_footer": False,
-            "margin": {"top": "0mm", "right": "0mm", "bottom": "0mm", "left": "0mm"},
-            "prefer_css_page_size": True,
-        }
+    Note:
+        All files are created in and read from TEMPLATE_DIR for process safety.
+    """
+    # Ensure all paths are explicitly within TEMPLATE_DIR
+    pdf_path = TEMPLATE_DIR / pdf_filename
+    temp_html_path = TEMPLATE_DIR / f"temp_{pdf_filename}.html"
 
-        await page.pdf(**pdf_options)
-        await browser.close()
+    try:
+        # Write HTML to temporary file
+        try:
+            with open(temp_html_path, "w", encoding="utf-8") as file:
+                file.write(html_content)
+        except IOError as e:
+            logger.error(f"Error writing temporary HTML file: {str(e)}")
+            raise
+
+        # Convert to PDF
+        await html_to_pdf(temp_html_path, pdf_path)
+        return pdf_path
+    except Exception as e:
+        logger.error(f"Error during PDF generation process: {str(e)}")
+        raise
+    finally:
+        # Always cleanup temporary HTML file
+        cleanup_temp_file(temp_html_path)
+
+
+def cleanup_temp_file(file_path: Path) -> None:
+    """
+    Clean up a temporary file if it exists.
+
+    Args:
+        file_path: Path to the file to be cleaned up
+    """
+    try:
+        if file_path.exists():
+            os.remove(file_path)
+    except Exception as e:
+        logger.warning(f"Failed to cleanup temporary file {file_path}: {str(e)}")

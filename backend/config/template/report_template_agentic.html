@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>AuditAgent Report</title>
+  <meta charset="utf-8" />
+  <link href="./styles.css" rel="stylesheet" />
+  <link href="./code.css" rel="stylesheet" />
+</head>
+
+<body>
+  <div class="a4-container">
+    <div class="report-container">
+      <div class="report-content">
+        <div class="report-section">
+          <div class="info-container">
+            <!-- INFO SECTION -->
+            <div class="info-section">
+              <div class="section-header">
+                <span class="section-title">Code Info</span>
+              </div>
+              <div class="section-content">
+                <!-- Row 1 -->
+                <div class="info-row">
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Organization icon" class="info-icon" src="public/organization_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Chain ID</span>
+                          <span class="info-value"><!--chain--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="divider"></div>
+                </div>
+
+                <div class="horizontal-divider"></div>
+
+                <!-- Row 2 -->
+                <div class="info-row">
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Repository icon" class="info-icon" src="public/contracts_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Ethereum Address</span>
+                          <span class="info-value"><!--ethereum_address--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="divider"></div>
+                </div>
+
+                <div class="horizontal-divider"></div>
+
+                <!-- Row 2 -->
+                <div class="info-row">
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Contracts icon" class="info-icon" src="public/scan_id_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Scan ID</span>
+                          <span class="info-value"><!--scanId--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CONTRACST IN SCOPE SECTION -->
+            <div class="info-section">
+              <div class="section-header">
+                <span class="section-title">
+                  <span>Contracts in scope</span>
+                </span>
+              </div>
+              <div class="section-content">
+                <span class="info-value contracts-in-scope">
+                  <!--contracts_files-->
+                </span>
+              </div>
+            </div>
+
+            <!-- CODE STATISTICS SECTION -->
+            <div class="info-section">
+              <div class="section-header">
+                <span class="section-title">
+                  <span>Code Statistics</span>
+                </span>
+              </div>
+              <div class="section-content">
+                <div class="info-row">
+                  <!-- Findings -->
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Bug icon" class="info-icon" src="public/bug_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Findings</span>
+                          <span class="info-value"><!--vulnerabilties_found--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <!-- Contracts Scanned -->
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Contracts icon" class="info-icon" src="public/contracts_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Contracts Scanned</span>
+                          <span class="info-value"><!--Contracts_Scanned--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="divider"></div>
+
+                  <!-- Lines of Code -->
+                  <div class="info-column">
+                    <div class="info-text">
+                      <img alt="Lines of code icon" class="info-icon" src="public/loc_icon.svg" />
+                      <div class="info-column">
+                        <div class="info-text column">
+                          <span class="info-label">Lines of Code</span>
+                          <span class="info-value"><!--LoC--></span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- CODE SUMMARY SECTION -->
+            <div class="info-section">
+              <div class="section-header">
+                <span class="section-title">
+                  <span>Code Summary</span>
+                </span>
+              </div>
+              <div class="section-content">
+                <span class="description-text">
+                  <!--summary-->
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="findings-container">
+          <!--findings-->
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

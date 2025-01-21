@@ -42,7 +42,6 @@ async def run_context_scan(
 
         # Send prompt to LLM
         start_time = time.time()
-        logger.info(f"[ContextScan] Starting LLM call for {model}")
         llm_response: Optional[ContextScanResponse] = await retry_async_operation(
             send_prompt_to_llm_async,
             model_type=model,

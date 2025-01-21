@@ -3,15 +3,15 @@ from uuid import UUID
 from fastapi import BackgroundTasks, HTTPException
 from langfuse.decorators import langfuse_context, observe
 
+from api.v1.agentic.helpers.eliza_callback import send_callback_status
 from api.v1.agentic.helpers.scan_initializer import AgenticScanInitializer
 from api.v1.agentic.helpers.task_manager import TaskManager
 from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
 from api.v1.common.result_processor import ResultProcessor
 from api.v1.utilities.etherscan.service import EtherscanService
-from api.v1.utilities.pdf.service import generate_pdf_from_scan
+from api.v1.utilities.pdf.service import generate_and_send_agentic_pdf
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Scan
-from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
 
 
@@ -51,8 +51,11 @@ class AgenticService:
                 scan_number = await Scan.get_next_agentic_scan_number(request.contractAddress)
                 scan_number = scan_number or 1
 
-                # Correctly call the instance method
-                await initializer.create_agentic_scan_record(scan_number)
+                # Get contract files from the contracts dictionary
+                contract_files = list(contracts_dict.keys())
+
+                # Correctly call the instance method with contract_files
+                await initializer.create_agentic_scan_record(scan_number, contract_files)
                 await initializer.count_lines_of_code(flattened_contracts)
 
                 # Create agentic scan context
@@ -61,7 +64,7 @@ class AgenticService:
                     user_email=request.userEmail,
                     contract_address=request.contractAddress,
                     chain_id=request.chainId,
-                    contract_files=list(contracts_dict.keys()),
+                    contract_files=contract_files,
                     flattened_contracts=flattened_contracts,
                 )
 
@@ -76,8 +79,11 @@ class AgenticService:
             except Exception as e:
                 logger.exception(f"[Agentic] Unexpected error during scan initiation: {str(e)}")
                 await ScanRepository.update_scan_failure(scan_id, "Failed to initiate audit scan")
-                # TODO: Send error status to ELIZA BOT instead
-                await send_error_email(request.userEmail, scan_id)
+                await send_callback_status(
+                    scan_id,
+                    success=False,
+                    message=f"Failed to initiate audit scan for scan ID: {str(scan_id)}",
+                )
                 raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
         except HTTPException:
@@ -136,10 +142,16 @@ class AgenticService:
                 context.scan_id, "completed", total_findings_after_dedup
             )
 
-            # TODO: Generate PDF and send back to ELIZA BOT
+            # Send success callback
+            await send_callback_status(
+                context.scan_id,
+                success=True,
+                message=f"Scan completed successfully with {total_findings_after_dedup} findings",
+            )
+
             # Generate PDF without blocking scan completion
             if context.user_email:
-                await generate_pdf_from_scan(None, context.scan_id, context.user_email)
+                await generate_and_send_agentic_pdf(context.scan_id, context.user_email)
             else:
                 logger.warning("User email not configured, skipping PDF generation.")
 
@@ -148,14 +160,12 @@ class AgenticService:
             error_msg = f"[Agentic] Error in agentic audit scan {context.scan_id}: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            # TODO: Send error status to ELIZA BOT instead
-            await send_error_email(context.user_email, context.scan_id)
+            await send_callback_status(context.scan_id, success=False, message=e.detail)
             raise
 
         except Exception as e:
             error_msg = f"[Agentic] Unexpected error: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            # TODO: Send error status to ELIZA BOT instead
-            await send_error_email(context.user_email, context.scan_id)
+            await send_callback_status(context.scan_id, success=False, message=error_msg)
             raise HTTPException(status_code=500, detail=error_msg) from e
