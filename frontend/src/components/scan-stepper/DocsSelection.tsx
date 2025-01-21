@@ -92,7 +92,7 @@ export const DocsSelection: FC = () => {
   return (
     <div className="h-full w-full flex flex-col">
       <section
-        className={`flex-1 min-h-0 overflow-auto flex justify-center ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
+        className={`flex-1 min-h-0 flex justify-center ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
       >
         <div className="w-3/4">
           <Accordion selectionMode="multiple">
@@ -188,7 +188,9 @@ export const DocsSelection: FC = () => {
             </AccordionItem>
 
             <AccordionItem
-              classNames={{ title: "text-base font-normal text-default-600 font-inter leading-6" }}
+              classNames={{
+                title: "text-base font-normal text-default-600 font-inter leading-6",
+              }}
               key="2"
               aria-label="Additional Q&A (Optional)"
               title="Additional Q&A (Optional)"
