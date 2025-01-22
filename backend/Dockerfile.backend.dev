@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
     libssl-dev \
     pkg-config \
     wget \
-    && curl -L https://foundry.paradigm.xyz | bash \
+    && curl --proto "=https" -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup \
     && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends\
     && echo "deb [signed-by=/usr/share/keyrings/stripe.gpg] \
     https://packages.stripe.dev/stripe-cli-debian-local \
     stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
-    && apt-get update && apt-get install -y stripe \
+    && apt-get update && apt-get --no-install-recommends install -y stripe \
     && git clone --branch v0.3.3 https://github.com/Cyfrin/aderyn.git \
     && cd aderyn \
     && cargo build --release \
