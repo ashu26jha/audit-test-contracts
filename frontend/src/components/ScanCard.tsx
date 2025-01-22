@@ -19,11 +19,11 @@ const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
   return (
     <Card
       isPressable
-      className="bg-content-1 border border-default-100 cursor-pointer hover:bg-content2 transition-colors duration-300"
+      className="bg-content-1 border border-default-100 cursor-pointer hover:bg-content-2 transition-colors duration-300 group"
       onPress={onClick}
     >
       <CardBody>
-        <div className="flex items-center justify-between mb-4 border-b border-default-100 pb-4">
+        <div className="flex items-center justify-between mb-4 border-b border-default-100 pb-4 group-hover:border-default-400">
           <div className="flex items-center">
             <div className="w-10 h-10 mr-3 bg-default-100 rounded-lg flex items-center justify-center border border-default">
               <Image

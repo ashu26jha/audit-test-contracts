@@ -5,7 +5,6 @@ import type { FC } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
 import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
-import { FileSearch2 } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -52,7 +51,7 @@ const Navbar: FC = () => {
           href={PAGES.MANUAL_AUDIT}
           target="_blank"
           className="h-10 bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg"
-          startContent={<FileSearch2 size={18} />}
+          startContent={<Image src="/svg/book-security-review.svg" width={18} height={18} alt="book-security-review" />}
         >
           Book a Security Review
         </Button>

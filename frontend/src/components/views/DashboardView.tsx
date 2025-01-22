@@ -45,7 +45,7 @@ const DashboardView: FC = () => {
           className="bg-[#8B5CF6] text-white"
           onPress={handleScan}
           isLoading={hasGithubApp === null}
-          startContent={<Image src="/svg/scan-icon.svg" alt="Scan" width={20} height={20} />}
+          startContent={<Image src="/svg/scan-code.svg" alt="Scan" width={20} height={20} />}
         >
           Scan Code
         </Button>

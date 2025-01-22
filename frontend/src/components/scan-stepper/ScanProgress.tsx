@@ -12,7 +12,6 @@ const GradientSVG = () => {
     <svg style={{ height: 0 }}>
       <defs>
         <linearGradient id={gradientId} gradientTransform={gradientTransform}>
-          <stop offset="0%" stopColor="#EC4899" />
           <stop offset="100%" stopColor="#A855F7" />
         </linearGradient>
       </defs>
@@ -28,9 +27,9 @@ export const ScanProgress: FC<ScanProgressProps> = ({ progress }) => {
   const gradientId = "progressGradient";
 
   return (
-    <div className="flex flex-col items-center space-y-4 w-56">
+    <div className="flex flex-col items-center space-y-3 w-56">
       <Card className="p-4">
-        <div style={{ width: "64px", height: "64px" }}>
+        <div style={{ width: "90px", height: "90px" }}>
           <GradientSVG />
           <CircularProgressbar
             value={progress}

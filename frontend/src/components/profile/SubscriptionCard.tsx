@@ -75,7 +75,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
         await handleSubscribe(subscriptionType);
       }
       if (subscriptionType === "enterprise") {
-        window.open(PAGES.CONTACT, "_blank");
+        window.open(PAGES.ENTERPRISE_PLAN, "_blank");
       }
     }
   };

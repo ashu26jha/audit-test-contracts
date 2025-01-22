@@ -57,7 +57,7 @@ const SubscriptionDetails: FC = () => {
           <Button
             className="flex-1 bg-transparent border border-default"
             as="a"
-            href={PAGES.CONTACT}
+            href={PAGES.ENTERPRISE_PLAN}
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -90,7 +90,7 @@ export const DocsSelection: FC = () => {
   const isBlurred = user?.subscription.type !== "enterprise";
 
   return (
-    <div className="h-full w-full flex flex-col">
+    <div className="h-full w-full flex flex-col overflow-y-hidden">
       <section
         className={`flex-1 min-h-0 flex justify-center ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
       >
