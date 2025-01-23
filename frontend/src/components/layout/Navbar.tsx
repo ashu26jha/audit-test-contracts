@@ -1,6 +1,6 @@
 "use client";
 
-import type { FC } from "react";
+import { useEffect, type FC } from "react";
 
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
@@ -11,6 +11,7 @@ import { useRouter, usePathname } from "next/navigation";
 
 import { PAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
 import LoginNavbar from "./LoginNavbar";
@@ -20,6 +21,11 @@ const Navbar: FC = () => {
   const { user, loading, logout } = useAuth();
   const { setShowStepper } = useScanStepperStore();
   const pathname = usePathname();
+  const { checkIfFreeScanAllowed, freeScanAllowed } = useSubscription();
+
+  useEffect(() => {
+    checkIfFreeScanAllowed();
+  }, [checkIfFreeScanAllowed]);
 
   if (pathname === "/login-success") {
     return null;
@@ -67,7 +73,12 @@ const Navbar: FC = () => {
                 )}
                 <div>
                   <p className="text-neutral-50 text-sm leading-normal">{user?.username ?? "Guest"}</p>
-                  <p className="text-xs">{`${user.subscription.credits} Scans Left`}</p>
+                  {user?.subscription.type === "free" && (
+                    <p className="text-xs">{`${freeScanAllowed ? "1" : "0"} Free Scan Left`}</p>
+                  )}
+                  {user?.subscription.type !== "free" && (
+                    <p className="text-xs">{`${user.subscription.credits} Scans Left`}</p>
+                  )}
                 </div>
                 <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
               </div>

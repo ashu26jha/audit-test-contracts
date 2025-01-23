@@ -53,7 +53,7 @@ const QnATextarea = ({ value, maxLength, onChange, question }: QnATextareaProps)
         </p>
       </div>
       <Textarea
-        disabled={!user?.subscription.isActive}
+        disabled={user?.subscription.type !== "enterprise"}
         value={value}
         onChange={onChange}
         minRows={1}
