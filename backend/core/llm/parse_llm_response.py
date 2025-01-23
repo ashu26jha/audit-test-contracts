@@ -103,6 +103,15 @@ def _clean_gemini_response(content: str) -> str:
         return content
     except json.JSONDecodeError:
         pass
+    content = content.replace('"\\\\"', "")
+    content = content.replace('\\\\"', "")
+    content = content.replace('""', '""')
+    try:
+        content = gemini_ending_cases(content)
+        json.loads(content)
+        return content
+    except Exception as e:
+        pass
 
     # If that fails, try to extract the JSON structure while preserving content
     try:
@@ -155,6 +164,27 @@ def _clean_gemini_response(content: str) -> str:
         pass
 
     # If all else fails, return the original content
+    return content
+
+
+def gemini_ending_cases(content: str) -> str:
+    """Special handling for Gemini responses that often contain unescaped newlines in strings."""
+
+    if content.endswith('"}'):
+        content += "]}"
+    elif content.endswith("\\n}"):
+        content += "]}"
+    elif content.endswith('"},'):
+        content = content[:-1] + "}]"
+    elif content.endswith("]"):
+        content += "}"
+    elif content[-1].isalpha():  # Check if last character is alphabetic
+        content += '"}]}'
+    elif content.endswith("],"):
+        content = content[:-1] + "}]}"
+    elif content.endswith('",'):
+        content = content[:-1] + "}]}"
+
     return content
 
 
