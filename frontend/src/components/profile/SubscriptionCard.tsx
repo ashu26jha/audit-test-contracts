@@ -109,7 +109,6 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
               <Button
                 size="sm"
                 as="div"
-                isLoading={isSubscribing}
                 onPress={handleSubscription}
                 className={`${button({ type: subscriptionType })} ml-4 w-28 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
                 endContent={<ArrowUpRight />}
@@ -124,7 +123,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
           {variant === "profile" && !isSubscribed && subscriptionType !== "free" && !userSubscribedDifferentPlan && (
             <Button
               as="div"
-              isLoading={isSubscribing}
+              isLoading={subscriptionType === "pro" && isSubscribing}
               onPress={handleSubscription}
               className={`${button({ type: subscriptionType })} w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
               endContent={<ArrowUpRight />}
