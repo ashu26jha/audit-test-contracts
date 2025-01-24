@@ -70,6 +70,48 @@ class StripeSubscriptionHelper:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @staticmethod
+    async def create_enterprise_subscription_session(
+        email: str, user_id: str
+    ) -> stripe.checkout.Session:
+        """Create subscription session for enterprise plan without payment method."""
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+
+        subscription = SUBSCRIPTION_SETTINGS[SubscriptionType.ENTERPRISE]
+        if not subscription["price"]:
+            raise HTTPException(
+                status_code=500, detail="Stripe enterprise price ID is not configured"
+            )
+
+        success_url, cancel_url = get_payment_urls()
+
+        try:
+            metadata = {
+                "userId": user_id,
+                "type": SubscriptionType.ENTERPRISE.value,
+            }
+
+            return stripe.checkout.Session.create(
+                customer_email=email,
+                billing_address_collection="auto",
+                line_items=[
+                    {
+                        "price": subscription["price"],
+                        "quantity": 1,
+                    }
+                ],
+                mode="subscription",
+                payment_method_collection="if_required",
+                allow_promotion_codes=True,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata=metadata,
+                subscription_data={"metadata": metadata},
+            )
+        except stripe.error.StripeError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @staticmethod
     async def create_portal_session(user: User) -> stripe.billing_portal.Session:
         """Create a Stripe billing portal session."""
         if not user.subscription.stripeCustomerId:

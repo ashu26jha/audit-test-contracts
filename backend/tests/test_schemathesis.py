@@ -57,6 +57,7 @@ GITHUB_ENDPOINTS = {
 PAYMENT_ENDPOINTS = {
     "/api/v1/payments/create-subscription-session",
     "/api/v1/payments/create-portal-session",
+    "/api/v1/payments/create-enterprise-subscription",
 }
 
 
@@ -194,7 +195,6 @@ def test_input_validation(case, auth_token):
     no_payload_endpoints = {
         "/api/v1/auth/logout",
         "/api/v1/payments/create-portal-session",
-        "/api/v1/payments/create-subscription-session",
         "/api/v1/payments/stripe-webhook",  # Stripe webhook has its own validation
     }
     if case.path in no_payload_endpoints:

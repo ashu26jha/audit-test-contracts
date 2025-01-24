@@ -2,8 +2,9 @@ from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from api.v1.auth.helpers.dependencies import get_current_user
+from api.v1.auth.helpers.dependencies import get_api_key, get_current_user
 from api.v1.payments.schema import (
+    EnterpriseSubscriptionRequest,
     PortalSessionResponse,
     SubscriptionCheckoutRequest,
     SubscriptionCheckoutResponse,
@@ -42,6 +43,32 @@ async def create_subscription(
         current_user,
         scan_id=request.scanId or None,
         subscription_type=request.subscription_type,
+    )
+    return SuccessResponse(
+        data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)
+    )
+
+
+@router.post(
+    "/create-enterprise-subscription",
+    dependencies=[Depends(get_api_key)],
+    response_model=Union[SuccessResponse[SubscriptionCheckoutResponse], ErrorResponse],
+    description="Create a new enterprise subscription without payment method.",
+)
+async def create_enterprise_subscription(request: EnterpriseSubscriptionRequest):
+    """
+    Create a new enterprise subscription without requiring payment method.
+
+    Args:
+        request: Contains either email or github_id of the user
+
+    Returns:
+        session_id (str): The ID of the checkout session
+        url (str): The URL of the checkout session
+    """
+    session = await StripeSubscriptionService.create_enterprise_subscription_session(
+        email=request.email,
+        github_id=request.github_id,
     )
     return SuccessResponse(
         data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)

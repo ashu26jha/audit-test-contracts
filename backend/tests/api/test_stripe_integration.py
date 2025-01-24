@@ -128,7 +128,8 @@ async def test_subscription_checkout_success(mock_user):
         mock_create_session.return_value = AsyncMock(id="test_session_id", url="https://test.com")
 
         response = client.post(
-            "/api/v1/payments/create-subscription-session", json={"scanId": str(uuid4())}
+            "/api/v1/payments/create-subscription-session",
+            json={"scanId": str(uuid4()), "subscription_type": "pro"},
         )
         assert response.status_code == 200
         result = response.json()
@@ -153,7 +154,8 @@ async def test_subscription_checkout_failure(mock_user):
         )
 
         response = client.post(
-            "/api/v1/payments/create-subscription-session", json={"scanId": str(uuid4())}
+            "/api/v1/payments/create-subscription-session",
+            json={"scanId": str(uuid4()), "subscription_type": "pro"},
         )
         assert response.status_code == 400
         error_response = response.json()

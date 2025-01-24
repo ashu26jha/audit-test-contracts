@@ -121,8 +121,14 @@ def mock_stripe():
         async def mock_create_portal_session(*args, **kwargs):
             return mock_session
 
+        async def mock_create_enterprise_subscription_session(*args, **kwargs):
+            return mock_session
+
         mock_stripe.create_subscription_session = mock_create_subscription_session
         mock_stripe.create_portal_session = mock_create_portal_session
+        mock_stripe.create_enterprise_subscription_session = (
+            mock_create_enterprise_subscription_session
+        )
         yield mock_stripe
 
 
