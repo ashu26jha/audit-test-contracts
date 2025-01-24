@@ -122,7 +122,7 @@ async def validate_subscription_limits(user_id: str, contract_files: List[str], 
             status_code=400, detail=f"Maximum {limits['max_contracts']} contracts allowed"
         )
 
-    # TODO: Check that calculation matches the one in the frontend
+    # Note: A 5% buffer is added to the max LoC limit due to frontend mismatch
     if total_loc > limits["max_loc"]:
         raise HTTPException(
             status_code=400, detail=f"Maximum {limits['max_loc']} lines of code allowed"
