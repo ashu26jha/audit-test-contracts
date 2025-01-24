@@ -127,13 +127,9 @@ class AuditAgentService:
 
             # Deduct credit
             if context.is_subscription_scan:
-                try:
-                    await CreditHelper.deduct_credit(
-                        context.user_id, context.scan_id, context.repository_url
-                    )
-                except HTTPException as e:
-                    logger.error(f"Failed to deduct credit: {str(e)}")
-                    raise e
+                await CreditHelper.deduct_credit(
+                    context.user_id, context.scan_id, context.repository_url
+                )
 
             await ScanRepository.update_scan_progress(context.scan_id, 5)
 
@@ -144,18 +140,10 @@ class AuditAgentService:
             flattened_contracts = await initializer.flatten_contracts()
             lines_of_code = await initializer.count_lines_of_code(flattened_contracts)
 
-            try:
-                await validate_subscription_limits(
-                    context.user_id, context.contract_files, lines_of_code.total_lines
-                )
-            except HTTPException as e:
-                logger.error(f"Subscription limits exceeded: {str(e)}")
-                await ScanRepository.update_scan_failure(
-                    context.scan_id, f"Subscription limit exceeded: {str(e)}"
-                )
-                await send_error_email(context.user_email, context.scan_id)
-                await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
-                return
+            # Let validation errors bubble up to main exception handler
+            await validate_subscription_limits(
+                context.user_id, context.contract_files, lines_of_code.total_lines
+            )
 
             # Update scan status to 'in_progress'
             await ScanRepository.update_scan_status(context.scan_id, "in_progress")
