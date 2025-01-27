@@ -58,5 +58,5 @@ class StripeSubscriptionService:
             raise HTTPException(status_code=400, detail="Enterprise subscription already active")
 
         return await StripeSubscriptionHelper.create_enterprise_subscription_session(
-            email=user.email, user_id=user.githubId
+            user_id=user.githubId
         )
