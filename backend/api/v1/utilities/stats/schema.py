@@ -25,6 +25,9 @@ class GlobalStatsResponse(BaseModel):
     total_findings: int
     total_lines_of_code: int
     scan_statuses: ScanStatusCounts
+    pro_scans: int
+    free_scans: int
+    enterprise_scans: int
 
 
 class TwentyFourHStatsResponse(BaseModel):
@@ -32,4 +35,7 @@ class TwentyFourHStatsResponse(BaseModel):
     total_scans_24h: int
     vulnerabilities_found: int
     paid_scans_24h: int
+    free_scans: int
+    pro_scans: int
+    enterprise_scans: int
     new_users: int

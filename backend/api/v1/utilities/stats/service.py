@@ -6,7 +6,7 @@ from api.v1.utilities.stats.schema import (
     TwentyFourHStatsResponse,
 )
 from core.models.scan import Scan
-from core.models.user import User
+from core.models.user import SubscriptionType, User
 from core.utils.logger import logger
 
 TOTAL_FINDINGS = "$total_findings"
@@ -84,12 +84,7 @@ class StatsService:
                         "free_scans": {
                             "$sum": {
                                 "$cond": [
-                                    {
-                                        "$and": [
-                                            {"$eq": ["$status", "completed"]},
-                                            {"$lte": [{"$ifNull": [TOTAL_FINDINGS, 2]}, 1]},
-                                        ]
-                                    },
+                                    {"$eq": ["$type", "free"]},
                                     1,
                                     0,
                                 ]
@@ -109,6 +104,24 @@ class StatsService:
                                             },  # Exclude free scans
                                         ]
                                     },
+                                    1,
+                                    0,
+                                ]
+                            }
+                        },
+                        "pro_scans": {
+                            "$sum": {
+                                "$cond": [
+                                    {"$eq": ["$type", "pro"]},
+                                    1,
+                                    0,
+                                ]
+                            }
+                        },
+                        "enterprise_scans": {
+                            "$sum": {
+                                "$cond": [
+                                    {"$eq": ["$type", "enterprise"]},
                                     1,
                                     0,
                                 ]
@@ -165,6 +178,9 @@ class StatsService:
                 total_findings=base_stats.get("total_findings", 0),
                 total_lines_of_code=base_stats.get("total_lines_of_code", 0),
                 scan_statuses=status_counts,
+                pro_scans=base_stats.get("pro_scans", 0),
+                free_scans=base_stats.get("free_scans", 0),
+                enterprise_scans=base_stats.get("enterprise_scans", 0),
             )
         except Exception as e:
             logger.error(f"Error getting global stats: {str(e)}")
@@ -207,6 +223,47 @@ class StatsService:
                             ]
                         }
                     },
+                    "completed_free_scans": {
+                        "$sum": {
+                            "$cond": [
+                                {
+                                    "$and": [
+                                        {"$eq": ["$status", "completed"]},
+                                        {"$lte": [{"$ifNull": [TOTAL_FINDINGS, 2]}, 1]},
+                                    ]
+                                },
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "free_scans": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$type", SubscriptionType.FREE]},
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "pro_scans": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$type", SubscriptionType.PRO]},
+                                1,
+                                0,
+                            ]
+                        }
+                    },
+                    "enterprise_scans": {
+                        "$sum": {
+                            "$cond": [
+                                {"$eq": ["$type", SubscriptionType.ENTERPRISE]},
+                                1,
+                                0,
+                            ]
+                        }
+                    },
                 }
             },
         ]
@@ -218,11 +275,17 @@ class StatsService:
             total_scans_24h = scans_24h_results[0].get("total_scans_24h", 0)
             vulnerabilities_found = scans_24h_results[0].get("vulnerabilities_found", 0)
             paid_scans_24h = scans_24h_results[0].get("paid_scans_24h", 0)
+            free_scans = scans_24h_results[0].get("free_scans", 0)
+            pro_scans = scans_24h_results[0].get("pro_scans", 0)
+            enterprise_scans = scans_24h_results[0].get("enterprise_scans", 0)
         else:
             lines_of_code = 0
             total_scans_24h = 0
             vulnerabilities_found = 0
             paid_scans_24h = 0
+            free_scans = 0
+            pro_scans = 0
+            enterprise_scans = 0
 
         # Number of users created in the last 24h
         new_users_in_24h = await User.find(User.createdAt >= twenty_four_hours_ago).count()
@@ -233,4 +296,7 @@ class StatsService:
             vulnerabilities_found=vulnerabilities_found,
             paid_scans_24h=paid_scans_24h,
             new_users=new_users_in_24h,
+            free_scans=free_scans,
+            pro_scans=pro_scans,
+            enterprise_scans=enterprise_scans,
         )

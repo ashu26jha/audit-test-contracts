@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from core.models.user import SubscriptionType
 from core.utils.ensure_utc import ensure_utc_datetime
 from core.utils.profiles import Profiles
 from core.utils.severity import Severity
@@ -112,6 +113,7 @@ class Scan(Document):
     progress: float = Field(default=0.0, description="Scan progress percentage (0-100)")
     completed_detectors: int = Field(default=0, description="Number of completed detectors")
     total_detectors: int = Field(default=0, description="Total number of detectors to run")
+    type: Optional[SubscriptionType] = Field(None, description="Type of scan")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -148,6 +150,7 @@ class Scan(Document):
                     "fuzzer": False,
                 },
                 "total_detectors": 5,
+                "type": "free",
                 "completed_detectors": 0,
                 "progress": 0.0,
             }

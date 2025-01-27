@@ -12,7 +12,7 @@ from api.v1.github.helpers.clone_repo import clone_repo
 from api.v1.github.service import GitHubService
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import CodeAnalysisResult, Scan, ScanResult
-from core.models.user import User
+from core.models.user import SubscriptionType, User
 from core.utils.email_utils import send_error_email
 from core.utils.profiles import Profiles
 from core.utils.validate import (
@@ -64,8 +64,20 @@ class ScanInitializer:
             self.user.accessToken, self.request.repositoryURL
         )
 
+    def get_type_of_scan(self) -> str:
+        # Get the type of scan from the request
+        if not self.user.is_free:
+            return SubscriptionType.FREE
+
+        # Default to free user in case of None
+        if self.user.subscription is None:
+            return SubscriptionType.FREE
+        # This ensure we put the correct type
+        return self.user.subscription.type
+
     async def create_scan_record(self, scan_number: int):
-        # Create and store the new scan with initial status 'pending'
+        # Create and store the new scan with initial status 'pending' with type of scan
+        type_of_scan = self.get_type_of_scan()
         new_scan = Scan(
             scan_id=self.scan_id,
             scan_number=scan_number,
@@ -76,6 +88,7 @@ class ScanInitializer:
             repositoryURL=self.request.repositoryURL,
             repositoryName=self.repo_info.repo_name if self.repo_info else "",
             branchName=self.branch_name,
+            type=type_of_scan,
         )
         await ScanRepository.store_scan(new_scan)
 
