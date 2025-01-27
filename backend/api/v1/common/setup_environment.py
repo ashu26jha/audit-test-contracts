@@ -85,31 +85,26 @@ async def setup_environment(
         return None
 
 
-async def cleanup_environment(temp_dir: str, project_dir: str):
-    """Safely cleans up temporary directories"""
-    # Clean up temp_dir if it's different from project_dir
-    if temp_dir != project_dir and os.path.exists(temp_dir):
-        try:
+async def cleanup_environment(temp_dir: str = None, project_dir: str = None):
+    """Clean up temporary directories after scan completion"""
+    try:
+        if temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
             logger.info(f"Cleaned up temporary directory: {temp_dir}")
-        except Exception as e:
-            logger.warning(f"Failed to clean up temp directory {temp_dir}: {e}")
 
-    # For Hardhat projects, clean up the foundry_project directory
-    foundry_dir = None
-    if "foundry_project" in project_dir:
-        foundry_dir = project_dir
-    else:
-        foundry_dir_candidate = os.path.join(project_dir, "foundry_project")
-        if os.path.exists(foundry_dir_candidate):
-            foundry_dir = foundry_dir_candidate
+        if project_dir and os.path.exists(project_dir):
+            if "foundry_project" in project_dir:
+                # Clean up foundry project directory
+                shutil.rmtree(project_dir)
+                logger.info(f"Cleaned up foundry project directory: {project_dir}")
+            else:
+                # Clean up repository directory
+                shutil.rmtree(project_dir)
+                logger.info(f"Cleaned up repository directory: {project_dir}")
 
-    if foundry_dir and os.path.exists(foundry_dir):
-        try:
-            shutil.rmtree(foundry_dir)
-            logger.info(f"Cleaned up Foundry project directory: {foundry_dir}")
-        except Exception as e:
-            logger.warning(f"Failed to clean up Foundry directory {foundry_dir}: {e}")
+    except Exception as e:
+        logger.error(f"Error during environment cleanup: {str(e)}")
+        # Don't raise the error to avoid blocking task completion
 
 
 async def setup_hardhat_environment(

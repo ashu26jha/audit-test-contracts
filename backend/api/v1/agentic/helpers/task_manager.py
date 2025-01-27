@@ -12,14 +12,12 @@ from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Finding, Scan
 from core.utils.logger import logger
-from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
 
 
 class TaskManager:
-
     def __init__(
         self,
         context: AgenticScanContext,
@@ -32,10 +30,7 @@ class TaskManager:
         self.context_scan_configs: List[Dict[str, Any]] = []
         self.task_detector_names: List[str] = []
         self.summary_result: Optional[str] = None
-
-        # Initialize task tracking
         self.task_results = {}  # Store task results
-        self.process_pool = ProcessPoolManager.get_instance()
 
     async def initialize_scan(self):
         # Fetch the scan document to update detectors
@@ -66,7 +61,7 @@ class TaskManager:
             self.scan.completed_detectors = 0
             await self.scan.save()
 
-        logger.info(f"Scan {self.scan_id} initialized with {active_detectors} detectors. ")
+        logger.info(f"Scan {self.scan_id} initialized with {active_detectors} detectors.")
 
     async def start_tasks(self):
         try:
@@ -77,9 +72,7 @@ class TaskManager:
             # Handle timeout - mark remaining tasks as failed
 
     async def _execute_tasks(self):
-        """
-        Sequential flow with strict ordering and verification
-        """
+        """Execute tasks sequentially since Huey handles the parallelization"""
         try:
             # 1. Summary Generation
             try:
@@ -97,7 +90,7 @@ class TaskManager:
                     detail="Internal server error during summary generation.",
                 ) from e
 
-            # 3. Context Scans - Strict batching with verification
+            # 2. Context Scans - Strict batching with verification
             await self._run_context_scans_in_batches()
 
         except asyncio.TimeoutError as e:
@@ -156,7 +149,7 @@ class TaskManager:
                     await self.scan.save()
 
         except Exception as e:
-            logger.error(f"Batch task failed: {str(e)}")
+            logger.error(f"[Agentic] Batch task failed: {str(e)}")
             # Mark all detectors in the batch as failed
             for config in batch_configs:
                 detector_name = config["detector_name"]
@@ -170,14 +163,13 @@ class TaskManager:
                     await self.scan.save()
 
     async def run_context_scan_with_batch(self, batch_configs):
-        """Run a batch of context scans using process pool"""
+        """Run a batch of context scans"""
         try:
             logger.info(
-                f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
+                f"[Agentic] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
             )
 
-            response_dicts = await self.process_pool.run_in_process(
-                run_context_scan_batch,
+            response_dicts = await run_context_scan_batch(
                 self.flattened_contracts,
                 self.summary_result,
                 None,  # docs parameter
@@ -186,7 +178,7 @@ class TaskManager:
 
             return response_dicts
         except Exception as e:
-            error_msg = f"Batch context scan failed: {str(e)}"
+            error_msg = f"[Agentic] Batch context scan failed: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise
 
@@ -196,7 +188,7 @@ class TaskManager:
         detected_type: Profiles
 
     async def gather_results(self) -> GatherResults:
-        # Use stored results instead of awaiting tasks again
+        """Gather and process all results with final progress updates."""
         results = []
         detector_name_to_result = {}
 
@@ -216,24 +208,25 @@ class TaskManager:
 
             if isinstance(context_scan_result, (Exception, asyncio.TimeoutError)):
                 detector_updates[detector_name] = False
-                logger.error(f"Context scan failed - Detector: {detector_name}")
+                logger.error(f"[Agentic] Context scan failed - Detector: {detector_name}")
             else:
                 detector_updates[detector_name] = True
                 findings = context_scan_result.findings
                 findings_by_detector[detector_name] = findings
                 combined_findings.extend(findings)
                 logger.info(
-                    f"Context scan completed successfully - Detector: {detector_name}, "
+                    f"[Agentic] Context scan completed successfully - Detector: {detector_name}, "
                     f"Found {len(findings)} issues"
                 )
 
-        # Single database update for all detectors
+        # Update final scan status
         if self.scan:
             self.scan.detectors.update(detector_updates)
             await self.scan.save()
 
-        # Simplified logging for findings
-        logger.info(f"Scan {self.scan_id} completed with {len(combined_findings)} total findings.")
+        logger.info(
+            f"[Agentic] Scan {self.scan_id} completed with {len(combined_findings)} total findings."
+        )
 
         return {
             "combined_findings": combined_findings,

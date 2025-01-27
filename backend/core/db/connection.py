@@ -1,7 +1,9 @@
+import os
 from datetime import datetime, timedelta, timezone
 
 import certifi
 from beanie import init_beanie
+from huey import SqliteHuey
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import settings
@@ -27,6 +29,25 @@ DOCUMENT_MODELS = [
     OAuthState,
     ThrottleRecord,
 ]
+
+# Create storage directory for SQLite databases if it doesn't exist
+storage_dir = os.path.join(os.path.dirname(__file__), "storage")
+os.makedirs(storage_dir, exist_ok=True)
+
+# Initialize Huey with SQLite storage based on environment
+if settings.ENVIRONMENT == "development":
+    db_name = "audit_agent_dev_tasks.db"
+elif settings.ENVIRONMENT == "staging":
+    db_name = "audit_agent_staging_tasks.db"
+else:  # production
+    db_name = "audit_agent_tasks.db"
+
+# Initialize Huey with environment-specific SQLite database in storage directory
+huey = SqliteHuey(
+    name="audit_agent",
+    filename=os.path.join(storage_dir, db_name),
+    immediate=False,  # Always run tasks in background workers
+)
 
 # Initialize MongoDB client
 client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
@@ -80,4 +101,33 @@ async def cleanup_login_attempts():
 
     except Exception as e:
         logger.error(f"Error during login attempts cleanup: {str(e)}")
+        # Don't raise the error to prevent scheduler from stopping
+
+
+async def cleanup_huey_tasks():
+    """Cleanup completed Huey tasks older than 7 days"""
+    try:
+        # Get the current database file based on environment
+        if settings.ENVIRONMENT == "development":
+            db_name = "audit_agent_dev_tasks.db"
+        elif settings.ENVIRONMENT == "staging":
+            db_name = "audit_agent_staging_tasks.db"
+        else:  # production
+            db_name = "audit_agent_tasks.db"
+
+        db_path = os.path.join(storage_dir, db_name)
+        if not os.path.exists(db_path):
+            logger.info(f"No Huey database found at {db_path}")
+            return
+
+        # Calculate the cutoff timestamp (7 days ago)
+        cutoff = datetime.now() - timedelta(days=7)
+        cutoff_timestamp = int(cutoff.timestamp())
+
+        # Clean up completed tasks older than the cutoff
+        huey.storage.delete_older_than(cutoff_timestamp)
+        logger.info(f"Cleaned up Huey tasks older than {cutoff.strftime('%Y-%m-%d %H:%M:%S')}")
+
+    except Exception as e:
+        logger.error(f"Error during Huey tasks cleanup: {str(e)}")
         # Don't raise the error to prevent scheduler from stopping

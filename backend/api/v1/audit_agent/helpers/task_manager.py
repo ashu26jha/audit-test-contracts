@@ -16,7 +16,6 @@ from core.models.scan import Finding, Scan
 from core.schemas.audit_agent_schema import SetupResult
 from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
-from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
@@ -53,7 +52,6 @@ class TaskManager:
 
         self.task_results = {}
         self.error_email_sent = False
-        self.process_pool = ProcessPoolManager.get_instance()
 
     async def initialize_scan(self):
         # Fetch the scan document to update detectors
@@ -152,33 +150,17 @@ class TaskManager:
             if self.setup_result:
                 # Static Analysis with silent failure
                 try:
-                    # Create and await static analysis
-                    self.static_analysis_task = asyncio.create_task(
-                        run_static_analyzer(
-                            "",
-                            "",
-                            self.selected_contracts,
-                            self.setup_result,
-                        )
+                    # Run static analysis directly
+                    static_analysis_result = await run_static_analyzer(
+                        github_url="",
+                        oauth_token="",
+                        selected_contracts=self.selected_contracts,
+                        setup_result=self.setup_result,
                     )
-
-                    # Monitor task
-                    monitor_task = asyncio.create_task(
-                        self._monitor_task(
-                            self.static_analysis_task,
-                            "static_analyzer",
-                        )
-                    )
-
-                    # Wait for both execution and monitoring to complete with timeout
-                    await asyncio.wait(
-                        [self.static_analysis_task, monitor_task],
-                        timeout=300,  # 5 minutes timeout
-                        return_when=asyncio.ALL_COMPLETED,
-                    )
+                    self.task_results["static_analyzer"] = static_analysis_result
+                    await self.update_progress("static_analyzer", True)
                 except Exception as e:
-                    logger.error(f"Static analysis failed silently: {str(e)}")
-                    # Store the error but continue execution
+                    logger.error(f"Static analysis failed: {str(e)}")
                     self.task_results["static_analyzer"] = e
                     await self.update_progress("static_analyzer", False)
 
@@ -262,8 +244,8 @@ class TaskManager:
         # Process configs in pairs of batches
         for i in range(0, total_configs, batch_size * 2):
             # Create two batches of 3 configs each
-            batch1 = configs[i : i + batch_size]
-            batch2 = configs[i + batch_size : i + (batch_size * 2)]
+            batch1 = configs[i : i + batch_size]  # noqa: E203
+            batch2 = configs[i + batch_size : i + (batch_size * 2)]  # noqa: E203
 
             # Process both batches simultaneously
             tasks = []
@@ -329,13 +311,11 @@ class TaskManager:
                     await self.scan.save()
 
     async def run_context_scan_with_batch(self, batch_configs):
-        """Run a batch of context scans using process pool"""
+        """Run a batch of context scans directly in the worker process"""
         try:
-            logger.info(
-                f"[ProcessPool] Starting batch scan with models: {[c['model'] for c in batch_configs]}"
-            )
-            response_dicts = await self.process_pool.run_in_process(
-                run_context_scan_batch,
+            logger.info(f"Starting batch scan with models: {[c['model'] for c in batch_configs]}")
+            # Run directly in the worker process
+            response_dicts = await run_context_scan_batch(
                 self.flattened_contracts,
                 self.summary_result,
                 self.docs,

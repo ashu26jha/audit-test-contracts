@@ -167,4 +167,4 @@ scripts/
 /temp/
 .coverage
 dump.rdb
-
+core/db/storage/**/*

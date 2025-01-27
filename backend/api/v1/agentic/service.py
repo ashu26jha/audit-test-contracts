@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.agentic.helpers.eliza_callback import send_callback_status
@@ -10,6 +10,7 @@ from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
 from api.v1.common.result_processor import ResultProcessor
 from api.v1.utilities.etherscan.service import EtherscanService
 from api.v1.utilities.pdf.service import generate_and_send_agentic_pdf
+from core.db.connection import close_database, huey, init_database
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Scan
 from core.utils.logger import logger
@@ -17,13 +18,9 @@ from core.utils.logger import logger
 
 class AgenticService:
     @staticmethod
-    async def create_scan_per_address(
-        scan_id: UUID,
-        request: PerAddressAgenticRequest,
-        background_tasks: BackgroundTasks,
-    ):
+    async def create_scan_per_address(scan_id: UUID, request: PerAddressAgenticRequest):
         try:
-            # fetch contract code from address
+            # Fetch and validate contract source code from Etherscan
             contracts_dict = await EtherscanService.get_contract_source(
                 request.contractAddress, request.chainId
             )
@@ -62,29 +59,29 @@ class AgenticService:
                 context = AgenticScanContext(
                     scan_id=scan_id,
                     user_email=request.userEmail,
+                    user_name=request.userName,
                     contract_address=request.contractAddress,
                     chain_id=request.chainId,
                     contract_files=contract_files,
                     flattened_contracts=flattened_contracts,
                 )
 
-                # Start initialization in background
-                background_tasks.add_task(
-                    AgenticService._perform_audit_agent_background,
-                    context,
-                )
+                # Queue scan for background processing in Huey worker
+                perform_agentic_background(context)
 
             except HTTPException:
                 raise
             except Exception as e:
                 logger.exception(f"[Agentic] Unexpected error during scan initiation: {str(e)}")
-                await ScanRepository.update_scan_failure(scan_id, "Failed to initiate audit scan")
+                error_msg = f"Failed to initiate agentic scan for scan ID: {str(scan_id)}"
+                await ScanRepository.update_scan_failure(scan_id, error_msg)
                 await send_callback_status(
-                    scan_id,
+                    scan_id=scan_id,
+                    user_name=request.userName,
                     success=False,
-                    message=f"Failed to initiate audit scan for scan ID: {str(scan_id)}",
+                    message=error_msg,
                 )
-                raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
+                raise HTTPException(status_code=500, detail=error_msg) from e
 
         except HTTPException:
             raise
@@ -96,23 +93,39 @@ class AgenticService:
                 status_code=500, detail=f"Failed to process contract {request.contractAddress}"
             ) from e
 
-    @staticmethod
-    @observe(name="agentic_background_scan")
-    async def _perform_audit_agent_background(
-        context: AgenticScanContext,
-    ):
-        logger.info(f"[Agentic] Starting agentic background audit scan with ID: {context.scan_id}")
 
+@huey.task(retries=3, retry_delay=60, priority=6)
+def perform_agentic_background(context: AgenticScanContext):
+    """Background task to perform the agentic scan.
+
+    Runs in a separate Huey worker process with database connection management.
+    Handles the complete scan lifecycle including summary generation, context scans,
+    and result processing.
+
+    Args:
+        context (AgenticScanContext): Complete context for the scan including
+            contract information and configuration.
+    """
+    logger.info(f"[Agentic] Starting agentic background audit scan with ID: {context.scan_id}")
+
+    import asyncio
+    import os
+
+    os.environ["HUEY_WORKER"] = "1"
+
+    @observe(name="agentic_background_scan")
+    async def _async_perform_scan():
         try:
+            # Initialize database connection in worker process
+            await init_database()
+
             # Initialize TaskManager
-            task_manager = TaskManager(
-                context=context,
-            )
+            task_manager = TaskManager(context)
 
             # Initialize scan and detectors
             await task_manager.initialize_scan()
 
-            # Start tasks (will skip Slither if setup_result is None)
+            # Start tasks
             await task_manager.start_tasks()
 
             # Gather and process results
@@ -132,6 +145,8 @@ class AgenticService:
                 summary_result=summary_result,
                 detected_type=detected_type,
             )
+
+            # Process results and update final scan status
             await result_processor.process_results()
             total_findings_after_dedup = result_processor.get_total_findings()
 
@@ -144,7 +159,8 @@ class AgenticService:
 
             # Send success callback
             await send_callback_status(
-                context.scan_id,
+                scan_id=context.scan_id,
+                user_name=context.user_name,
                 success=True,
                 message=f"Scan completed successfully with {total_findings_after_dedup} findings",
             )
@@ -153,19 +169,45 @@ class AgenticService:
             if context.user_email:
                 await generate_and_send_agentic_pdf(context.scan_id, context.user_email)
             else:
-                logger.warning("User email not configured, skipping PDF generation.")
+                logger.warning("[Agentic] User email not configured, skipping PDF generation.")
 
             logger.info(f"[Agentic] Completed agentic audit scan with ID: {context.scan_id}")
+
         except HTTPException as e:
             error_msg = f"[Agentic] Error in agentic audit scan {context.scan_id}: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            await send_callback_status(context.scan_id, success=False, message=e.detail)
+            await send_callback_status(
+                scan_id=context.scan_id,
+                user_name=context.user_name,
+                success=False,
+                message=e.detail,
+            )
             raise
 
         except Exception as e:
             error_msg = f"[Agentic] Unexpected error: {str(e)}"
             logger.exception(error_msg)
             await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            await send_callback_status(context.scan_id, success=False, message=error_msg)
+            await send_callback_status(
+                scan_id=context.scan_id,
+                user_name=context.user_name,
+                success=False,
+                message=error_msg,
+            )
             raise HTTPException(status_code=500, detail=error_msg) from e
+
+        finally:
+            await close_database()
+
+    try:
+        # Create and run event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(_async_perform_scan())
+    except Exception as e:
+        logger.exception(f"[Agentic] Error in Huey task: {str(e)}")
+        raise
+    finally:
+        loop.close()
+        asyncio.set_event_loop(None)

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import BackgroundTasks, HTTPException
+from fastapi import HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.audit_agent.helpers.payment_handler import PaymentHandler
@@ -14,6 +14,7 @@ from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
 from api.v1.payments.helpers.credits import CreditHelper
 from api.v1.utilities.pdf.service import generate_and_send_pdf_from_scan
+from core.db.connection import close_database, huey, init_database
 from core.db.repositories.docs import DocsRepository
 from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
@@ -21,7 +22,6 @@ from core.models.scan import Scan
 from core.models.user import User
 from core.utils.email_utils import send_error_email
 from core.utils.logger import logger
-from core.utils.process_pool import ProcessPoolManager
 from core.utils.profiles import Profiles
 from core.utils.validate import validate_free_scan_limit, validate_subscription_limits
 
@@ -35,7 +35,6 @@ class AuditAgentService:
         scan_id: UUID,
         user: User,
         request: AuditAgentRequest,
-        background_tasks: BackgroundTasks,
     ):
         initializer = ScanInitializer(user, request, scan_id)
         try:
@@ -83,25 +82,25 @@ class AuditAgentService:
             # Fetch commit hash
             await initializer.fetch_commit_hash()
 
-            # Create scan context
-            context = ScanContext(
-                scan_id=scan_id,
+            # Calculate priority based on user type
+            if user.is_enterprise:
+                priority = 1  # Highest priority
+            elif user.is_pro:
+                priority = 5  # Medium priority
+            else:
+                priority = 10  # Lowest priority (default)
+
+            # Queue the task with Huey
+            perform_audit_agent_background(
+                scan_id=str(scan_id),
                 user_id=str(user.githubId),
                 user_email=user.email,
                 user_access_token=user.accessToken,
                 scan_number=scan_number,
-                repository_url=request.repositoryURL,
-                branch_name=request.branchName,
-                contract_files=request.contractFiles,
+                request_dict=request.model_dump(),
                 is_subscription_scan=is_subscription_scan,
-                formatted_docs=formatted_docs,
-            )
-
-            # Start initialization in background
-            background_tasks.add_task(
-                AuditAgentService._perform_audit_agent_background,
-                context,
-                initializer,
+                formatted_docs=formatted_docs if formatted_docs else None,
+                priority=priority,
             )
 
         except HTTPException:
@@ -112,135 +111,204 @@ class AuditAgentService:
             await send_error_email(user.email, scan_id)
             raise HTTPException(status_code=500, detail="Failed to initiate audit scan") from e
 
-    @staticmethod
-    @observe(name="audit_agent_background")
-    async def _perform_audit_agent_background(
-        context: ScanContext,
-        initializer: ScanInitializer,
-    ):
-        logger.info(f"Starting background audit scan with ID: {context.scan_id}")
+
+@huey.task(retries=3, retry_delay=60, priority=10)
+def perform_audit_agent_background(
+    scan_id: str,
+    user_id: str,
+    user_email: str,
+    user_access_token: str,
+    scan_number: int,
+    request_dict: dict,
+    is_subscription_scan: bool,
+    formatted_docs: dict = None,
+):
+    """
+    The main Huey task that executes the audit scan
+    """
+    import asyncio
+    import os
+
+    # Set environment variable to indicate we're in a Huey worker
+    os.environ["HUEY_WORKER"] = "1"
+
+    try:
+        # Create a new event loop using the default event loop policy
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        @observe(name="audit_agent_background")
+        async def _async_perform_scan():
+            initializer = None
+            try:
+                # Initialize database connection for the worker process
+                await init_database()
+
+                # Convert request dict back to AuditAgentRequest
+                request = AuditAgentRequest(**request_dict)
+
+                # Create context
+                context = ScanContext(
+                    scan_id=UUID(scan_id),
+                    user_id=user_id,
+                    user_email=user_email,
+                    user_access_token=user_access_token,
+                    scan_number=scan_number,
+                    repository_url=request.repositoryURL,
+                    branch_name=request.branchName,
+                    contract_files=request.contractFiles,
+                    is_subscription_scan=is_subscription_scan,
+                    formatted_docs=formatted_docs,
+                )
+
+                # Create a User object for the initializer
+                user = await UserRepository.get_by_github_id(user_id)
+
+                # Create initializer with the actual User object
+                initializer = ScanInitializer(user, request, UUID(scan_id))
+
+                logger.info(f"Starting background audit scan with ID: {context.scan_id}")
+
+                try:
+                    # Create initial payment record
+                    payment_handler = PaymentHandler(context)
+                    await payment_handler.initialize_payment()
+
+                    # Deduct credit
+                    if context.is_subscription_scan:
+                        await CreditHelper.deduct_credit(
+                            context.user_id, context.scan_id, context.repository_url
+                        )
+
+                    await ScanRepository.update_scan_progress(context.scan_id, 5)
+
+                    # Setup environment
+                    await initializer.clone_repository()
+
+                    # Flatten contracts & Count lines of code
+                    flattened_contracts = await initializer.flatten_contracts()
+                    lines_of_code = await initializer.count_lines_of_code(flattened_contracts)
+
+                    # Let validation errors bubble up to main exception handler
+                    await validate_subscription_limits(
+                        context.user_id, context.contract_files, lines_of_code.total_lines
+                    )
+
+                    # Update scan status to 'in_progress'
+                    await ScanRepository.update_scan_status(context.scan_id, "in_progress")
+                    await ScanRepository.update_scan_progress(context.scan_id, 12)
+
+                    # Set up the environment directly in the worker process
+                    setup_result = None
+                    try:
+                        setup_result = await setup_environment(
+                            context.repository_url,
+                            initializer.repo_dir,
+                            context.user_access_token,
+                            context.branch_name,
+                            context.contract_files,
+                        )
+                        # Update progress after successful setup (25%)
+                        await ScanRepository.update_scan_progress(context.scan_id, 25)
+                    except Exception as e:
+                        logger.error(f"Environment setup failed: {str(e)}")
+                        # Continue with setup_result as None
+
+                    # Initialize TaskManager
+                    task_manager = TaskManager(
+                        context=context,
+                        flattened_contracts=flattened_contracts,
+                        setup_result=setup_result,
+                        detected_profile=Profiles.DEFAULT,
+                    )
+
+                    # Initialize scan and detectors
+                    await task_manager.initialize_scan()
+
+                    # Start tasks (will skip Slither if setup_result is None)
+                    await task_manager.start_tasks()
+
+                    # Gather and process results
+                    results = await task_manager.gather_results()
+
+                    combined_findings = results["combined_findings"]
+                    summary_result = results["summary_result"]
+                    detected_type = results["detected_type"]
+
+                    # Process results using ResultProcessor
+                    result_processor = ResultProcessor(
+                        scan_id=context.scan_id,
+                        user_id=context.user_id,
+                        contract_files=context.contract_files,
+                        combined_findings=combined_findings,
+                        flattened_contracts=flattened_contracts,
+                        summary_result=summary_result,
+                        detected_type=detected_type,
+                    )
+                    await result_processor.process_results()
+                    total_findings_after_dedup = result_processor.get_total_findings()
+
+                    langfuse_context.update_current_trace(session_id=str(context.scan_id))
+
+                    # Handle payment processing using PaymentHandler
+                    payment_handler = PaymentHandler(context, total_findings_after_dedup)
+                    await payment_handler.finalize_payment()
+
+                    # Update scan status to 'completed' and include total_findings
+                    await ScanRepository.update_scan_status(
+                        context.scan_id, "completed", total_findings_after_dedup
+                    )
+
+                    # Generate PDF without blocking scan completion
+                    if context.user_email:
+                        try:
+                            user = await UserRepository.get_by_github_id(context.user_id)
+                            await generate_and_send_pdf_from_scan(user, context.scan_id)
+                        except Exception as e:
+                            logger.error(f"Failed to generate PDF: {str(e)}")
+                            # Don't fail the scan if PDF generation fails
+                    else:
+                        logger.warning(f"User {context.user_id} does not have an email address.")
+
+                    logger.info(f"Completed audit scan with ID: {context.scan_id}")
+
+                    return results
+                except HTTPException as e:
+                    error_msg = f"Error in audit scan {context.scan_id}: {str(e)}"
+                    logger.exception(error_msg)
+                    await ScanRepository.update_scan_failure(context.scan_id, e.detail)
+                    if context.is_subscription_scan:
+                        await CreditHelper.refund_credit(context.user_id, context.scan_id)
+                    # await send_error_email(context.user_email, context.scan_id)
+                    raise
+                except Exception as e:
+                    error_msg = f"Unexpected error: {str(e)}"
+                    logger.exception(error_msg)
+                    await ScanRepository.update_scan_failure(context.scan_id, error_msg)
+                    if context.is_subscription_scan:
+                        await CreditHelper.refund_credit(context.user_id, context.scan_id)
+                    # await send_error_email(context.user_email, context.scan_id)
+                    raise HTTPException(status_code=500, detail=error_msg) from e
+            except Exception as e:
+                logger.exception(f"Error in async scan execution: {str(e)}")
+                raise
+            finally:
+                if (
+                    initializer
+                    and hasattr(initializer, "temp_dir")
+                    and hasattr(initializer, "repo_dir")
+                ):
+                    await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
+                await close_database()
 
         try:
-            # Create initial payment record
-            payment_handler = PaymentHandler(context)
-            await payment_handler.initialize_payment()
-
-            # Deduct credit
-            if context.is_subscription_scan:
-                await CreditHelper.deduct_credit(
-                    context.user_id, context.scan_id, context.repository_url
-                )
-
-            await ScanRepository.update_scan_progress(context.scan_id, 5)
-
-            # Setup environment
-            await initializer.clone_repository()
-
-            # Flatten contracts & Count lines of code
-            flattened_contracts = await initializer.flatten_contracts()
-            lines_of_code = await initializer.count_lines_of_code(flattened_contracts)
-
-            # Let validation errors bubble up to main exception handler
-            await validate_subscription_limits(
-                context.user_id, context.contract_files, lines_of_code.total_lines
-            )
-
-            # Update scan status to 'in_progress'
-            await ScanRepository.update_scan_status(context.scan_id, "in_progress")
-            await ScanRepository.update_scan_progress(context.scan_id, 12)
-
-            # Get process pool instance
-            process_pool = ProcessPoolManager.get_instance()
-
-            # Attempt to set up the environment using the process pool
-            # This runs CPU-intensive operations (compilation, dependency installation) in a separate process
-            # to avoid blocking the main worker and reduce CPU spikes
-            setup_result = None
-            try:
-                setup_result = await process_pool.run_in_process(
-                    setup_environment,
-                    context.repository_url,
-                    initializer.repo_dir,
-                    context.user_access_token,
-                    context.branch_name,
-                    context.contract_files,
-                )
-
-                # Update progress after successful setup (25%)
-                await ScanRepository.update_scan_progress(context.scan_id, 25)
-            except Exception as e:
-                logger.error(f"Environment setup failed in process pool: {str(e)}")
-                # Continue with setup_result as None
-
-            # Initialize TaskManager
-            task_manager = TaskManager(
-                context=context,
-                flattened_contracts=flattened_contracts,
-                setup_result=setup_result,
-                detected_profile=Profiles.DEFAULT,
-            )
-
-            # Initialize scan and detectors
-            await task_manager.initialize_scan()
-
-            # Start tasks (will skip Slither if setup_result is None)
-            await task_manager.start_tasks()
-
-            # Gather and process results
-            results = await task_manager.gather_results()
-
-            combined_findings = results["combined_findings"]
-            summary_result = results["summary_result"]
-            detected_type = results["detected_type"]
-
-            # Process results using ResultProcessor
-            result_processor = ResultProcessor(
-                scan_id=context.scan_id,
-                user_id=context.user_id,
-                contract_files=context.contract_files,
-                combined_findings=combined_findings,
-                flattened_contracts=flattened_contracts,
-                summary_result=summary_result,
-                detected_type=detected_type,
-            )
-            await result_processor.process_results()
-            total_findings_after_dedup = result_processor.get_total_findings()
-
-            langfuse_context.update_current_trace(session_id=str(context.scan_id))
-
-            # Handle payment processing using PaymentHandler
-            payment_handler = PaymentHandler(context, total_findings_after_dedup)
-            await payment_handler.finalize_payment()
-
-            # Update scan status to 'completed' and include total_findings
-            await ScanRepository.update_scan_status(
-                context.scan_id, "completed", total_findings_after_dedup
-            )
-
-            # Generate PDF without blocking scan completion
-            if context.user_email:
-                user = await UserRepository.get_by_github_id(context.user_id)
-                await generate_and_send_pdf_from_scan(user, context.scan_id)
-            else:
-                logger.warning(f"User {context.user_id} does not have an email address.")
-
-            logger.info(f"Completed audit scan with ID: {context.scan_id}")
-        except HTTPException as e:
-            error_msg = f"Error in audit scan {context.scan_id}: {str(e)}"
-            logger.exception(error_msg)
-            await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            if context.is_subscription_scan:
-                await CreditHelper.refund_credit(context.user_id, context.scan_id)
-            await send_error_email(context.user_email, context.scan_id)
-            raise
-
-        except Exception as e:
-            error_msg = f"Unexpected error: {str(e)}"
-            logger.exception(error_msg)
-            await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            if context.is_subscription_scan:
-                await CreditHelper.refund_credit(context.user_id, context.scan_id)
-            await send_error_email(context.user_email, context.scan_id)
-            raise HTTPException(status_code=500, detail=error_msg) from e
+            # Run the async function in the event loop
+            return loop.run_until_complete(_async_perform_scan())
         finally:
-            await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
+            # Clean up the event loop
+            loop.close()
+            asyncio.set_event_loop(None)
+
+    except Exception as e:
+        logger.exception(f"Error in Huey task: {str(e)}")
+        raise
