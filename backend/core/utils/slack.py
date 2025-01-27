@@ -16,6 +16,9 @@ async def send_slack_message():
         ─ Total Scans: {stats_24h.total_scans_24h}
         ─ Vulnerabilities Found: {stats_24h.vulnerabilities_found}
         ─ External Scans: {stats_24h.paid_scans_24h}
+        ─ Free Scans: {stats_24h.free_scans}
+        ─ Pro Scans: {stats_24h.pro_scans}
+        ─ Enterprise Scans: {stats_24h.enterprise_scans}
         """
 
         slack_client = slack.WebClient(token=SLACK_TOKEN)
