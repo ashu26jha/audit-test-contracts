@@ -1,4 +1,4 @@
-import os
+import multiprocessing
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -7,17 +7,23 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
+from huey.consumer import Consumer
 
 from api.v1.router import router as api_v1_router
 from config import settings
-from core.db.connection import cleanup_login_attempts, close_database, init_database
+from core.db.connection import (
+    cleanup_huey_tasks,
+    cleanup_login_attempts,
+    close_database,
+    huey,
+    init_database,
+)
 from core.utils.error_handling import (
     general_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
 from core.utils.logger import logger
-from core.utils.process_pool import ProcessPoolManager
 from core.utils.slack import send_slack_message
 
 # Create scheduler
@@ -26,9 +32,17 @@ scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize process pool
-    process_pool = ProcessPoolManager.get_instance()
-    process_pool.initialize()
+    # Configure and start Huey consumer with multiple workers
+    workers = max(2, multiprocessing.cpu_count() - 1)  # Use N-1 cores, minimum 2
+    consumer = Consumer(
+        huey,
+        workers=workers,  # Multiple workers to leverage CPU cores
+        worker_type="process",
+        check_worker_health=True,
+        health_check_interval=10,
+    )
+    consumer.start()
+    logger.info(f"Huey consumer started with {workers} worker processes")
 
     if settings.SLACK_TOKEN:
         scheduler.add_job(
@@ -39,11 +53,22 @@ async def lifespan(app: FastAPI):
             timezone="Asia/Kolkata",
         )
 
+    # Login attempt cleanup job - run daily at 12:30 AM
     scheduler.add_job(
         cleanup_login_attempts,
         "interval",
         hours=24,
         name="cleanup_login_attempts",
+        misfire_grace_time=3600,
+    )
+
+    # Huey tasks cleanup job - run daily at midnight
+    scheduler.add_job(
+        cleanup_huey_tasks,
+        "cron",
+        hour=0,
+        minute=0,
+        name="cleanup_huey_tasks",
         misfire_grace_time=3600,
     )
 
@@ -56,8 +81,8 @@ async def lifespan(app: FastAPI):
 
     # Cleanup
     await close_database()
-    process_pool.shutdown()
-    logger.info("Process pool shutdown complete")
+    consumer.stop()
+    logger.info("Huey consumer stopped")
 
 
 app = FastAPI(
@@ -110,10 +135,4 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 
 if __name__ == "__main__":
-    if settings.ENVIRONMENT == "development":
-        # Use standard Uvicorn in development
-        uvicorn.run(app, host="0.0.0.0", port=8000)
-    else:
-        # Use Gunicorn with config from gunicorn.conf.py
-        os.environ["GUNICORN_WORKER"] = "1"
-        os.system("gunicorn 'main:app' --config gunicorn.conf.py")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

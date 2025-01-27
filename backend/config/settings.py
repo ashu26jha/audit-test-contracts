@@ -126,3 +126,10 @@ BASE_ETHERSCAN_URL = "https://api.etherscan.io/v2/api"
 ##################################################
 
 SLACK_TOKEN = os.getenv("SLACK_TOKEN")
+
+
+##################################################
+#         ELIZA (Only for Agentic scans)
+##################################################
+
+ELIZA_CALLBACK_URL = os.getenv("ELIZA_CALLBACK_URL")

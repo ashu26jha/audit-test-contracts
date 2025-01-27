@@ -1,7 +1,7 @@
 from typing import Union
 from uuid import uuid4
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, Depends, status
 
 from api.v1.audit_agent.schema import (
     AuditAgentInitiateResponse,
@@ -26,7 +26,6 @@ router = APIRouter()
 )
 async def perform_audit_agent(
     request: AuditAgentRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -42,7 +41,7 @@ async def perform_audit_agent(
         scan_id (UUID): Unique identifier for the scan
     """
     scan_id = uuid4()
-    await AuditAgentService.create_scan(scan_id, current_user, request, background_tasks)
+    await AuditAgentService.create_scan(scan_id, current_user, request)
     return SuccessResponse(data=AuditAgentInitiateResponse(scan_id=scan_id))
 
 

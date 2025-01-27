@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter
 
 from api.v1.audit_agent.schema import AuditAgentRequest
 from api.v1.audit_agent.service import AuditAgentService
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 
 
 @router.post("/")
-async def benchmark(request: AuditAgentRequest, background_tasks: BackgroundTasks):
+async def benchmark(request: AuditAgentRequest):
     """
     Benchmarks AuditAgent, returns a scan_id
     """
@@ -38,7 +38,7 @@ async def benchmark(request: AuditAgentRequest, background_tasks: BackgroundTask
     )
     await user.save()
 
-    await AuditAgentService.create_scan(scan_id, user, request, background_tasks)
+    await AuditAgentService.create_scan(scan_id, user, request)
     return SuccessResponse(data=scan_id)
 
 
