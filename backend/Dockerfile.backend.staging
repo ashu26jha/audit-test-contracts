@@ -1,34 +1,26 @@
 # Build stage
-FROM python:3.12.0-slim AS builder
+FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1
 
-# Install build dependencies, Foundry and Rust
+# Install build dependencies, Foundry and Stripe CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ca-certificates \
     curl \
     git \
     gnupg \
-    libssl-dev \
-    pkg-config \
     wget \
     && curl --proto "=https" -L https://foundry.paradigm.xyz | bash \
     && /root/.foundry/bin/foundryup \
-    && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && . "$HOME/.cargo/env" \
-    && git clone --branch v0.3.3 https://github.com/Cyfrin/aderyn.git \
-    && cd aderyn \
-    && cargo build --release \
-    && mkdir -p /root/.cyfrin/bin \
-    && cp target/release/aderyn /root/.cyfrin/bin/ \
-    && cd .. \
-    && rm -rf aderyn \
+    && curl --proto "=https" -L https://raw.githubusercontent.com/Cyfrin/aderyn/dev/cyfrinup/install | bash \
+    && /root/.cyfrin/bin/cyfrinup \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Final stage
-FROM python:3.12.0-slim
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -36,13 +28,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Copy installed tools from builder stage
 COPY --from=builder /root/.foundry /root/.foundry
+COPY --from=builder /root/.cyfrin /root/.cyfrin
 
 # Install runtime dependencies, Node.js, and Doppler in one layer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     git \
-    gnupg \
+    python3 \
+    python3-pip \
+    python3-venv \
     && curl --proto "=https" --tlsv1.2 -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs=20.* \
     && npm install -g --ignore-scripts npm@latest \
@@ -53,15 +48,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /root/.npm/* /root/.cache/*
 
-# Install Python dependencies, Playwright (Chromium only), and Aderyn
+# Create and activate virtual environment
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Install Python dependencies in virtual environment
 WORKDIR /app/backend
 COPY requirements.txt .
-COPY --from=builder /root/.cyfrin/bin/aderyn /root/.cyfrin/bin/aderyn
 
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install --no-cache-dir setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt \
     && pip install --no-cache-dir slither-analyzer==0.10.0 solc-select==1.0.4 toml==0.10.2 \
     && playwright install chromium --with-deps \
-    && chmod +x /root/.cyfrin/bin/aderyn \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /root/.npm/*
 
