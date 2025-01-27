@@ -70,12 +70,8 @@ class StripeSubscriptionHelper:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     @staticmethod
-    async def create_enterprise_subscription_session(
-        email: str, user_id: str
-    ) -> stripe.checkout.Session:
+    async def create_enterprise_subscription_session(user_id: str) -> stripe.checkout.Session:
         """Create subscription session for enterprise plan without payment method."""
-        if not email:
-            raise HTTPException(status_code=400, detail="Email is required")
 
         subscription = SUBSCRIPTION_SETTINGS[SubscriptionType.ENTERPRISE]
         if not subscription["price"]:
@@ -92,7 +88,7 @@ class StripeSubscriptionHelper:
             }
 
             return stripe.checkout.Session.create(
-                customer_email=email,
+                customer_email=None,
                 billing_address_collection="auto",
                 line_items=[
                     {
