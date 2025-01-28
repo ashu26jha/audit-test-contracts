@@ -50,21 +50,32 @@ huey = SqliteHuey(
 )
 
 # Initialize MongoDB client
-client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+client = None
+
+
+def get_client():
+    global client
+    if client is None:
+        client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    return client
+
 
 # Select database based on environment
-if settings.ENVIRONMENT == "development":
-    db = client.audit_agent_dev
-elif settings.ENVIRONMENT == "staging":
-    db = client.audit_agent_staging
-else:
-    db = client.audit_agent
+def get_database():
+    db_client = get_client()
+    if settings.ENVIRONMENT == "development":
+        return db_client.audit_agent_dev
+    elif settings.ENVIRONMENT == "staging":
+        return db_client.audit_agent_staging
+    else:
+        return db_client.audit_agent
 
 
 async def init_database():
     """Initialize database connection and Beanie models"""
     try:
         logger.info("Connecting to MongoDB...")
+        db = get_database()
         await init_beanie(
             database=db,
             document_models=DOCUMENT_MODELS,
@@ -77,10 +88,13 @@ async def init_database():
 
 async def close_database():
     """Close database connection"""
+    global client
     try:
-        logger.info("Closing MongoDB connection")
-        client.close()
-        logger.info("MongoDB connection closed")
+        if client:
+            logger.info("Closing MongoDB connection")
+            client.close()
+            client = None
+            logger.info("MongoDB connection closed")
     except Exception as e:
         logger.error(f"Error closing database connection: {str(e)}")
         raise

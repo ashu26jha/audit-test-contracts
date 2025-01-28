@@ -1,6 +1,6 @@
+import asyncio
 import json
 from asyncio import Semaphore, sleep
-from collections import defaultdict
 from typing import List, Optional, Type, TypeVar, Union
 
 import google.generativeai as genai
@@ -22,15 +22,15 @@ from core.utils.token_count import count_tokens
 # Global limit of 6 concurrent requests across *all* models
 GLOBAL_SEMAPHORE = Semaphore(6)
 
-# Per-model limit of 2 concurrent requests
-MODEL_SEMAPHORES = defaultdict(lambda: Semaphore(3))
-
 # Per-request timeout
 REQUEST_DELAY = 0.5  # seconds
 REQUEST_TIMEOUT = 240.0  # 4 minutes per request
 CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 
 T = TypeVar("T", bound=BaseModel)
+
+# Replace the old MODEL_SEMAPHORES with a loop-aware dictionary:
+_MODEL_SEMAPHORES_PER_LOOP = {}
 
 
 @observe(name="llm_call", as_type="generation")
@@ -54,7 +54,8 @@ async def send_prompt_to_llm_async(
 
     try:
         async with GLOBAL_SEMAPHORE:
-            async with MODEL_SEMAPHORES[model_type]:
+            sem = _get_model_semaphore(model_type)
+            async with sem:
                 _validate_model(model_type)
 
                 # Convert string to message array for OpenAI/Anthropic
@@ -175,6 +176,24 @@ async def send_prompt_to_llm_async(
         )
         logger.exception(f"Unexpected error when sending prompt to {model_type}: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
+
+
+def _get_model_semaphore(model_type: str) -> asyncio.Semaphore:
+    """
+    Retrieve or create a semaphore for the given model_type,
+    scoped to the current event loop. This prevents cross-loop usage
+    that leads to the "bound to a different event loop" error.
+    """
+    current_loop = asyncio.get_running_loop()
+    if current_loop not in _MODEL_SEMAPHORES_PER_LOOP:
+        _MODEL_SEMAPHORES_PER_LOOP[current_loop] = {}
+
+    loop_semaphores = _MODEL_SEMAPHORES_PER_LOOP[current_loop]
+    if model_type not in loop_semaphores:
+        # You can customize the concurrency limit here if needed
+        loop_semaphores[model_type] = asyncio.Semaphore(2)
+
+    return loop_semaphores[model_type]
 
 
 def _validate_model(model_type: str) -> None:

@@ -168,3 +168,4 @@ scripts/
 .coverage
 dump.rdb
 core/db/storage/**/*
+!core/db/storage/.gitkeep
