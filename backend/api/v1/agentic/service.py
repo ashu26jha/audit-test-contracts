@@ -113,101 +113,115 @@ def perform_agentic_background(context: AgenticScanContext):
 
     os.environ["HUEY_WORKER"] = "1"
 
-    @observe(name="agentic_background_scan")
-    async def _async_perform_scan():
-        try:
-            # Initialize database connection in worker process
-            await init_database()
-
-            # Initialize TaskManager
-            task_manager = TaskManager(context)
-
-            # Initialize scan and detectors
-            await task_manager.initialize_scan()
-
-            # Start tasks
-            await task_manager.start_tasks()
-
-            # Gather and process results
-            results = await task_manager.gather_results()
-
-            combined_findings = results["combined_findings"]
-            summary_result = results["summary_result"]
-            detected_type = results["detected_type"]
-
-            # Process results using ResultProcessor
-            result_processor = ResultProcessor(
-                scan_id=context.scan_id,
-                user_id=None,
-                contract_files=context.contract_files,
-                combined_findings=combined_findings,
-                flattened_contracts=context.flattened_contracts,
-                summary_result=summary_result,
-                detected_type=detected_type,
-            )
-
-            # Process results and update final scan status
-            await result_processor.process_results()
-            total_findings_after_dedup = result_processor.get_total_findings()
-
-            langfuse_context.update_current_trace(session_id=str(context.scan_id))
-
-            # Update scan status to 'completed' and include total_findings
-            await ScanRepository.update_scan_status(
-                context.scan_id, "completed", total_findings_after_dedup
-            )
-
-            # Send success callback
-            await send_callback_status(
-                scan_id=context.scan_id,
-                user_name=context.user_name,
-                success=True,
-                message=f"Scan completed successfully with {total_findings_after_dedup} findings",
-            )
-
-            # Generate PDF without blocking scan completion
-            if context.user_email:
-                await generate_and_send_agentic_pdf(context.scan_id, context.user_email)
-            else:
-                logger.warning("[Agentic] User email not configured, skipping PDF generation.")
-
-            logger.info(f"[Agentic] Completed agentic audit scan with ID: {context.scan_id}")
-
-        except HTTPException as e:
-            error_msg = f"[Agentic] Error in agentic audit scan {context.scan_id}: {str(e)}"
-            logger.exception(error_msg)
-            await ScanRepository.update_scan_failure(context.scan_id, e.detail)
-            await send_callback_status(
-                scan_id=context.scan_id,
-                user_name=context.user_name,
-                success=False,
-                message=e.detail,
-            )
-            raise
-
-        except Exception as e:
-            error_msg = f"[Agentic] Unexpected error: {str(e)}"
-            logger.exception(error_msg)
-            await ScanRepository.update_scan_failure(context.scan_id, error_msg)
-            await send_callback_status(
-                scan_id=context.scan_id,
-                user_name=context.user_name,
-                success=False,
-                message=error_msg,
-            )
-            raise HTTPException(status_code=500, detail=error_msg) from e
-
-        finally:
-            await close_database()
+    # Create a new event loop using the default event loop policy
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
 
     try:
-        # Create and run event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(_async_perform_scan())
+        # Initialize database first, before any other async operations
+        loop.run_until_complete(init_database())
+
+        @observe(name="agentic_background_scan")
+        async def _async_perform_scan():
+            try:
+                # Initialize TaskManager
+                task_manager = TaskManager(context)
+
+                # Initialize scan and detectors
+                await task_manager.initialize_scan()
+
+                # Start tasks
+                await task_manager.start_tasks()
+
+                # Gather and process results
+                results = await task_manager.gather_results()
+
+                combined_findings = results["combined_findings"]
+                summary_result = results["summary_result"]
+                detected_type = results["detected_type"]
+
+                # Process results using ResultProcessor
+                result_processor = ResultProcessor(
+                    scan_id=context.scan_id,
+                    user_id=None,
+                    contract_files=context.contract_files,
+                    combined_findings=combined_findings,
+                    flattened_contracts=context.flattened_contracts,
+                    summary_result=summary_result,
+                    detected_type=detected_type,
+                )
+
+                # Process results and update final scan status
+                await result_processor.process_results()
+                total_findings_after_dedup = result_processor.get_total_findings()
+
+                langfuse_context.update_current_trace(session_id=str(context.scan_id))
+
+                # Update scan status to 'completed' and include total_findings
+                await ScanRepository.update_scan_status(
+                    context.scan_id, "completed", total_findings_after_dedup
+                )
+
+                # Send success callback
+                await send_callback_status(
+                    scan_id=context.scan_id,
+                    user_name=context.user_name,
+                    success=True,
+                    message=f"Scan completed successfully with {total_findings_after_dedup} findings",
+                )
+
+                # Generate PDF without blocking scan completion
+                if context.user_email:
+                    await generate_and_send_agentic_pdf(context.scan_id, context.user_email)
+                else:
+                    logger.warning("[Agentic] User email not configured, skipping PDF generation.")
+
+                logger.info(f"[Agentic] Completed agentic audit scan with ID: {context.scan_id}")
+
+            except HTTPException as e:
+                error_msg = f"[Agentic] Error in agentic audit scan {context.scan_id}: {str(e)}"
+                logger.exception(error_msg)
+                await ScanRepository.update_scan_failure(context.scan_id, e.detail)
+                await send_callback_status(
+                    scan_id=context.scan_id,
+                    user_name=context.user_name,
+                    success=False,
+                    message=e.detail,
+                )
+                raise
+
+            except Exception as e:
+                error_msg = f"[Agentic] Unexpected error: {str(e)}"
+                logger.exception(error_msg)
+                await ScanRepository.update_scan_failure(context.scan_id, error_msg)
+                await send_callback_status(
+                    scan_id=context.scan_id,
+                    user_name=context.user_name,
+                    success=False,
+                    message=error_msg,
+                )
+                raise HTTPException(status_code=500, detail=error_msg) from e
+
+            finally:
+                await close_database()
+
+        try:
+            # Run the async function in the event loop
+            return loop.run_until_complete(_async_perform_scan())
+        except Exception as e:
+            logger.exception(f"[Agentic] Error in Huey task: {str(e)}")
+            raise
+        finally:
+            try:
+                # Run all remaining tasks to completion
+                pending = asyncio.all_tasks(loop)
+                loop.run_until_complete(asyncio.gather(*pending))
+            except Exception as e:
+                logger.error(f"[Agentic] Error during task cleanup: {str(e)}")
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)
+
     except Exception as e:
         logger.exception(f"[Agentic] Error in Huey task: {str(e)}")
         raise
-    finally:
-        loop.close()
-        asyncio.set_event_loop(None)

@@ -132,18 +132,18 @@ def perform_audit_agent_background(
     # Set environment variable to indicate we're in a Huey worker
     os.environ["HUEY_WORKER"] = "1"
 
+    # Create a new event loop using the default event loop policy
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     try:
-        # Create a new event loop using the default event loop policy
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # Initialize database first, before any other async operations
+        loop.run_until_complete(init_database())
 
         @observe(name="audit_agent_background")
         async def _async_perform_scan():
             initializer = None
             try:
-                # Initialize database connection for the worker process
-                await init_database()
-
                 # Convert request dict back to AuditAgentRequest
                 request = AuditAgentRequest(**request_dict)
 
@@ -279,7 +279,7 @@ def perform_audit_agent_background(
                     await ScanRepository.update_scan_failure(context.scan_id, e.detail)
                     if context.is_subscription_scan:
                         await CreditHelper.refund_credit(context.user_id, context.scan_id)
-                    # await send_error_email(context.user_email, context.scan_id)
+                    await send_error_email(context.user_email, context.scan_id)
                     raise
                 except Exception as e:
                     error_msg = f"Unexpected error: {str(e)}"
@@ -287,7 +287,7 @@ def perform_audit_agent_background(
                     await ScanRepository.update_scan_failure(context.scan_id, error_msg)
                     if context.is_subscription_scan:
                         await CreditHelper.refund_credit(context.user_id, context.scan_id)
-                    # await send_error_email(context.user_email, context.scan_id)
+                    await send_error_email(context.user_email, context.scan_id)
                     raise HTTPException(status_code=500, detail=error_msg) from e
             except Exception as e:
                 logger.exception(f"Error in async scan execution: {str(e)}")
@@ -299,15 +299,24 @@ def perform_audit_agent_background(
                     and hasattr(initializer, "repo_dir")
                 ):
                     await cleanup_environment(initializer.temp_dir, initializer.repo_dir)
-                await close_database()
+                    await close_database()
 
         try:
             # Run the async function in the event loop
             return loop.run_until_complete(_async_perform_scan())
+        except Exception as e:
+            logger.exception(f"Error in Huey task: {str(e)}")
+            raise
         finally:
-            # Clean up the event loop
-            loop.close()
-            asyncio.set_event_loop(None)
+            try:
+                # Run all remaining tasks to completion
+                pending = asyncio.all_tasks(loop)
+                loop.run_until_complete(asyncio.gather(*pending))
+            except Exception as e:
+                logger.error(f"Error during task cleanup: {str(e)}")
+            finally:
+                loop.close()
+                asyncio.set_event_loop(None)
 
     except Exception as e:
         logger.exception(f"Error in Huey task: {str(e)}")
