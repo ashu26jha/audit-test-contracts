@@ -8,12 +8,15 @@
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-- [Running the Server](#running-the-server)
-- [Running the Linters](#running-the-linters)
-- [Running Tests](#running-tests)
+- [How to run the backend separately](#how-to-run-the-backend-separately)
+  - [Install dependencies](#install-dependencies)
+  - [Run the server](#run-the-server)
+  - [Run the Linters](#run-the-linters)
+  - [Run the Tests](#run-the-tests)
+  - [Run Stripe](#run-stripe)
+- [Backend Structure](#backend-structure)
 - [API Endpoints](#api-endpoints)
 - [Database Schema](#database-schema)
-- [Running stripe](#running-stripe)
 - [Profiles](#profiles)
 
 ## Introduction
@@ -28,6 +31,7 @@ This is the backend component of Audit Agent, providing the core functionality f
 - Node.js 20+
 - MongoDB
 - Git
+- Docker
 
 ### Installation
 
@@ -111,14 +115,14 @@ then run the following command to run the server:
 docker run -p 8000:8000 audit-agent-backend
 ```
 
-## Running the Linters
+### Run the Linters
 
 ```bash
 pre-commit install
 pre-commit run --all-files
 ```
 
-## Running Tests
+### Run the Tests
 
 To run the test suite (Make sure you have launched the local development server):
 
@@ -149,10 +153,93 @@ To generate a coverage report:
 pytest backend/tests/ -v --cov=backend --cov-report=html
 ```
 
+### Run Stripe:
+
+> Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
+
+> Note that `WEBHOOK_SECRET` for local deployment is generated in CLI (detail steps below)
+
+Fill the `STRIPE_API_KEY` and `WEBHOOK_SECRET` in the `.env` file.
+
+You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
+
+```json
+{
+    "scanId": "String"
+}
+```
+
+The response is:
+```json
+{
+  "session_id": "String",
+  "URL": "String"
+}
+```
+
+### To be able to use webhooks
+1. Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
+
+2. Login using: 
+```bash 
+stripe login
+```
+
+3. Run the following command to start the webhook listener:
+```bash
+stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook
+```
+
+4. The response of above command will be like, and paste your webhook URL:
+```bash
+Your webhook signing secret is whsec_ (^C to quit)
+```
+
+## Backend Structure
+
+```python
+backend/
+├── api/                 # API Layer organized by features
+│   └── v1/              # API Version 1
+│       ├── agentic/     # Agentic endpoints
+│       ├── audit_agent/ # Audit Agent endpoints
+│       ├── auth/        # Authentication endpoints
+│       ├── common/      # Common API utilities
+│       ├── detectors/   # Detectors endpoints
+│       ├── github/      # GitHub integration endpoints
+│       ├── payments/    # Payment processing endpoints
+│       ├── scans/       # Scan management endpoints
+│       └── utilities/   # Utility endpoints
+│
+├── core/                # Core Business Logic
+│   ├── db/              # Database layer and data access
+│   ├── llm/             # LLM integration
+│   ├── models/          # Data models
+│   ├── schemas/         # Pydantic schemas
+│   └── utils/           # Shared utility functions
+│
+├── config/              # Configuration management
+│
+├── tests/               # Test suite
+│   ├── api/             # API tests
+│   └── core/            # Core logic tests
+│
+└── main.py              # Application entry point
+
+Key Files:
+├── requirements.txt     # Python dependencies
+├── setup.cfg            # Project configuration
+├── Dockerfile.*         # Docker configurations
+└── .env                 # Environment variables
+```
+
 ## API Endpoints
 
-In development mode, you can access the API endpoints and their descriptions using the following URL: http://localhost:8000/docs
-
+> You can access the API endpoints and their descriptions using the following URLs: 
+> - development: http://localhost:8000/docs
+> - development: http://localhost:8000/redoc
+> - staging: http://api.auditagent.dev/docs
+> - staging: http://api.auditagent.dev/redoc
 
 ### Authentication Endpoints
 
@@ -738,47 +825,7 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 }
 ```
 
-## Running stripe:
 
-> Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
-
-> Note that `WEBHOOK_SECRET` for local deployment is generated in CLI (detail steps below)
-
-Fill the `STRIPE_API_KEY` and `WEBHOOK_SECRET` in the `.env` file.
-
-You need to send a post request to `http://localhost:8000/api/v1/payments/create-stripe-session`
-
-```json
-{
-    "scanId": "String"
-}
-```
-
-The response is:
-```json
-{
-  "session_id": "String",
-  "URL": "String"
-}
-```
-
-### To be able to use webhooks
-1. Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
-
-2. Login using: 
-```bash 
-stripe login
-```
-
-3. Run the following command to start the webhook listener:
-```bash
-stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook
-```
-
-4. The response of above command will be like, and paste your webhook URL:
-```bash
-Your webhook signing secret is whsec_ (^C to quit)
-```
 
 ## Profiles
 

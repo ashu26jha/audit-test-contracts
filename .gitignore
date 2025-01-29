@@ -2,3 +2,4 @@
 .cursorrules
 htmlcov/
 .coverage
+.DS_Store

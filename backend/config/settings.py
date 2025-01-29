@@ -6,7 +6,7 @@ load_dotenv()
 
 TITLE = "AuditAgent - APIs"
 DESCRIPTION = "API for auditing smart contracts and detecting vulnerabilities"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")

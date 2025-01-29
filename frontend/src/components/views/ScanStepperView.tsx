@@ -103,7 +103,7 @@ const ScanStepperView: FC = () => {
 
   useEffect(() => {
     resetStepper(user?.subscription.type === "free" ? 0 : 1);
-  }, [resetStepper, user]);
+  }, [resetStepper, user?.subscription.type]);
 
   useEffect(() => {
     setIsNextEnabled(isNextStepEnabled());

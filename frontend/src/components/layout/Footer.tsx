@@ -52,7 +52,7 @@ const Footer: FC = () => {
           >
             Privacy Policy
           </Link>
-          • Copyright © 2024 by Nethermind
+          • Copyright © {`${new Date().getFullYear()}`} by Nethermind
         </p>
       </footer>
     );
