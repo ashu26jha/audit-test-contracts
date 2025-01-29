@@ -51,6 +51,8 @@ const ProfileView: FC = () => {
         {selectedTab === "details" && <UserDetails user={user} logout={logout} />}
         {selectedTab === "repositories" && <AllowedRepositories />}
         {selectedTab === "subscription" && <SubscriptionDetails />}
+        {/* TODO: Enable this when CI flow is ready*/}
+        {/* {selectedTab === "github-action" && <GithubAction />} */}
       </div>
     </Container>
   );
