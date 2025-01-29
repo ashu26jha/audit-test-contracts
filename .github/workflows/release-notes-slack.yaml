@@ -1,0 +1,60 @@
+name: Post Release Notes to Slack
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  post-to-slack:
+    runs-on: ubuntu-latest
+    env: 
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Send release notes to Slack
+        run: |
+          echo "Release Tag: ${{ github.event.release.tag_name }}"
+
+          # Transform markdown to Slack format
+          TRANSFORMED_BODY=$(echo '${{ github.event.release.body }}' | \
+            # Remove carriage returns
+            sed 's/\r//g' | \
+            # Replace heading lines "### Something" with "\n*Something*"
+            sed 's/^### \(.*\)/\n*\1*/g' | \
+            sed 's/[[:space:]]### \(.*\)/\n*\1*/g' | \
+            # Convert bullet points while preserving bold
+            sed 's/^\* /• /' | \
+            sed 's/^  - /    • /g' | \
+            # Convert markdown links to Slack format
+            sed 's/\[\(#[0-9]*\)\]([^)]*)/\1/g' | \
+            # Convert PR/Issue references to links
+            sed 's/#\([0-9]*\)/<https:\/\/github.com\/NethermindEth\/ai-auditor\/pull\/\1|\1>/g' | \
+            # Replace remaining **bold** with *bold*
+            sed 's/\*\*\([^*]*\)\*\*/*\1*/' \
+          )
+
+          # Build our JSON payload using jq to ensure valid JSON.
+          payload=$(jq -n \
+            --arg tag_name "${{ github.event.release.tag_name }}" \
+            --arg body "$TRANSFORMED_BODY" \
+            --arg url "${{ github.event.release.html_url }}" '
+            {
+              blocks: [
+                {
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: ("🚀 *New Release:* \($tag_name)\n\n\($body)\n\n<\($url)|View Release on GitHub>")
+                  }
+                }
+              ]
+            }
+          ')
+
+          echo "Slack Payload: $payload"
+
+          RESPONSE=$(curl -v -X POST \
+            -H "Content-Type: application/json" \
+            --data "$payload" \
+            "$SLACK_WEBHOOK_URL")
+
+          echo "Slack Response: $RESPONSE"
