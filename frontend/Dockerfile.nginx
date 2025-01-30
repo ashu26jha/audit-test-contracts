@@ -33,7 +33,7 @@ COPY tailwind.config.js ./
 COPY public ./public
 COPY src ./src
 
-# Build the application with full optimization
+# Build the application
 RUN npm run build
 
 # Stage 3: Runner
@@ -53,11 +53,9 @@ COPY --from=builder /app/public ./public
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY .htpasswd /etc/nginx/.htpasswd
 
-# Expose the port Nginx will use
 EXPOSE 80
 
-ENV PORT=3000 \
-    NODE_ENV=production
+ENV NODE_ENV=production
 
 # Start both Next.js and Nginx
 CMD ["sh", "-c", "node server.js & nginx -g 'daemon off;'"]

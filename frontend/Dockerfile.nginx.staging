@@ -55,9 +55,7 @@ COPY .htpasswd /etc/nginx/.htpasswd
 
 EXPOSE 80
 
-# Set environment variables for Next.js
-ENV PORT=3000 \
-    NODE_ENV=production
+ENV NODE_ENV=production
 
 # Start both Next.js and Nginx
 CMD ["sh", "-c", "node server.js & nginx -g 'daemon off;'"]
