@@ -41,10 +41,10 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install nginx and create non-root user
+# Install nginx
 RUN apk add --no-cache nginx apache2-utils
 
-# Copy the built app
+# Copy standalone output and static files
 COPY --from=builder /app/.next/standalone/. ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
@@ -56,7 +56,6 @@ COPY .htpasswd /etc/nginx/.htpasswd
 EXPOSE 80
 
 ENV PORT=3000 \
-    HOSTNAME="0.0.0.0" \
     NODE_ENV=production
 
 # Start both Next.js and Nginx
