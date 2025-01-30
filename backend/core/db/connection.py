@@ -134,13 +134,11 @@ async def cleanup_huey_tasks():
             logger.info(f"No Huey database found at {db_path}")
             return
 
-        # Calculate the cutoff timestamp (7 days ago)
-        cutoff = datetime.now() - timedelta(days=7)
-        cutoff_timestamp = int(cutoff.timestamp())
+        # Clean up all data using Huey's built-in flush methods
+        huey.storage.flush_results()
+        huey.storage.flush_schedule()
 
-        # Clean up completed tasks older than the cutoff
-        huey.storage.delete_older_than(cutoff_timestamp)
-        logger.info(f"Cleaned up Huey tasks older than {cutoff.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("Cleaned up all Huey tasks, results, and scheduled tasks")
 
     except Exception as e:
         logger.error(f"Error during Huey tasks cleanup: {str(e)}")
