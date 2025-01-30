@@ -42,28 +42,16 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Install nginx and create non-root user
-RUN apk add --no-cache nginx apache2-utils && \
-    addgroup -S appuser && \
-    adduser -S -G appuser appuser
+RUN apk add --no-cache nginx apache2-utils
 
 # Copy standalone output and static files
 COPY --from=builder /app/.next/standalone/. ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Set ownership to match previous setup
-RUN chown -R appuser:appuser /app && \
-    chown -R appuser:appuser /var/lib/nginx && \
-    chown -R appuser:appuser /var/log/nginx && \
-    touch /var/run/nginx.pid && \
-    chown -R appuser:appuser /var/run/nginx.pid
-
 # Copy nginx configs
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY .htpasswd /etc/nginx/.htpasswd
-
-# Switch to non-root user
-USER appuser
 
 # Expose the port Nginx will use
 EXPOSE 80
