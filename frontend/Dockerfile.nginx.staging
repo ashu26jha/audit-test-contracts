@@ -63,7 +63,8 @@ EXPOSE 80
 
 ENV NODE_ENV=production \
     PORT=3000 \
-    HOSTNAME="0.0.0.0" \
+    HOST="localhost" \
+    HOSTNAME="localhost" \
     NEXT_TELEMETRY_DISABLED=1
 
 # Start both Next.js and Nginx
