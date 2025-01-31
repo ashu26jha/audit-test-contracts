@@ -49,6 +49,9 @@ COPY --from=builder /app/.next/standalone/. ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
+# Switch back to root for nginx setup
+USER root
+
 # Copy nginx configs
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY .htpasswd /etc/nginx/.htpasswd
@@ -56,8 +59,8 @@ COPY .htpasswd /etc/nginx/.htpasswd
 EXPOSE 80
 
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
 
 # Start both Next.js and Nginx
-# Force standalone to listen on 0.0.0.0 so that NGINX can connect via localhost:3000
-CMD ["sh", "-c", "node server.js -p 3000 -H 0.0.0.0 & nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "node server.js & nginx -g 'daemon off;'"]
