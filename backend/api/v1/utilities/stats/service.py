@@ -208,21 +208,6 @@ class StatsService:
                     # Sum of total_findings for vulnerabilities
                     "vulnerabilities_found": {"$sum": {"$ifNull": [TOTAL_FINDINGS, 0]}},
                     # Count of paid scans (non-discounted, completed)
-                    "paid_scans_24h": {
-                        "$sum": {
-                            "$cond": [
-                                {
-                                    "$and": [
-                                        {"$eq": ["$status", "completed"]},
-                                        {"$eq": [PAID_STATUS, True]},
-                                        {"$eq": [{"$ifNull": [DISCOUNT_APPLIED, False]}, False]},
-                                    ]
-                                },
-                                1,
-                                0,
-                            ]
-                        }
-                    },
                     "completed_free_scans": {
                         "$sum": {
                             "$cond": [
@@ -274,7 +259,6 @@ class StatsService:
             lines_of_code = scans_24h_results[0].get("lines_of_code", 0)
             total_scans_24h = scans_24h_results[0].get("total_scans_24h", 0)
             vulnerabilities_found = scans_24h_results[0].get("vulnerabilities_found", 0)
-            paid_scans_24h = scans_24h_results[0].get("paid_scans_24h", 0)
             free_scans = scans_24h_results[0].get("free_scans", 0)
             pro_scans = scans_24h_results[0].get("pro_scans", 0)
             enterprise_scans = scans_24h_results[0].get("enterprise_scans", 0)
@@ -282,7 +266,6 @@ class StatsService:
             lines_of_code = 0
             total_scans_24h = 0
             vulnerabilities_found = 0
-            paid_scans_24h = 0
             free_scans = 0
             pro_scans = 0
             enterprise_scans = 0
@@ -294,7 +277,6 @@ class StatsService:
             lines_of_code=lines_of_code,
             total_scans_24h=total_scans_24h,
             vulnerabilities_found=vulnerabilities_found,
-            paid_scans_24h=paid_scans_24h,
             new_users=new_users_in_24h,
             free_scans=free_scans,
             pro_scans=pro_scans,

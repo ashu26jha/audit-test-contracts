@@ -65,11 +65,7 @@ class ScanInitializer:
         )
 
     def get_type_of_scan(self) -> str:
-        # Get the type of scan from the request
-        if not self.user.is_free:
-            return SubscriptionType.FREE
-
-        # Default to free user in case of None
+        # Default to free user in case of None, since subscription is NONE, it's free scan
         if self.user.subscription is None:
             return SubscriptionType.FREE
         # This ensure we put the correct type
