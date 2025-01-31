@@ -22,10 +22,10 @@ const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
       className="bg-content-1 border border-default-100 cursor-pointer hover:bg-content-2 transition-colors duration-300 group"
       onPress={onClick}
     >
-      <CardBody>
-        <div className="flex items-center justify-between mb-4 border-b border-default-100 pb-4 group-hover:border-default-400">
+      <CardBody className="p-0">
+        <div className="flex p-3 items-center justify-between mb-4 border-b border-default-100 pb-4 group-hover:border-default-400">
           <div className="flex items-center">
-            <div className="w-10 h-10 mr-3 bg-default-100 rounded-lg flex items-center justify-center border border-default">
+            <div className="w-10 h-10 mr-3 bg-default-100 rounded-lg flex items-center justify-center border border-default-200">
               <Image
                 src={repository.logo ?? "/svg/default_repo.svg"}
                 alt="logo"
@@ -37,7 +37,7 @@ const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
             <span className="font-semibold">{repository.repositoryName ?? "Repo Name"}</span>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 p-3">
           <InfoRow icon={Calendar} label="Last Scanned" value={formattedDate} />
           <InfoRow icon={AlertTriangle} label="Total Vulnerabilities" value={latestScan?.total_findings ?? "-"} />
           <InfoRow icon={Hash} label="No. of Scans" value={repository.totalScans} />

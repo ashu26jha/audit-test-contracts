@@ -99,3 +99,11 @@ interface InitiateScanRequest {
     qa: Record<string, string>;
   };
 }
+
+interface FolderStructure {
+  name: string;
+  type: "folder" | "file";
+  path: string;
+  children?: FolderStructure[];
+  fileInfo?: any;
+}

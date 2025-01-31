@@ -12,6 +12,7 @@ export const SubscriptionSelection: FC = () => {
   const { selectedPlan } = useScanStepperStore();
   const { freeScanAllowed, nextAvailableScanDate } = useSubscription();
 
+  if (!user) return null;
   return (
     <div className="w-full flex justify-center gap-x-4 mb-10 px-4">
       <SubscriptionCard
@@ -25,6 +26,7 @@ export const SubscriptionSelection: FC = () => {
         subscriptionType={FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isSelectable={freeScanAllowed}
         variant="scan-now"
+        currentSubscriptionType={user.subscription.type}
         isSelected={selectedPlan === FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isFreeScanUsed={!freeScanAllowed}
       />
@@ -40,6 +42,7 @@ export const SubscriptionSelection: FC = () => {
         isSelectable={true}
         isSelected={selectedPlan === PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         variant="scan-now"
+        currentSubscriptionType={user.subscription.type}
       />
       <SubscriptionCard
         auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
@@ -52,6 +55,7 @@ export const SubscriptionSelection: FC = () => {
         subscriptionType={ENTERPRISE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isSelectable={false}
         variant="scan-now"
+        currentSubscriptionType={user.subscription.type}
       />
     </div>
   );

@@ -25,7 +25,7 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
     <div className="relative">
       <button
         onClick={handleCopy}
-        className="absolute right-2 top-2 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors"
+        className="absolute right-2 top-2 p-2 rounded-lg bg-content-1 hover:bg-default-100 border border-default transition-colors"
       >
         {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} className="text-gray-400" />}
       </button>

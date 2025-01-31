@@ -3,7 +3,7 @@
 import { type FC, useState, useRef } from "react";
 
 import { Card, CardBody, Button, Tooltip } from "@nextui-org/react";
-import { FileText, Code, Hash, Info } from "lucide-react";
+import { Hash, Info, Text } from "lucide-react";
 import Image from "next/image";
 
 import { Container } from "@/components/layout";
@@ -39,12 +39,12 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
       value: scanData.total_findings ?? 0,
     },
     {
-      icon: <FileText size={16} />,
+      icon: <Image src="/svg/contracts-scanned.svg" alt="Error" width={16} height={16} />,
       label: "Contracts Scanned",
       value: scanData.scan.contractFiles?.length.toString() || "0",
     },
     {
-      icon: <Code size={16} />,
+      icon: <Text size={16} />,
       label: "Lines of Code",
       value: scanData.scan.linesOfCode?.total_lines.toString() || "N/A",
     },

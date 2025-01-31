@@ -1,21 +1,8 @@
 "use client";
 import { type FC, useCallback, useEffect, useMemo } from "react";
 
-import {
-  Input,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-  Spinner,
-  Accordion,
-  AccordionItem,
-  type Selection,
-} from "@nextui-org/react";
-import { Sparkles } from "lucide-react";
-import Image from "next/image";
+import { Input, Accordion, AccordionItem, Divider } from "@nextui-org/react";
+import { Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { BottomBanner } from "@/components/layout";
@@ -24,9 +11,11 @@ import { HELP_DESCRIPTION } from "@/config/helpDescription";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepper } from "@/hooks";
 import { useScanStepperStore } from "@/store/scanStepperStore";
+import { organizeFilesByFolder } from "@/utils/helpers";
 
 import { HelpGuide } from "./HelpGuide";
 import { QnABox } from "./QnABox";
+import { FolderStructureView } from "../common/FolderStructureView";
 
 export const DocsSelection: FC = () => {
   const {
@@ -60,17 +49,15 @@ export const DocsSelection: FC = () => {
 
   const totalSelectedChars = calculateTotalSelectedChars();
 
-  const allPaths = useMemo(() => filteredReadmeFiles.map((file) => file.path), [filteredReadmeFiles]);
-
   const handleSelectionChange = useCallback(
-    (selection: Selection) => {
-      if (selection === "all") {
-        setRepoDocs({ readme: allPaths });
+    (path: string) => {
+      if (repoDocs.readme.includes(path)) {
+        setRepoDocs({ readme: repoDocs.readme.filter((p) => p !== path) });
       } else {
-        setRepoDocs({ readme: Array.from(selection).map(String) });
+        setRepoDocs({ readme: [...repoDocs.readme, path] });
       }
     },
-    [allPaths, setRepoDocs],
+    [repoDocs.readme, setRepoDocs],
   );
 
   // Fetch previous docs if user is a subscriber
@@ -107,71 +94,29 @@ export const DocsSelection: FC = () => {
               <div className="flex gap-8">
                 <div className="flex-1 max-w-[70%]">
                   <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
-                  <div className="overflow-auto">
-                    <Table
-                      isHeaderSticky
-                      aria-label="Readme files table"
-                      selectionMode={user?.subscription.type === "enterprise" ? "multiple" : "none"}
-                      color="secondary"
-                      onSelectionChange={handleSelectionChange}
-                      selectedKeys={repoDocs.readme}
-                      disabledKeys={
-                        isFileLimitExceeded
-                          ? readmeFiles.filter((file) => !repoDocs.readme.includes(file.path)).map((file) => file.path)
-                          : []
-                      }
+
+                  <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[22rem] overflow-auto">
+                    <Input
                       classNames={{
-                        base: "max-w-full max-h-80 gap-0 border-2 border-default-100 rounded-xl overflow-hidden",
-                        table: "min-w-full",
-                        th: "bg-background",
-                        wrapper: "rounded-none",
+                        inputWrapper: "bg-content-1",
                       }}
-                      topContent={
-                        <Input
-                          classNames={{
-                            base: "border-b-2 border-default-100",
-                            inputWrapper: "bg-content-1",
-                          }}
-                          radius="none"
-                          aria-label="Search files"
-                          isClearable={true}
-                          placeholder="Search files..."
-                          value={contractSearch}
-                          onChange={(e) => setContractSearch(e.target.value)}
-                          onClear={() => setContractSearch("")}
-                          startContent={<Image src="/svg/search.svg" alt="Search" width={16} height={16} />}
-                        />
-                      }
-                      topContentPlacement="outside"
-                    >
-                      <TableHeader className="rounded-none">
-                        <TableColumn>Path</TableColumn>
-                        <TableColumn>Char</TableColumn>
-                      </TableHeader>
-                      <TableBody
-                        isLoading={!!isLoading}
-                        loadingContent={<Spinner />}
-                        emptyContent={
-                          <div className="flex flex-col items-center">
-                            <Image
-                              src="/svg/empty_contract.svg"
-                              alt="No Readme files found"
-                              width={100}
-                              height={100}
-                              className="mt-8"
-                            />
-                            <p className="mt-2 text-gray-500">No Readme files found</p>
-                          </div>
-                        }
-                      >
-                        {readmeFiles.map((file) => (
-                          <TableRow key={file.path}>
-                            <TableCell>{file.path}</TableCell>
-                            <TableCell>{file.character_count}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                      radius="none"
+                      aria-label="Search contracts"
+                      isClearable={true}
+                      placeholder="Search contracts..."
+                      value={contractSearch}
+                      onValueChange={setContractSearch}
+                      startContent={<Search size={18} />}
+                    />
+                    <Divider className="bg-default-100 h-[2px] mb-3" />
+                    <FolderStructureView
+                      items={organizeFilesByFolder(filteredReadmeFiles)}
+                      onSelect={handleSelectionChange}
+                      selectedPaths={repoDocs.readme}
+                      isDisabled={isFileLimitExceeded}
+                      isLoading={isLoading}
+                      variant="readme"
+                    />
                   </div>
                 </div>
                 <div className="w-[30%]">

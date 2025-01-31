@@ -27,7 +27,7 @@ export const HelpGuide: FC<{
   return (
     <div>
       <h3 className="text-sm text-default-600 font-normal mb-2 font-inter leading-6">Help Guide</h3>
-      <Card classNames={{ base: "min-h-80 bg-content-1 border-2 border-default-100" }}>
+      <Card classNames={{ base: "min-h-[22rem] bg-content-1 border-2 border-default-100" }}>
         <CardHeader>
           <p className="text-sm text-default-600">Consider the following</p>
         </CardHeader>

@@ -23,6 +23,7 @@ interface SubscriptionCardProps {
   hasActiveSubscription?: boolean;
   isSelectable: boolean;
   isSelected?: boolean;
+  currentSubscriptionType: "free" | "pro" | "enterprise";
   variant: "profile" | "scan-now";
   isFreeScanUsed?: boolean;
 }
@@ -40,10 +41,11 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   hasActiveSubscription = false,
   isSelectable,
   isSelected,
+  currentSubscriptionType,
   variant,
   isFreeScanUsed,
 }) => {
-  const { handleSubscribe, isLoading: isSubscribing } = useSubscription();
+  const { handleSubscribe, isLoading: isSubscribing, handleCustomerPortalSession } = useSubscription();
   const { setSelectedPlan } = useScanStepperStore();
   const button = tv({
     base: "mr-auto text-white",
@@ -54,6 +56,10 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
       },
     },
   });
+
+  const handleManageSubscription = async () => {
+    await handleCustomerPortalSession();
+  };
 
   const card = tv({
     base: "bg-content-1 w-[28rem] rounded-xl p-3 border-2 border-default-100 ursor-pointer transition-all duration-200",
@@ -71,6 +77,11 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
     if (isSelectable) {
       setSelectedPlan(subscriptionType);
     } else {
+      if (isSubscribed) {
+        handleManageSubscription();
+        return;
+      }
+
       if (subscriptionType === "pro") {
         await handleSubscribe(subscriptionType);
       }
@@ -87,7 +98,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-x-3">
               <div className="font-medium text-base text-[#A1A1AA]">{planName}</div>
-              <Chip className="bg-default-100 text-default-600 text-xs" radius="sm">
+              <Chip className="bg-transparent border border-default-200 text-default-600 text-xs" radius="sm">
                 {auditType}
               </Chip>
             </div>
@@ -129,6 +140,40 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
               endContent={<ArrowUpRight />}
             >
               <span>{subscriptionType === "pro" ? "Subscribe" : "Contact us"}</span>
+            </Button>
+          )}
+
+          {variant === "profile" && subscriptionType === "pro" && currentSubscriptionType === "pro" && (
+            <Button
+              as="div"
+              isLoading={subscriptionType === "pro" && isSubscribing}
+              onPress={handleManageSubscription}
+              className={`${button({ type: subscriptionType })} w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
+              endContent={<ArrowUpRight />}
+            >
+              <span>Manage Plan</span>
+            </Button>
+          )}
+
+          {variant === "profile" && subscriptionType === "enterprise" && hasActiveSubscription && (
+            <Button
+              as="div"
+              onPress={handleSubscription}
+              className={`${button({ type: subscriptionType })}  w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
+              endContent={<ArrowUpRight />}
+            >
+              <span>Contact us</span>
+            </Button>
+          )}
+
+          {variant === "profile" && subscriptionType === "pro" && hasActiveSubscription && !isSubscribed && (
+            <Button
+              as="div"
+              onPress={handleSubscription}
+              className={`${button({ type: subscriptionType })}  w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg `}
+              endContent={<ArrowUpRight />}
+            >
+              <span>Subscribe</span>
             </Button>
           )}
 
