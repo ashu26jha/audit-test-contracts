@@ -66,5 +66,5 @@ ENV NODE_ENV=production \
     HOSTNAME="0.0.0.0" \
     NEXT_TELEMETRY_DISABLED=1
 
-# Start both Next.js and Nginx
-CMD ["sh", "-c", "node server.js & nginx -g 'daemon off;'"]
+# Start nginx first to ensure it gets port 80, then start Next.js
+CMD ["sh", "-c", "nginx -g 'daemon off;' & node server.js"]
