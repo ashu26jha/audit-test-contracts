@@ -4,7 +4,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.backend.dev
-    container_name: backend  # Name of the backend container
+    container_name: backend-dev  # Name of the backend container
     ports:
       - "8000:8000"  # Expose port 8000 for the backend service
     networks:
@@ -20,7 +20,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.frontend.dev
-    container_name: frontend  # Name of the frontend container
+    container_name: frontend-dev  # Name of the frontend container
     ports:
       - "3000:3000"  # Expose port 3000 for the frontend service
     networks:

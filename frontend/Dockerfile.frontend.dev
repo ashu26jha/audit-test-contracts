@@ -22,6 +22,7 @@ COPY postcss.config.js ./
 COPY tailwind.config.js ./
 COPY public ./public
 COPY src ./src
+COPY .env ./
 
 # Build the Next.js app with standalone output
 RUN npm run build
@@ -39,7 +40,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/.next/standalone/. ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
+COPY --from=builder /app/.env ./
 USER nextjs
 
 EXPOSE 3000
