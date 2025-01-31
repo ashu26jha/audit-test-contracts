@@ -52,6 +52,9 @@ COPY --from=builder /app/.next/standalone/. ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
+# Modify the generated server.js to use a different binding configuration
+RUN sed -i 's/const hostname = process.env.HOSTNAME || '\''0.0.0.0'\''/const hostname = "127.0.0.1"/g' server.js
+
 # Switch back to root for nginx setup
 USER root
 
@@ -63,7 +66,6 @@ EXPOSE 80
 
 ENV NODE_ENV=production \
     PORT=3000 \
-    HOSTNAME="0.0.0.0" \
     NEXT_TELEMETRY_DISABLED=1
 
 # Start nginx first to ensure it gets port 80, then start Next.js
