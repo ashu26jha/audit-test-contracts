@@ -55,7 +55,9 @@ COPY .htpasswd /etc/nginx/.htpasswd
 
 EXPOSE 80
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PORT=3000
 
 # Start both Next.js and Nginx
-CMD ["sh", "-c", "node server.js & nginx -g 'daemon off;'"]
+# Force standalone to listen on 0.0.0.0 so that NGINX can connect via localhost:3000
+CMD ["sh", "-c", "node server.js -p 3000 -H 0.0.0.0 & nginx -g 'daemon off;'"]
