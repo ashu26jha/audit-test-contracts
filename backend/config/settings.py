@@ -31,6 +31,7 @@ SUPPORTED_MODELS = {
         "gpt-4o-mini",  # 128k - 16k context
         "o1",  # 200k - 100k context
         "o1-2024-12-17",  # 200k - 100k context
+        "o3-mini",  # 200k - 100k context
     ],
     "anthropic": [
         "claude-3-5-sonnet-latest",
@@ -47,7 +48,7 @@ SUPPORTED_MODELS = {
 LLM_UTILITY = os.getenv("LLM_UTILITY", "claude-3-5-sonnet-latest")
 LLM_SCAN_1 = os.getenv("LLM_SCAN_1", "o1-2024-12-17")
 LLM_SCAN_2 = os.getenv("LLM_SCAN_2", "claude-3-5-sonnet-latest")
-LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "gemini-2.0-flash-exp")
+LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "o3-mini")
 
 
 # Tokens encoding: "cl100k_base" || "p50k_base"
