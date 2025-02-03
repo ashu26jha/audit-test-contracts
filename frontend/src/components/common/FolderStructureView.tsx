@@ -1,10 +1,11 @@
 "use client";
 
-import { type FC, useState } from "react";
+import { type FC, useState, useEffect } from "react";
 
 import { Checkbox, cn, Spinner } from "@nextui-org/react";
 import { ChevronDown, ChevronRight, Text } from "lucide-react";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { formatNumberWithCommas } from "@/utils/formatters";
 
 export interface FolderStructureViewProps {
@@ -26,8 +27,10 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   isLoading,
   variant,
 }) => {
-  // Initialize expandedFolders with all folder paths
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const { user } = useAuth();
+
+  useEffect(() => {
     const folderPaths = new Set<string>();
 
     const collectFolderPaths = (items: FolderStructure[]) => {
@@ -42,8 +45,8 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
     };
 
     collectFolderPaths(items);
-    return folderPaths;
-  });
+    setExpandedFolders(folderPaths);
+  }, [items]);
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -84,7 +87,9 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
                   color="secondary"
                   isSelected={selectedPaths.includes(item.path)}
                   onValueChange={() => onSelect?.(item.path)}
-                  isDisabled={isDisabled && !selectedPaths.includes(item.path)}
+                  isDisabled={
+                    user?.subscription.type !== "enterprise" || (isDisabled && !selectedPaths.includes(item.path))
+                  }
                   classNames={{
                     base: cn(
                       "ml-4 inline-flex w-full max-w-full",
