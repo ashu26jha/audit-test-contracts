@@ -72,7 +72,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
         <div key={item.path}>
           <div
             className="flex items-center gap-2 py-1 rounded px-2 cursor-pointer"
-            style={{ marginLeft: `${level * 12}px` }}
+            style={{ marginLeft: `${level * 20}px` }}
           >
             {item.type === "folder" ? (
               <button className="flex items-center gap-2 w-full" onClick={() => toggleFolder(item.path)}>

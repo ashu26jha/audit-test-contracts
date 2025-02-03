@@ -82,14 +82,14 @@ export const DocsSelection: FC = () => {
         className={`flex-1 min-h-0 flex justify-center ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
       >
         <div className="w-3/4">
-          <Accordion selectionMode="multiple">
+          <Accordion defaultExpandedKeys={["1", "2"]} selectionMode="multiple">
             <AccordionItem
               classNames={{
                 title: "text-base font-normal text-default-600 font-inter leading-6",
               }}
               key="1"
               aria-label="Select Readme files (Optional)"
-              title="Select Readme files (Optional)"
+              title="1. Select Readme files (Optional)"
             >
               <div className="flex gap-8">
                 <div className="flex-1 max-w-[70%]">
@@ -138,7 +138,7 @@ export const DocsSelection: FC = () => {
               }}
               key="2"
               aria-label="Additional Q&A (Optional)"
-              title="Additional Q&A (Optional)"
+              title="2. Additional Q&A (Optional)"
             >
               <QnABox />
             </AccordionItem>
