@@ -101,9 +101,9 @@ export const DocsSelection: FC = () => {
                         inputWrapper: "bg-content-1",
                       }}
                       radius="none"
-                      aria-label="Search contracts"
+                      aria-label="Search files"
                       isClearable={true}
-                      placeholder="Search contracts..."
+                      placeholder="Search files..."
                       value={contractSearch}
                       onValueChange={setContractSearch}
                       startContent={<Search size={18} />}

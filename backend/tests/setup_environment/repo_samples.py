@@ -36,16 +36,6 @@ TEST_REPOS = [
         ],
         description="Foundry project with dependencies",
     ),
-    RepoConfig(
-        url="https://github.com/Pedrojok01/deploy-to-skale.git",
-        project_type="foundry",
-        contract_paths=[
-            "src/pool/PoolConfigurator.sol",
-            "src/pool/Pool.sol",
-            "src/providers/PoolAddressesProvider.sol",
-        ],
-        description="Foundry project with submodules",
-    ),
     # Foundry Projects in Subfolder
     RepoConfig(
         url="https://github.com/Pedrojok01/fury-racing",

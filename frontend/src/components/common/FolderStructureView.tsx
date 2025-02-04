@@ -88,7 +88,8 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
                   isSelected={selectedPaths.includes(item.path)}
                   onValueChange={() => onSelect?.(item.path)}
                   isDisabled={
-                    user?.subscription.type !== "enterprise" || (isDisabled && !selectedPaths.includes(item.path))
+                    (variant == "readme" && user?.subscription.type !== "enterprise") ||
+                    (isDisabled && !selectedPaths.includes(item.path))
                   }
                   classNames={{
                     base: cn(
