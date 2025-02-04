@@ -2,7 +2,7 @@
 <h1><strong> <span style="color:#8660f2"> Audit</span> Agent APIs </strong></h1>
 </div>
 
-## Table of Contents
+## Table of Contents 📑
 
 - [Introduction](#introduction)
 - [Getting Started](#getting-started)
@@ -19,21 +19,22 @@
 - [Database Schema](#database-schema)
 - [Profiles](#profiles)
 
-## Introduction
+## Introduction 📖
 
 This is the backend component of Audit Agent, providing the core functionality for smart contract auditing, GitHub integration, and user management.
 
-## Getting Started
+## Getting Started 🚀
 
-### Prerequisites
+### Prerequisites 📚
 
 - Python 3.12+
 - Node.js 20+
 - MongoDB
 - Git
 - Docker
+- Foundry
 
-### Installation
+### Installation 🛠️
 
 Clone the repository:
 ```bash
@@ -41,7 +42,7 @@ git clone https://github.com/NethermindEth/yokai-ai-reviewer.git .
 cd backend
 ```
 
-### Configure environment variables
+### Configure environment variables 🔒
 
 Copy the `.env.example` file to `.env` and set the following variables:
 
@@ -84,45 +85,56 @@ SMTP_USERNAME=
 SMTP_PASSWORD=
 ```
 
-## How to run the backend separately
+## How to run the backend separately 🔍
 
-### Install dependencies:
+### Install dependencies 📦
 
-For production environment:
+1. Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+
+# On Windows:
+venv/Scripts/activate
+
+# On Unix/MacOS:
+source venv/bin/activate
+```
+
+
+2. Install dependencies:
+
+  - For production environment:
 ```bash
 pip install -r requirements.txt
 ```
 
-For development environment (includes testing and linting tools):
+  - For development environment (includes testing and linting tools):
 ```bash
 pip install -r requirements.dev.txt
 ```
 
-### Run the server
 
-To launch a local development server (PDF generation not working):
-```bash
-uvicorn main:app --reload
-```
+### Run the server with Docker 🐳
 
-To launch a local development server with Docker (PDF generation OK):
+1. Build the image:
 ```bash
 docker build -t audit-agent-backend -f Dockerfile.backend.dev .
 ```
 
-then run the following command to run the server:
+2. Run the image:
 ```bash
 docker run -p 8000:8000 audit-agent-backend
 ```
 
-### Run the Linters
+### Run the Linters 📝
 
 ```bash
 pre-commit install
 pre-commit run --all-files
 ```
 
-### Run the Tests
+### Run the Tests 🧪
 
 To run the test suite (Make sure you have launched the local development server):
 
@@ -153,7 +165,7 @@ To generate a coverage report:
 pytest backend/tests/ -v --cov=backend --cov-report=html
 ```
 
-### Run Stripe:
+### Run Stripe 💳
 
 > Read the [Stripe docs](https://docs.stripe.com/webhooks?lang=python#webhooks-summary) to setup webhook. The callback endpoint needs to be registered in the Stripe dashboard.
 
@@ -177,7 +189,8 @@ The response is:
 }
 ```
 
-### To be able to use webhooks
+### To be able to use webhooks 🔑
+
 1. Install stripe CLI: [Stripe CLI Documentation](https://docs.stripe.com/stripe-cli)
 
 2. Login using: 
@@ -195,7 +208,7 @@ stripe listen --forward-to http://localhost:8000/api/v1/payments/stripe-webhook
 Your webhook signing secret is whsec_ (^C to quit)
 ```
 
-## Backend Structure
+## Backend Structure 📁
 
 ```python
 backend/
@@ -827,7 +840,7 @@ curl -X POST "http://localhost:8000/test-auth/token" \
 
 
 
-## Profiles
+## Profiles 📝
 
 <details>
 <summary>Default 1</summary>

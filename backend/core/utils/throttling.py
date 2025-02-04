@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from functools import wraps
 from typing import Optional
 
@@ -33,9 +33,7 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                         raise HTTPException(status_code=400, detail="User not found")
                     key = f"throttle:{func.__name__}:{current_user.id}"
 
-                # Ensure UTC timezone
                 now = datetime.now(timezone.utc)
-                expires_at = now + timedelta(minutes=rate_limit_minutes)
 
                 # Get or create throttle record
                 record = await ThrottleRecord.find_one({"key": key})
@@ -53,8 +51,8 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                     await ThrottleRecord(
                         key=key,
                         request_count=1,
+                        created_at=now,
                         last_request=now,
-                        expires_at=expires_at,
                     ).insert()
 
                 return await func(*args, **kwargs)

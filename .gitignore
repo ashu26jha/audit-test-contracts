@@ -3,3 +3,5 @@
 htmlcov/
 .coverage
 .DS_Store
+venv/**/*
+.env

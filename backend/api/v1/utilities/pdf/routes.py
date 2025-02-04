@@ -21,7 +21,7 @@ router = APIRouter()
     response_model=Union[SuccessResponse[str], ErrorResponse],
     description="Generate and send a PDF report from a scan.",
 )
-@throttle(rate_limit_minutes=5, max_requests=10)
+@throttle(rate_limit_minutes=1, max_requests=5)
 async def generate_pdf(
     scan_id: UUID,
     current_user: User = Depends(get_current_user),
@@ -46,7 +46,7 @@ async def generate_pdf(
     response_model=Union[SuccessResponse[str], ErrorResponse],
     description="Generate and send a PDF report from an agentic scan.",
 )
-@throttle(rate_limit_minutes=5, max_requests=10)
+@throttle(rate_limit_minutes=1, max_requests=5)
 async def generate_agentic_pdf(
     scan_id: UUID,
     email: str = Query(..., description="Email address to send the PDF report to"),
