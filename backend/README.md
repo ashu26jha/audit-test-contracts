@@ -97,6 +97,9 @@ python -m venv venv
 # On Windows:
 venv/Scripts/activate
 
+# On Windows with Git Bash:
+source venv/bin/activate
+
 # On Unix/MacOS:
 source venv/bin/activate
 ```

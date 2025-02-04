@@ -76,7 +76,7 @@ async def send_prompt_to_llm_async(
                                 "messages": messages,
                                 "response_format": response_model,
                             }
-                            if "o1" in model_type:
+                            if "o1" in model_type or "o3" in model_type:
                                 params["reasoning_effort"] = "high"
 
                             if response_model:
