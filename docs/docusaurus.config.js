@@ -11,11 +11,11 @@ import { themes as prismThemes } from "prism-react-renderer";
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Audit Agent",
-  tagline: "Dinosaurs are cool",
+  tagline: "Automatically detect vulnerabilities and mitigate risks in smart contracts",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
-  url: "https://your-docusaurus-site.example.com",
+  url: "https://docs.auditagent.nethermind.io/",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
@@ -25,7 +25,7 @@ const config = {
   organizationName: "NethermindEth", // Usually your GitHub org/user name.
   projectName: "audit-agent", // Usually your repo name.
 
-  onBrokenLinks: "throw",
+  onBrokenLinks: "warn",
   onBrokenMarkdownLinks: "warn",
 
   // Even if you don't use internationalization, you can use this field to set
