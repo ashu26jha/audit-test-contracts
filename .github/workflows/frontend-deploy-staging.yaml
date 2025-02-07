@@ -65,7 +65,7 @@ jobs:
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
           docker buildx build \
             --platform=linux/amd64 \
-            -f ./frontend/Dockerfile.nginx.staging \
+            -f ./frontend/Dockerfile.frontend.staging \
             --build-arg NEXT_PUBLIC_API_URL="${{ env.NEXT_PUBLIC_API_URL }}" \
             --build-arg NEXT_PUBLIC_GITHUB_APP_URL="${{ env.NEXT_PUBLIC_GITHUB_APP_URL }}" \
             -t $IMAGE_URI ./frontend 

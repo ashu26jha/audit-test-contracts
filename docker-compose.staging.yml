@@ -20,10 +20,11 @@ services:
   frontend-staging:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.nginx.staging
+      dockerfile: Dockerfile.frontend.staging
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
         - NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/auditagent-dev/installations/new
+
     container_name: frontend-staging
     ports:
       - "8080:80"  # Using 8080 to avoid conflicts with dev environment
