@@ -27,7 +27,7 @@ services:
 
     container_name: frontend-staging
     ports:
-      - "8080:80"  # Using 8080 to avoid conflicts with dev environment
+      - "8080:3000"  # Mapping host port 8080 to container port 3000
     networks:
       - auditor-staging-network
     env_file:
