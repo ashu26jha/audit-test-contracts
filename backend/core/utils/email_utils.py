@@ -19,6 +19,9 @@ async def send_pdf_email(to_email: str, pdf_path: str, scan_id: str):
     """
     Send the generated PDF as an email attachment.
     """
+    # Skip sending emails when running the benchmark
+    if to_email == "audit-agent-benchmark@example.com":
+        return
 
     # Create the email message
     msg = MIMEMultipart()
@@ -74,6 +77,10 @@ async def send_error_email(to_email: str, scan_number: int):
     """
     Send an email with the error message.
     """
+
+    # Skip sending emails when running the benchmark
+    if to_email == "audit-agent-benchmark@example.com":
+        return
 
     # Create the email message
     msg = MIMEMultipart()

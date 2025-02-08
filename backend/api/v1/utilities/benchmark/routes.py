@@ -13,10 +13,11 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 
 
-@router.post("/")
+@router.post("/launch")
 async def benchmark(request: AuditAgentRequest):
     """
     Benchmarks AuditAgent, returns a scan_id
+
     """
 
     scan_id = uuid4()
@@ -42,13 +43,13 @@ async def benchmark(request: AuditAgentRequest):
     return SuccessResponse(data=scan_id)
 
 
-@router.post("/result")
-async def get_result(scan_id: UUID):
+@router.get("/result/{scan_id}")
+async def get_result(scan_id: str):
     """
     Get benchmark result for a specific scan
     """
     user = await UserRepository.get_by_username("audit-agent-benchmark")
     if not user:
-        return ErrorResponse(message="user_not_found")
-    full_result = await ScanRepository.get_scan_result(scan_id)
+        return ErrorResponse(message="user_not_found", code=404)
+    full_result = await ScanRepository.get_scan_result(UUID(scan_id))
     return SuccessResponse(data=full_result)
