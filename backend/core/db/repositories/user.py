@@ -47,6 +47,7 @@ class UserRepository:
         username: str,
         email: str,
         access_token: str,
+        refresh_token: str,
         avatar_url: str,
         name: str,
         installation_ids: List[int],
@@ -75,6 +76,7 @@ class UserRepository:
                 username=username,
                 email=email,
                 accessToken=access_token,
+                refreshToken=refresh_token,
                 avatarUrl=avatar_url,
                 name=name,
                 installationId=installation_ids,
@@ -90,6 +92,7 @@ class UserRepository:
     async def update_user(
         user: User,
         access_token: str,
+        refresh_token: str,
         installation_ids: List[int],
         avatar_url: str,
         name: str,
@@ -117,6 +120,7 @@ class UserRepository:
                 {
                     "$set": {
                         "accessToken": access_token,
+                        "refreshToken": refresh_token,
                         "installationId": installation_ids,
                         "avatarUrl": avatar_url,
                         "name": name,
@@ -268,6 +272,7 @@ class UserRepository:
             email=f"{username}@example.com",
             githubId="1234567890",
             accessToken="test_access_token",
+            refreshToken="test_refresh_token",
             avatarUrl="https://github.com/ghost.png",
             name=username,
             createdAt=datetime.now(timezone.utc),

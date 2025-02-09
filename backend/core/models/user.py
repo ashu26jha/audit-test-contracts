@@ -78,6 +78,7 @@ class User(Document):
     email: EmailStr = Indexed(unique=True)
     githubId: str = Indexed(unique=True)
     accessToken: str
+    refreshToken: Optional[str] = None
     avatarUrl: Optional[str] = None
     name: Optional[str] = None
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -93,6 +94,7 @@ class User(Document):
                 "email": "johndoe@example.com",
                 "githubId": "12345678",
                 "accessToken": "github_access_token_here",
+                "refreshToken": "github_refresh_token_here",
                 "avatarUrl": "https://avatars.githubusercontent.com/u/12345678?v=4",
                 "name": "John Doe",
                 "createdAt": "2023-10-01T12:00:00Z",

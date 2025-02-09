@@ -42,14 +42,13 @@ async def get_current_user(request: Request) -> User:
             return user
 
         try:
-            await validate_github_token(user.accessToken)
+            validated_user = await validate_github_token(user)
+            return validated_user
         except HTTPException as e:
             # Increment token version and invalidate all sessions if GitHub token is invalid
             await UserRepository.increment_token_version(user)
             await blacklist_token(token)
             raise HTTPException(status_code=401, detail="GitHub session expired") from e
-
-        return user
 
     except JWTError as e:
         raise HTTPException(status_code=401, detail="Invalid token") from e

@@ -35,7 +35,7 @@ def create_access_token(data: dict, user: User, expires_delta: Optional[timedelt
     return encoded_jwt
 
 
-async def handle_user_data(user_data: dict, access_token: str) -> User:
+async def handle_user_data(user_data: dict, access_token: str, refresh_token: str) -> User:
     """Create or update a user based on GitHub data"""
     # Check if user exists
     user = await UserRepository.get_by_github_id(str(user_data["id"]))
@@ -51,6 +51,7 @@ async def handle_user_data(user_data: dict, access_token: str) -> User:
             username=user_data["login"],
             email=user_data["email"],
             access_token=access_token,
+            refresh_token=refresh_token,
             avatar_url=user_data["avatar_url"],
             name=user_data["name"],
             installation_ids=installation_ids,
@@ -78,6 +79,7 @@ async def handle_user_data(user_data: dict, access_token: str) -> User:
         user = await UserRepository.update_user(
             user=user,
             access_token=access_token,
+            refresh_token=refresh_token,
             installation_ids=installation_ids,
             avatar_url=user_data["avatar_url"],
             name=user_data["name"],
@@ -104,7 +106,7 @@ async def handle_github_callback(
         raise HTTPException(status_code=400, detail="State parameter required for OAuth flow")
 
     # Exchange code for access token
-    access_token = await exchange_github_code(code, state)
+    access_token, refresh_token = await exchange_github_code(code, state)
 
     # If this is a GitHub App callback, verify installation
     if installation_id is not None:
@@ -112,12 +114,12 @@ async def handle_github_callback(
 
     # Get user data and create/update user
     user_data = await github_service.get_user_data(access_token)
-    user = await handle_user_data(user_data, access_token)
+    user = await handle_user_data(user_data, access_token, refresh_token)
 
     return access_token, user
 
 
-async def exchange_github_code(code: str, state: Optional[str] = None) -> str:
+async def exchange_github_code(code: str, state: Optional[str] = None) -> Tuple[str, str]:
     """Exchange GitHub code for access token"""
     token_url = "https://github.com/login/oauth/access_token"
     data = {
@@ -143,10 +145,11 @@ async def exchange_github_code(code: str, state: Optional[str] = None) -> str:
             raise HTTPException(status_code=400, detail=token_data.get("error_description"))
 
         access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
         if not access_token:
             raise HTTPException(status_code=400, detail="Invalid token response")
 
-        return access_token
+        return access_token, refresh_token
 
 
 async def verify_installation_id(access_token: str, installation_id: str) -> None:
