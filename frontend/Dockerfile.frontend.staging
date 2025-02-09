@@ -53,12 +53,23 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Modify the generated server.js to use a different binding configuration
 RUN sed -i 's/const hostname = process.env.HOSTNAME || '\''0.0.0.0'\''/const hostname = "0.0.0.0"/g' server.js
 
+# Ensure proper handling of static files
+RUN mkdir -p ./.next/cache && \
+    chown -R nextjs:nodejs ./.next
+
 USER nextjs
 
+# Make sure port 3000 is properly exposed
 EXPOSE 3000
 
 ENV NODE_ENV=production \
     PORT=3000 \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOST=0.0.0.0 \
+    HOSTNAME=0.0.0.0
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 CMD ["node", "server.js"]

@@ -12,7 +12,6 @@ env:
   NEXT_PUBLIC_API_URL: "https://api.auditagent.staging-nethermind.xyz"
   NEXT_PUBLIC_GITHUB_APP_URL: "https://github.com/apps/auditagent-staging/installations/new"
 
-
 permissions:
   id-token: write
   contents: write

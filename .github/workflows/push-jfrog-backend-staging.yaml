@@ -1,4 +1,4 @@
-name: Build and Push backend image on jfrog 
+name: Build and Push Backend image on jfrog 
 
 on:
   push:
@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  push-frontend-image:
+  push-backend-image:
     runs-on: ubuntu-latest
 
     steps:
