@@ -113,7 +113,7 @@ async def generate_and_store_oauth_state() -> str:
     """Generate and store OAuth state parameter"""
     state = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(minutes=10)
+    expires_at = now + timedelta(minutes=5)
 
     try:
         oauth_state = OAuthState(state=state, created_at=now, expires_at=expires_at)

@@ -8,7 +8,7 @@ import httpx
 from fastapi import HTTPException
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from config.settings import ENVIRONMENT, GITHUB_API_URL
+from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
 
 
@@ -57,7 +57,7 @@ class GitHubAPIClient:
             Dict containing required headers
         """
         headers = {"Accept": "application/vnd.github.v3+json"}
-        if access_token != "test_access_token" and ENVIRONMENT != "development":
+        if access_token != "test_access_token":
             headers["Authorization"] = f"token {access_token}"
         return headers
 
