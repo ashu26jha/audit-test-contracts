@@ -77,7 +77,7 @@ class User(Document):
     username: str = Indexed(unique=True)
     email: EmailStr = Indexed(unique=True)
     githubId: str = Indexed(unique=True)
-    accessToken: str
+    accessToken: Optional[str] = None
     refreshToken: Optional[str] = None
     avatarUrl: Optional[str] = None
     name: Optional[str] = None
