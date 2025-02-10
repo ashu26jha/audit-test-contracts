@@ -11,11 +11,15 @@ from core.utils.logger import logger
 def throttle(max_requests: int = 1, use_ip: bool = False):
     """
     Rate limiting decorator that uses MongoDB's TTL for window management.
+    Records are automatically deleted after 5 minutes (configured in ThrottleRecord).
 
     Args:
-        rate_limit_minutes: Number of minutes in the rate limit window (should match TTL in ThrottleRecord)
-        max_requests: Maximum number of requests allowed within the window
+        max_requests: Maximum number of requests allowed within the 5-minute window
         use_ip: Whether to use IP-based (True) or user-based (False) throttling
+
+    Note:
+        The rate limit window is fixed at 5 minutes, controlled by the TTL index in ThrottleRecord.
+        After 5 minutes, the record is automatically deleted and the count starts fresh.
     """
 
     def decorator(func):
@@ -60,7 +64,7 @@ def throttle(max_requests: int = 1, use_ip: bool = False):
                     if record.request_count >= max_requests:
                         raise HTTPException(
                             status_code=429,
-                            detail="Rate limit exceeded. Please try again later.",
+                            detail=f"Rate limit exceeded. Maximum {max_requests} requests allowed per 5 minutes.",
                         )
                     record.request_count += 1
                     record.last_request = now

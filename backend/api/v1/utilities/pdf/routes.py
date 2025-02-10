@@ -46,7 +46,7 @@ async def generate_pdf(
     response_model=Union[SuccessResponse[str], ErrorResponse],
     description="Generate and send a PDF report from an agentic scan.",
 )
-@throttle(max_requests=5)
+@throttle(max_requests=10)
 async def generate_agentic_pdf(
     scan_id: UUID,
     email: str = Query(..., description="Email address to send the PDF report to"),

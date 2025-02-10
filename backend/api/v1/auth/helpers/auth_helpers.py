@@ -113,12 +113,24 @@ async def generate_and_store_oauth_state() -> str:
     """Generate and store OAuth state parameter"""
     state = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(minutes=5)
+    expires_at = now + timedelta(minutes=5)  # 5 minutes to match TTL
 
     try:
+        logger.info(f"Generating new OAuth state. Raw state length: {len(state)}")
+        logger.info(f"Generated state: {state}")  # This is safe to log as it's temporary
+
         oauth_state = OAuthState(state=state, created_at=now, expires_at=expires_at)
         await oauth_state.insert()
-        logger.info(f"Successfully stored OAuth state: {state}")
+
+        # Verify it was stored correctly
+        stored_state = await OAuthState.find_one({"state": state})
+        if stored_state:
+            logger.info(
+                f"Successfully stored and verified OAuth state in database. Created at: {stored_state.created_at}, Expires at: {stored_state.expires_at}"
+            )
+        else:
+            logger.error("Failed to verify stored OAuth state immediately after insertion")
+
         return state
     except Exception as e:
         logger.error(f"Error storing OAuth state: {str(e)}")
@@ -128,14 +140,33 @@ async def generate_and_store_oauth_state() -> str:
 async def verify_oauth_state(state: str) -> bool:
     """Verify OAuth state parameter"""
     now = datetime.now(timezone.utc)
-    try:
-        oauth_state = await OAuthState.find_one({"state": state, "expires_at": {"$gt": now}})
-        logger.info(f"OAuth state verification result: {oauth_state is not None}")
+    logger.info(f"Verifying OAuth state. Received state length: {len(state)}")
+    logger.info(f"Received state: {state}")
 
-        if oauth_state:
-            await oauth_state.delete()
-            return True
-        return False
-    except Exception as e:
-        logger.error(f"Error verifying OAuth state: {str(e)}")
-        return False
+    oauth_state = await OAuthState.find_one({"state": state, "expires_at": {"$gt": now}})
+
+    if oauth_state:
+        logger.info(
+            f"Found valid OAuth state, created at: {oauth_state.created_at}, expires at: {oauth_state.expires_at}"
+        )
+        await oauth_state.delete()
+        return True
+
+    # If not found, try to find any state to see if it expired
+    expired_state = await OAuthState.find_one({"state": state})
+    if expired_state:
+        logger.error(
+            f"Found expired OAuth state. Created at: {expired_state.created_at}, expired at: {expired_state.expires_at}, current time: {now}"
+        )
+    else:
+        # Let's check for any recent states to see if there's a mismatch
+        recent_states = await OAuthState.find(
+            {"created_at": {"$gt": now - timedelta(minutes=10)}}
+        ).to_list()
+        if recent_states:
+            logger.error(
+                f"Recent states found but none match. Recent states: {[s.state for s in recent_states]}"
+            )
+        logger.error(f"OAuth state not found in database: {state}")
+
+    return False

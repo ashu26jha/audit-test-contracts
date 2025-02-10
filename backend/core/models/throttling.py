@@ -23,5 +23,6 @@ class ThrottleRecord(Document):
         name = "throttle_records"
         indexes = [
             [("key", ASCENDING)],  # Index for key lookups
-            IndexModel([("created_at", ASCENDING)], expireAfterSeconds=60),
+            # 5 minutes TTL - allows for proper rate limiting windows
+            IndexModel([("created_at", ASCENDING)], expireAfterSeconds=300),
         ]

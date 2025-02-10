@@ -39,7 +39,7 @@ async def github_login(request: Request):
 
 
 @router.get("/github-callback")
-@throttle(max_requests=10, use_ip=True)
+@throttle(max_requests=20, use_ip=True)
 async def github_callback(
     request: Request,
     code: str,
