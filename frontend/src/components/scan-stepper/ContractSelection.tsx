@@ -1,7 +1,7 @@
 "use client";
-import { type FC, useCallback, useMemo } from "react";
+import { type FC, useCallback, useMemo, useState } from "react";
 
-import { Input, Divider } from "@nextui-org/react";
+import { Input, Divider, Checkbox } from "@nextui-org/react";
 import { Search } from "lucide-react";
 
 import { FREE_PLAN_DETAILS, ENTERPRISE_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
@@ -23,6 +23,7 @@ export const ContractSelection: FC = () => {
     isLoading,
     isFileLimitExceeded,
   } = useScanStepperStore();
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
   const { user } = useAuth();
 
@@ -63,23 +64,36 @@ export const ContractSelection: FC = () => {
     return ENTERPRISE_PLAN_DETAILS;
   };
 
+  const onAllSelect = () => {
+    if (isAllSelected) {
+      setSelectedContracts([]);
+      setIsAllSelected(false);
+      return;
+    }
+    setSelectedContracts(filteredSolidityFiles.map((file) => file.path));
+    setIsAllSelected(true);
+  };
+
   return (
     <div className="flex gap-8 w-3/4 min-w-[300px]">
       <div className="flex-1 max-w-[70%]">
         <h3 className="text-base font-normal mb-2 font-inter leading-6">Select Contracts</h3>
         <div className="border-2 bg-content-1 border-default-100 rounded-xl h-[22rem]">
-          <Input
-            classNames={{
-              inputWrapper: "bg-content-1",
-            }}
-            radius="none"
-            aria-label="Search contracts"
-            isClearable={true}
-            placeholder="Search contracts..."
-            value={contractSearch}
-            onValueChange={setContractSearch}
-            startContent={<Search size={18} />}
-          />
+          <div className="flex">
+            <Checkbox isSelected={isAllSelected} onValueChange={onAllSelect} color="secondary" className="ml-2" />
+            <Input
+              classNames={{
+                inputWrapper: "bg-content-1",
+              }}
+              radius="none"
+              aria-label="Search contracts"
+              isClearable={true}
+              placeholder="Search contracts..."
+              value={contractSearch}
+              onValueChange={setContractSearch}
+              startContent={<Search size={18} />}
+            />
+          </div>
           <Divider className="bg-default-100 h-[2px]" />
           <FolderStructureView
             items={organizeFilesByFolder(filteredSolidityFiles)}

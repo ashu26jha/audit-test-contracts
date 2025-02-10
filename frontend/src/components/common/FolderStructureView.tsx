@@ -31,22 +31,24 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   const { user } = useAuth();
 
   useEffect(() => {
-    const folderPaths = new Set<string>();
+    if (selectedPaths.length === 0) {
+      const folderPaths = new Set<string>();
 
-    const collectFolderPaths = (items: FolderStructure[]) => {
-      items.forEach((item) => {
-        if (item.type === "folder") {
-          folderPaths.add(item.path);
-          if (item.children) {
-            collectFolderPaths(item.children);
+      const collectFolderPaths = (items: FolderStructure[]) => {
+        items.forEach((item) => {
+          if (item.type === "folder") {
+            folderPaths.add(item.path);
+            if (item.children) {
+              collectFolderPaths(item.children);
+            }
           }
-        }
-      });
-    };
+        });
+      };
 
-    collectFolderPaths(items);
-    setExpandedFolders(folderPaths);
-  }, [items]);
+      collectFolderPaths(items);
+      setExpandedFolders(folderPaths);
+    }
+  }, [items, selectedPaths]);
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);

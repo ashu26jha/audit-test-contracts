@@ -1,6 +1,6 @@
 import { type FC } from "react";
 
-import { Button, Card, CardBody, CardFooter, Chip } from "@nextui-org/react";
+import { Button, Card, CardBody, CardFooter } from "@nextui-org/react";
 import { ArrowUpRight, Circle, CircleCheck } from "lucide-react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
@@ -29,7 +29,6 @@ interface SubscriptionCardProps {
 }
 
 const SubscriptionCard: FC<SubscriptionCardProps> = ({
-  auditType,
   planName,
   price,
   description,
@@ -98,9 +97,6 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-x-3">
               <div className="font-medium text-base text-[#A1A1AA]">{planName}</div>
-              <Chip className="bg-transparent border border-default-200 text-default-600 text-xs" radius="sm">
-                {auditType}
-              </Chip>
             </div>
             {isSubscribed && (
               <div className="bg-[#9353D333] px-2 py-1 rounded text-xs text-[#C9A9E9]">CURRENT PLAN</div>

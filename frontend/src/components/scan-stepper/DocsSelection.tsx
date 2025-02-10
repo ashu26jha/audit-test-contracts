@@ -1,7 +1,7 @@
 "use client";
-import { type FC, useCallback, useEffect, useMemo } from "react";
+import { type FC, useCallback, useEffect, useMemo, useState } from "react";
 
-import { Input, Accordion, AccordionItem, Divider } from "@nextui-org/react";
+import { Input, Accordion, AccordionItem, Divider, Checkbox } from "@nextui-org/react";
 import { Search, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -34,6 +34,7 @@ export const DocsSelection: FC = () => {
   const { user } = useAuth();
   const router = useRouter();
   const { fetchReadmeFiles, fetchPreviousDocs } = useScanStepper();
+  const [isAllSelected, setIsAllSelected] = useState(false);
 
   const filteredReadmeFiles = useMemo(() => {
     const searchLower = contractSearch.toLowerCase();
@@ -59,6 +60,16 @@ export const DocsSelection: FC = () => {
     },
     [repoDocs.readme, setRepoDocs],
   );
+
+  const onAllSelect = () => {
+    if (isAllSelected) {
+      setRepoDocs({ readme: [] });
+      setIsAllSelected(false);
+      return;
+    }
+    setRepoDocs({ readme: filteredReadmeFiles.map((file) => file.path) });
+    setIsAllSelected(true);
+  };
 
   // Fetch previous docs if user is a subscriber
   useEffect(() => {
@@ -96,18 +107,26 @@ export const DocsSelection: FC = () => {
                   <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
 
                   <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[22rem] overflow-auto">
-                    <Input
-                      classNames={{
-                        inputWrapper: "bg-content-1",
-                      }}
-                      radius="none"
-                      aria-label="Search files"
-                      isClearable={true}
-                      placeholder="Search files..."
-                      value={contractSearch}
-                      onValueChange={setContractSearch}
-                      startContent={<Search size={18} />}
-                    />
+                    <div className="flex">
+                      <Checkbox
+                        isSelected={isAllSelected}
+                        onValueChange={onAllSelect}
+                        color="secondary"
+                        className="ml-2"
+                      />
+                      <Input
+                        classNames={{
+                          inputWrapper: "bg-content-1",
+                        }}
+                        radius="none"
+                        aria-label="Search files"
+                        isClearable={true}
+                        placeholder="Search files..."
+                        value={contractSearch}
+                        onValueChange={setContractSearch}
+                        startContent={<Search size={18} />}
+                      />
+                    </div>
                     <Divider className="bg-default-100 h-[2px] mb-3" />
                     <FolderStructureView
                       items={organizeFilesByFolder(filteredReadmeFiles)}
