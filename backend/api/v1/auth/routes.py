@@ -28,7 +28,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 
 @router.get("/github-login")
-@throttle(rate_limit_minutes=1, max_requests=20, use_ip=True)
+@throttle(max_requests=20, use_ip=True)
 async def github_login(request: Request):
     """
     Redirect the user to the GitHub OAuth authorization page.
@@ -39,9 +39,9 @@ async def github_login(request: Request):
 
 
 @router.get("/github-callback")
-@throttle(rate_limit_minutes=5, max_requests=10, use_ip=True)
+@throttle(max_requests=10, use_ip=True)
 async def github_callback(
-    _: Request,
+    request: Request,
     code: str,
     state: str | None = None,
     installation_id: str | None = None,

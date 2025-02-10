@@ -8,14 +8,32 @@ from core.models.throttling import ThrottleRecord
 from core.utils.logger import logger
 
 
-def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = False):
+def throttle(max_requests: int = 1, use_ip: bool = False):
+    """
+    Rate limiting decorator that uses MongoDB's TTL for window management.
+
+    Args:
+        rate_limit_minutes: Number of minutes in the rate limit window (should match TTL in ThrottleRecord)
+        max_requests: Maximum number of requests allowed within the window
+        use_ip: Whether to use IP-based (True) or user-based (False) throttling
+    """
+
     def decorator(func):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             try:
                 if use_ip:
                     # Get IP from request
-                    request: Optional[Request] = kwargs.get("request")
+                    request: Optional[Request] = None
+
+                    # Look for request in both args and kwargs
+                    for arg in args:
+                        if isinstance(arg, Request):
+                            request = arg
+                            break
+                    if not request:
+                        request = kwargs.get("request")
+
                     if not request:
                         logger.error("Request object not found for IP-based throttling")
                         return await func(*args, **kwargs)
@@ -48,6 +66,7 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                     record.last_request = now
                     await record.save()
                 else:
+                    # Create new record - MongoDB TTL will automatically delete it after the window
                     await ThrottleRecord(
                         key=key,
                         request_count=1,
@@ -60,7 +79,6 @@ def throttle(rate_limit_minutes: int = 1, max_requests: int = 1, use_ip: bool = 
                 raise
             except Exception as e:
                 logger.error(f"Error in throttling: {str(e)}")
-                # Proceed without throttling on error
                 return await func(*args, **kwargs)
 
         return wrapper
