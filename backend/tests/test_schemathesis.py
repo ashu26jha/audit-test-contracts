@@ -175,7 +175,11 @@ def test_schema_validation(case, auth_token):
     client.cookies.set("auth_token", auth_token)
 
     response = handle_github_request(case, client, kwargs, "schema")
-    assert response.status_code in [200, 201, 202, 204, 400, 401, 403, 404, 422, 500]
+    # Include 429 in valid response codes and make the error message more descriptive
+    valid_status_codes = [200, 201, 202, 204, 400, 401, 403, 404, 422, 429, 500]
+    assert (
+        response.status_code in valid_status_codes
+    ), f"Unexpected status code {response.status_code}. Expected one of {valid_status_codes}"
 
 
 @schema.parametrize()

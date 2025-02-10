@@ -106,7 +106,7 @@ async def handle_github_callback(
         raise HTTPException(status_code=400, detail="State parameter required for OAuth flow")
 
     # Exchange code for access token
-    access_token, refresh_token = await exchange_github_code(code, state)
+    access_token, refresh_token = await exchange_github_code(code)
 
     # If this is a GitHub App callback, verify installation
     if installation_id is not None:
@@ -119,7 +119,7 @@ async def handle_github_callback(
     return access_token, user
 
 
-async def exchange_github_code(code: str, state: Optional[str] = None) -> Tuple[str, str]:
+async def exchange_github_code(code: str) -> Tuple[str, str]:
     """Exchange GitHub code for access token"""
     token_url = "https://github.com/login/oauth/access_token"
     data = {
@@ -127,8 +127,6 @@ async def exchange_github_code(code: str, state: Optional[str] = None) -> Tuple[
         "client_secret": settings.GITHUB_CLIENT_SECRET,
         "code": code,
     }
-    if state:
-        data["state"] = state
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
