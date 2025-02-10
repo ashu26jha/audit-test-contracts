@@ -113,18 +113,29 @@ async def generate_and_store_oauth_state() -> str:
     """Generate and store OAuth state parameter"""
     state = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(minutes=5)
+    expires_at = now + timedelta(minutes=10)
 
-    await OAuthState(state=state, created_at=now, expires_at=expires_at).insert()
-    return state
+    try:
+        oauth_state = OAuthState(state=state, created_at=now, expires_at=expires_at)
+        await oauth_state.insert()
+        logger.info(f"Successfully stored OAuth state: {state}")
+        return state
+    except Exception as e:
+        logger.error(f"Error storing OAuth state: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error during authentication") from e
 
 
 async def verify_oauth_state(state: str) -> bool:
     """Verify OAuth state parameter"""
     now = datetime.now(timezone.utc)
-    oauth_state = await OAuthState.find_one({"state": state, "expires_at": {"$gt": now}})
+    try:
+        oauth_state = await OAuthState.find_one({"state": state, "expires_at": {"$gt": now}})
+        logger.info(f"OAuth state verification result: {oauth_state is not None}")
 
-    if oauth_state:
-        await oauth_state.delete()
-        return True
-    return False
+        if oauth_state:
+            await oauth_state.delete()
+            return True
+        return False
+    except Exception as e:
+        logger.error(f"Error verifying OAuth state: {str(e)}")
+        return False
