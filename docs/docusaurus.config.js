@@ -11,7 +11,8 @@ import { themes as prismThemes } from "prism-react-renderer";
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Audit Agent",
-  tagline: "Automatically detect vulnerabilities and mitigate risks in smart contracts",
+  tagline:
+    "Automatically detect vulnerabilities and mitigate risks in smart contracts",
   favicon: "img/favicon.ico",
 
   // Set the production url of your site here
@@ -61,13 +62,16 @@ const config = {
         title: "",
         logo: {
           alt: "Audit Agent Logo",
-          src: "img/audit-agent-logo.svg",
+          src: "img/audit-agent-logo-light.svg",
+          srcDark: "img/audit-agent-logo.svg",
+          width: 150,
         },
         items: [
           {
             to: "https://app.auditagent.nethermind.io",
             label: "Launch app",
             position: "right",
+            className: "button button--primary button--md",
           },
         ],
       },
