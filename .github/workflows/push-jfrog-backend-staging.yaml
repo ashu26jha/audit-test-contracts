@@ -52,7 +52,7 @@ jobs:
           context: ./backend
           platforms: "linux/amd64"
           push: true
-          file: ./backend/Dockerfile.backend.staging
+          file: ./backend/Dockerfile.backend
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.JFROG_REPOSITORY }}/${{ env.AGENT_NAME }}:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.JFROG_REPOSITORY }}/${{ env.AGENT_NAME }}:latest

@@ -6,7 +6,7 @@ services:
   backend-staging:
     build:
       context: ./backend
-      dockerfile: Dockerfile.backend.staging
+      dockerfile: Dockerfile.backend
     container_name: backend-staging
     ports:
       - "8000:8000"
@@ -20,7 +20,7 @@ services:
   frontend-staging:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.frontend.staging
+      dockerfile: Dockerfile.frontend
       args:
         - NEXT_PUBLIC_API_URL=http://localhost:8000
         - NEXT_PUBLIC_GITHUB_APP_URL=https://github.com/apps/auditagent-dev/installations/new

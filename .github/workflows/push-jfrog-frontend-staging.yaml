@@ -58,7 +58,7 @@ jobs:
           context: ./frontend
           platforms: "linux/amd64"
           push: true
-          file: ./frontend/Dockerfile.frontend.staging
+          file: ./frontend/Dockerfile.frontend
           tags: |
             ${{ env.DOCKER_REGISTRY }}/${{ env.JFROG_REPOSITORY }}/${{ env.AGENT_NAME }}:${{ github.sha }}
             ${{ env.DOCKER_REGISTRY }}/${{ env.JFROG_REPOSITORY }}/${{ env.AGENT_NAME }}:latest
