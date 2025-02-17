@@ -181,8 +181,8 @@ def perform_audit_agent_background(
                 await initializer.clone_repository()
 
                 # Flatten contracts & Count lines of code
-                flattened_contracts = await initializer.flatten_contracts()
-                lines_of_code = await initializer.count_lines_of_code(flattened_contracts)
+                flattened_contracts, lines_of_code = await initializer.flatten_and_count_contracts()
+                await ScanRepository.update_scan_lines_of_code(context.scan_id, lines_of_code)
 
                 # Let validation errors bubble up to main exception handler
                 await validate_subscription_limits(

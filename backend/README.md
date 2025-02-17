@@ -54,20 +54,26 @@ AGENTIC_API_KEY="Your_agentic_api_key" # Only needed for Agentic scans
 ETHERSCAN_API_KEY="Your_etherscan_api_key" # Only needed for Agentic scans
 SECRET_KEY="Any key for JWT token"
 
-# For AI services
+# For AI services (use placeholders for unused services)
 OPENAI_API_KEY="Your_openai_api_key"
 ANTHROPIC_API_KEY="Your_anthropic_api_key"
 GEMINI_API_KEY="Your_gemini_api_key"
+
+# AI models used in the analysis, enabled based on the provided API keys above
+LLM_UTILITY=claude-3-5-sonnet-latest
+LLM_SCAN_1=o1
+LLM_SCAN_2=claude-3-5-sonnet-latest
+LLM_SCAN_3=o3-mini
 
 # For Langfuse monitoring (Ask for the keys)
 LANGFUSE_SECRET_KEY="Your_langfuse_secret_key"
 LANGFUSE_PUBLIC_KEY="Your_langfuse_public_key"
 LANGFUSE_HOST="Your_langfuse_host"
 
-# Create a MongoDB and get the URL (Create your own to mess with)
+# Create a MongoDB and get the URL (Create your own to mess with, local databases are not supported, so use a service like Atlas)
 MONGODB_URL="Your_mongodb_url"
 
-# Create a Github app and get the client ID and secret
+# Create a simple Github app and get the client ID and secret, make sure to enable email and repository access rights
 GITHUB_CLIENT_ID="Your_github_client_id"
 GITHUB_CLIENT_SECRET="Your_github_client_secret"
 GITHUB_INSTALLATION_URL=your_github_installation_url

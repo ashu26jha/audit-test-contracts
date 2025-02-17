@@ -6,8 +6,7 @@ from uuid import UUID
 from fastapi import HTTPException
 
 from api.v1.audit_agent.schema import AuditAgentRequest
-from api.v1.common.flatten_contracts import flatten_contracts
-from api.v1.common.lines_of_code import count_lines_of_code
+from api.v1.common.flatten_contracts import flatten_and_count_contracts
 from api.v1.github.helpers.clone_repo import clone_repo
 from api.v1.github.service import GitHubService
 from core.db.repositories.scan import ScanRepository
@@ -115,19 +114,9 @@ class ScanInitializer:
             await send_error_email(self.user.email, self.scan_id)
             raise
 
-    async def flatten_contracts(self) -> str:
+    async def flatten_and_count_contracts(self) -> tuple[str, CodeAnalysisResult]:
         # Flatten contracts using the cloned repo
-        flattened_contracts = await flatten_contracts(
+        return await flatten_and_count_contracts(
             self.request.contractFiles,
             project_dir=self.repo_dir,
         )
-        return flattened_contracts
-
-    async def count_lines_of_code(self, flattened_contracts: str) -> CodeAnalysisResult:
-        # Count lines of code
-        lines_of_code = await count_lines_of_code(flattened_contracts)
-
-        # Update scan with lines of code
-        await ScanRepository.update_scan_lines_of_code(self.scan_id, lines_of_code)
-
-        return lines_of_code

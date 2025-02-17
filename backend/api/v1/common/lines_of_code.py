@@ -67,7 +67,7 @@ async def _analyze_code(
         )
 
         result = CodeAnalysisResult(
-            total_lines=analysis.code_count + analysis.documentation_count + analysis.empty_count,
+            total_lines=analysis.line_count,
             code_lines=analysis.code_count,
             comment_lines=analysis.documentation_count,
             empty_lines=analysis.empty_count,
