@@ -40,7 +40,7 @@ def get_claude_client():
             api_key=ANTHROPIC_API_KEY,
             http_client=http_client,
         )
-        claude_client = instructor.from_anthropic(base_claude_client)
+        claude_client = instructor.from_anthropic(base_claude_client, enable_prompt_caching=True)
         return claude_client
     except Exception as e:
         logger.error(f"[LLMClient] Failed to initialize Claude client: {str(e)}", exc_info=True)

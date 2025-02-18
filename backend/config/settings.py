@@ -55,7 +55,7 @@ LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "o3-mini")
 TOKENS_ENCODING = "cl100k_base"
 
 # Specify the temperature for the LLM - From 0.0 to 1.0
-TEMPERATURE = 0.3
+TEMPERATURE = 0
 MAX_RETRIES = 3
 DELAY = 2
 

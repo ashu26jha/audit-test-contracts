@@ -12,7 +12,7 @@ from langfuse.openai import AsyncOpenAI
 from openai import OpenAIError
 from pydantic import BaseModel, ValidationError
 
-from config.settings import SUPPORTED_MODELS
+from config.settings import SUPPORTED_MODELS, TEMPERATURE
 from core.llm.llm_clients import get_claude_client, get_gemini_client
 from core.llm.parse_llm_response import parse_model_response
 from core.schemas.llm_schema import Message
@@ -107,6 +107,7 @@ async def send_prompt_to_llm_async(
                             max_tokens=8192,
                             response_model=response_model,
                             timeout=REQUEST_TIMEOUT,
+                            temperature=TEMPERATURE,
                         )
 
                         _update_langfuse(model_type, token_count, count_tokens(str(response)))
@@ -128,7 +129,7 @@ async def send_prompt_to_llm_async(
                             messages,
                             generation_config=genai.GenerationConfig(
                                 response_mime_type="application/json",
-                                temperature=0.1,
+                                temperature=TEMPERATURE,
                             ),
                         )
 
