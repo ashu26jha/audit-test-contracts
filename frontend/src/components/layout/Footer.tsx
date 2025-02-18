@@ -68,7 +68,7 @@ const Footer: FC = () => {
           <Image src="/svg/nethermind.svg" alt="logo" width={100} height={16} />
         </div>
         <Elipsis className="hidden lg:block" />
-        <div className="text-xs md:text-sm">©2024 Nethermind. All rights reserved</div>
+        <div className="text-xs md:text-sm">©{new Date().getFullYear()} Nethermind. All rights reserved</div>
       </div>
 
       <div className="flex flex-wrap justify-center md:justify-end items-center gap-x-2 lg:gap-x-0">

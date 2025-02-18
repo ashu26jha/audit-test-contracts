@@ -10,12 +10,10 @@ import { Container, Loading } from "@/components/layout";
 import ScanCard from "@/components/ScanCard";
 import { SERVICES } from "@/config/constants";
 import { useFetchScanHistory, useGithubApp, useScanResult } from "@/hooks";
-import { useScanStepperStore } from "@/store/scanStepperStore";
 import { checkInProgressScan } from "@/utils/helpers";
 
 const DashboardView: FC = () => {
   const router = useRouter();
-  const { setShowStepper } = useScanStepperStore();
   const { repositories, scanHistory, isLoading, refetch } = useFetchScanHistory();
   const { hasGithubApp } = useGithubApp();
   const [inProgressScan, setInProgressScan] = useState<string | null>(null);
@@ -40,15 +38,15 @@ const DashboardView: FC = () => {
       window.location.href = SERVICES.GITHUB_APP_URL;
       return;
     }
-
-    setShowStepper(true);
     // Trigger a refetch when starting a new scan
     refetch();
+
+    router.push("/dashboard?tab=scan");
   };
 
   return (
     <Container
-      breadcrumbItems={["Dashboard"]}
+      breadcrumbItems={[{ label: "Dashboard", href: "/dashboard" }]}
       buttons={
         <Button
           color="secondary"

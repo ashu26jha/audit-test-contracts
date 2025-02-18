@@ -9,7 +9,7 @@ interface LoadingProps {
 
 const Loading: FC<LoadingProps> = ({ text = "Loading", subText = "Please wait..." }) => {
   return (
-    <div className="h-full bg-black text-white flex flex-col items-center justify-center">
+    <div className="h-screen bg-black text-white flex flex-col items-center justify-center">
       <div className="bg-content-1 size-[100px] rounded-lg p-8 flex flex-col items-center text-center">
         <Spinner size="lg" color="secondary" />
       </div>

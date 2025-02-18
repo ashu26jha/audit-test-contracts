@@ -4,6 +4,7 @@ import { type FC, useState, useEffect } from "react";
 
 import { Checkbox, cn, Spinner } from "@nextui-org/react";
 import { ChevronDown, ChevronRight, Text } from "lucide-react";
+import Image from "next/image";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { formatNumberWithCommas } from "@/utils/formatters";
@@ -16,6 +17,7 @@ export interface FolderStructureViewProps {
   isDisabled?: boolean;
   isLoading: boolean;
   variant: "contract" | "readme";
+  emptyText: string;
 }
 
 export const FolderStructureView: FC<FolderStructureViewProps> = ({
@@ -26,6 +28,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   isDisabled = false,
   isLoading,
   variant,
+  emptyText,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const { user } = useAuth();
@@ -68,8 +71,19 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
     );
   }
 
+  if (level === 0 && items.length === 0) {
+    return (
+      <div className="w-full h-96 flex flex-col items-center justify-center gap-y-2">
+        <div className="p-4 bg-default-100 rounded-xl">
+          <Image src="/svg/empty-repo.svg" alt="Empty repo" width={20} height={20} />
+        </div>
+        <p className="text-default-500">{emptyText}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className={`${level === 0 && "h-[18rem] overflow-auto"}`}>
+    <div className={`${level === 0 && "h-[20rem] overflow-auto"}`}>
       {items.map((item) => (
         <div key={item.path}>
           <div
@@ -124,6 +138,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
               isDisabled={isDisabled}
               isLoading={false}
               variant={variant}
+              emptyText={emptyText}
             />
           )}
         </div>

@@ -3,33 +3,28 @@ import Image from "next/image";
 export const STEPS = [
   {
     notSelectedIcon: <Image src="/svg/repository.svg" alt="Repository" width={45} height={45} />,
-    selectingIcon: <Image src="/svg/repository_selecting.svg" alt="Repository Selecting" width={45} height={45} />,
-    selectedIcon: <Image src="/svg/repository_selected.svg" alt="Repository Selected" width={100} height={100} />,
+    selectedIcon: <Image src="/svg/repository_selected.svg" alt="Repository Selected" width={45} height={45} />,
     label: "Repository",
   },
   {
     notSelectedIcon: <Image src="/svg/branch.svg" alt="Branch" width={45} height={45} />,
-    selectingIcon: <Image src="/svg/branch_selecting.svg" alt="Branch Selecting" width={45} height={45} />,
-    selectedIcon: <Image src="/svg/branch_selected.svg" alt="Branch Selected" width={60} height={60} />,
+    selectedIcon: <Image src="/svg/branch_selected.svg" alt="Branch Selected" width={45} height={45} />,
     label: "Branch",
   },
   {
-    notSelectedIcon: <Image src="/svg/contract.svg" alt="Contract" width={45} height={45} />,
-    selectingIcon: <Image src="/svg/contract_selecting.svg" alt="Contract Selecting" width={45} height={45} />,
-    selectedIcon: <Image src="/svg/contract_selected.svg" alt="Contract Selected" width={60} height={60} />,
+    notSelectedIcon: <Image src="/svg/contract.svg" alt="Contract" width={35} height={35} />,
+    selectedIcon: <Image src="/svg/contract_selected.svg" alt="Contract Selected" width={35} height={35} />,
     label: "Contract",
   },
   {
     notSelectedIcon: <Image src="/svg/docs.svg" alt="Docs" width={45} height={45} />,
-    selectingIcon: <Image src="/svg/docs_selecting.svg" alt="Docs Selecting" width={45} height={45} />,
-    selectedIcon: <Image src="/svg/docs_selected.svg" alt="Docs Selected" width={60} height={60} />,
+    selectedIcon: <Image src="/svg/docs_selected.svg" alt="Docs Selected" width={45} height={45} />,
     label: "Docs",
   },
 ];
 
 export const PLAN_STEP = {
-  notSelectedIcon: <Image src="/svg/repository.svg" alt="Repository" width={45} height={45} />,
-  selectingIcon: <Image src="/svg/subscription_selecting.svg" alt="Plans Selecting" width={45} height={45} />,
-  selectedIcon: <Image src="/svg/subscription_selected.svg" alt="Plans Selected" width={100} height={100} />,
+  notSelectedIcon: <Image src="/svg/subscription.svg" alt="Plans" width={45} height={45} />,
+  selectedIcon: <Image src="/svg/subscription_selected.svg" alt="Plans Selected" width={45} height={45} />,
   label: "Plans",
 };

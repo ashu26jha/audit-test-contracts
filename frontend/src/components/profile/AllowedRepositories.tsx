@@ -36,7 +36,7 @@ const AllowedRepositories: FC = () => {
       )}
 
       {allowedRepositories.length > 0 ? (
-        <Card className="w-full max-h-[500px] min-h-[400px] overflow-y-auto border border-[#27272A] bg-[#18181B]">
+        <Card className="w-full max-h-[350px] min-h-[250px] overflow-y-auto border border-[#27272A] bg-[#18181B]">
           <CardBody>
             {allowedRepositories.map((repo) => (
               <div key={repo.name} className="flex items-center justify-between p-1 rounded-md">

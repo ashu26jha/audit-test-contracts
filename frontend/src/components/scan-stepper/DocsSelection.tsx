@@ -106,7 +106,7 @@ export const DocsSelection: FC = () => {
                 <div className="flex-1 max-w-[70%]">
                   <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
 
-                  <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[22rem] overflow-auto">
+                  <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[23.85rem] overflow-auto">
                     <div className="flex">
                       <Checkbox
                         isSelected={isAllSelected}
@@ -135,6 +135,7 @@ export const DocsSelection: FC = () => {
                       isDisabled={isFileLimitExceeded}
                       isLoading={isLoading}
                       variant="readme"
+                      emptyText="No readme files found under this branch"
                     />
                   </div>
                 </div>

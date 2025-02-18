@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
-import { SubscriptionCard } from "../profile";
+import SubscriptionCard from "./SubscriptionCard";
 
 export const SubscriptionSelection: FC = () => {
   const { user } = useAuth();
@@ -22,11 +22,8 @@ export const SubscriptionSelection: FC = () => {
         description={FREE_PLAN_DETAILS.DESCRIPTION}
         features={FREE_PLAN_DETAILS.features}
         nextPaymentDate={nextAvailableScanDate ?? new Date()} // We are passing the next available scan date
-        isSubscribed={user?.subscription.type === "free"}
         subscriptionType={FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isSelectable={freeScanAllowed}
-        variant="scan-now"
-        currentSubscriptionType={user.subscription.type}
         isSelected={selectedPlan === FREE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isFreeScanUsed={!freeScanAllowed}
       />
@@ -37,12 +34,9 @@ export const SubscriptionSelection: FC = () => {
         description={PRO_PLAN_DETAILS.DESCRIPTION}
         features={PRO_PLAN_DETAILS.features}
         nextPaymentDate={new Date()} // We can pass any date here because it wont be displayed
-        isSubscribed={false} // This will always be false because the cards will only be shown if the user is not subscribed
         subscriptionType={PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isSelectable={true}
         isSelected={selectedPlan === PRO_PLAN_DETAILS.SUBSCRIPTION_TYPE}
-        variant="scan-now"
-        currentSubscriptionType={user.subscription.type}
       />
       <SubscriptionCard
         auditType={ENTERPRISE_PLAN_DETAILS.AUDIT_TYPE}
@@ -51,11 +45,8 @@ export const SubscriptionSelection: FC = () => {
         description={ENTERPRISE_PLAN_DETAILS.DESCRIPTION}
         features={ENTERPRISE_PLAN_DETAILS.features}
         nextPaymentDate={new Date()} // We can pass any date here because it wont be displayed
-        isSubscribed={false} // This will always be false because the cards will only be shown if the user is not subscribed
         subscriptionType={ENTERPRISE_PLAN_DETAILS.SUBSCRIPTION_TYPE}
         isSelectable={false}
-        variant="scan-now"
-        currentSubscriptionType={user.subscription.type}
       />
     </div>
   );

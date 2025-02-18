@@ -1,5 +1,7 @@
 import { useMemo, type FC } from "react";
 
+import Image from "next/image";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepper } from "@/hooks";
 
@@ -23,21 +25,25 @@ export const StepperVisualization: FC<StepperVisualizationProps> = ({ currentSte
     <div className="flex justify-center">
       {stepsData.map((step, index) => (
         <div key={step.label} className="flex items-center gap-x-3">
-          <div className="flex flex-col items-center justify-center">
+          <div className="flex items-center justify-center gap-x-1">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center ${
+              className={`size-5 rounded-full flex items-center justify-center ${
                 index + indexIncrement === currentStep ? "text-red-500" : "text-gray-400"
               }`}
             >
-              {index + indexIncrement < currentStep
-                ? step.selectedIcon
-                : index + indexIncrement === currentStep
-                  ? step.selectingIcon
-                  : step.notSelectedIcon}
+              {index + indexIncrement !== currentStep && step.notSelectedIcon}
+
+              {index + indexIncrement === currentStep && step.selectedIcon}
             </div>
-            <span className={`text-sm ${index + indexIncrement === currentStep ? "text-[#C9A9E9]" : "text-gray-400"}`}>
-              {step.label}
+            <span
+              className={`text-sm font-semibold ${index + indexIncrement === currentStep ? "text-[#AE7EDE]" : "text-gray-400"}`}
+            >
+              {index + 1}. {step.label}
             </span>
+
+            {index + indexIncrement < currentStep && (
+              <Image src="/svg/check-icon.svg" alt="check" width={18} height={18} />
+            )}
           </div>
           {index + indexIncrement < stepsData.length - 1 + indexIncrement && (
             <div className="w-16 h-px bg-gray-700 mx-2" />

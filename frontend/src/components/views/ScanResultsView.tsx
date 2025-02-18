@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC, useState, useRef } from "react";
+import { type FC, useState, useRef, useEffect } from "react";
 
 import { Card, CardBody, Button, Tooltip } from "@nextui-org/react";
 import { Hash, Info, Text } from "lucide-react";
@@ -20,9 +20,20 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [selectedFinding, setSelectedFinding] = useState<Finding | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   // Add ref for findings container
   const findingsRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Add scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Add scroll handler
   const scrollToFinding = (finding: Finding) => {
@@ -54,7 +65,11 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
   return (
     <>
       <Container
-        breadcrumbItems={["Dashboard", scanData.scan.repositoryName, scanData.scan_number.toString()]}
+        breadcrumbItems={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: scanData.scan.repositoryName ?? "", href: `/repository/${scanData.scan.repositoryName}` },
+          { label: scanData.scan_number.toString(), href: `/scan-results/${scanData.scan_number}` },
+        ]}
         buttons={
           <div className="flex space-x-2">
             <Tooltip content="More information">
@@ -87,7 +102,9 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
           <div
             className={`h-full transition-all duration-300 ${isCollapsed ? "w-[50px] flex-none" : "w-full lg:w-1/5"}`}
           >
-            <div className="sticky top-0 h-full overflow-y-auto w-full flex justify-center pt-4">
+            <div
+              className={`fixed h-[70vh] transform ${hasScrolled ? "-translate-y-20" : "translate-y-0"} transition-all duration-300 ease-in-out overflow-y-auto flex justify-center pt-4 ${isCollapsed ? "w-[50px]" : "w-full lg:w-1/5"}`}
+            >
               <div className={`w-full ${isCollapsed ? "flex justify-center" : ""}`}>
                 <FindingsMenu
                   findings={scanData.findings}

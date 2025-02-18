@@ -12,14 +12,12 @@ import { useRouter, usePathname } from "next/navigation";
 import { PAGES } from "@/config/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
-import { useScanStepperStore } from "@/store/scanStepperStore";
 
 import LoginNavbar from "./LoginNavbar";
 
 const Navbar: FC = () => {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
-  const { setShowStepper } = useScanStepperStore();
   const pathname = usePathname();
   const { checkIfFreeScanAllowed, freeScanAllowed } = useSubscription();
 
@@ -41,13 +39,9 @@ const Navbar: FC = () => {
       position="sticky"
       className="h-20 px-4 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
     >
-      <NavbarBrand as="li" className="gap-3 max-w-fit min-w-[130px]">
-        <NextLink
-          className="flex justify-start items-center gap-1"
-          href="/dashboard"
-          onClick={() => setShowStepper(false)}
-        >
-          <Image src="/svg/logo.svg" alt="logo" width={195} height={150} priority />
+      <NavbarBrand as="li" className="max-w-fit min-w-[130px]">
+        <NextLink className="flex justify-start items-center" href="/dashboard?tab=home">
+          <Image src="/svg/logo.svg" alt="logo" width={175} height={150} priority />
         </NextLink>
       </NavbarBrand>
 

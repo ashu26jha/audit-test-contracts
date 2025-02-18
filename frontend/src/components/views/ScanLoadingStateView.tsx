@@ -76,7 +76,11 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
 
   return (
     <Container
-      breadcrumbItems={["Dashboard", scanData.scan.repositoryName, scanData.scan_number.toString()]}
+      breadcrumbItems={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: scanData.scan.repositoryName ?? "", href: `/repository/${scanData.scan.repositoryName}` },
+        { label: scanData.scan_number.toString(), href: `/scan-results/${scanData.scan_number}` },
+      ]}
       buttons={
         <Tooltip content="More information">
           <Button
@@ -90,7 +94,7 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
         </Tooltip>
       }
     >
-      <div className="w-full h-full flex flex-col lg:flex-row lg:justify-center">
+      <div className="w-full min-h-[65vh] flex flex-col lg:flex-row lg:justify-center">
         {/* Findings Menu */}
         <div className={`h-full transition-all duration-300 ${isCollapsed ? "w-[50px] flex-none" : "w-full lg:w-1/5"}`}>
           <div className="sticky top-0 h-full overflow-y-auto w-full flex justify-center pt-4">

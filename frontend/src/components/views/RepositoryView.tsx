@@ -42,7 +42,10 @@ const RepositoryView: FC<RepositoryViewProps> = ({ repoId }) => {
 
   return (
     <Container
-      breadcrumbItems={["Dashboard", repository?.repositoryName ?? ""]}
+      breadcrumbItems={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: repository?.repositoryName ?? "", href: `/repository/${repository?.repositoryName}` },
+      ]}
       buttons={
         <ScanFilters
           selectedDateRange={selectedDateRange}

@@ -25,7 +25,6 @@ import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const ScanStepperView: FC = () => {
   const router = useRouter();
-  const { setShowStepper } = useScanStepperStore();
   const { toast } = useToast();
   const {
     currentStep,
@@ -169,10 +168,10 @@ const ScanStepperView: FC = () => {
   const handleBack = () => {
     if (user?.subscription.type === "free" && currentStep === 0) {
       resetStepper(0);
-      setShowStepper(false);
+      router.push("/dashboard?tab=home");
     } else if (user?.subscription.type !== "free" && currentStep === 1) {
       resetStepper(1);
-      setShowStepper(false);
+      router.push("/dashboard?tab=home");
     } else {
       setCurrentStep(currentStep - 1);
     }
@@ -199,26 +198,35 @@ const ScanStepperView: FC = () => {
       )}
 
       <Container
-        breadcrumbItems={["Dashboard", "Scan Code"]}
+        breadcrumbItems={[
+          { label: "Dashboard", href: "/dashboard?tab=home" },
+          { label: "Scan Code", href: "/dashboard?tab=scan" },
+        ]}
+        disableTopPadding={true}
         buttons={
           <div>
-            <Button className="mr-2 rounded-lg bg-content-1 border border-default-flat" onPress={handleBack}>
+            <Button
+              className="mr-2 rounded-lg bg-content-1 border border-default-flat"
+              onPress={handleBack}
+              disableAnimation
+            >
               Go Back
             </Button>
             <Button
               color="secondary"
               className="bg-[#8B5CF6] disabled:bg-[#7f69b3] disabled:hover:bg-[#7f69b3] rounded-lg"
               isDisabled={!useScanStepperStore.getState().isNextEnabled || isLineExceeded || isFileLimitExceeded}
+              disableAnimation
               endContent={<ArrowRight size={20} />}
               onPress={handleScan}
             >
-              {currentStep === 0 && (freeScanAllowed && selectedPlan === "free" ? "Continue" : "Pay & continue")}
+              {currentStep === 0 && (freeScanAllowed && selectedPlan === "free" ? "Continue" : "Pay & Continue")}
               {currentStep > 0 && (currentStep + stepIndexIncrement === stepsData.length ? "Scan Code" : "Next")}
             </Button>
           </div>
         }
       >
-        <div className="h-24 flex justify-center items-start border-b-2 border-default-100">
+        <div className="h-16 flex justify-center items-center border-b-2 border-default-100">
           <StepperVisualization currentStep={currentStep} />
         </div>
 

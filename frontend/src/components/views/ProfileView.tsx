@@ -23,7 +23,11 @@ const ProfileView: FC = () => {
 
   return (
     <Container
-      breadcrumbItems={["Dashboard", "Profile Settings"]}
+      breadcrumbItems={[
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "Profile Settings", href: "/profile" },
+      ]}
+      disableTopPadding
       buttons={
         <div className="flex space-x-2">
           <ButtonProfile

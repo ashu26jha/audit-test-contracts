@@ -2,18 +2,20 @@
 
 import { type FC } from "react";
 
+import { useSearchParams } from "next/navigation";
+
 import { ProtectedRoute } from "@/components/layout";
 import { ScanInfoModal } from "@/components/Modals";
 import { DashboardView, ScanStepperView } from "@/components/views";
-import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const DashboardPage: FC = () => {
-  const { showStepper } = useScanStepperStore();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab") || "home";
 
   return (
     <ProtectedRoute>
       <ScanInfoModal />
-      {showStepper ? <ScanStepperView /> : <DashboardView />}
+      {tab === "scan" ? <ScanStepperView /> : <DashboardView />}
     </ProtectedRoute>
   );
 };

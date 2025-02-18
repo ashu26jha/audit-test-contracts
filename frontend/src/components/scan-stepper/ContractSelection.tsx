@@ -78,7 +78,7 @@ export const ContractSelection: FC = () => {
     <div className="flex gap-8 w-3/4 min-w-[300px]">
       <div className="flex-1 max-w-[70%]">
         <h3 className="text-base font-normal mb-2 font-inter leading-6">Select Contracts</h3>
-        <div className="border-2 bg-content-1 border-default-100 rounded-xl h-[22rem]">
+        <div className="border-2 bg-content-1 border-default-100 rounded-xl h-[23.85rem]">
           <div className="flex">
             <Checkbox isSelected={isAllSelected} onValueChange={onAllSelect} color="secondary" className="ml-2" />
             <Input
@@ -102,6 +102,7 @@ export const ContractSelection: FC = () => {
             isDisabled={isFileLimitExceeded}
             isLoading={isLoading}
             variant="contract"
+            emptyText="No contracts found under this branch"
           />
         </div>
       </div>
