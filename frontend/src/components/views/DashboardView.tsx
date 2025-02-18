@@ -1,6 +1,6 @@
 "use client";
 
-import { type FC } from "react";
+import { useEffect, useState, type FC } from "react";
 
 import { Button } from "@nextui-org/react";
 import Image from "next/image";
@@ -9,14 +9,24 @@ import { useRouter } from "next/navigation";
 import { Container, Loading } from "@/components/layout";
 import ScanCard from "@/components/ScanCard";
 import { SERVICES } from "@/config/constants";
-import { useFetchScanHistory, useGithubApp } from "@/hooks";
+import { useFetchScanHistory, useGithubApp, useScanResult } from "@/hooks";
 import { useScanStepperStore } from "@/store/scanStepperStore";
+import { checkInProgressScan } from "@/utils/helpers";
 
 const DashboardView: FC = () => {
   const router = useRouter();
   const { setShowStepper } = useScanStepperStore();
   const { repositories, scanHistory, isLoading, refetch } = useFetchScanHistory();
   const { hasGithubApp } = useGithubApp();
+  const [inProgressScan, setInProgressScan] = useState<string | null>(null);
+  useScanResult(inProgressScan ?? "");
+
+  useEffect(() => {
+    if (repositories.length > 0) {
+      const scanId = checkInProgressScan(repositories);
+      setInProgressScan(scanId);
+    }
+  }, [repositories]);
 
   if (isLoading) return <Loading text="Loading data" subText="Please wait..." />;
 
@@ -45,6 +55,7 @@ const DashboardView: FC = () => {
           className="bg-[#8B5CF6] text-white"
           onPress={handleScan}
           isLoading={hasGithubApp === null}
+          isDisabled={inProgressScan !== null}
           startContent={<Image src="/svg/scan-code.svg" alt="Scan" width={20} height={20} />}
         >
           Scan Code

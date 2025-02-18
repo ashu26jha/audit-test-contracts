@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
 import { useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
+import ScanProgressToast from "@/components/common/ScanProgressToast";
 import { useAuth } from "@/contexts/AuthContext";
 import { getScanResults } from "@/services/api";
 import { usePaymentStore } from "@/store/paymentStore";
@@ -10,7 +12,7 @@ export type PaymentType = "single" | "subscription";
 
 export const useScanResult = (scanId: string, pollingInterval = 5000) => {
   const { user } = useAuth();
-  const { isProcessing, error, shouldPoll, setError, setShouldPoll } = usePaymentStore();
+  const { isProcessing, error, shouldPoll, setError, setShouldPoll, toastStarted, setToastStarted } = usePaymentStore();
 
   const {
     data: scanData,
@@ -44,6 +46,16 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
       setShouldPoll(true);
     };
   }, [scanData, setError, setShouldPoll]);
+
+  useEffect(() => {
+    if (shouldPoll && scanData && !toastStarted) {
+      toast.custom((t) => <ScanProgressToast t={t} scanId={scanId} />, {
+        duration: Infinity,
+        position: "bottom-right",
+      });
+      setToastStarted(true);
+    }
+  }, [shouldPoll, scanData, scanId, toastStarted, setToastStarted]);
 
   return {
     scanData,

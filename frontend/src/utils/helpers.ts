@@ -54,3 +54,13 @@ export const organizeFilesByFolder = (files: SolidityFile[] | ReadmeFile[]): Fol
 
   return root;
 };
+
+export const checkInProgressScan = (repositories: RepositoriesData[]): string | null => {
+  for (const repository of repositories) {
+    const inProgressScan = repository.scans.find((scan) => scan.status === "in_progress");
+    if (inProgressScan) {
+      return inProgressScan.scan_id;
+    }
+  }
+  return null;
+};

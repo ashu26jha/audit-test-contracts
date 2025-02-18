@@ -20,6 +20,7 @@ import { DocsSelection } from "@/components/scan-stepper/DocsSelection";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast, useScanStepper } from "@/hooks";
 import { useSubscription } from "@/hooks/useSubscription";
+import { usePaymentStore } from "@/store/paymentStore";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
 const ScanStepperView: FC = () => {
@@ -47,6 +48,8 @@ const ScanStepperView: FC = () => {
   const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
   const { user, refetchUser } = useAuth();
   const { freeScanAllowed, checkIfFreeScanAllowed, handleSubscribe } = useSubscription();
+
+  const { setToastStarted } = usePaymentStore();
 
   const stepIndexIncrement = useMemo(() => {
     const isSubscribed = user?.subscription.type !== "free";
@@ -122,6 +125,7 @@ const ScanStepperView: FC = () => {
     try {
       const response = await initiateScanProcess();
       refetchUser();
+      setToastStarted(false); // To start the toast
       router.push(`/scan-results/${response.data.scan_id}`);
     } catch (error) {
       console.error("Error initiating scan:", error);
