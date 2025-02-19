@@ -10,7 +10,7 @@ const AllowedRepositories: FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full h-full flex justify-center items-center p-8">
+      <div className="w-full h-[60vh] flex justify-center items-center p-8">
         <CircularProgress size="lg" color="secondary" aria-label="Loading repositories" />
       </div>
     );

@@ -67,12 +67,12 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
   );
 
   useEffect(() => {
-    if (isCompleted || isFailed) {
+    if (isCompleted || isFailed || inProgress) {
       setIsCollapsed(true);
     } else {
       setIsCollapsed(false);
     }
-  }, [isCompleted, isFailed]);
+  }, [isCompleted, isFailed, inProgress]);
 
   return (
     <Container

@@ -12,7 +12,17 @@ export type PaymentType = "single" | "subscription";
 
 export const useScanResult = (scanId: string, pollingInterval = 5000) => {
   const { user } = useAuth();
-  const { isProcessing, error, shouldPoll, setError, setShouldPoll, toastStarted, setToastStarted } = usePaymentStore();
+  const {
+    isProcessing,
+    error,
+    shouldPoll,
+    isScanLoading,
+    setError,
+    setShouldPoll,
+    toastStarted,
+    setToastStarted,
+    setIsScanLoading,
+  } = usePaymentStore();
 
   const {
     data: scanData,
@@ -23,6 +33,7 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
     queryFn: async () => {
       if (!user || !scanId) throw new Error("User or scanId not available");
 
+      setIsScanLoading(true);
       const result = await getScanResults(scanId);
 
       return result;
@@ -38,14 +49,16 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
     if (scanData) {
       const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
       setShouldPoll(!isCompleted);
+      if (isCompleted) {
+        setIsScanLoading(false);
+      }
     }
 
     return () => {
       // Cleanup when unmounting
       setError(null);
-      setShouldPoll(true);
     };
-  }, [scanData, setError, setShouldPoll]);
+  }, [scanData, setError, setShouldPoll, setIsScanLoading]);
 
   useEffect(() => {
     if (shouldPoll && scanData && !toastStarted) {
@@ -60,6 +73,7 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
   return {
     scanData,
     isProcessing,
+    isScanLoading,
     error,
     isLoading,
     refetchScanResults: refetch,

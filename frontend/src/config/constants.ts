@@ -36,6 +36,7 @@ export const FREE_PLAN_DETAILS = {
       `${this.SCAN_CREDITS} scan per month`,
       `Up to ${this.MAX_LINES} lines of code per scan`,
       `Up to ${this.MAX_FILES} contracts per scan`,
+      "Additional context documentation",
       "PDF report export",
     ];
   },
@@ -82,7 +83,6 @@ export const ENTERPRISE_PLAN_DETAILS = {
       "CI integration",
       "Crypto Payments",
       "Custom Extensions",
-      "Additional context documentation",
       "Dedicated Telegram or Slack channel support",
     ];
   },

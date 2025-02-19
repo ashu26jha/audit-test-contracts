@@ -17,7 +17,7 @@ const DashboardView: FC = () => {
   const { repositories, scanHistory, isLoading, refetch } = useFetchScanHistory();
   const { hasGithubApp } = useGithubApp();
   const [inProgressScan, setInProgressScan] = useState<string | null>(null);
-  useScanResult(inProgressScan ?? "");
+  const { isScanLoading } = useScanResult(inProgressScan ?? "");
 
   useEffect(() => {
     if (repositories.length > 0) {
@@ -53,7 +53,7 @@ const DashboardView: FC = () => {
           className="bg-[#8B5CF6] text-white"
           onPress={handleScan}
           isLoading={hasGithubApp === null}
-          isDisabled={inProgressScan !== null}
+          isDisabled={isScanLoading || inProgressScan !== null}
           startContent={<Image src="/svg/scan-code.svg" alt="Scan" width={20} height={20} />}
         >
           Scan Code

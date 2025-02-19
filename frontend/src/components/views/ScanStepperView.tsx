@@ -48,7 +48,7 @@ const ScanStepperView: FC = () => {
   const { user, refetchUser } = useAuth();
   const { freeScanAllowed, checkIfFreeScanAllowed, handleSubscribe } = useSubscription();
 
-  const { setToastStarted } = usePaymentStore();
+  const { setToastStarted, setShouldPoll } = usePaymentStore();
 
   const stepIndexIncrement = useMemo(() => {
     const isSubscribed = user?.subscription.type !== "free";
@@ -125,6 +125,7 @@ const ScanStepperView: FC = () => {
       const response = await initiateScanProcess();
       refetchUser();
       setToastStarted(false); // To start the toast
+      setShouldPoll(true); // To start polling the scan progress
       router.push(`/scan-results/${response.data.scan_id}`);
     } catch (error) {
       console.error("Error initiating scan:", error);

@@ -1,6 +1,8 @@
+import { useEffect } from "react";
+
 import { Button, Progress, Spinner } from "@nextui-org/react";
 import { AlertCircle, CheckCircle2, CircleX, ExternalLink } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import toast, { type Toast } from "react-hot-toast";
 
 import { useScanResult } from "@/hooks";
@@ -12,6 +14,7 @@ interface ScanProgressToastProps {
 
 const ScanProgressToast: React.FC<ScanProgressToastProps> = ({ scanId, t }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { scanData, error } = useScanResult(scanId);
 
   const getStatusContent = () => {
@@ -43,9 +46,19 @@ const ScanProgressToast: React.FC<ScanProgressToastProps> = ({ scanId, t }) => {
 
   const statusContent = getStatusContent();
 
+  useEffect(() => {
+    if (
+      pathname.startsWith("/scan-results") &&
+      (scanData.scan.status === "completed" || scanData.scan.status === "failed")
+    ) {
+      toast.dismiss(t.id);
+    }
+  }, [pathname, scanData.scan.status, t]);
+
   return (
     <div
       className={`
+        ${pathname.startsWith("/scan-results") && "hidden"}
         bg-zinc-900 border border-zinc-800 px-4 py-3 rounded-lg shadow-lg min-w-[500px] max-w-[700px]
         transform transition-all duration-300 ease-in-out
         ${t.visible ? "animate-enter" : "animate-leave"}
