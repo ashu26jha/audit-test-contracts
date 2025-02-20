@@ -3,7 +3,6 @@ import { type ChangeEventHandler, type FC } from "react";
 import { Textarea } from "@nextui-org/input";
 
 import { QUESTIONS } from "@/config/QnAQuestions";
-import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
 export const QnABox: FC = () => {
@@ -43,7 +42,6 @@ interface QnATextareaProps {
 }
 
 const QnATextarea = ({ value, maxLength, onChange, question }: QnATextareaProps) => {
-  const { user } = useAuth();
   return (
     <div>
       <div className="flex justify-between items-center mb-2">
@@ -53,7 +51,6 @@ const QnATextarea = ({ value, maxLength, onChange, question }: QnATextareaProps)
         </p>
       </div>
       <Textarea
-        disabled={user?.subscription.type !== "enterprise"}
         value={value}
         onChange={onChange}
         minRows={1}

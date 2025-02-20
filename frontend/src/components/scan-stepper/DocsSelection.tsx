@@ -2,10 +2,8 @@
 import { type FC, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Input, Accordion, AccordionItem, Divider, Checkbox } from "@nextui-org/react";
-import { Search, Sparkles } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
 
-import { BottomBanner } from "@/components/layout";
 import { ENTERPRISE_PLAN_DETAILS } from "@/config/constants";
 import { HELP_DESCRIPTION } from "@/config/helpDescription";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,7 +30,6 @@ export const DocsSelection: FC = () => {
   } = useScanStepperStore();
 
   const { user } = useAuth();
-  const router = useRouter();
   const { fetchReadmeFiles, fetchPreviousDocs } = useScanStepper();
   const [isAllSelected, setIsAllSelected] = useState(false);
 
@@ -85,13 +82,9 @@ export const DocsSelection: FC = () => {
     }
   }, [fetchReadmeFiles, selectedOwner, selectedRepo, selectedBranch]);
 
-  const isBlurred = user?.subscription.type !== "enterprise";
-
   return (
     <div className="h-full w-full flex flex-col overflow-y-hidden">
-      <section
-        className={`flex-1 min-h-0 flex justify-center ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
-      >
+      <section className={`flex-1 min-h-0 flex justify-center`}>
         <div className="w-3/4">
           <Accordion defaultExpandedKeys={["1", "2"]} selectionMode="multiple">
             <AccordionItem
@@ -165,16 +158,6 @@ export const DocsSelection: FC = () => {
           </Accordion>
         </div>
       </section>
-
-      {user?.subscription.type !== "enterprise" && (
-        <BottomBanner
-          title="Context docs are only available for enterprise users"
-          description="Please subscribe to enterprise plan to access the docs and Q&A."
-          buttonText="Subscribe Now"
-          buttonIcon={<Sparkles size={14} />}
-          action={() => router.push("/profile?tab=subscription")}
-        />
-      )}
     </div>
   );
 };

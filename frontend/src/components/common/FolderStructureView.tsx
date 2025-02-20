@@ -6,7 +6,6 @@ import { Checkbox, cn, Spinner } from "@nextui-org/react";
 import { ChevronDown, ChevronRight, Text } from "lucide-react";
 import Image from "next/image";
 
-import { useAuth } from "@/contexts/AuthContext";
 import { formatNumberWithCommas } from "@/utils/formatters";
 
 export interface FolderStructureViewProps {
@@ -31,7 +30,6 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   emptyText,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
-  const { user } = useAuth();
 
   useEffect(() => {
     if (selectedPaths.length === 0) {
@@ -103,10 +101,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
                   color="secondary"
                   isSelected={selectedPaths.includes(item.path)}
                   onValueChange={() => onSelect?.(item.path)}
-                  isDisabled={
-                    (variant == "readme" && user?.subscription.type !== "enterprise") ||
-                    (isDisabled && !selectedPaths.includes(item.path))
-                  }
+                  isDisabled={isDisabled && !selectedPaths.includes(item.path)}
                   classNames={{
                     base: cn(
                       "ml-4 inline-flex w-full max-w-full",
