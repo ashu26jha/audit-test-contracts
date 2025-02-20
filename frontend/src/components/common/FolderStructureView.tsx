@@ -30,26 +30,30 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   emptyText,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  const getAllFolderPaths = (items: FolderStructure[]) => {
+    const allFolderPaths = new Set<string>();
+    const addFolderPaths = (items: FolderStructure[]) => {
+      items.forEach((item) => {
+        if (item.type === "folder") {
+          allFolderPaths.add(item.path);
+          if (item.children) {
+            addFolderPaths(item.children);
+          }
+        }
+      });
+    };
+    addFolderPaths(items);
+    return allFolderPaths;
+  };
 
   useEffect(() => {
-    if (selectedPaths.length === 0) {
-      const folderPaths = new Set<string>();
-
-      const collectFolderPaths = (items: FolderStructure[]) => {
-        items.forEach((item) => {
-          if (item.type === "folder") {
-            folderPaths.add(item.path);
-            if (item.children) {
-              collectFolderPaths(item.children);
-            }
-          }
-        });
-      };
-
-      collectFolderPaths(items);
-      setExpandedFolders(folderPaths);
+    if (!initialized && !isLoading && items.length > 0) {
+      setExpandedFolders(getAllFolderPaths(items));
+      setInitialized(true);
     }
-  }, [items, selectedPaths]);
+  }, [items, isLoading, initialized]);
 
   const toggleFolder = (path: string) => {
     const newExpanded = new Set(expandedFolders);

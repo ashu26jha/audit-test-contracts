@@ -176,8 +176,6 @@ const ScanStepperView: FC = () => {
     } else {
       setCurrentStep(currentStep - 1);
     }
-
-    router.push("/dashboard");
   };
 
   if (isScanning) {
