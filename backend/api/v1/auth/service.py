@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
-import httpx
 from fastapi import HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -13,6 +12,7 @@ from api.v1.github.service import GitHubService
 from config import settings
 from core.db.repositories.user import UserRepository
 from core.models.user import User
+from core.utils.http_client import get_http_client
 from core.utils.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -128,10 +128,9 @@ async def exchange_github_code(code: str) -> Tuple[str, str]:
         "code": code,
     }
 
-    async with httpx.AsyncClient() as client:
+    async with get_http_client() as client:
         response = await client.post(
             token_url,
-            headers={"Accept": "application/json"},
             data=data,
         )
 

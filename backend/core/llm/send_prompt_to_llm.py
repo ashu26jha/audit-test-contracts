@@ -6,7 +6,6 @@ from typing import List, Optional, Type, TypeVar, Union
 import google.generativeai as genai
 import httpx
 from anthropic import APIError as AnthropicError
-from fastapi import HTTPException
 from langfuse.decorators import langfuse_context, observe
 from langfuse.openai import AsyncOpenAI
 from openai import OpenAIError
@@ -16,6 +15,12 @@ from config.settings import SUPPORTED_MODELS, TEMPERATURE
 from core.llm.llm_clients import get_claude_client, get_gemini_client
 from core.llm.parse_llm_response import parse_model_response
 from core.schemas.llm_schema import Message
+from core.utils.errors import (
+    LLMError,
+    ModelError,
+    RateLimitError,
+)
+from core.utils.errors import ValidationError as AuditValidationError
 from core.utils.logger import logger
 from core.utils.token_count import count_tokens
 
@@ -24,7 +29,7 @@ GLOBAL_SEMAPHORE = Semaphore(6)
 
 # Per-request timeout
 REQUEST_DELAY = 0.5  # seconds
-REQUEST_TIMEOUT = 240.0  # 4 minutes per request
+REQUEST_TIMEOUT = 300.0  # 5 minutes per request
 CONNECT_TIMEOUT = 5.0  # 5 seconds for connection
 
 T = TypeVar("T", bound=BaseModel)
@@ -50,6 +55,13 @@ async def send_prompt_to_llm_async(
 
     Returns:
         Optional[T]: The structured response from the LLM.
+
+    Raises:
+        ModelError: If the model type is not supported
+        RateLimitError: If rate limits are exceeded
+        LLMError: If there's an error with the LLM API
+        ValidationError: If response validation fails
+        PromptError: If there's an error with prompt construction or token limits
     """
 
     try:
@@ -95,8 +107,15 @@ async def send_prompt_to_llm_async(
                             return structured_response
                         except OpenAIError as e:
                             if "rate_limit" in str(e).lower():
-                                logger.error(f"Rate limit hit for {model_type}: {e}")
-                            raise
+                                logger.error(f"[LLMPrompt] Rate limit hit for {model_type}: {e}")
+                                raise RateLimitError(
+                                    message="OpenAI rate limit exceeded",
+                                    details={"model": model_type, "error": str(e)},
+                                ) from e
+                            raise LLMError(
+                                message="OpenAI API error",
+                                details={"model": model_type, "error": str(e)},
+                            ) from e
 
                 elif model_type in SUPPORTED_MODELS["anthropic"]:
                     try:
@@ -118,7 +137,15 @@ async def send_prompt_to_llm_async(
                             f"[LLMPrompt] Anthropic API error for {model_type}: {str(e)}",
                             exc_info=True,
                         )
-                        raise HTTPException(status_code=500, detail="LLM API Error") from e
+                        raise LLMError(
+                            message="Anthropic API error",
+                            details={"model": model_type, "error": str(e)},
+                        ) from e
+                    except Exception as e:
+                        logger.error(
+                            f"[LLMPrompt] Unexpected error with Claude: {str(e)}", exc_info=True
+                        )
+                        raise
 
                 elif model_type in SUPPORTED_MODELS["gemini"]:
                     try:
@@ -138,7 +165,7 @@ async def send_prompt_to_llm_async(
                             structured_response = response_model.model_validate(parsed_json)
                         except (json.JSONDecodeError, ValidationError):
                             logger.info(
-                                "Initial Gemini structured output failed, trying to parse model response..."
+                                "[LLMPrompt] Initial Gemini structured output failed, trying to parse model response..."
                             )
                             structured_response = parse_model_response(
                                 response.text, response_model, model_type=model_type
@@ -148,7 +175,7 @@ async def send_prompt_to_llm_async(
                         usage = response._result.usage_metadata
                         if not usage:
                             logger.warning(
-                                f"No usage metadata available for {model_type}, falling back to estimates"
+                                f"[LLMPrompt] No usage metadata available for {model_type}, falling back to estimates"
                             )
 
                         prompt_tokens = usage.prompt_token_count if usage else token_count
@@ -163,20 +190,29 @@ async def send_prompt_to_llm_async(
 
                         return structured_response
                     except Exception as e:
-                        logger.error(f"Gemini API error for {model_type}: {e}")
-                        raise HTTPException(status_code=500, detail="LLM API Error") from e
+                        logger.error(f"[LLMPrompt] Gemini API error for {model_type}: {e}")
+                        raise LLMError(
+                            message="Gemini API error",
+                            details={"model": model_type, "error": str(e)},
+                        ) from e
 
                 else:
-                    raise HTTPException(
-                        status_code=500, detail=f"Unsupported model type: {model_type}"
+                    raise ModelError(
+                        message=f"Unsupported model type: {model_type}",
+                        details={"model": model_type, "supported_models": SUPPORTED_MODELS},
                     )
 
+    except (ModelError, RateLimitError, LLMError, AuditValidationError):
+        raise
     except Exception as e:
         langfuse_context.update_current_trace(
             metadata={"error": str(e), "error_type": type(e).__name__}
         )
-        logger.exception(f"Unexpected error when sending prompt to {model_type}: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        logger.exception(f"[LLMPrompt] Unexpected error when sending prompt to {model_type}: {e}")
+        raise LLMError(
+            message="Unexpected error during LLM processing",
+            details={"model": model_type, "error": str(e)},
+        ) from e
 
 
 def _get_model_semaphore(model_type: str) -> asyncio.Semaphore:
@@ -202,17 +238,26 @@ def _validate_model(model_type: str) -> None:
     for _, models in SUPPORTED_MODELS.items():
         if model_type in models:
             return
-    raise HTTPException(status_code=500, detail=f"Unsupported model type: {model_type}")
+    raise ModelError(
+        message=f"Unsupported model type: {model_type}",
+        details={"model": model_type, "supported_models": SUPPORTED_MODELS},
+    )
 
 
 def _update_langfuse(
     model_type: str, input_tokens: int, output_tokens: int, total_tokens: Optional[int] = None
 ):
-    langfuse_context.update_current_observation(
-        model=model_type,
-        usage={
-            "input": input_tokens,
-            "output": output_tokens,
-            "total": total_tokens,
-        },
-    )
+    """Update Langfuse with token usage information."""
+    try:
+
+        langfuse_context.update_current_observation(
+            model=model_type,
+            usage={
+                "input": input_tokens,
+                "output": output_tokens,
+                "total": total_tokens or (input_tokens + output_tokens),
+            },
+        )
+    except Exception as e:
+        logger.warning(f"Failed to update Langfuse metrics: {e}")
+        # Don't raise - this is non-critical telemetry

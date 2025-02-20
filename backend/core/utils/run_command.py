@@ -2,6 +2,7 @@ import asyncio
 import shutil
 from typing import Dict, List, Tuple
 
+from core.utils.errors import DependencyError, EnvironmentError
 from core.utils.logger import logger
 
 
@@ -18,13 +19,20 @@ async def run_command(
 
     Returns:
         Tuple[int, str, str]: A tuple containing the return code, stdout, and stderr.
+
+    Raises:
+        DependencyError: If the required command is not found in PATH
+        EnvironmentError: If there's an error executing the command
     """
     try:
         # Check if command exists in PATH
         if command[0] in ["npm", "forge", "git"]:
             executable = shutil.which(command[0])
             if not executable:
-                raise FileNotFoundError(f"{command[0]} not found in PATH")
+                raise DependencyError(
+                    message=f"{command[0]} not found in PATH",
+                    details={"command": command[0], "path": shutil.get_exec_path()},
+                )
             command[0] = executable
 
         process = await asyncio.create_subprocess_exec(
@@ -36,8 +44,13 @@ async def run_command(
         )
         stdout, stderr = await process.communicate()
         return process.returncode, stdout.decode(), stderr.decode()
+    except DependencyError:
+        raise
     except Exception as e:
         logger.exception(
             f"Exception occurred while running command '{' '.join(command)}': {str(e)}"
         )
-        raise
+        raise EnvironmentError(
+            message="Failed to execute command",
+            details={"command": " ".join(command), "cwd": cwd, "error": str(e)},
+        ) from e

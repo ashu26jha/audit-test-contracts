@@ -1,21 +1,14 @@
-import tempfile
 from datetime import datetime, timezone
-from typing import Optional
-from uuid import UUID
 
-from fastapi import HTTPException
-
-from api.v1.audit_agent.schema import AuditAgentRequest
-from api.v1.common.flatten_contracts import flatten_and_count_contracts
-from api.v1.github.helpers.clone_repo import clone_repo
 from api.v1.github.service import GitHubService
 from core.db.repositories.scan import ScanRepository
-from core.models.scan import CodeAnalysisResult, Scan, ScanResult
-from core.models.user import SubscriptionType, User
-from core.utils.email_utils import send_error_email
-from core.utils.profiles import Profiles
+from core.models.scan import Scan
+from core.scanners.base_scan_initializer import BaseScanInitializer
+from core.schemas.scan_schema import ScanType
+from core.utils.errors import ValidationError
 from core.utils.validate import (
     validate_contract_files,
+    validate_free_scan_limit,
     validate_github_url,
     validate_no_in_progress_scans,
     validate_user_has_github_token,
@@ -24,99 +17,43 @@ from core.utils.validate import (
 github_service = GitHubService()
 
 
-class ScanInitializer:
-    def __init__(
-        self,
-        user: User,
-        request: AuditAgentRequest,
-        scan_id: UUID,
-    ):
-        self.user = user
-        self.request = request
-        self.scan_id = scan_id
-        self.repo_dir: Optional[str] = None
-        self.temp_dir: Optional[str] = None
-        self.repo_info = None
-        self.branch_name = request.branchName or "main"
+class AuditAgentScanInitializer(BaseScanInitializer):
+    """AuditAgent-specific scan initialization logic."""
 
     async def validate_request(self) -> None:
+        """Validate repository and contract files."""
         validate_user_has_github_token(self.user)
-        validate_github_url(self.request.repositoryURL)
-        validate_contract_files(self.request.contractFiles)
+        validate_github_url(self.context.repository_url)
+        validate_contract_files(self.context.contract_files)
         await validate_no_in_progress_scans(self.user)
 
-    async def clone_repository(self) -> None:
-        # Create temporary directory for this scan
-        self.temp_dir = tempfile.mkdtemp()
+        if self.user.is_free:
+            free_scan_status = await validate_free_scan_limit(self.user.githubId)
+            if not free_scan_status.is_allowed:
+                raise ValidationError(
+                    message="Free scan limit reached.",
+                    details="Free scan limit reached. Please wait for the next available scan or upgrade your subscription.",
+                )
 
-        # Clone repository once
-        self.repo_dir = await clone_repo(
-            self.request.repositoryURL,
-            self.temp_dir,
-            self.user.accessToken,
-            self.branch_name,
-        )
+    async def create_scan_record(self) -> None:
+        """Create the initial scan record with audit-agent-specific details."""
 
-    async def fetch_repository_info(self):
-        # Fetch repository info
-        self.repo_info = await github_service.get_github_repo_info(
-            self.user.accessToken, self.request.repositoryURL
-        )
+        type_of_scan = self.get_scan_subscription_type()
 
-    def get_type_of_scan(self) -> str:
-        # Default to free user in case of None, since subscription is NONE, it's free scan
-        if self.user.subscription is None:
-            return SubscriptionType.FREE
-        # This ensure we put the correct type
-        return self.user.subscription.type
-
-    async def create_scan_record(self, scan_number: int):
-        # Create and store the new scan with initial status 'pending' with type of scan
-        type_of_scan = self.get_type_of_scan()
+        # Create scan record
         new_scan = Scan(
             scan_id=self.scan_id,
-            scan_number=scan_number,
-            user_id=self.user.githubId,
+            scan_type=ScanType.AUDIT_AGENT,
+            scan_number=self.context.scan_number,
+            user_id=self.context.user_id,
             status="pending",
             startedAt=datetime.now(timezone.utc),
-            contractFiles=self.request.contractFiles,
-            repositoryURL=self.request.repositoryURL,
-            repositoryName=self.repo_info.repo_name if self.repo_info else "",
-            branchName=self.branch_name,
+            contractFiles=self.context.contract_files,
+            repositoryURL=self.context.repository_url,
+            repositoryName=self.context.repository_name if self.context.repository_name else "",
+            branchName=self.context.branch_name,
             type=type_of_scan,
         )
+
+        # Store scan and create initial result
         await ScanRepository.store_scan(new_scan)
-
-        # Create and store an initial empty scan result
-        initial_scan_result = ScanResult(
-            scan_id=self.scan_id,
-            scan_number=scan_number,
-            summary=None,
-            info_message="Scan in progress",
-            type=Profiles.NONE,
-            total_findings=0,
-            findings=[],
-        )
-        await ScanRepository.store_scan_result(initial_scan_result)
-
-    async def fetch_commit_hash(self):
-        # Fetch the commit hash using GitHub API
-        try:
-            commit_hash = await github_service.get_commit_hash(
-                self.user.accessToken, self.request.repositoryURL, self.branch_name
-            )
-
-            # Update scan with commit hash
-            await ScanRepository.update_scan_commit_hash(self.scan_id, commit_hash)
-
-        except HTTPException:
-            await ScanRepository.update_scan_failure(self.scan_id, "Failed to fetch commit hash")
-            await send_error_email(self.user.email, self.scan_id)
-            raise
-
-    async def flatten_and_count_contracts(self) -> tuple[str, CodeAnalysisResult]:
-        # Flatten contracts using the cloned repo
-        return await flatten_and_count_contracts(
-            self.request.contractFiles,
-            project_dir=self.repo_dir,
-        )

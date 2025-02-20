@@ -35,8 +35,8 @@ async def run_context_scan(
 
         # Build full messages with profile
         messages = _prompt_builder.build_messages(
-            model,
-            formatted_prompt,
+            model_type=model,
+            user_input=formatted_prompt,
             profile=profile,
         )
 

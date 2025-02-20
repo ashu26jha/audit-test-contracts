@@ -34,6 +34,10 @@ jobs:
       STRIPE_API_KEY: 'teststripeapikey'
       STRIPE_WEBHOOK_SECRET: 'teststripewebhooksecret'
       ETHERSCAN_API_KEY: 'testetherscanapikey'
+      SMTP_SERVER: 'test.smtp.server'
+      SMTP_PORT: '587'
+      SMTP_USERNAME: 'test_username'
+      SMTP_PASSWORD: 'test_password'
     steps:
     - uses: actions/checkout@v4
       with:

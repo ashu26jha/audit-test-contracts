@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import HTTPException
-
 from core.models.payment import Payment, PaymentStatus, PaymentType
+from core.utils.errors import DatabaseError
 from core.utils.logger import logger
 
 
@@ -27,8 +26,15 @@ class PaymentRepository:
         return await Payment.find_one({"scan_id": scan_id})
 
     @staticmethod
-    async def create_initial_payment(scan_id: UUID, user_id: str) -> Payment:
-        """Create initial pending payment record for a new scan."""
+    async def create_initial_payment(
+        scan_id: UUID, user_id: str, payment_type: PaymentType
+    ) -> Payment:
+        """
+        Create initial pending payment record for a new scan.
+
+        Raises:
+            DatabaseError: If payment record creation fails
+        """
         try:
             existing_payment = await PaymentRepository.get_by_scan_id(scan_id)
             if existing_payment:
@@ -43,7 +49,7 @@ class PaymentRepository:
                 status=PaymentStatus.PENDING,
                 event_id="Scan initialization",
                 stripeSessionId="SCAN_INIT",
-                payment_type=PaymentType.ONE_TIME,
+                payment_type=payment_type,
             )
             await payment.save()
             logger.info(f"Created initial payment record for scan {scan_id}")
@@ -51,8 +57,9 @@ class PaymentRepository:
 
         except Exception as e:
             logger.error(f"Error creating initial payment record for scan {scan_id}: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail="Failed to create initial payment record"
+            raise DatabaseError(
+                message="Failed to create initial payment record",
+                details={"scan_id": str(scan_id), "user_id": user_id, "error": str(e)},
             ) from e
 
     @staticmethod
@@ -75,6 +82,9 @@ class PaymentRepository:
 
         Returns:
             Updated Payment object
+
+        Raises:
+            DatabaseError: If payment update fails
         """
 
         return await PaymentRepository._update_payment(
@@ -90,7 +100,12 @@ class PaymentRepository:
 
     @staticmethod
     async def update_free_payment(scan_id: UUID, user_id: str) -> Payment:
-        """Update payment record for a free scan (0-1 findings)."""
+        """
+        Update payment record for a free scan (0-1 findings).
+
+        Raises:
+            DatabaseError: If payment update fails
+        """
         return await PaymentRepository._update_payment(
             scan_id=scan_id,
             user_id=user_id,
@@ -104,7 +119,12 @@ class PaymentRepository:
 
     @staticmethod
     async def update_subscription_payment(scan_id: UUID, user_id: str) -> Payment:
-        """Update payment record for a free scan (0-1 findings)."""
+        """
+        Update payment record for a subscription scan.
+
+        Raises:
+            DatabaseError: If payment update fails
+        """
         return await PaymentRepository._update_payment(
             scan_id=scan_id,
             user_id=user_id,
@@ -120,7 +140,12 @@ class PaymentRepository:
     async def update_failed_payment(
         scan_id: UUID, user_id: str, event_id: str = "Failed scan"
     ) -> Payment:
-        """Update payment record for a failed scan."""
+        """
+        Update payment record for a failed scan.
+
+        Raises:
+            DatabaseError: If payment update fails
+        """
         return await PaymentRepository._update_payment(
             scan_id=scan_id,
             user_id=user_id,
@@ -162,8 +187,7 @@ class PaymentRepository:
             Updated Payment object
 
         Raises:
-            HTTPException: If update fails
-
+            DatabaseError: If payment update fails
         """
         try:
             existing_payment = await PaymentRepository.get_by_scan_id(scan_id)
@@ -196,4 +220,13 @@ class PaymentRepository:
 
         except Exception as e:
             logger.error(f"Error updating payment for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail=error_message) from e
+            raise DatabaseError(
+                message=error_message,
+                details={
+                    "scan_id": str(scan_id),
+                    "user_id": user_id,
+                    "status": status.value,
+                    "payment_type": payment_type.value,
+                    "error": str(e),
+                },
+            ) from e

@@ -122,12 +122,12 @@ def copy_solidity_files(repo_dir: str, dst_dir: str, project_type: str) -> None:
         raise
 
     # Copy files in batches of 10
-    BATCH_SIZE = 10
+    batch_size = 10
     files_copied = 0
     copy_errors = []
 
-    for i in range(0, len(files_to_copy), BATCH_SIZE):
-        batch = files_to_copy[i : i + BATCH_SIZE]  # noqa: E203
+    for i in range(0, len(files_to_copy), batch_size):
+        batch = files_to_copy[i : i + batch_size]  # noqa: E203
 
         for src, dst in batch:
             try:

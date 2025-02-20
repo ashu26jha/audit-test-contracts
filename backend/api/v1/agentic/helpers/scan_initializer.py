@@ -1,59 +1,46 @@
 from datetime import datetime, timezone
-from typing import List
-from uuid import UUID
 
-from api.v1.agentic.schema import PerAddressAgenticRequest
-from api.v1.common.lines_of_code import count_lines_of_code
 from core.db.repositories.scan import ScanRepository
-from core.models.scan import CodeAnalysisResult, Scan, ScanResult
-from core.utils.profiles import Profiles
+from core.models.scan import Scan
+from core.scanners.base_scan_initializer import BaseScanInitializer
+from core.schemas.context_protocols import ChainContext
+from core.schemas.scan_schema import ScanType
+from core.utils.errors import UnsupportedOperationError
 
 
-class AgenticScanInitializer:
-    def __init__(
-        self,
-        request: PerAddressAgenticRequest,
-        scan_id: UUID,
-    ):
-        self.contract_files = []
-        self.contract_address = request.contractAddress
-        self.chain_id = request.chainId
-        self.scan_id = scan_id
-        self.user_id = request.userEmail
+class AgenticScanInitializer(BaseScanInitializer):
+    """Agentic-specific scan initialization logic."""
 
-    async def create_agentic_scan_record(self, scan_number: int, contract_files: List[str]):
-        # Create and store the new scan with initial status 'pending'
+    async def validate_request(self) -> None:
+        """Validate the request for the scan."""
+        pass
+
+    async def create_scan_record(self) -> None:
+        """Create the initial scan record with agentic-specific details."""
+
+        if not isinstance(self.context, ChainContext):
+            raise UnsupportedOperationError(
+                f"Context type {type(self.context).__name__} does not support GitHub operations"
+            )
+
+        # Get next scan number
+        scan_number = await Scan.get_next_agentic_scan_number(self.context.contract_address)
+        scan_number = scan_number or 1
+        self.scan_number = scan_number
+
+        # Create scan record
         new_scan = Scan(
             scan_id=self.scan_id,
+            scan_type=ScanType.AGENTIC,
             scan_number=scan_number,
+            user_id=self.context.user_email,  # use user_email for Agentic
             status="pending",
             startedAt=datetime.now(timezone.utc),
-            contractFiles=contract_files,
-            user_id=self.user_id,
+            contractFiles=self.context.contract_files,
             branchName="Agentic Scan Per Address",
-            contract_address=self.contract_address,
-            chain_id=str(self.chain_id),
-            scan_type="Agentic Scan Per Address",
+            contract_address=self.context.contract_address,
+            chain_id=str(self.context.chain_id),
         )
+
+        # Store scan and create initial result
         await ScanRepository.store_scan(new_scan)
-
-        # Create and store an initial empty scan result
-        initial_scan_result = ScanResult(
-            scan_id=self.scan_id,
-            scan_number=scan_number,
-            summary=None,
-            info_message="Agentic scan in progress",
-            type=Profiles.NONE,
-            total_findings=0,
-            findings=[],
-        )
-        await ScanRepository.store_scan_result(initial_scan_result)
-
-    async def count_lines_of_code(self, flattened_contracts: str) -> CodeAnalysisResult:
-        # Count lines of code
-        lines_of_code = await count_lines_of_code(flattened_contracts)
-
-        # Update scan with lines of code
-        await ScanRepository.update_scan_lines_of_code(self.scan_id, lines_of_code)
-
-        return lines_of_code

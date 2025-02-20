@@ -7,6 +7,7 @@ from api.v1.agentic.schema import PerAddressAgenticRequest, PerAddressAgenticRes
 from api.v1.agentic.service import AgenticService
 from api.v1.auth.helpers.dependencies import get_agentic_api_key
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.schemas.scan_schema import ScanType
 
 router = APIRouter(prefix="/agentic", tags=["agentic"])
 
@@ -40,5 +41,6 @@ async def scan_per_address(request: PerAddressAgenticRequest):
             - scan_id (UUID): Unique identifier for tracking the scan
     """
     scan_id = uuid4()
-    await AgenticService.create_scan_per_address(scan_id, request)
+    service = AgenticService()
+    await service.create_scan(scan_id, scan_type=ScanType.AGENTIC, request=request)
     return SuccessResponse(data=PerAddressAgenticResponse(scan_id=scan_id))

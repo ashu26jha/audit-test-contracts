@@ -1,12 +1,20 @@
 import slack
+from slack.errors import SlackApiError
 
 from api.v1.utilities.stats.service import StatsService
 from config.settings import SLACK_TOKEN
+from core.utils.errors import EnvironmentError
 from core.utils.logger import logger
 
 
 async def send_slack_message():
-    logger.info("Sending Slack message")
+    """
+    Send a Slack message with the last 24-hour statistics.
+
+    Raises:
+        EnvironmentError: If there's an error sending the message to Slack
+    """
+    logger.info("[Slack] Sending message...")
     try:
         stats_24h = await StatsService.get_24h_stats()
         text = f"""
@@ -26,5 +34,10 @@ async def send_slack_message():
             text=text,
             username="Audit Agent Updates",
         )
+    except SlackApiError as e:
+        raise EnvironmentError(
+            "Failed to send Slack message",
+            details={"error": str(e), "response_code": e.response.get("error", "unknown")},
+        ) from e
     except Exception as e:
-        logger.error(f"Failed to send Slack message: {e}")
+        raise EnvironmentError("Failed to send Slack message", details={"error": str(e)}) from e

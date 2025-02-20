@@ -2,10 +2,11 @@ import json
 import re
 from typing import Optional, Type, TypeVar, Union
 
-from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config.settings import SUPPORTED_MODELS
+from core.utils.errors import LLMError, PromptError
+from core.utils.errors import ValidationError as AuditValidationError
 from core.utils.logger import logger
 
 T = TypeVar("T", bound=BaseModel)
@@ -26,7 +27,8 @@ def parse_model_response(
         Union[T, str]: An instance of the response_model parsed from the content, or raw content if no model is provided.
 
     Raises:
-        HTTPException: If any error occurs during parsing or validation.
+        ValidationError: If the response cannot be parsed into the specified model
+        LLMError: If there's an unexpected error during parsing
     """
     if response_model is None:
         return content
@@ -84,15 +86,25 @@ def parse_model_response(
             logger.error(f"All parsing attempts failed. Final error: {str(e)}")
             logger.error("Original content:", content[:200])
             logger.error("After cleaning:", cleaned_json[:200])
-            raise HTTPException(
-                status_code=400, detail=f"Failed to parse content into {response_model.__name__}"
+            raise AuditValidationError(
+                message=f"Failed to parse content into {response_model.__name__}",
+                details={
+                    "model_type": model_type,
+                    "content_preview": content[:200],
+                    "cleaned_preview": cleaned_json[:200],
+                    "error": str(e),
+                    "validation_errors": getattr(e, "errors", lambda: None)(),
+                },
             ) from e
 
-    except HTTPException:
+    except AuditValidationError:
         raise
     except Exception as e:
         logger.exception(f"Unexpected error in parse_model_response: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to parse response") from e
+        raise LLMError(
+            message="Failed to parse LLM response",
+            details={"model_type": model_type, "content_preview": content[:200], "error": str(e)},
+        ) from e
 
 
 def _clean_gemini_response(content: str) -> str:
@@ -110,7 +122,7 @@ def _clean_gemini_response(content: str) -> str:
         content = gemini_ending_cases(content)
         json.loads(content)
         return content
-    except Exception as e:
+    except json.JSONDecodeError:
         pass
 
     # If that fails, try to extract the JSON structure while preserving content
@@ -161,7 +173,6 @@ def _clean_gemini_response(content: str) -> str:
             return content
     except Exception as e:
         logger.error(f"Error in cleaning JSON: {str(e)}")
-        pass
 
     # If all else fails, return the original content
     return content
@@ -304,16 +315,18 @@ def extract_json(text: str) -> Optional[str]:
 
 def extract_code_from_response(content: str, language: str = "solidity") -> str:
     """
-    Extracts the Solidity fuzz test from the LLM response.
+    Extracts code from the LLM response.
 
     Args:
         content (str): The raw content returned by the LLM.
         language (str): The programming language to extract (default is "solidity").
 
     Returns:
-        str: The extracted Solidity fuzz test code.
-    """
+        str: The extracted code.
 
+    Raises:
+        PromptError: If no valid code block is found
+    """
     # Use regex to find the Solidity code block
     code_match = re.search(rf"```{language}(.*?)```", content, re.DOTALL)
 
@@ -326,4 +339,7 @@ def extract_code_from_response(content: str, language: str = "solidity") -> str:
 
         return fuzz_test
 
-    raise ValueError("No Solidity fuzz test found in the LLM response.")
+    raise PromptError(
+        message=f"No {language} code block found in response",
+        details={"language": language, "content_preview": content[:200]},
+    )

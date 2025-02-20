@@ -19,10 +19,12 @@ from core.db.connection import (
     init_database,
 )
 from core.utils.error_handling import (
+    audit_agent_exception_handler,
     general_exception_handler,
     http_exception_handler,
     validation_exception_handler,
 )
+from core.utils.errors import AuditAgentError
 from core.utils.logger import logger
 from core.utils.slack import send_slack_message
 
@@ -131,6 +133,7 @@ app.include_router(api_v1_router)
 
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(AuditAgentError, audit_agent_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 

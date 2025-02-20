@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from core.models.docs import QAResponse, ReadmeDocs
+from core.utils.errors import QueryError
 from core.utils.logger import logger
 
 
@@ -10,8 +11,20 @@ class DocsRepository:
 
     @staticmethod
     async def get_docs(repository_url: str, user_id: str) -> Optional[ReadmeDocs]:
-        """Get docs for a repository and user."""
-        return await ReadmeDocs.find_one({"repository_url": repository_url, "user_id": user_id})
+        """
+        Get docs for a repository and user.
+
+        Raises:
+            QueryError: If the database query fails
+        """
+        try:
+            return await ReadmeDocs.find_one({"repository_url": repository_url, "user_id": user_id})
+        except Exception as e:
+            logger.error(f"Failed to fetch repository docs: {str(e)}")
+            raise QueryError(
+                message="Failed to fetch repository docs",
+                details={"repository_url": repository_url, "user_id": user_id, "error": str(e)},
+            ) from e
 
     @staticmethod
     async def store_docs(repository_url: str, user_id: str, docs: QAResponse) -> None:

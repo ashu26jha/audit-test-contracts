@@ -2,7 +2,20 @@ import asyncio
 from typing import Any, Callable, TypeVar
 
 from config.settings import DELAY, MAX_RETRIES
+from core.utils.errors import ConfigurationError
 from core.utils.logger import logger
+
+if not all([DELAY, MAX_RETRIES]):
+    raise ConfigurationError(
+        "Missing retry configuration",
+        details={
+            "missing_fields": [
+                field
+                for field, value in {"DELAY": DELAY, "MAX_RETRIES": MAX_RETRIES}.items()
+                if not value
+            ]
+        },
+    )
 
 T = TypeVar("T")
 

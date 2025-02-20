@@ -64,6 +64,12 @@ class DetectorError(ScanError):
     pass
 
 
+class CriticError(ScanError):
+    """Raised when a critic fails."""
+
+    pass
+
+
 # Payment and credit-related errors
 class PaymentError(AuditAgentError):
     """Base class for payment-related errors."""
@@ -115,6 +121,12 @@ class ConfigurationError(EnvironmentError):
     pass
 
 
+class UnsupportedOperationError(EnvironmentError):
+    """Raised when a context doesn't support required operations."""
+
+    pass
+
+
 class DependencyError(EnvironmentError):
     """Raised when required dependencies are missing or incompatible."""
 
@@ -162,5 +174,12 @@ class QueryError(DatabaseError):
 # Rate limiting errors
 class RateLimitError(AuditAgentError):
     """Raised when rate limits are exceeded."""
+
+    pass
+
+
+# HTTP errors
+class HTTPClientError(AuditAgentError):
+    """Raised when HTTP client operations fail."""
 
     pass

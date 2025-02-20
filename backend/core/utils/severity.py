@@ -12,7 +12,15 @@ class Severity(Enum):
 
     @classmethod
     def from_str(cls, value: str) -> "Severity":
-        """Convert string to Severity enum, with fallback handling."""
+        """
+        Convert string to Severity enum, with fallback handling.
+
+        Args:
+            value: The string value to convert. Can be None.
+
+        Returns:
+            Severity: The corresponding severity level, defaults to INFO for unknown values.
+        """
         if not value:
             return cls.INFO
 

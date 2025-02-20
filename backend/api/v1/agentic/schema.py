@@ -1,8 +1,11 @@
-from typing import List
+from dataclasses import dataclass
+from typing import Dict, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from core.schemas.context_protocols import ChainContext, UserContext
+from core.schemas.scan_schema import BaseScanContext, ScanType
 from core.utils.validate import is_valid_eth_address
 
 
@@ -26,18 +29,20 @@ class PerAddressAgenticResponse(BaseModel):
     scan_id: UUID = Field(..., description="Unique identifier for the scan")
 
 
-class AgenticScanContext(BaseModel):
-    """Context maintaining the state throughout the scan process."""
+@dataclass(kw_only=True)
+class AgenticScanContext(BaseScanContext):
+    """Context for Agentic scans with chain and user capabilities."""
 
-    # Core identifiers
-    scan_id: UUID
     user_email: str
     user_name: str
-
-    # Scan configuration
     contract_address: str
     chain_id: int
-    contract_files: List[str]
-    flattened_contracts: str
+
+    user_id: str = "agentic"
+    user_access_token: str = "test_access_token"
+    scan_number: int = 1
+    scan_type: ScanType = ScanType.AGENTIC
+    contracts_dict: Optional[Dict[str, str]] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    _supports = (UserContext, ChainContext)

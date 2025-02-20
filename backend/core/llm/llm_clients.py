@@ -3,23 +3,29 @@ import httpx
 import instructor
 import openai
 from anthropic import AsyncAnthropic
-from fastapi import HTTPException
 
 from config.settings import ANTHROPIC_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY
+from core.utils.errors import ConfigurationError
 from core.utils.logger import logger
 
 # Check for required API keys
 if not OPENAI_API_KEY:
     logger.error("Missing OPENAI_API_KEY in environment variables")
-    raise HTTPException(status_code=500, detail="Internal Server Error")
+    raise ConfigurationError(
+        message="Missing OpenAI API key", details={"missing_key": "OPENAI_API_KEY"}
+    )
 
 if not ANTHROPIC_API_KEY:
     logger.error("Missing ANTHROPIC_API_KEY in environment variables")
-    raise HTTPException(status_code=500, detail="Internal Server Error")
+    raise ConfigurationError(
+        message="Missing Anthropic API key", details={"missing_key": "ANTHROPIC_API_KEY"}
+    )
 
 if not GEMINI_API_KEY:
     logger.error("Missing GEMINI_API_KEY in environment variables")
-    raise HTTPException(status_code=500, detail="Internal Server Error")
+    raise ConfigurationError(
+        message="Missing Gemini API key", details={"missing_key": "GEMINI_API_KEY"}
+    )
 
 
 # Getter for OpenAI client

@@ -22,15 +22,18 @@ repos:
         files: ^backend/
 
   # - repo: https://github.com/pylint-dev/pylint
-  #   rev: v3.2.7
+  #   rev: v3.3.4
   #   hooks:
   #     - id: pylint
   #       name: pylint
   #       entry: pylint
   #       language: system
   #       types: [python]
-  #       args: [--rcfile=backend/setup.cfg]
-  #       exclude: \.git|__pycache__|\.venv|env|venv|build|dist
+  #       args:
+  #         - --rcfile=backend/setup.cfg
+  #         - --output-format=colorized
+  #         - '--msg-template={path}:{line}:{column}: {msg_id}: {msg} ({symbol})'
+  #       exclude: \.git|__pycache__|\.venv|env|venv|build|dist|tests
   #       files: ^backend/
   #       verbose: true
 

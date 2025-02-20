@@ -15,14 +15,14 @@ from api.v1.common.project_detection import detect_project_config
 from api.v1.common.project_helpers import compile_project, get_project_structure
 from api.v1.github.helpers.clone_repo import clone_repo
 from config.solidity_settings import FORGE_INSTALL_COMMAND
-from core.schemas.audit_agent_schema import SetupResult
+from core.schemas.scan_schema import SetupResult
 from core.utils.logger import logger
 from core.utils.run_command import run_command
 
 
 async def setup_environment(
     github_url: HttpUrl,
-    temp_dir: str,
+    temp_dir: str,  # Directory where the repo is initially cloned
     oauth_token: str = None,
     branch: str = "main",
     contract_files: Optional[List[str]] = None,

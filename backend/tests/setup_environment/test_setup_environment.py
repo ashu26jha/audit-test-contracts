@@ -4,7 +4,7 @@ import tempfile
 import pytest
 
 from api.v1.common.setup_environment import setup_environment
-from core.schemas.audit_agent_schema import SetupResult
+from core.schemas.scan_schema import SetupResult
 from core.utils.logger import logger
 from tests.setup_environment.repo_samples import TEST_REPOS, RepoConfig
 

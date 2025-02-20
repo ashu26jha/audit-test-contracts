@@ -1,15 +1,15 @@
-import httpx
 from fastapi import HTTPException
 
 from config import settings
 from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
 from core.models.user import User
+from core.utils.http_client import get_http_client
 
 
 async def validate_github_token(user: User) -> User:
     """Validate a GitHub access token by making a simple API call."""
-    async with httpx.AsyncClient() as client:
+    async with get_http_client() as client:
         response = await client.get(
             f"{GITHUB_API_URL}/user",
             headers={
@@ -38,10 +38,9 @@ async def refresh_access_token(user: User) -> User:
         "grant_type": "refresh_token",
         "refresh_token": user.refreshToken,
     }
-    async with httpx.AsyncClient() as client:
+    async with get_http_client() as client:
         response = await client.post(
             token_url,
-            headers={"Accept": "application/json"},
             data=data,
         )
 

@@ -57,6 +57,7 @@ class GitHubAPIClient:
             Dict containing required headers
         """
         headers = {"Accept": "application/vnd.github.v3+json"}
+
         if access_token != "test_access_token":
             headers["Authorization"] = f"token {access_token}"
         return headers

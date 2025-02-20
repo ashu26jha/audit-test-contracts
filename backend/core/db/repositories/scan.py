@@ -1,12 +1,25 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import HTTPException
+from beanie.operators import Set
 
 from core.models.scan import CodeAnalysisResult, Scan, ScanResult
 from core.models.user import User
+from core.utils.errors import DatabaseError, QueryError
 from core.utils.logger import logger
+
+
+class ScanNotFoundError(QueryError):
+    """Raised when a scan is not found in the database."""
+
+    pass
+
+
+class ScanResultNotFoundError(QueryError):
+    """Raised when a scan result is not found in the database."""
+
+    pass
 
 
 class ScanRepository:
@@ -15,23 +28,52 @@ class ScanRepository:
     @staticmethod
     async def get_scan(scan_id: UUID) -> Scan:
         """Retrieve scan metadata by scan ID."""
-        scan = await Scan.find_one({"scan_id": scan_id})
-        if not scan:
-            raise HTTPException(status_code=404, detail=f"Scan with ID {scan_id} not found")
-        return scan
+        try:
+            scan = await Scan.find_one({"scan_id": scan_id})
+            if not scan:
+                raise ScanNotFoundError(
+                    message=f"Scan with ID {scan_id} not found", details={"scan_id": str(scan_id)}
+                )
+            return scan
+        except ScanNotFoundError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to fetch scan: {str(e)}")
+            raise QueryError(
+                message="Failed to fetch scan", details={"scan_id": str(scan_id), "error": str(e)}
+            ) from e
 
     @staticmethod
     async def get_scan_result(scan_id: UUID) -> ScanResult:
         """Retrieve scan results by scan ID."""
-        result = await ScanResult.find_one(ScanResult.scan_id == scan_id)
-        if not result:
-            raise HTTPException(status_code=404, detail=f"Scan result with ID {scan_id} not found")
-        return result
+        try:
+            result = await ScanResult.find_one(ScanResult.scan_id == scan_id)
+            if not result:
+                raise ScanResultNotFoundError(
+                    message=f"Scan result with ID {scan_id} not found",
+                    details={"scan_id": str(scan_id)},
+                )
+            return result
+        except ScanResultNotFoundError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to fetch scan result: {str(e)}")
+            raise QueryError(
+                message="Failed to fetch scan result",
+                details={"scan_id": str(scan_id), "error": str(e)},
+            ) from e
 
     @staticmethod
     async def get_scan_history(user: User) -> List[Scan]:
         """Retrieve scan history for a given user."""
-        return await Scan.find({"user_id": user.githubId}).sort("-createdAt").to_list()
+        try:
+            return await Scan.find({"user_id": user.githubId}).sort("-createdAt").to_list()
+        except Exception as e:
+            logger.error(f"Failed to fetch scan history: {str(e)}")
+            raise QueryError(
+                message="Failed to fetch scan history",
+                details={"user_id": str(user.githubId), "error": str(e)},
+            ) from e
 
     @staticmethod
     async def store_scan(scan: Scan) -> None:
@@ -41,8 +83,11 @@ class ScanRepository:
             scan.updatedAt = datetime.now(timezone.utc)
             await scan.create()
         except Exception as e:
-            logger.error(f"Error storing scan {scan.scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to store scan") from e
+            logger.error(f"Failed to store scan: {str(e)}")
+            raise DatabaseError(
+                message="Failed to store scan",
+                details={"scan_id": str(scan.scan_id), "error": str(e)},
+            ) from e
 
     @staticmethod
     async def store_scan_result(scan_result: ScanResult, is_new: bool = True) -> None:
@@ -62,100 +107,99 @@ class ScanRepository:
                 scan_result.completedAt = datetime.now(timezone.utc)
                 await scan_result.save()
         except Exception as e:
-            logger.error(f"Error storing scan result for scan {scan_result.scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to store scan result") from e
+            action = "create" if is_new else "update"
+            logger.error(f"Failed to {action} scan result: {str(e)}")
+            raise DatabaseError(
+                message=f"Failed to {action} scan result",
+                details={"scan_id": str(scan_result.scan_id), "is_new": is_new, "error": str(e)},
+            ) from e
+
+    @staticmethod
+    async def update_scan(scan_id: UUID, **updates: Dict[str, Any]) -> None:
+        """
+        Generic method to update scan fields.
+
+        Args:
+            scan_id: The ID of the scan to update
+            **updates: Dictionary of field names and their new values
+
+        Raises:
+            ScanNotFoundError: If scan not found
+            DatabaseError: If update fails
+        """
+        try:
+            # Always update the updatedAt timestamp
+            updates["updatedAt"] = datetime.now(timezone.utc)
+            scan = await ScanRepository.get_scan(scan_id)
+            await scan.update(Set(updates))
+        except ScanNotFoundError:
+            raise
+        except Exception as e:
+            logger.error("Failed to update scan %s: %s", scan_id, str(e))
+            raise DatabaseError(
+                message="Failed to update scan",
+                details={"scan_id": str(scan_id), "updates": updates, "error": str(e)},
+            ) from e
+
+    @staticmethod
+    async def update_scan_contract_files(scan_id: UUID, contract_files: List[str]) -> None:
+        """Update the contract files of a scan."""
+        await ScanRepository.update_scan(scan_id, contractFiles=contract_files)
+
+    @staticmethod
+    async def update_scan_commit_hash(scan_id: UUID, commit_hash: str) -> None:
+        """Update the commit hash of a scan."""
+        await ScanRepository.update_scan(scan_id, commitHash=commit_hash)
+
+    @staticmethod
+    async def update_scan_lines_of_code(scan_id: UUID, lines_of_code: CodeAnalysisResult) -> None:
+        """Update the lines of code of a scan."""
+        await ScanRepository.update_scan(scan_id, linesOfCode=lines_of_code)
+
+    @staticmethod
+    async def update_scan_repo_name(scan_id: UUID, repo_name: str) -> None:
+        """Update the repo name of a scan."""
+        await ScanRepository.update_scan(scan_id, repositoryName=repo_name)
+
+    @staticmethod
+    async def update_scan_progress(scan_id: UUID, progress: float) -> None:
+        """Update the progress of a scan."""
+        await ScanRepository.update_scan(scan_id, progress=progress)
 
     @staticmethod
     async def update_scan_status(
         scan_id: UUID, status: str, total_findings: Optional[int] = None
     ) -> None:
-        """
-        Update the status of a scan.
+        """Update the status of a scan."""
+        updates = {"status": status}
 
-        Args:
-            scan_id: UUID of the scan to update
-            status: New status value
-            total_findings: Optional number of findings
-        """
-        try:
-            scan = await ScanRepository.get_scan(scan_id)
-            scan.status = status
-            scan.updatedAt = datetime.now(timezone.utc)
-            if status in ["completed", "failed"]:
-                scan.completedAt = datetime.now(timezone.utc)
-            if total_findings is not None:
-                scan.total_findings = total_findings
-            await scan.save()
-        except Exception as e:
-            logger.error(f"Error updating scan status for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update scan status") from e
+        if status in ["completed", "failed"]:
+            updates["completedAt"] = datetime.now(timezone.utc)
 
-    @staticmethod
-    async def update_scan_commit_hash(scan_id: UUID, commit_hash: str) -> None:
-        """Update the commit hash of a scan."""
-        try:
-            scan = await ScanRepository.get_scan(scan_id)
-            if scan:
-                scan.commitHash = commit_hash
-                await scan.save()
-        except Exception as e:
-            logger.error(f"Error updating scan commit hash for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update scan commit hash") from e
+        if total_findings is not None:
+            updates["total_findings"] = total_findings
 
-    @staticmethod
-    async def update_scan_lines_of_code(scan_id: UUID, lines_of_code: CodeAnalysisResult) -> None:
-        """Update the lines of code of a scan."""
-        try:
-            scan = await ScanRepository.get_scan(scan_id)
-            if scan:
-                scan.linesOfCode = lines_of_code
-                await scan.save()
-        except Exception as e:
-            logger.error(f"Error updating scan lines of code for scan {scan_id}: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail="Failed to update scan lines of code"
-            ) from e
-
-    @staticmethod
-    async def update_scan_progress(scan_id: UUID, progress: float) -> Optional[Scan]:
-        """Update the progress of a scan."""
-        try:
-            scan = await ScanRepository.get_scan(scan_id)
-            if scan:
-                scan.progress = progress
-                await scan.save()
-                return scan
-            return None
-        except Exception as e:
-            logger.error(f"Error updating scan progress for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update scan progress") from e
+        await ScanRepository.update_scan(scan_id, **updates)
 
     @staticmethod
     async def update_scan_paid_status(
         scan_id: UUID, paid_status: bool, discount_applied: bool = False
     ) -> None:
-        """Update the paid status and discount status of a scan."""
-        try:
-            scan = await ScanRepository.get_scan(scan_id)
-            scan.paid_status = paid_status
-            scan.discount_applied = discount_applied
-            scan.updatedAt = datetime.now(timezone.utc)
-            await scan.save()
-        except Exception as e:
-            logger.error(f"Error updating paid status for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update scan paid status") from e
+        """Update the paid status of a scan."""
+        updates = {
+            "paid_status": paid_status,
+            "discount_applied": discount_applied,
+        }
+        await ScanRepository.update_scan(scan_id, **updates)
 
     @staticmethod
-    async def update_scan_failure(
-        scan_id: UUID,
-        error_message: Optional[str] = None,
-    ) -> None:
+    async def update_scan_failure(scan_id: UUID, error_message: str) -> None:
         """
-        Comprehensive function to handle scan failures.
+        Special method for handling scan failures with specific failure logic.
+        Updates both scan and scan_result records.
 
-        Args:
-            scan_id: (UUID) The ID of the scan that failed
-            error_message: (Optional[str]) Specific error message to store
+        This is kept separate due to its specific error handling requirements
+        and the need to update multiple records.
         """
         try:
             # Update scan result but keep findings for debugging if any
@@ -166,14 +210,20 @@ class ScanRepository:
                 scan_result.total_findings = 0
                 await scan_result.save()
 
-            # Update scan status but preserve detector information
-            scan = await ScanRepository.get_scan(scan_id)
-            if scan:
-                scan.status = "failed"
-                scan.total_findings = 0
-                scan.updatedAt = datetime.now(timezone.utc)
-                scan.completedAt = datetime.now(timezone.utc)
-                await scan.save()
+            # Update scan status
+            scan_updates = {
+                "status": "failed",
+                "completedAt": datetime.now(timezone.utc),
+                "total_findings": 0,
+                "info_message": error_message,
+            }
+            await ScanRepository.update_scan(scan_id, **scan_updates)
+        except ScanResultNotFoundError:
+            # If no result exists yet, just update the scan
+            await ScanRepository.update_scan(scan_id, **scan_updates)
         except Exception as e:
-            logger.error(f"Failed to update scan failure for scan {scan_id}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update scan failure") from e
+            logger.error("Failed to update scan failure state: %s", str(e))
+            raise DatabaseError(
+                message="Failed to update scan failure state",
+                details={"scan_id": str(scan_id), "error_message": error_message, "error": str(e)},
+            ) from e

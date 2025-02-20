@@ -50,14 +50,14 @@ huey = SqliteHuey(
 )
 
 # Initialize MongoDB client
-client = None
+CLIENT = None
 
 
 def get_client():
-    global client
-    if client is None:
-        client = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
-    return client
+    global CLIENT
+    if CLIENT is None:
+        CLIENT = AsyncIOMotorClient(settings.MONGODB_URL, tlsCAFile=certifi.where())
+    return CLIENT
 
 
 # Select database based on environment
@@ -74,29 +74,29 @@ def get_database():
 async def init_database():
     """Initialize database connection and Beanie models"""
     try:
-        logger.info("Connecting to MongoDB...")
+        logger.info("[MongoDB] Connecting...")
         db = get_database()
         await init_beanie(
             database=db,
             document_models=DOCUMENT_MODELS,
         )
-        logger.info(f"Connected to MongoDB in {settings.ENVIRONMENT} environment.")
+        logger.info(f"[MongoDB] Connected in {settings.ENVIRONMENT} environment.")
     except Exception as e:
-        logger.error(f"Failed to initialize database: {str(e)}")
+        logger.error(f"[MongoDB] Failed to initialize database: {str(e)}")
         raise
 
 
 async def close_database():
     """Close database connection"""
-    global client
+    global CLIENT
     try:
-        if client:
-            logger.info("Closing MongoDB connection")
-            client.close()
-            client = None
-            logger.info("MongoDB connection closed")
+        if CLIENT:
+            logger.info("[MongoDB] Closing connection...")
+            CLIENT.close()
+            CLIENT = None
+            logger.info("[MongoDB] Connection closed")
     except Exception as e:
-        logger.error(f"Error closing database connection: {str(e)}")
+        logger.error(f"[MongoDB] Error closing connection: {str(e)}")
         raise
 
 
@@ -109,12 +109,12 @@ async def cleanup_login_attempts():
         ).delete()
 
         if result and hasattr(result, "deleted_count"):
-            logger.info(f"Cleaned up {result.deleted_count} old login attempts")
+            logger.info(f"[MongoDB] Cleaned up {result.deleted_count} old login attempts")
         else:
-            logger.info("No old login attempts to clean up")
+            logger.info("[MongoDB] No old login attempts to clean up")
 
     except Exception as e:
-        logger.error(f"Error during login attempts cleanup: {str(e)}")
+        logger.error(f"[MongoDB] Error during login attempts cleanup: {str(e)}")
         # Don't raise the error to prevent scheduler from stopping
 
 
@@ -131,15 +131,15 @@ async def cleanup_huey_tasks():
 
         db_path = os.path.join(storage_dir, db_name)
         if not os.path.exists(db_path):
-            logger.info(f"No Huey database found at {db_path}")
+            logger.info(f"[Huey] No Huey database found at {db_path}")
             return
 
         # Clean up all data using Huey's built-in flush methods
         huey.storage.flush_results()
         huey.storage.flush_schedule()
 
-        logger.info("Cleaned up all Huey tasks, results, and scheduled tasks")
+        logger.info("[Huey] Cleaned up all tasks, results, and scheduled tasks")
 
     except Exception as e:
-        logger.error(f"Error during Huey tasks cleanup: {str(e)}")
+        logger.error(f"[Huey] Error during tasks cleanup: {str(e)}")
         # Don't raise the error to prevent scheduler from stopping

@@ -1,10 +1,9 @@
 import os
 from typing import List
 
-from fastapi import HTTPException
-
 from api.v1.common.lines_of_code import count_lines_of_code
 from core.models.scan import CodeAnalysisResult
+from core.utils.errors import EnvironmentError, InitializationError
 from core.utils.logger import logger
 
 
@@ -23,13 +22,12 @@ async def flatten_and_count_contracts(
     Returns:
         str: Concatenated contract code with file headers,
         CodeAnalysisResult: count of lines
-
-    Raises:
-        HTTPException: If project_dir is invalid or files are not found
     """
     if not project_dir or not os.path.exists(project_dir):
         logger.error("Repository directory not provided or does not exist")
-        raise HTTPException(status_code=400, detail="Invalid repository directory")
+        raise EnvironmentError(
+            message="Invalid repository directory", details={"project_dir": project_dir}
+        )
 
     try:
         flattened_code = ""
@@ -38,8 +36,9 @@ async def flatten_and_count_contracts(
             full_path = os.path.join(project_dir, file_path)
             if not os.path.isfile(full_path):
                 logger.error(f"Contract file '{file_path}' not found")
-                raise HTTPException(
-                    status_code=404, detail=f"Contract file '{file_path}' not found"
+                raise EnvironmentError(
+                    message=f"Contract file '{file_path}' not found",
+                    details={"file_path": file_path},
                 )
             with open(full_path, "r", encoding="utf-8") as f:
                 file_content = f.read()
@@ -51,8 +50,10 @@ async def flatten_and_count_contracts(
         logger.info("Selected contracts flattened code successfully")
         return flattened_code, code_analysis
 
-    except HTTPException:
+    except EnvironmentError:
         raise
     except Exception as e:
-        logger.exception("Failed to flatten contracts")
-        raise HTTPException(status_code=500, detail="Failed to flatten contracts") from e
+        logger.exception(f"Failed to flatten contracts: {str(e)}")
+        raise InitializationError(
+            message="Failed to flatten contracts", details={"error": str(e)}
+        ) from e

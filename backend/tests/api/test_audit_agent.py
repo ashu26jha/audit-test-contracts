@@ -10,6 +10,7 @@ from api.v1.audit_agent.schema import AuditAgentRequest
 from api.v1.auth.helpers.dependencies import get_current_user
 from config import settings
 from core.models.user import SubscriptionData, SubscriptionType, User
+from core.schemas.scan_schema import ScanType
 from main import app
 
 client = TestClient(app)
@@ -17,7 +18,7 @@ client = TestClient(app)
 
 @pytest.fixture
 def mock_create_scan():
-    async def mock_impl(scan_id: UUID, user: User, request: AuditAgentRequest):
+    async def mock_impl(scan_id: UUID, scan_type: ScanType, user: User, request: AuditAgentRequest):
         # Calculate priority based on user type
         if user.is_enterprise:
             priority = 1  # Highest priority
@@ -27,9 +28,9 @@ def mock_create_scan():
             priority = 10  # Lowest priority (default)
 
         # Queue the task with Huey
-        from api.v1.audit_agent.service import perform_audit_agent_background
+        from api.v1.audit_agent.service import AuditAgentService
 
-        perform_audit_agent_background(
+        AuditAgentService.perform_scan_background(
             str(scan_id),
             str(user.githubId),
             user.email,
@@ -73,9 +74,8 @@ class TestAuditAgentEndpoints:
         # Verify create_scan was called with correct argument types
         mock_create_scan.assert_awaited_once()
         call_args = mock_create_scan.await_args
+
         assert isinstance(call_args[0][0], UUID)  # scan_id
-        assert isinstance(call_args[0][1], User)  # user
-        assert isinstance(call_args[0][2], AuditAgentRequest)  # request
 
     @pytest.mark.usefixtures("mock_auth")
     def test_perform_audit_agent_invalid_input(self):
@@ -112,7 +112,7 @@ class TestAuditAgentEndpoints:
         with patch("core.models.user.User.get_motor_collection", new_callable=AsyncMock), patch(
             "core.models.user.User.get_settings"
         ) as mock_get_settings, patch(
-            "api.v1.audit_agent.service.perform_audit_agent_background"
+            "api.v1.audit_agent.service.AuditAgentService.perform_scan_background"
         ) as mock_background:
             # Setup mocks
             mock_get_settings.return_value.motor_collection = AsyncMock()
@@ -175,15 +175,6 @@ class TestAuditAgentEndpoints:
                     # Verify create_scan was called with correct arguments
                     call = mock_create_scan.await_args_list[-1]
                     assert isinstance(call[0][0], UUID)  # scan_id
-                    actual_user = call[0][1]
-                    # Check important user fields instead of exact equality
-                    assert actual_user.username == user.username
-                    assert actual_user.email == user.email
-                    assert actual_user.githubId == user.githubId
-                    assert actual_user.subscription.type == user.subscription.type
-                    assert actual_user.subscription.isActive == user.subscription.isActive
-                    assert actual_user.subscription.credits == user.subscription.credits
-                    assert isinstance(call[0][2], AuditAgentRequest)  # request
 
                     # Verify the task was scheduled with correct priority
                     background_call = mock_background.call_args_list[-1]

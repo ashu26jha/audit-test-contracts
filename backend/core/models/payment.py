@@ -21,6 +21,8 @@ class PaymentType(str, Enum):
     SUBSCRIPTION = "subscription"  # Payment from subscription
     FREE = "free"  # Free scan (0-1 findings)
     FAILED = "failed"  # Failed scan
+    BENCHMARK = "benchmark"  # Benchmark scan
+    AGENTIC = "agentic"  # Agentic scan
 
 
 class Payment(Document):

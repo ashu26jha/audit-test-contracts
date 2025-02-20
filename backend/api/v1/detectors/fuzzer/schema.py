@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
 
 from core.models.scan import Finding
-from core.schemas.audit_agent_schema import SetupResult
+from core.schemas.scan_schema import SetupResult
 
 
 class FuzzTestResult(BaseModel):

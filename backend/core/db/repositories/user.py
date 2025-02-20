@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import HTTPException
-
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.models.user import SubscriptionData, SubscriptionType, User
+from core.utils.errors import DatabaseError
 from core.utils.logger import logger
 
 
@@ -68,7 +67,7 @@ class UserRepository:
             Created User object
 
         Raises:
-            HTTPException: If user creation fails
+            DatabaseError: If user creation fails
         """
         try:
             user = User(
@@ -86,7 +85,10 @@ class UserRepository:
             return user
         except Exception as e:
             logger.error(f"Error creating user {username}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to create user") from e
+            raise DatabaseError(
+                message="Failed to create user",
+                details={"username": username, "github_id": github_id, "error": str(e)},
+            ) from e
 
     @staticmethod
     async def update_user(
@@ -113,7 +115,7 @@ class UserRepository:
             Updated User object
 
         Raises:
-            HTTPException: If update fails
+            DatabaseError: If update fails
         """
         try:
             await user.update(
@@ -132,12 +134,22 @@ class UserRepository:
             return await UserRepository.get_by_github_id(user.githubId)
         except Exception as e:
             logger.error(f"Error updating user {user.username}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to update user") from e
+            raise DatabaseError(
+                message="Failed to update user",
+                details={"username": user.username, "github_id": user.githubId, "error": str(e)},
+            ) from e
 
     @staticmethod
     async def increment_token_version(user: User) -> None:
         """Increment user's token version to invalidate all existing tokens"""
-        await user.update({"$inc": {"token_version": 1}})
+        try:
+            await user.update({"$inc": {"token_version": 1}})
+        except Exception as e:
+            logger.error(f"Error incrementing token version for user {user.username}: {str(e)}")
+            raise DatabaseError(
+                message="Failed to increment token version",
+                details={"username": user.username, "github_id": user.githubId, "error": str(e)},
+            ) from e
 
     @staticmethod
     async def activate_subscription(
@@ -157,8 +169,15 @@ class UserRepository:
 
         Returns:
             Updated User object
+
+        Raises:
+            DatabaseError: If subscription activation fails
+            ValueError: If subscription type is invalid
         """
         try:
+            if subscription_type not in SUBSCRIPTION_SETTINGS:
+                raise ValueError(f"Invalid subscription type: {subscription_type}")
+
             subscription = SUBSCRIPTION_SETTINGS[subscription_type]
             now = datetime.now(timezone.utc)
 
@@ -178,14 +197,28 @@ class UserRepository:
             await user.update({"$set": {"subscription": subscription_data.model_dump()}})
             return await UserRepository.get_by_github_id(user.githubId)
 
+        except ValueError:
+            # Re-raise ValueError for invalid subscription types
+            raise
         except Exception as e:
             logger.error(f"Error activating subscription for user {user.username}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to activate subscription") from e
+            raise DatabaseError(
+                message="Failed to activate subscription",
+                details={
+                    "username": user.username,
+                    "github_id": user.githubId,
+                    "subscription_type": subscription_type,
+                    "error": str(e),
+                },
+            ) from e
 
     @staticmethod
     async def deactivate_subscription(user: User) -> User:
         """
         Deactivate a user's subscription while preserving the Stripe customer ID.
+
+        Raises:
+            DatabaseError: If subscription deactivation fails
         """
         try:
             now = datetime.now(timezone.utc)
@@ -207,12 +240,19 @@ class UserRepository:
 
         except Exception as e:
             logger.error(f"Error deactivating subscription for user {user.username}: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to deactivate subscription") from e
+            raise DatabaseError(
+                message="Failed to deactivate subscription",
+                details={"username": user.username, "github_id": user.githubId, "error": str(e)},
+            ) from e
 
     @staticmethod
     async def renew_subscription_credits(user: User, expire: int) -> User:
         """
         Renew subscription credits for the current billing period.
+
+        Raises:
+            DatabaseError: If credit renewal fails
+            ValueError: If subscription type is invalid
         """
         try:
             now = datetime.now(timezone.utc)
@@ -233,10 +273,19 @@ class UserRepository:
             await user.update(updates)
             return await UserRepository.get_by_github_id(user.githubId)
 
+        except ValueError:
+            # Re-raise ValueError for invalid subscription types
+            raise
         except Exception as e:
             logger.error(f"Error renewing subscription credits for user {user.username}: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail="Failed to renew subscription credits"
+            raise DatabaseError(
+                message="Failed to renew subscription credits",
+                details={
+                    "username": user.username,
+                    "github_id": user.githubId,
+                    "subscription_type": user.subscription.type,
+                    "error": str(e),
+                },
             ) from e
 
     async def ensure_user_subscription_data(user: User) -> User:
@@ -248,46 +297,74 @@ class UserRepository:
 
         Returns:
             Updated User object
+
+        Raises:
+            DatabaseError: If subscription data initialization fails
         """
         if not user.subscription:
-            user.subscription = SubscriptionData(
-                isActive=False,
-                type=SubscriptionType.FREE,
-                credits=0,
-                monthlyCredits=0,
-                stripeSubscriptionId=None,
-                stripeCustomerId=None,
-                expiresAt=None,
-                lastRenewalAt=None,
-            )
-            await user.save()
-            logger.info(f"Initialized subscription data for user {user.githubId}")
+            try:
+                user.subscription = SubscriptionData(
+                    isActive=False,
+                    type=SubscriptionType.FREE,
+                    credits=0,
+                    monthlyCredits=0,
+                    stripeSubscriptionId=None,
+                    stripeCustomerId=None,
+                    expiresAt=None,
+                    lastRenewalAt=None,
+                )
+                await user.save()
+                logger.info(f"Initialized subscription data for user {user.githubId}")
+            except Exception as e:
+                logger.error(
+                    f"Error initializing subscription data for user {user.username}: {str(e)}"
+                )
+                raise DatabaseError(
+                    message="Failed to initialize subscription data",
+                    details={
+                        "username": user.username,
+                        "github_id": user.githubId,
+                        "error": str(e),
+                    },
+                ) from e
         return user
 
     @staticmethod
     async def create_test_user(username: str) -> User:
-        """Create a test user in the database."""
-        test_user = User(
-            username=username,
-            email=f"{username}@example.com",
-            githubId="1234567890",
-            accessToken="test_access_token",
-            refreshToken="test_refresh_token",
-            avatarUrl="https://github.com/ghost.png",
-            name=username,
-            createdAt=datetime.now(timezone.utc),
-            updatedAt=datetime.now(timezone.utc),
-            installationId=[12345],
-            token_version=0,
-            subscription=SubscriptionData(
-                isActive=False,
-                type=SubscriptionType.FREE,
-                credits=0,
-                monthlyCredits=0,
-                expiresAt=None,
-                stripeSubscriptionId=None,
-                lastRenewalAt=None,
-            ),
-        )
-        await test_user.save()
-        return test_user
+        """
+        Create a test user in the database.
+
+        Raises:
+            DatabaseError: If test user creation fails
+        """
+        try:
+            test_user = User(
+                username=username,
+                email=f"{username}@example.com",
+                githubId="1234567890",
+                accessToken="test_access_token",
+                refreshToken="test_refresh_token",
+                avatarUrl="https://github.com/ghost.png",
+                name=username,
+                createdAt=datetime.now(timezone.utc),
+                updatedAt=datetime.now(timezone.utc),
+                installationId=[12345],
+                token_version=0,
+                subscription=SubscriptionData(
+                    isActive=False,
+                    type=SubscriptionType.FREE,
+                    credits=0,
+                    monthlyCredits=0,
+                    expiresAt=None,
+                    stripeSubscriptionId=None,
+                    lastRenewalAt=None,
+                ),
+            )
+            await test_user.save()
+            return test_user
+        except Exception as e:
+            logger.error(f"Error creating test user {username}: {str(e)}")
+            raise DatabaseError(
+                message="Failed to create test user",
+                details={"username": username, "error": str(e)},
+            ) from e

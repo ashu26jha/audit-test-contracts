@@ -1,6 +1,8 @@
 import gc
-from typing import List, Optional
+from typing import List
 from uuid import UUID
+
+from typing_extensions import final
 
 from api.v1.common import contract_utils
 from api.v1.utilities.critics.service import CriticService
@@ -10,11 +12,11 @@ from core.utils import logger
 from core.utils.profiles import Profiles
 
 
-class ResultProcessor:
+class BaseResultsProcessor:
     def __init__(
         self,
         scan_id: UUID,
-        user_id: Optional[str],  # Optional because agentic scans don't have a user_id
+        user_id: str,
         contract_files: List[str],
         combined_findings: List[Finding],
         flattened_contracts: str,
@@ -30,15 +32,17 @@ class ResultProcessor:
         self.summary_result = summary_result
         self.detected_type = detected_type
 
-    async def process_results(self) -> None:
+    @final
+    async def process_results(self) -> int:
         """Process results sequentially: filter, deduplicate, then mitigate."""
+
         # 1. Filter findings to ensure they all belong to the selected contracts
         initial_count = len(self.findings_before_removal)
         self.findings_before_removal = contract_utils.filter_by_contracts(
             self.findings_before_removal, self.selected_contracts, contract_field="Contracts"
         )
         logger.logger.info(
-            f"Filtered out {initial_count - len(self.findings_before_removal)} findings that didn't match selected contracts"
+            f"[ResultProcessor] Filtered {initial_count - len(self.findings_before_removal)} findings that didn't match selected contracts"
         )
         await ScanRepository.update_scan_progress(self.scan_id, 80)
 
@@ -61,10 +65,9 @@ class ResultProcessor:
         result = await self._get_scan_result()
         await ScanRepository.store_scan_result(result, is_new=False)  # Update existing scan result
 
-    def get_total_findings(self) -> int:
-        """Returns the current total number of findings after processing."""
         return len(self.combined_findings)
 
+    @final
     async def _get_scan_result(self) -> ScanResult:
         """Creates a ScanResult object with the current state of processing."""
         scan_result = await ScanRepository.get_scan_result(self.scan_id)

@@ -2,11 +2,11 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from api.v1.utilities.summary.schema import SummaryResponse
 from api.v1.utilities.summary.service import generate_summary
+from core.utils.errors import LLMError
 from main import app
 
 client = TestClient(app)
@@ -48,18 +48,20 @@ async def test_generate_summary_success(mock_send_prompt_to_llm_async):
 
 @pytest.mark.asyncio
 async def test_generate_summary_error(mock_send_prompt_to_llm_async):
-    mock_send_prompt_to_llm_async.side_effect = Exception("LLM error")
+    error_message = "LLM error"
+    mock_send_prompt_to_llm_async.side_effect = LLMError(
+        message=error_message, details={"model": "test-model", "error": "test error"}
+    )
 
-    response = client.post("/api/v1/generate-summary", json={"contracts": "Test Contracts"})
-    assert response.status_code == 500
-    error_response = response.json()
-    assert error_response["success"] is False
-    assert error_response["code"] == 500
-    assert error_response["message"] == "Internal Server Error"
-    assert error_response["details"] is None
-
-    with pytest.raises(HTTPException) as exc_info:
+    # Test the service layer - should raise LLMError
+    with pytest.raises(LLMError) as service_exc:
         await generate_summary("Test Contracts")
+    assert error_message in str(service_exc.value)
 
-    assert exc_info.value.status_code == 500
-    assert exc_info.value.detail == "Internal Server Error"
+    # Test the API endpoint - should return 503 with error details
+    response = client.post("/api/v1/generate-summary", json={"contracts": "Test Contracts"})
+    assert response.status_code == 503
+    response_data = response.json()
+    assert response_data["success"] is False
+    assert response_data["code"] == 503
+    assert error_message in response_data["message"]

@@ -7,6 +7,7 @@ from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.models.user import SubscriptionType
+from core.schemas.scan_schema import ScanType
 from core.utils.ensure_utc import ensure_utc_datetime
 from core.utils.profiles import Profiles
 from core.utils.severity import Severity
@@ -94,7 +95,7 @@ class Scan(Document):
     branchName: str = Field(default="main", description="Branch being scanned")
     contract_address: Optional[str] = Field(None, description="Contract address for agentic scans")
     chain_id: Optional[str] = Field(None, description="Chain ID for agentic scans")
-    scan_type: Optional[str] = Field(None, description="Type of scan for agentic scans")
+    scan_type: Optional[ScanType] = Field(None, description="AuditAgent, Agentic or Benchmark")
     commitHash: Optional[str] = Field(None, description="Commit hash being scanned")
     paid_status: bool = Field(default=False, description="Whether the scan has been paid for")
     discount_applied: bool = Field(default=False, description="Whether a discount was applied")

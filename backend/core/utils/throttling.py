@@ -5,6 +5,7 @@ from typing import Optional
 from fastapi import HTTPException, Request
 
 from core.models.throttling import ThrottleRecord
+from core.utils.errors import AuthError
 from core.utils.logger import logger
 
 
@@ -20,6 +21,9 @@ def throttle(max_requests: int = 1, use_ip: bool = False):
     Note:
         The rate limit window is fixed at 5 minutes, controlled by the TTL index in ThrottleRecord.
         After 5 minutes, the record is automatically deleted and the count starts fresh.
+
+    Raises:
+        AuthError: If user authentication is required but not provided
     """
 
     def decorator(func):
@@ -52,7 +56,7 @@ def throttle(max_requests: int = 1, use_ip: bool = False):
                     # User-based throttling
                     current_user = kwargs.get("current_user")
                     if not current_user:
-                        raise HTTPException(status_code=400, detail="User not found")
+                        raise AuthError("User not found")
                     key = f"throttle:{func.__name__}:{current_user.id}"
 
                 now = datetime.now(timezone.utc)
@@ -79,7 +83,7 @@ def throttle(max_requests: int = 1, use_ip: bool = False):
                     ).insert()
 
                 return await func(*args, **kwargs)
-            except HTTPException:
+            except AuthError:
                 raise
             except Exception as e:
                 logger.error(f"Error in throttling: {str(e)}")

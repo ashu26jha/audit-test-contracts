@@ -159,3 +159,17 @@ async def setup_db():
 
     # Clean up
     client.close()
+
+
+@pytest.fixture(autouse=True)
+def mock_email_functions():
+    """Mock all email sending functionality."""
+    with patch("core.utils.email_utils.send_pdf_email", new_callable=AsyncMock) as mock_pdf, patch(
+        "core.utils.email_utils.send_error_email", new_callable=AsyncMock
+    ) as mock_error, patch(
+        "core.utils.email_utils.send_failed_refund_email", new_callable=AsyncMock
+    ) as mock_refund:
+        mock_pdf.return_value = None
+        mock_error.return_value = None
+        mock_refund.return_value = None
+        yield {"pdf": mock_pdf, "error": mock_error, "refund": mock_refund}

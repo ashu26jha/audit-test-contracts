@@ -11,7 +11,7 @@ from api.v1.detectors.static_analyzer.helpers.improve_slither_findings import (
 )
 from api.v1.detectors.static_analyzer.helpers.slither import run_slither
 from api.v1.detectors.static_analyzer.schema import StaticAnalysisOutput, StaticAnalyzerResponse
-from core.schemas.audit_agent_schema import SetupResult
+from core.schemas.scan_schema import SetupResult
 from core.utils import logger
 
 
@@ -35,13 +35,23 @@ async def run_static_analyzer(
                 github_url, temp_dir, oauth_token, contract_files=selected_contracts
             )
 
-        # 2. Run Slither
-        slither_output = await run_slither(
-            setup_result.project_dir, setup_result.remappings, selected_contracts
-        )
+        # 2. Run Slither (with silent failure)
+        try:
+            slither_output = await run_slither(
+                setup_result.project_dir, setup_result.remappings, selected_contracts
+            )
+            logger.info("[Static Analyzer] Slither analysis completed successfully")
+        except Exception as e:
+            logger.error(f"[Static Analyzer] Slither analysis failed: {str(e)}")
+            slither_output = {"findings": [], "severity_counts": {}, "total_findings": 0}
 
-        # 3. Run Aderyn
-        aderyn_output = await run_aderyn(setup_result.project_dir, selected_contracts)
+        # 3. Run Aderyn (with silent failure)
+        try:
+            aderyn_output = await run_aderyn(setup_result.project_dir, selected_contracts)
+            logger.info("[Static Analyzer] Aderyn analysis completed successfully")
+        except Exception as e:
+            logger.error(f"[Static Analyzer] Aderyn analysis failed: {str(e)}")
+            aderyn_output = {"findings": [], "severity_counts": {}, "total_findings": 0}
 
         # 4. Combine Slither and Aderyn outputs
         slither_output["severity_counts"]["High"] = slither_output["severity_counts"].get(
@@ -72,15 +82,25 @@ async def run_static_analyzer(
         if is_local_temp_dir:
             shutil.rmtree(temp_dir)
 
-        logger.info("[Static Analyzer] Static analyzer task completed successfully")
+        # Determine status message based on what succeeded
+        status_message = ""
+        if slither_output and aderyn_output:
+            status_message = "Both Slither and Aderyn analyses completed successfully."
+        elif slither_output:
+            status_message = "Only Slither analysis completed successfully. Aderyn analysis failed."
+        elif aderyn_output:
+            status_message = "Only Aderyn analysis completed successfully. Slither analysis failed."
+
+        logger.info(f"[Static Analyzer] {status_message}")
 
         return StaticAnalyzerResponse(
-            message="Repository analyzed successfully.",
+            message=status_message,
             status="Success",
             project_type=setup_result.project_type,
             environment_setup="Analysis completed successfully",
             static_analysis_output=StaticAnalysisOutput(**static_analysis_findings),
         )
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:

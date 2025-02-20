@@ -14,7 +14,7 @@ from api.v1.detectors.fuzzer.helpers.get_fuzz_test import get_fuzz_test
 from api.v1.detectors.fuzzer.helpers.run_fuzz_file import run_fuzz_file
 from api.v1.detectors.fuzzer.schema import FuzzerResponse, FuzzTestResult
 from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
-from core.schemas.audit_agent_schema import SetupResult
+from core.schemas.scan_schema import SetupResult
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
 

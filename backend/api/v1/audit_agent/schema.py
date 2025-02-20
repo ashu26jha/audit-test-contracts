@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -5,6 +6,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.models.docs import QAResponse
+from core.schemas.context_protocols import CompilationContext, GitHubContext, UserContext
+from core.schemas.scan_schema import BaseScanContext, ScanType, SetupResult
 
 
 class AuditAgentRequest(BaseModel):
@@ -31,24 +34,27 @@ class AuditAgentRequest(BaseModel):
         return v
 
 
-class ScanContext(BaseModel):
-    """Context maintaining the state throughout the scan process."""
+@dataclass(kw_only=True)
+class AuditAgentScanContext(BaseScanContext):
+    """Context for AuditAgent scans with GitHub and user capabilities."""
 
-    # Core identifiers
-    scan_id: UUID
-    user_id: str
     user_email: str
     user_access_token: str
-    scan_number: int
-
-    # Scan configuration
     repository_url: str
     branch_name: str
-    contract_files: List[str]
-    is_subscription_scan: bool = False
+    scan_type: ScanType = ScanType.AUDIT_AGENT
+
+    # Optional fields (with defaults)
+    user_name: Optional[str] = None
+    repository_name: Optional[str] = None
+    repo_dir: Optional[str] = None
+    temp_dir: Optional[str] = None
+    setup_result: Optional[SetupResult] = None
+    commit_hash: Optional[str] = None
     formatted_docs: Optional[str] = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    _supports = (GitHubContext, UserContext, CompilationContext)
 
 
 class AuditAgentInitiateResponse(BaseModel):

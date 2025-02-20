@@ -12,6 +12,7 @@ from api.v1.audit_agent.service import AuditAgentService
 from api.v1.auth.helpers.dependencies import get_api_key, get_current_user
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.schemas.scan_schema import ScanType
 from core.utils.validate import validate_free_scan_limit
 
 router = APIRouter()
@@ -38,10 +39,14 @@ async def perform_audit_agent(
         docs (QAResponse): Optional QA response associated with the request
 
     Returns:
-        scan_id (UUID): Unique identifier for the scan
+        SuccessResponse[AuditAgentInitiateResponse]: Response containing:
+            - scan_id (UUID): Unique identifier for tracking the scan
     """
     scan_id = uuid4()
-    await AuditAgentService.create_scan(scan_id, current_user, request)
+    service = AuditAgentService()
+    await service.create_scan(
+        scan_id, scan_type=ScanType.AUDIT_AGENT, user=current_user, request=request
+    )
     return SuccessResponse(data=AuditAgentInitiateResponse(scan_id=scan_id))
 
 
