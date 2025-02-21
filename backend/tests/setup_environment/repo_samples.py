@@ -116,4 +116,17 @@ TEST_REPOS = [
         branch="release-candidate",
         is_subrepo=False,
     ),
+    # Excluded from routine testing because it's very time-consuming
+    # RepoConfig(
+    #     url="https://github.com/code-423n4/2024-07-munchables",
+    #     project_type="foundry",
+    #     contract_paths=[
+    #         "src/config/BaseConfigStorage.sol",
+    #         "src/managers/AccountManager.sol",
+    #         "src/managers/MunchadexManager.sol",
+    #     ],
+    #     description="Foundry project with npm dependencies",
+    #     branch="main",
+    #     is_subrepo=False,
+    # ),
 ]

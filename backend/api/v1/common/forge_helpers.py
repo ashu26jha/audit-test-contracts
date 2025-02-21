@@ -34,7 +34,38 @@ async def initialize_foundry_project(temp_dir: str, repo_dir: str, project_type:
     _preprocess_solidity_files(temp_dir)
 
 
-async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
+async def install_npm_deps(target_dir: str) -> None:
+    """
+    Installs NPM dependencies in the specified directory.
+
+    Args:
+        target_dir (str): The directory where the dependencies should be installed.
+    """
+    try:
+        logger.info("Installing NPM dependencies...")
+        returncode, _, stderr = await run_command(["npm", "install"], target_dir)
+        if returncode != 0:
+            if "ERESOLVE" in stderr:
+                logger.warning(
+                    "NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps."
+                )
+                returncode, _, stderr = await run_command(
+                    ["npm", "install", "--legacy-peer-deps"], target_dir
+                )
+                if returncode != 0:
+                    logger.error(f"NPM install failed: {stderr}")
+                    raise ValueError(f"NPM install failed: {stderr}")
+            else:
+                logger.error(f"NPM install failed: {stderr}")
+                raise ValueError(f"NPM install failed: {stderr}")
+        else:
+            logger.info("NPM dependencies installed successfully.")
+    except Exception as e:
+        logger.exception(f"Error installing NPM dependencies: {str(e)}")
+        raise
+
+
+async def install_npm_deps_hardhat(temp_dir: str, repo_dir: str) -> None:
     """
     Installs NPM dependencies in the specified directory.
 
@@ -49,29 +80,7 @@ async def install_npm_deps(temp_dir: str, repo_dir: str) -> None:
         if os.path.exists(src_file):
             shutil.copy2(src_file, dst_file)
 
-    # Install NPM dependencies in the Foundry project
-    try:
-        logger.info("Installing NPM dependencies...")
-        returncode, _, stderr = await run_command(["npm", "install"], temp_dir)
-        if returncode != 0:
-            if "ERESOLVE" in stderr:
-                logger.warning(
-                    "NPM install failed due to dependency conflict. Retrying with --legacy-peer-deps."
-                )
-                returncode, _, stderr = await run_command(
-                    ["npm", "install", "--legacy-peer-deps"], temp_dir
-                )
-                if returncode != 0:
-                    logger.error(f"NPM install failed: {stderr}")
-                    raise ValueError(f"NPM install failed: {stderr}")
-            else:
-                logger.error(f"NPM install failed: {stderr}")
-                raise ValueError(f"NPM install failed: {stderr}")
-        else:
-            logger.info("NPM dependencies installed successfully.")
-    except Exception as e:
-        logger.exception(f"Error installing NPM dependencies: {str(e)}")
-        raise
+    await install_npm_deps(temp_dir)
 
 
 def _clean_unused_files(temp_dir: str) -> None:

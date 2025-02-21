@@ -133,5 +133,5 @@ async def check_aderyn_installation():
         logger.error(f"[Aderyn] Aderyn not found or error checking version: {stderr}")
         return False
     except Exception as e:
-        logger.exception(f"[Aderyn] Error checking Slither installation: {str(e)}")
+        logger.exception(f"[Aderyn] Error checking Aderyn installation: {str(e)}")
         return False

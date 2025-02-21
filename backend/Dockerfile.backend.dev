@@ -22,18 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     https://packages.stripe.dev/stripe-cli-debian-local \
     stable main" | tee -a /etc/apt/sources.list.d/stripe.list \
     && apt-get update && apt-get --no-install-recommends install -y stripe \
-    # Install Aderyn v0.4.0 with checksum verification
-    && ADERYN_VERSION="0.4.0" \
-    && ADERYN_ARCH="x86_64-unknown-linux-gnu" \
-    && curl --proto "=https" --tlsv1.2 -fsSL -LO "https://github.com/cyfrin/aderyn/releases/download/aderyn-v${ADERYN_VERSION}/aderyn-${ADERYN_ARCH}.tar.xz" \
-    && curl --proto "=https" --tlsv1.2 -fsSL -LO "https://github.com/cyfrin/aderyn/releases/download/aderyn-v${ADERYN_VERSION}/aderyn-${ADERYN_ARCH}.tar.xz.sha256" \
-    && sha256sum -c "aderyn-${ADERYN_ARCH}.tar.xz.sha256" \
-    && mkdir -p aderyn-temp \
-    && tar -xf "aderyn-${ADERYN_ARCH}.tar.xz" -C aderyn-temp \
-    && find aderyn-temp -type f -executable -name "aderyn*" -exec mv {} /usr/local/bin/aderyn \; \
-    && chmod +x /usr/local/bin/aderyn \
-    # Clean up
-    && rm -rf aderyn-temp "aderyn-${ADERYN_ARCH}.tar.xz" "aderyn-${ADERYN_ARCH}.tar.xz.sha256" \
+    # Install Aderyn
+    && curl --proto '=https' --tlsv1.2 -LsSf https://github.com/cyfrin/aderyn/releases/download/aderyn-v0.4.2/aderyn-installer.sh | sh \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,12 +32,12 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
-    PATH="/root/.foundry/bin:/root/.cyfrin/bin:${PATH}"
+    PATH="/root/.foundry/bin:/root/.cargo/bin:${PATH}"
 
 # Copy installed tools from builder stage
 COPY --from=builder /root/.foundry /root/.foundry
 COPY --from=builder /usr/bin/stripe /usr/local/bin/stripe
-COPY --from=builder /usr/local/bin/aderyn /usr/local/bin/aderyn
+COPY --from=builder /root/.cargo /root/.cargo
 
 # Install minimal runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -9,6 +9,7 @@ from api.v1.common.forge_helpers import (
     generate_remappings_with_foundry,
     initialize_foundry_project,
     install_npm_deps,
+    install_npm_deps_hardhat,
     update_foundry_config,
 )
 from api.v1.common.project_detection import detect_project_config
@@ -118,7 +119,7 @@ async def setup_hardhat_environment(
     await initialize_foundry_project(foundry_dir, project_dir, project_type)
 
     # Install NPM dependencies
-    await install_npm_deps(foundry_dir, project_dir)
+    await install_npm_deps_hardhat(foundry_dir, project_dir)
 
     # Update foundry.toml configuration and generate remappings
     update_foundry_config(foundry_dir)
@@ -160,6 +161,10 @@ async def setup_foundry_environment(project_dir: str) -> Optional[List[str]]:
         except Exception as e:
             logger.warning(f"Failed to generate remappings with Foundry: {str(e)}")
             return None
+
+        # Install NPM dependencies if present
+        if os.path.exists(os.path.join(project_dir, "package.json")):
+            await install_npm_deps(project_dir)
 
         logger.info("Foundry project dependencies installed.")
         return remappings
