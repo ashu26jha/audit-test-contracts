@@ -24,13 +24,3 @@ class FuzzerRequest(BaseModel):
     oauth_token: Optional[str] = None
     selected_contracts: Optional[List[str]] = None
     setup_result: Optional[SetupResult] = None
-
-
-class InvariantResponse(BaseModel):
-    description: str = Field(..., description="The description of the invariants")
-    function: str = Field(..., description="The function name of the invariant")
-    condition: str = Field(..., description="The condition of the invariant")
-
-
-class InvariantsList(BaseModel):
-    invariants: List[InvariantResponse]

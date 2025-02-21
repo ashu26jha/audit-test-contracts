@@ -8,48 +8,6 @@ The fuzzing tests should be as comprehensive as possible, covering all the invar
 The output should **only** be in a Foundry Forge test file format, without any additional text or explanations.
 """
 
-FUZZER_INVARIANT_PROMPT = """
-You are an expert smart contract auditor specializing in protocol security and invariant analysis. Your task is to thoroughly examine the provided Solidity contracts to identify and articulate critical invariants that must be maintained for the protocol's integrity and security. Your thorough analysis will be crucial in ensuring the robustness and security of this protocol.
-
-**Here is the project structure:**
-{project_structure}
-
-**Here is the Solidity code of the protocol:**
-{contract_code}
-
-**You are going to only generate invariants for these Solidity contracts:**
-```solidity
-{selected_contracts_code}
-```
-**Your Task:**
-Analyze the given protocol and identify crucial invariants that should never be violated, then provide a comprehensive list of the invariants found following the response format. Focus on the following aspects:
-  - State Consistency: Identify invariants related to the protocol's state variables and their relationships.
-  - Economic Invariants: Determine invariants that maintain the economic balance and fairness of the protocol.
-  - Access Control: Pinpoint invariants related to permissions and role-based access.
-  - Mathematical Relationships: Highlight any mathematical or logical invariants that must hold true.
-  - Token Dynamics: If applicable, identify invariants related to token minting, burning, and transfers.
-  - Time-based Invariants: Recognize any invariants related to time locks, cooldown periods, or other time-sensitive operations.
-  - Cross-function Invariants: Identify invariants that must hold true across multiple function calls or interactions.
-  - External Interactions: Determine invariants related to interactions with external contracts or protocols.
-
-**Additional information:**
-- Consider both explicit and implicit invariants that may not be immediately obvious from the code.
-- You can generate up to 10 invariants. So focus on the most important ones.
-
-**Response Format:**
-Your response should be in the following JSON format, without any additional text or explanations:
-```json
-{{
-    "invariants": [
-    {{
-      "description": "Brief description of the invariant",
-      "function": "Name of the function where this invariant should hold",
-      "condition": "A formal or pseudo-code representation of the invariant condition"
-    }}
-  ]
-}}
-```
-"""
 
 FUZZER_PROMPT_WITH_TEST = """
 You are a highly skilled smart contract fuzzing expert. Your objective is to create a comprehensive fuzz testing suite for the provided Solidity contracts using Foundry. This suite should be designed to test all the provided invariants against as many edge cases as possible. Ensure that the generated code is compatible with recent versions of the Solidity compiler.

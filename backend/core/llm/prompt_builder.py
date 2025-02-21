@@ -1,5 +1,7 @@
+import json
 from typing import Dict, List, Optional, Union
 
+from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.prompts.context_scan_prompts import (
     CONTEXT_PROMPT,
     CONTEXT_PROMPT_WITH_DOCS,
@@ -83,9 +85,11 @@ class PromptBuilder:
         contracts: str,
         summary: Optional[str],
         docs: Optional[str],
+        invariants: Optional[InvariantsResponse],
     ) -> str:
         """Build the context scan specific prompt"""
         template = self._prompt_templates["with_docs" if docs else "without_docs"]
+        invariants_str = json.dumps(invariants.model_dump()) if invariants else "None Given"
 
         if docs:
             clean_docs = docs.replace("```", "")
@@ -94,11 +98,13 @@ class PromptBuilder:
                 summary=summary,
                 docs=clean_docs,
                 flattened_contracts=contracts,
+                invariants=invariants_str,
             )
 
         return template.format(
             summary=summary,
             flattened_contracts=contracts,
+            invariants=invariants_str,
         )
 
     def _build_gemini_format(

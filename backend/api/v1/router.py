@@ -11,6 +11,7 @@ from .payments import router as payments_router
 from .scans import router as scans_router
 from .utilities.etherscan import router as etherscan_router
 from .utilities.health_check import router as health_check_router
+from .utilities.invariants import router as invariants_router
 from .utilities.pdf import router as pdf_router
 from .utilities.stats import router as stats_router
 
@@ -44,3 +45,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(critics_router)
     router.include_router(benchmark_router)
     router.include_router(etherscan_router)
+    router.include_router(invariants_router)

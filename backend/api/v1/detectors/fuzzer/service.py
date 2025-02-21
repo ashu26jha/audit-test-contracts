@@ -8,11 +8,11 @@ from api.v1.common.forge_helpers import read_file
 from api.v1.common.setup_environment import setup_environment
 from api.v1.detectors.fuzzer.helpers.check_for_test_folder import check_for_test_folder
 from api.v1.detectors.fuzzer.helpers.generate_fuzz_prompt import generate_fuzz_prompt
-from api.v1.detectors.fuzzer.helpers.generate_invariants import generate_invariants
 from api.v1.detectors.fuzzer.helpers.generate_report import generate_report
 from api.v1.detectors.fuzzer.helpers.get_fuzz_test import get_fuzz_test
 from api.v1.detectors.fuzzer.helpers.run_fuzz_file import run_fuzz_file
 from api.v1.detectors.fuzzer.schema import FuzzerResponse, FuzzTestResult
+from api.v1.utilities.invariants.service import generate_invariants
 from config.prompts.fuzzer_prompts import SYSTEM_PROMPT_FUZZ_TEST
 from core.schemas.scan_schema import SetupResult
 from core.utils.logger import logger
@@ -104,12 +104,10 @@ class FuzzerService:
                         # if the contract file is not found
                         logger.exception(f"Selected contract: {contract} not found in src folder")
 
-            # 3. Generate the invariants
+            # 3. Generate the invariants (TODO: Ensure contracts_in_scope is an array of strings)
             invariants = await generate_invariants(
-                detected_profile,
-                project_structure,
-                flattened_contracts,
-                selected_contracts_code,
+                contracts_in_scope=selected_contracts_code,
+                flattened_contracts=flattened_contracts,
             )
 
             # 4. Generate the fuzz tests prompt

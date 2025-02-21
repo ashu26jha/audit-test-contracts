@@ -56,7 +56,13 @@ async def test_run_context_scan_success(mock_send_prompt_to_llm_async):
     mock_response = create_mock_context_scan_response()
     mock_send_prompt_to_llm_async.return_value = mock_response
 
-    result = await run_context_scan("Test Summary", None, "Test Contracts", Profiles.NFT)
+    result = await run_context_scan(
+        contracts="Test Contracts",
+        summary="Test Summary",
+        docs=None,
+        invariants=None,
+        profile=Profiles.NFT,
+    )
 
     assert isinstance(result, dict)
     assert "findings" in result
@@ -73,7 +79,13 @@ async def test_run_context_scan_success(mock_send_prompt_to_llm_async):
 async def test_run_context_scan_empty_response(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = None
 
-    result = await run_context_scan("Test Summary", None, "Test Contracts", Profiles.NFT)
+    result = await run_context_scan(
+        contracts="Test Contracts",
+        summary="Test Summary",
+        docs=None,
+        invariants=None,
+        profile=Profiles.NFT,
+    )
 
     assert isinstance(result, dict)
     assert "findings" in result
@@ -86,7 +98,13 @@ async def test_run_context_scan_different_profiles(mock_send_prompt_to_llm_async
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     for profile in Profiles:
-        result = await run_context_scan("Test Summary", None, "Test Contracts", profile)
+        result = await run_context_scan(
+            contracts="Test Contracts",
+            summary="Test Summary",
+            docs=None,
+            invariants=None,
+            profile=profile,
+        )
         assert isinstance(result, dict)
         assert "findings" in result
         assert len(result["findings"]) == 1
@@ -110,11 +128,12 @@ async def test_run_context_scan_claude_model(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await run_context_scan(
-        "Test Summary Claude",
-        None,
-        "Test Contracts Claude",
-        Profiles.NFT,
-        "claude-3-5-sonnet-latest",
+        contracts="Test Contracts Claude",
+        summary="Test Summary Claude",
+        docs=None,
+        invariants=None,
+        profile=Profiles.NFT,
+        model="claude-3-5-sonnet-latest",
     )
 
     assert isinstance(result, dict)
@@ -145,7 +164,11 @@ async def test_run_context_scan_no_profile(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     result = await run_context_scan(
-        "Test Summary No Profile", None, "Test Contracts No Profile", Profiles.NONE
+        contracts="Test Contracts No Profile",
+        summary="Test Summary No Profile",
+        docs=None,
+        invariants=None,
+        profile=Profiles.NONE,
     )
 
     assert isinstance(result, dict)

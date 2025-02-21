@@ -35,7 +35,7 @@ class BenchmarkScanRequest(BaseModel):
         None,
         description="LLM model to use for the scan. Required if typeOfScan is 'model'",
     )
-    mode: Optional[ModeType] = Field(
+    mode: Optional[str] = Field(
         None,
         description="Mode to use for the scan. Defaults to 'few_shots' if not provided.",
     )

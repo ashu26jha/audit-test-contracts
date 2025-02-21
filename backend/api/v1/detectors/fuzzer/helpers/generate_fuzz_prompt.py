@@ -7,7 +7,7 @@ from api.v1.detectors.fuzzer.helpers.forge_docs import (
     FORGE_STD_ERRORS,
     FORGE_STD_FEATURES,
 )
-from api.v1.detectors.fuzzer.schema import InvariantsList
+from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.prompts.fuzzer_prompts import FUZZER_PROMPT_WITH_TEST, FUZZER_PROMPT_WITHOUT_TEST
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
@@ -20,7 +20,7 @@ async def generate_fuzz_prompt(
     project_structure: str,
     flattened_contracts: str,
     remappings: str,
-    invariants: InvariantsList,
+    invariants: InvariantsResponse,
     has_test_folder: bool,
     selected_contracts: str,
 ) -> str:
@@ -37,7 +37,7 @@ async def generate_fuzz_prompt(
         project_structure (str): The structure of the project, detailing the organization of contracts.
         remappings (str): The remappings used in the project.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
-        invariants (InvariantsList): The invariants to be included in the prompt.
+        invariants (InvariantsResponse): The invariants to be included in the prompt.
         selected_contracts (str): The selected contracts to be included in the prompt.
     Returns:
         str: The generated fuzzing prompt formatted for the LLM.

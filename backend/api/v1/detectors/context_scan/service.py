@@ -6,6 +6,7 @@ from typing import Dict, List, Optional
 from langfuse.decorators import observe
 
 from api.v1.detectors.context_scan.schema import ContextScanResponse
+from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.settings import LLM_SCAN_1
 from core.llm.prompt_builder import PromptBuilder
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
@@ -22,6 +23,7 @@ async def run_context_scan(
     contracts: str,
     summary: Optional[str],
     docs: Optional[str],
+    invariants: Optional[InvariantsResponse],
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_1,
 ) -> dict:
@@ -31,6 +33,7 @@ async def run_context_scan(
             contracts,
             summary,
             docs,
+            invariants,
         )
 
         # Build full messages with profile
@@ -72,6 +75,7 @@ async def run_context_scan_batch(
     contracts: str,
     summary: Optional[str],
     docs: Optional[str],
+    invariants: Optional[InvariantsResponse],
     batch_configs: List[Dict],
 ) -> List[dict]:
     """Run multiple context scans in a batch"""
@@ -79,11 +83,12 @@ async def run_context_scan_batch(
         tasks = []
         for config in batch_configs:
             task = run_context_scan(
-                contracts,
-                summary,
-                docs,
-                config["profile"],
-                config["model"],
+                contracts=contracts,
+                summary=summary,
+                docs=docs,
+                invariants=invariants,
+                profile=config["profile"],
+                model=config["model"],
             )
             tasks.append(task)
 
@@ -101,3 +106,4 @@ async def run_context_scan_batch(
         contracts = None
         summary = None
         docs = None
+        invariants = None

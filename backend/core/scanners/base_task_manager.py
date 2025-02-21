@@ -8,6 +8,8 @@ from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.detectors.fuzzer.service import FuzzerService
 from api.v1.detectors.static_analyzer.service import run_static_analyzer
+from api.v1.utilities.invariants.schema import InvariantsResponse
+from api.v1.utilities.invariants.service import generate_invariants
 from api.v1.utilities.summary.service import generate_summary
 from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.db.repositories.scan import ScanRepository
@@ -43,6 +45,7 @@ class BaseTaskManager(ABC):
         self.scan: Optional[Scan] = None
         self.summary_result: Optional[str] = None
         self.detected_type: Optional[Profiles] = None
+        self.invariants: Optional[InvariantsResponse] = None
         self.task_results: Dict = {}
         self.task_detector_names: List[str] = []  # Track detector order
         self.active_detectors: List[str] = []  # Track enabled detectors
@@ -94,7 +97,13 @@ class BaseTaskManager(ABC):
                 self.flattened_contracts
             )
 
-            # 3. Execute detectors (failures handled silently)
+            # 3. Generate invariants
+            self.invariants = await generate_invariants(
+                contracts_in_scope=self.contract_files,
+                flattened_contracts=self.flattened_contracts,
+            )
+
+            # 4. Execute detectors (failures handled silently)
             await self._run_detectors()
 
             # Clear memory after all detectors are complete
@@ -298,10 +307,11 @@ class BaseTaskManager(ABC):
         """Execute a batch of context scans and process results."""
         try:
             results = await run_context_scan_batch(
-                self.flattened_contracts,
-                self.summary_result,
-                getattr(self.context, "docs", None),
-                batch_configs,
+                contracts=self.flattened_contracts,
+                summary=self.summary_result,
+                docs=getattr(self.context, "docs", None),
+                invariants=self.invariants,
+                batch_configs=batch_configs,
             )
 
             # Process successful results
