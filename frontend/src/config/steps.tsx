@@ -21,6 +21,11 @@ export const STEPS = [
     selectedIcon: <Image src="/svg/docs_selected.svg" alt="Docs Selected" width={45} height={45} />,
     label: "Docs",
   },
+  {
+    notSelectedIcon: <Image src="/svg/docs.svg" alt="Docs" width={45} height={45} />,
+    selectedIcon: <Image src="/svg/docs_selected.svg" alt="Docs Selected" width={45} height={45} />,
+    label: "QnA",
+  },
 ];
 
 export const PLAN_STEP = {

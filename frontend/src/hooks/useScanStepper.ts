@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from "react";
 
+import DOMPurify from "dompurify";
+
 import { PLAN_STEP, STEPS } from "@/config/steps";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -120,6 +122,10 @@ export const useScanStepper = () => {
         },
         {} as Record<string, string>,
       );
+
+      if (repoDocs.additionalDocs.length > 0) {
+        qa["6"] = DOMPurify.sanitize(repoDocs.additionalDocs);
+      }
 
       const response = await initiateScan({
         repositoryURL: `https://github.com/${selectedOwner.login}/${selectedRepo.name}`,

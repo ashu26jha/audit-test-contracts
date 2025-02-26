@@ -36,4 +36,5 @@ interface ReadmeFile {
 interface RepoDocs {
   readme: string[];
   qa: Record<string, string>;
+  additionalDocs: string;
 }

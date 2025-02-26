@@ -56,6 +56,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   repoDocs: {
     readme: [],
     qa: {},
+    additionalDocs: "",
   },
   isLoading: false,
   isScanning: false,
@@ -106,6 +107,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
       repoDocs: {
         readme: [],
         qa: {},
+        additionalDocs: "",
       },
     }),
 }));

@@ -23,6 +23,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { usePaymentStore } from "@/store/paymentStore";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
+import QnASelection from "../scan-stepper/QnASelection";
+
 const ScanStepperView: FC = () => {
   const router = useRouter();
   const { toast } = useToast();
@@ -89,7 +91,9 @@ const ScanStepperView: FC = () => {
     const isStep2Valid = currentStep === 2 && selectedBranch !== "";
     const isStep3Valid = currentStep === 3 && selectedContracts.length > 0;
     const isSetp4Valid = currentStep === 4;
-    return isStep0Valid || isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid;
+    const isSetp5Valid = currentStep === 5;
+
+    return isStep0Valid || isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid || isSetp5Valid;
   }, [
     freeScanAllowed,
     currentStep,
@@ -235,6 +239,7 @@ const ScanStepperView: FC = () => {
           {currentStep === 2 && <BranchSelection />}
           {currentStep === 3 && <ContractSelection />}
           {currentStep === 4 && <DocsSelection />}
+          {currentStep === 5 && <QnASelection />}
         </div>
       </Container>
     </>

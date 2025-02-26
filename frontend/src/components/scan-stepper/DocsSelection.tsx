@@ -1,7 +1,7 @@
 "use client";
 import { type FC, useCallback, useEffect, useMemo, useState } from "react";
 
-import { Input, Accordion, AccordionItem, Divider, Checkbox } from "@nextui-org/react";
+import { Input, Divider, Checkbox, Textarea } from "@nextui-org/react";
 import { Search } from "lucide-react";
 
 import { ENTERPRISE_PLAN_DETAILS } from "@/config/constants";
@@ -12,7 +12,6 @@ import { useScanStepperStore } from "@/store/scanStepperStore";
 import { organizeFilesByFolder } from "@/utils/helpers";
 
 import { HelpGuide } from "./HelpGuide";
-import { QnABox } from "./QnABox";
 import { FolderStructureView } from "../common/FolderStructureView";
 
 export const DocsSelection: FC = () => {
@@ -68,6 +67,10 @@ export const DocsSelection: FC = () => {
     setIsAllSelected(true);
   };
 
+  const handleAdditionalDocsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRepoDocs({ additionalDocs: e.target.value });
+  };
+
   // Fetch previous docs if user is a subscriber
   useEffect(() => {
     if (user?.subscription.isActive && selectedOwner && selectedRepo) {
@@ -84,78 +87,64 @@ export const DocsSelection: FC = () => {
 
   return (
     <div className="h-full w-full flex flex-col overflow-y-hidden">
-      <section className={`flex-1 min-h-0 flex justify-center`}>
+      <section className="flex-1 min-h-0 flex justify-center">
         <div className="w-3/4">
-          <Accordion defaultExpandedKeys={["1", "2"]} selectionMode="multiple">
-            <AccordionItem
-              classNames={{
-                title: "text-base font-normal text-default-600 font-inter leading-6",
-              }}
-              key="1"
-              aria-label="Select Readme files (Optional)"
-              title="1. Select Readme files (Optional)"
-            >
-              <div className="flex gap-8">
-                <div className="flex-1 max-w-[70%]">
-                  <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
+          <div className="flex gap-8">
+            <div className="flex-1 max-w-[70%]">
+              <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
 
-                  <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[23.85rem] overflow-auto">
-                    <div className="flex">
-                      <Checkbox
-                        isSelected={isAllSelected}
-                        onValueChange={onAllSelect}
-                        color="secondary"
-                        className="ml-2"
-                      />
-                      <Input
-                        classNames={{
-                          inputWrapper: "bg-content-1",
-                        }}
-                        radius="none"
-                        aria-label="Search files"
-                        isClearable={true}
-                        placeholder="Search files..."
-                        value={contractSearch}
-                        onValueChange={setContractSearch}
-                        startContent={<Search size={18} />}
-                      />
-                    </div>
-                    <Divider className="bg-default-100 h-[2px] mb-3" />
-                    <FolderStructureView
-                      items={organizeFilesByFolder(filteredReadmeFiles)}
-                      onSelect={handleSelectionChange}
-                      selectedPaths={repoDocs.readme}
-                      isDisabled={isFileLimitExceeded}
-                      isLoading={isLoading}
-                      variant="readme"
-                      emptyText="No readme files found under this branch"
-                    />
-                  </div>
-                </div>
-                <div className="w-[30%]">
-                  <HelpGuide
-                    selectedLines={totalSelectedChars}
-                    totalLines={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_CHARS}
-                    selectedFiles={repoDocs.readme.length}
-                    totalFiles={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_FILES}
-                    description={HELP_DESCRIPTION.readme}
-                    variant="readme"
+              <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[23.85rem] overflow-auto">
+                <div className="flex">
+                  <Checkbox isSelected={isAllSelected} onValueChange={onAllSelect} color="secondary" className="ml-2" />
+                  <Input
+                    classNames={{
+                      inputWrapper: "bg-content-1",
+                    }}
+                    radius="none"
+                    aria-label="Search files"
+                    isClearable={true}
+                    placeholder="Search files..."
+                    value={contractSearch}
+                    onValueChange={setContractSearch}
+                    startContent={<Search size={18} />}
                   />
                 </div>
+                <Divider className="bg-default-100 h-[2px] mb-3" />
+                <FolderStructureView
+                  items={organizeFilesByFolder(filteredReadmeFiles)}
+                  onSelect={handleSelectionChange}
+                  selectedPaths={repoDocs.readme}
+                  isDisabled={isFileLimitExceeded}
+                  isLoading={isLoading}
+                  variant="readme"
+                  emptyText="No readme files found under this branch"
+                />
               </div>
-            </AccordionItem>
+            </div>
+            <div className="w-[30%]">
+              <HelpGuide
+                selectedLines={totalSelectedChars + repoDocs.additionalDocs.length}
+                totalLines={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_CHARS}
+                selectedFiles={repoDocs.readme.length}
+                totalFiles={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_FILES}
+                description={HELP_DESCRIPTION.readme}
+                variant="readme"
+              />
+            </div>
+          </div>
+          <div>
+            <h4 className="text-sm text-default-600 mb-2 mt-4">Any additional documentation?</h4>
 
-            <AccordionItem
+            <Textarea
+              value={repoDocs.additionalDocs}
+              onChange={handleAdditionalDocsChange}
               classNames={{
-                title: "text-base font-normal text-default-600 font-inter leading-6",
+                inputWrapper:
+                  "border-2 border-default-100 bg-content-1 hover:border-gray-600 group-data-[focus=true]:bg-content-1 data-[hover=true]:bg-content-1",
               }}
-              key="2"
-              aria-label="Additional Q&A (Optional)"
-              title="2. Additional Q&A (Optional)"
-            >
-              <QnABox />
-            </AccordionItem>
-          </Accordion>
+              placeholder="Enter additional documentation..."
+            />
+          </div>
         </div>
       </section>
     </div>
