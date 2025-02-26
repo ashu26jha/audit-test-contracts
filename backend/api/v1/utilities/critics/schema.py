@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -32,3 +32,34 @@ class MitigationResponse(BaseModel):
     original_count: int
     findings_count: int
     findings: List[Finding]
+
+
+# ------------------------------------------
+#  DEDUPLICATION
+# ------------------------------------------
+
+
+class IndexedFindingList(BaseModel):
+    """Response model for LLM deduplication that returns indexes."""
+
+    indexes: List[int]
+
+
+# ------------------------------------------
+#  MITIGATION
+# ------------------------------------------
+
+
+class MitigationUpdate(BaseModel):
+    """Model for LLM mitigation updates."""
+
+    index: int
+    severity: str
+    comments: Optional[str] = None
+    should_be_removed: bool = False
+
+
+class MitigationUpdateList(BaseModel):
+    """Response model for LLM mitigation that returns updates to findings."""
+
+    updates: List[MitigationUpdate]

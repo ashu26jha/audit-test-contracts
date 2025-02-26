@@ -7,25 +7,28 @@ from typing import Dict, List, Optional, TypedDict, final
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.detectors.fuzzer.service import FuzzerService
+from api.v1.detectors.multi_agents.service import run_multi_agent
 from api.v1.detectors.static_analyzer.service import run_static_analyzer
+from api.v1.utilities.ast_tree.schema import ProjectAST
+from api.v1.utilities.ast_tree.service import generate_ast_for_project
 from api.v1.utilities.invariants.schema import InvariantsResponse
 from api.v1.utilities.invariants.service import generate_invariants
 from api.v1.utilities.summary.service import generate_summary
 from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Finding, Scan
-from core.schemas.context_protocols import CompilationContext
-from core.schemas.scan_schema import BaseScanContext
+from core.schemas.context_protocols import BenchmarkContext, CompilationContext
+from core.schemas.scan_schema import BaseScanContext, TypeOfScan
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
 
-TOTAL_SCAN_TIMEOUT = 900  # 15 minutes for entire scan
+TOTAL_SCAN_TIMEOUT = 1200  # 20 minutes for entire scan
 CONTEXT_SCAN_BATCH_SIZE = 3  # Constants for batch processing
 
 # Progress stage weights
 PRE_DETECTOR_WEIGHT = 25  # Setup, cloning, etc. (0-25%)
-DETECTOR_WEIGHT = 50  # Detectors (25-75%)
-POST_DETECTOR_WEIGHT = 25  # Deduplication, cleanup (75-100%)
+DETECTOR_WEIGHT = 55  # Detectors (25-80%)
+POST_DETECTOR_WEIGHT = 20  # Deduplication, cleanup (80-100%)
 
 
 class TaskResults(TypedDict):
@@ -46,6 +49,7 @@ class BaseTaskManager(ABC):
         self.summary_result: Optional[str] = None
         self.detected_type: Optional[Profiles] = None
         self.invariants: Optional[InvariantsResponse] = None
+        self.ast_tree: Optional[ProjectAST] = None
         self.task_results: Dict = {}
         self.task_detector_names: List[str] = []  # Track detector order
         self.active_detectors: List[str] = []  # Track enabled detectors
@@ -92,16 +96,46 @@ class BaseTaskManager(ABC):
             # 1. Initialize detectors
             await self._initialize_detectors()
 
-            # 2. Generate summary (constant task)
-            self.summary_result, self.detected_type = await generate_summary(
-                self.flattened_contracts
+            # 2. Run summary, invariants, and AST tree generation in parallel
+            summary_task = asyncio.create_task(generate_summary(self.flattened_contracts))
+            invariants_task = asyncio.create_task(
+                generate_invariants(
+                    contracts_in_scope=self.contract_files,
+                    flattened_contracts=self.flattened_contracts,
+                )
             )
 
-            # 3. Generate invariants
-            self.invariants = await generate_invariants(
-                contracts_in_scope=self.contract_files,
-                flattened_contracts=self.flattened_contracts,
+            # Only create AST tree task if context is CompilationContext and setup_result is not None
+            ast_tree_task = None
+            if (
+                isinstance(self.context, CompilationContext)
+                and self.context.setup_result is not None
+            ):
+                ast_tree_task = asyncio.create_task(
+                    generate_ast_for_project(
+                        repo_path=self.context.setup_result.project_dir,
+                        contracts=self.contract_files,
+                    )
+                )
+
+            # Wait for all tasks to complete
+            results = await asyncio.gather(
+                summary_task,
+                invariants_task,
+                *([] if ast_tree_task is None else [ast_tree_task]),
+                return_exceptions=True,
             )
+
+            # Process results and handle any exceptions
+            self.summary_result, self.detected_type = results[0]
+            self.invariants = results[1]
+            self.ast_tree = results[2] if len(results) > 2 else None
+
+            # Log any errors that occurred
+            for i, result in enumerate(results):
+                if isinstance(result, Exception):
+                    task_name = ["summary", "invariants", "ast_tree"][i]
+                    logger.error(f"[TaskManager] Error in {task_name} generation: {str(result)}")
 
             # 4. Execute detectors (failures handled silently)
             await self._run_detectors()
@@ -110,7 +144,7 @@ class BaseTaskManager(ABC):
             self.flattened_contracts = None
             gc.collect()
 
-            # 4. Gather results after all tasks are complete
+            # 5. Gather results after all tasks are complete
             return await self._gather_results()
 
         except Exception as e:
@@ -140,6 +174,8 @@ class BaseTaskManager(ABC):
                 await self._initialize_static_analysis(detectors)
             elif detector == "fuzzing":
                 await self._initialize_fuzzing(detectors)
+            elif detector == "multi_agents":
+                await self._initialize_multi_agent(detectors)
 
         # Save initial detectors to scan
         self.scan.detectors = detectors
@@ -147,37 +183,30 @@ class BaseTaskManager(ABC):
         self.scan.completed_detectors = 0
 
         # Calculate detector weights dynamically based on active detectors
-        total_weight = DETECTOR_WEIGHT  # 50% for detectors
+        total_weight = DETECTOR_WEIGHT  # 55% for detectors
         self.detector_weights = {}
 
         # Reserve fixed weights for core detectors if they're active
-        reserved_weights = {"static_analyzer": 10, "fuzzer": 10}
+        reserved_weights = {"static_analyzer": 5, "fuzzer": 5, "multi_agents": 30}
 
-        # Calculate how much weight is reserved for core detectors
+        # Calculate how much weight is reserved for ACTIVE core detectors
         total_reserved = sum(
             weight for detector, weight in reserved_weights.items() if detector in detectors
         )
 
-        # Remaining weight to distribute among context scans
+        # Calculate remaining weight for context scans
         remaining_weight = total_weight - total_reserved
         context_scan_count = sum(1 for d in detectors if d.startswith("context_scan_"))
 
-        # Distribute weights
-        if context_scan_count > 0:
-            context_scan_weight = remaining_weight / context_scan_count
-            for detector in detectors:
-                if detector.startswith("context_scan_"):
-                    self.detector_weights[detector] = context_scan_weight
-                else:
-                    # Assign reserved weights for core detectors
-                    self.detector_weights[detector] = reserved_weights.get(detector, 0)
-        else:
-            # If no context scans, distribute remaining weight among other detectors
-            other_detector_weight = remaining_weight / len(detectors) if detectors else 0
-            for detector in detectors:
-                self.detector_weights[detector] = reserved_weights.get(
-                    detector, other_detector_weight
-                )
+        # Assign weights
+        for detector in detectors:
+            if detector in reserved_weights:
+                # Core detectors get their fixed weights
+                self.detector_weights[detector] = reserved_weights[detector]
+            elif detector.startswith("context_scan_") and context_scan_count > 0:
+                # Each context scan gets an equal share of remaining weight, rounded to 1 decimal
+                context_scan_weight = round(remaining_weight / context_scan_count, 1)
+                self.detector_weights[detector] = context_scan_weight
 
         await self.scan.save()
 
@@ -210,6 +239,16 @@ class BaseTaskManager(ABC):
         if isinstance(self.context, CompilationContext) and self.context.setup_result:
             detectors["fuzzer"] = None
 
+    @final
+    async def _initialize_multi_agent(self, detectors: Dict) -> None:
+        """Initialize multi-agent detector."""
+        if (
+            isinstance(self.context, CompilationContext)
+            and self.context.setup_result
+            and self.ast_tree
+        ):
+            detectors["multi_agents"] = None
+
     # Run detectors
 
     @final
@@ -219,7 +258,7 @@ class BaseTaskManager(ABC):
             # Run detectors in parallel if they don't have dependencies
             detector_tasks = []
 
-            # Static Analysis and Fuzzing can run in parallel
+            # Static Analysis, Fuzzing, and Multi-Agents can run in parallel
             if "static_analysis" in self.active_detectors:
                 task = asyncio.create_task(self._run_static_analysis())
                 detector_tasks.append(task)
@@ -228,7 +267,11 @@ class BaseTaskManager(ABC):
                 task = asyncio.create_task(self._run_fuzzing())
                 detector_tasks.append(task)
 
-            # Wait for static analysis and fuzzing to complete
+            if "multi_agents" in self.active_detectors:
+                task = asyncio.create_task(self._run_multi_agent())
+                detector_tasks.append(task)
+
+            # Wait for parallel detectors to complete
             if detector_tasks:
                 await asyncio.gather(*detector_tasks, return_exceptions=True)
 
@@ -281,6 +324,30 @@ class BaseTaskManager(ABC):
             await self._update_progress("fuzzer", False)
 
     @final
+    async def _run_multi_agent(self) -> None:
+        """Run multi-agent analysis."""
+        if (
+            not isinstance(self.context, CompilationContext)
+            or not self.context.setup_result
+            or not self.ast_tree
+        ):
+            return
+
+        try:
+            result = await run_multi_agent(
+                contracts_in_scope=self.contract_files,
+                ast_tree=self.ast_tree,
+                project_dir=self.context.setup_result.repo_root,
+                docs=getattr(self.context, "formatted_docs", None),
+            )
+            self.task_results["multi_agents"] = result
+            await self._update_progress("multi_agents", True)
+        except Exception as e:
+            logger.error(f"[TaskManager] Multi-agents analysis failed: {str(e)}")
+            self.task_results["multi_agents"] = e
+            await self._update_progress("multi_agents", False)
+
+    @final
     async def _run_context_scans(self) -> None:
         """Run context scans in parallel batches."""
         batch_size = CONTEXT_SCAN_BATCH_SIZE
@@ -305,12 +372,19 @@ class BaseTaskManager(ABC):
     @final
     async def _run_context_scan_batch(self, batch_configs: List[Dict]) -> None:
         """Execute a batch of context scans and process results."""
+        is_model_scan = False
+        if (
+            isinstance(self.context, BenchmarkContext)
+            and self.context.type_of_scan == TypeOfScan.MODEL
+        ):
+            is_model_scan = True
+
         try:
             results = await run_context_scan_batch(
                 contracts=self.flattened_contracts,
                 summary=self.summary_result,
-                docs=getattr(self.context, "docs", None),
-                invariants=self.invariants,
+                docs=None if is_model_scan else getattr(self.context, "formatted_docs", None),
+                invariants=None if is_model_scan else self.invariants,
                 batch_configs=batch_configs,
             )
 
@@ -377,6 +451,17 @@ class BaseTaskManager(ABC):
             else:
                 logger.error(f"Fuzzing failed: {fuzzing_result}")
                 findings_by_detector["fuzzer"] = []
+
+        # Process multi-agents results
+        if "multi_agents" in self.task_results:
+            multi_agents_result = self.task_results["multi_agents"]
+            if not isinstance(multi_agents_result, Exception):
+                multi_agents_findings = multi_agents_result.findings
+                findings_by_detector["multi_agents"] = multi_agents_findings
+                combined_findings.extend(multi_agents_findings)
+            else:
+                logger.error(f"Multi-agents analysis failed: {multi_agents_result}")
+                findings_by_detector["multi_agents"] = []
 
         # Update scan status in database
         if self.scan:
@@ -463,6 +548,12 @@ class BaseTaskManager(ABC):
             task = self.task_results["fuzzer"]
             if isinstance(task, asyncio.Task):
                 running_tasks.append((task, "fuzzer"))
+
+        # Add multi-agents task if running
+        if "multi_agents" in self.task_results:
+            task = self.task_results["multi_agents"]
+            if isinstance(task, asyncio.Task):
+                running_tasks.append((task, "multi_agents"))
 
         # Cancel all running tasks
         for task, name in running_tasks:

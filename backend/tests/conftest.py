@@ -173,3 +173,57 @@ def mock_email_functions():
         mock_error.return_value = None
         mock_refund.return_value = None
         yield {"pdf": mock_pdf, "error": mock_error, "refund": mock_refund}
+
+
+# Adding fixture to mock external tool searches for duckduckgo, perplexity, and OpenAI summarization
+@pytest.fixture(autouse=True)
+def mock_tool_searches():
+    with patch(
+        "api.v1.tools.helpers.duckduckgo.ddg_searcher.search", new_callable=AsyncMock
+    ) as mock_ddg_search, patch(
+        "api.v1.tools.helpers.perplexity.search", new_callable=AsyncMock
+    ) as mock_perplexity_search, patch(
+        "openai.chat.completions.create", new_callable=AsyncMock
+    ) as mock_openai_chat, patch(
+        "api.v1.tools.service.duckduckgo_search_service", new_callable=AsyncMock
+    ) as mock_ddg_service, patch(
+        "api.v1.tools.service.jina_parse_service", new_callable=AsyncMock
+    ) as mock_jina_service, patch(
+        "api.v1.tools.service.perplexity_search_service", new_callable=AsyncMock
+    ) as mock_perplexity_service:
+        # Return a dummy list for duckduckgo search
+        mock_ddg_search.return_value = [
+            {"title": "Mock Title", "href": "http://mockurl.com", "snippet": "Mock snippet"}
+        ]
+        # Return a dummy string for perplexity search
+        mock_perplexity_search.return_value = "Mocked perplexity result"
+        # Return a mock response for OpenAI summarization
+        mock_openai_chat.return_value = type(
+            "MockResponse",
+            (),
+            {
+                "choices": [
+                    type(
+                        "MockChoice",
+                        (),
+                        {"message": type("MockMessage", (), {"content": "Mocked summary result"})},
+                    )
+                ]
+            },
+        )
+
+        # Mock the service functions directly
+        mock_ddg_service.return_value = {
+            "results": [{"title": "Mock Title", "href": "http://mockurl.com", "body": "Mock body"}]
+        }
+        mock_jina_service.return_value = "Mocked jina parse result"
+        mock_perplexity_service.return_value = "Mocked perplexity service result"
+
+        yield {
+            "duckduckgo": mock_ddg_search,
+            "perplexity": mock_perplexity_search,
+            "openai": mock_openai_chat,
+            "ddg_service": mock_ddg_service,
+            "jina_service": mock_jina_service,
+            "perplexity_service": mock_perplexity_service,
+        }

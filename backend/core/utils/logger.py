@@ -10,16 +10,22 @@ logger = logging.getLogger("Audit Agent")
 # Set the logging level to DEBUG
 logger.setLevel(logging.DEBUG)
 
-# Create a formatter
-formatter = logging.Formatter("%(levelname)s: %(asctime)s - %(name)s - %(message)s")
+# Only add handler if logger doesn't have handlers yet
+if not logger.handlers:
+    try:
+        # Create a formatter
+        formatter = logging.Formatter("%(levelname)s: %(asctime)s - %(name)s - %(message)s")
 
-# Create a stream handler (for console output)
-try:
-    stream_handler = logging.StreamHandler(sys.stdout)
-    stream_handler.setFormatter(formatter)
-    logger.addHandler(stream_handler)
-except Exception as e:
-    raise ConfigurationError("Failed to initialize logger", details={"error": str(e)}) from e
+        # Create a stream handler (for console output)
+        stream_handler = logging.StreamHandler(sys.stdout)
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+
+        # Prevent propagation to root logger to avoid duplicate logs
+        logger.propagate = False
+
+    except Exception as e:
+        raise ConfigurationError("Failed to initialize logger", details={"error": str(e)}) from e
 
 
 def log_with_context(

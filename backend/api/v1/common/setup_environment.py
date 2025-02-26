@@ -79,6 +79,7 @@ async def setup_environment(
             project_type=project_type,
             remappings=remappings,
             project_structure=project_structure,
+            repo_root=temp_dir,
         )
 
     except Exception as e:

@@ -14,6 +14,7 @@ class SetupResult(BaseModel):
     project_type: str
     project_structure: str
     remappings: Optional[List[str]] = None
+    repo_root: str
 
 
 class FreeScanStatus(BaseModel):

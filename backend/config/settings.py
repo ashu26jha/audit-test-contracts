@@ -22,10 +22,12 @@ AGENTIC_API_KEY: str = os.getenv("AGENTIC_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+XAI_API_KEY = os.getenv("XAI_API_KEY")
 
 # Dictionary of supported models
 SUPPORTED_MODELS = {
     "openai": [
+        "chatgpt-4o-latest",  # 128k - 16k context
         "gpt-4o-2024-11-20",  # 128k - 16k context
         "gpt-4o-2024-08-06",  # 128k - 16k context
         "gpt-4o-mini",  # 128k - 16k context
@@ -35,21 +37,26 @@ SUPPORTED_MODELS = {
     ],
     "anthropic": [
         "claude-3-5-sonnet-latest",
+        "claude-3-7-sonnet-20250219",
     ],
     "gemini": [
         "gemini-1.5-pro",
         "gemini-1.5-pro-latest",
         "gemini-exp-1206",
         "gemini-2.0-flash-exp",
+        "gemini-2.0-pro-exp",
+        "gemini-2.0-flash-thinking-exp-01-21",
+    ],
+    "grok": [
+        "grok-beta",
     ],
 }
 
 # Default LLM models
-LLM_UTILITY = os.getenv("LLM_UTILITY", "claude-3-5-sonnet-latest")
+LLM_UTILITY = os.getenv("LLM_UTILITY", "claude-3-7-sonnet-20250219")
 LLM_SCAN_1 = os.getenv("LLM_SCAN_1", "o1-2024-12-17")
-LLM_SCAN_2 = os.getenv("LLM_SCAN_2", "claude-3-5-sonnet-latest")
+LLM_SCAN_2 = os.getenv("LLM_SCAN_2", "claude-3-7-sonnet-20250219")
 LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "o3-mini")
-
 
 # Tokens encoding: "cl100k_base" || "p50k_base"
 TOKENS_ENCODING = "cl100k_base"
@@ -134,3 +141,12 @@ SLACK_TOKEN = os.getenv("SLACK_TOKEN")
 ##################################################
 
 ELIZA_CALLBACK_URL = os.getenv("ELIZA_CALLBACK_URL")
+
+##################################################
+#         JINA (Only for Autonomous Agent)
+##################################################
+
+JINA_API_KEY = os.getenv("JINA_API_KEY")
+
+SOLODIT_EMAIL = os.getenv("SOLODIT_EMAIL")
+SOLODIT_PASSWORD = os.getenv("SOLODIT_PASSWORD")

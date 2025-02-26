@@ -25,6 +25,7 @@ async def benchmark(request: BenchmarkScanRequest):
             - repositoryURL (str): URL of the GitHub repository to scan
             - contractFiles (List[str]): Array of contract files to analyze
             - branchName (str): Branch to scan (defaults to 'main')
+            - docs (Optional[str]): Project documentation to use for multi-agent scans
             - typeOfScan (TypeOfScan): Type of scan to perform
             - model (Optional[str]): LLM model to use (required for model-only scans)
             - mode (Optional[ModeType]): Mode to use (defaults to FEW_SHOTS)

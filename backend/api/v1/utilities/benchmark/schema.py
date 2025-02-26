@@ -4,6 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from config.settings import SUPPORTED_MODELS
+from core.models.docs import QAResponse
 from core.schemas.context_protocols import (
     BenchmarkContext,
     CompilationContext,
@@ -26,6 +27,9 @@ class BenchmarkScanRequest(BaseModel):
     )
     branchName: str = Field(
         "main", description="Name of the branch to scan. Defaults to 'main' if not provided."
+    )
+    docs: Optional[QAResponse] = Field(
+        None, description="Optional QA response associated with the request"
     )
     typeOfScan: TypeOfScan = Field(
         default=TypeOfScan.AUDIT_AGENT,

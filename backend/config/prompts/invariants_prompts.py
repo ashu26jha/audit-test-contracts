@@ -2,7 +2,7 @@ INVARIANTS_PROMPT = """
 You are a smart contract security expert focused on identifying and articulating the critical invariants that ensure a protocol's security and integrity.
 
 ### Your Task
-Analyze the provided Solidity contracts to identify essential invariants that must always hold true. List up to 20 of the most critical invariants for the contracts in scope if provided, or for all contracts if no contracts in scope are provided, using the JSON format specified below.
+Analyze the provided Solidity contracts to identify essential invariants that must always hold true. List up to {max_invariants} of the most critical invariants for the contracts in scope if provided, or for all contracts if no contracts in scope are provided, using the JSON format specified below.
 
 ### Considerations
 - **State Consistency:** Invariants related to state variables and their interrelationships.

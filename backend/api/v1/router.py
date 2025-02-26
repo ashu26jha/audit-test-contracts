@@ -5,10 +5,17 @@ from config.settings import ENVIRONMENT
 from .agentic import router as agentic_router
 from .audit_agent import router as audit_agent_router
 from .auth import router as auth_router
-from .detectors import context_scan_router, fuzzer_router, static_analyzer_router
+from .detectors import (
+    autonomous_agent_router,
+    context_scan_router,
+    fuzzer_router,
+    static_analyzer_router,
+)
+from .detectors.multi_agents import router as multi_agent_router
 from .github import router as github_router
 from .payments import router as payments_router
 from .scans import router as scans_router
+from .utilities.ast_tree import router as ast_tree_router
 from .utilities.etherscan import router as etherscan_router
 from .utilities.health_check import router as health_check_router
 from .utilities.invariants import router as invariants_router
@@ -17,9 +24,16 @@ from .utilities.stats import router as stats_router
 
 # Development-only imports
 if ENVIRONMENT in ["development", "test"]:
+    # Removed individual tools imports:
+    # from .tools.duckduckgo import router as duckduckgo_router
+    # from .tools.jina import router as jina_router
+    # from .tools.perplexity import router as perplexity_router
     from .utilities.benchmark import router as benchmark_router
     from .utilities.critics import router as critics_router
     from .utilities.summary import router as summary_router
+
+# Unified tools import (used regardless of environment)
+from .tools.routes import router as tools_router
 
 # Create the main v1 router
 router = APIRouter(prefix="/api/v1", tags=["API v1"])
@@ -34,7 +48,10 @@ router.include_router(payments_router)
 router.include_router(pdf_router)
 router.include_router(stats_router)
 router.include_router(agentic_router)
-
+router.include_router(autonomous_agent_router)
+# Replace individual tools routers with the unified tools router
+router.include_router(tools_router)
+router.include_router(multi_agent_router)
 
 # Register development-only routers
 if ENVIRONMENT in ["development", "test"]:
@@ -46,3 +63,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(benchmark_router)
     router.include_router(etherscan_router)
     router.include_router(invariants_router)
+    router.include_router(ast_tree_router)

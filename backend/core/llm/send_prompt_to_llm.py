@@ -12,7 +12,7 @@ from openai import OpenAIError
 from pydantic import BaseModel, ValidationError
 
 from config.settings import SUPPORTED_MODELS, TEMPERATURE
-from core.llm.llm_clients import get_claude_client, get_gemini_client
+from core.llm.llm_clients import get_claude_client, get_gemini_client, get_grok_client
 from core.llm.parse_llm_response import parse_model_response
 from core.schemas.llm_schema import Message
 from core.utils.errors import (
@@ -24,8 +24,9 @@ from core.utils.errors import ValidationError as AuditValidationError
 from core.utils.logger import logger
 from core.utils.token_count import count_tokens
 
-# Global limit of 6 concurrent requests across *all* models
-GLOBAL_SEMAPHORE = Semaphore(6)
+# Global limit of 10 concurrent requests across *all* models
+GLOBAL_SEMAPHORE = Semaphore(25)
+MODEL_SEMAPHORE = 10
 
 # Per-request timeout
 REQUEST_DELAY = 0.5  # seconds
@@ -43,6 +44,7 @@ async def send_prompt_to_llm_async(
     model_type: str,
     messages: Union[str, List[Message]],
     response_model: Optional[Type[T]] = None,
+    thinking: Optional[bool] = False,
 ) -> Optional[T]:
     """
     Send pre-formatted messages to the specified LLM model asynchronously.
@@ -76,6 +78,47 @@ async def send_prompt_to_llm_async(
 
                 token_count = count_tokens(str(messages))
                 logger.info(f"[LLMPrompt] Message length: {token_count} tokens for {model_type}")
+
+                # -----------------------------------------
+                # SUPPORT FOR GROK MODELS
+                # -----------------------------------------
+
+                if model_type in SUPPORTED_MODELS["grok"]:
+                    try:
+                        grok_client = get_grok_client()
+                        params = {
+                            "model": model_type,
+                            "messages": messages,
+                            "response_format": response_model,
+                        }
+
+                        if response_model:
+                            response = await grok_client.beta.chat.completions.parse(**params)
+                            structured_response: Optional[T] = response.choices[0].message.parsed
+                        else:
+                            response = await grok_client.chat.completions.create(
+                                model=model_type,
+                                messages=messages,
+                            )
+                            content = response.choices[0].message.content.strip()
+                            structured_response = parse_model_response(content, response_model)
+
+                        return structured_response
+                    except OpenAIError as e:
+                        if "rate_limit" in str(e).lower():
+                            logger.error(f"[LLMPrompt] Rate limit hit for {model_type}: {e}")
+                            raise RateLimitError(
+                                message="Grok rate limit exceeded",
+                                details={"model": model_type, "error": str(e)},
+                            ) from e
+                        raise LLMError(
+                            message="Grok API error",
+                            details={"model": model_type, "error": str(e)},
+                        ) from e
+
+                # -----------------------------------------
+                # SUPPORT FOR OPENAI MODELS
+                # -----------------------------------------
 
                 if model_type in SUPPORTED_MODELS["openai"]:
                     await sleep(REQUEST_DELAY)
@@ -112,22 +155,39 @@ async def send_prompt_to_llm_async(
                                     message="OpenAI rate limit exceeded",
                                     details={"model": model_type, "error": str(e)},
                                 ) from e
+                            logger.error(f"[LLMPrompt] OpenAI API error for {model_type}: {e}")
                             raise LLMError(
                                 message="OpenAI API error",
                                 details={"model": model_type, "error": str(e)},
                             ) from e
 
+                # -----------------------------------------
+                # SUPPORT FOR ANTHROPIC MODELS
+                # -----------------------------------------
+
                 elif model_type in SUPPORTED_MODELS["anthropic"]:
                     try:
                         claude_client = get_claude_client()
-                        response = await claude_client.completions.create(
-                            model=model_type,
-                            messages=messages,
-                            max_tokens=8192,
-                            response_model=response_model,
-                            timeout=REQUEST_TIMEOUT,
-                            temperature=TEMPERATURE,
-                        )
+                        max_tokens = 60000 if "3-7" in model_type else 8192
+
+                        # Create base parameters for the API call
+                        api_params = {
+                            "model": model_type,
+                            "messages": messages,
+                            "max_tokens": max_tokens,
+                            "response_model": response_model,
+                            "timeout": REQUEST_TIMEOUT,
+                        }
+
+                        # Add temperature parameter if thinking is False
+                        if not thinking:
+                            api_params["temperature"] = TEMPERATURE
+
+                        # Add thinking parameter if thinking is True
+                        if thinking:
+                            api_params["thinking"] = {"type": "enabled", "budget_tokens": 30000}
+
+                        response = await claude_client.completions.create(**api_params)
 
                         _update_langfuse(model_type, token_count, count_tokens(str(response)))
 
@@ -146,6 +206,10 @@ async def send_prompt_to_llm_async(
                             f"[LLMPrompt] Unexpected error with Claude: {str(e)}", exc_info=True
                         )
                         raise
+
+                # -----------------------------------------
+                # SUPPORT FOR GEMINI MODELS
+                # -----------------------------------------
 
                 elif model_type in SUPPORTED_MODELS["gemini"]:
                     try:
@@ -228,7 +292,7 @@ def _get_model_semaphore(model_type: str) -> asyncio.Semaphore:
     loop_semaphores = _MODEL_SEMAPHORES_PER_LOOP[current_loop]
     if model_type not in loop_semaphores:
         # You can customize the concurrency limit here if needed
-        loop_semaphores[model_type] = asyncio.Semaphore(2)
+        loop_semaphores[model_type] = asyncio.Semaphore(MODEL_SEMAPHORE)
 
     return loop_semaphores[model_type]
 

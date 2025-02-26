@@ -102,3 +102,20 @@ async def format_docs_for_prompt(
             formatted_sections.append(f"Q{question_num}: {answer}\n")
 
     return "\n".join(formatted_sections) if formatted_sections else None
+
+
+async def format_docs_for_benchmark(docs: QAResponse) -> Optional[str]:
+    """
+    Format the QAResponse data into a string suitable for the context scan prompt.
+    This ONLY includes formatting Q&A data.
+    """
+    formatted_sections = []
+
+    # Handle Q&A data if present
+    if docs.qa:
+        formatted_sections.append("\n# Additional Documentation\n")
+        # Sort by question number to maintain consistent order
+        for question_num, answer in sorted(docs.qa.items(), key=lambda x: int(x[0])):
+            formatted_sections.append(f"Q{question_num}: {answer}\n")
+
+    return "\n".join(formatted_sections) if formatted_sections else None

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.prompts.invariants_prompts import INVARIANTS_PROMPT
@@ -10,6 +10,7 @@ from core.utils.logger import logger
 async def generate_invariants(
     contracts_in_scope: List[str],
     flattened_contracts: str,
+    max_invariants: Optional[int] = 25,
 ) -> InvariantsResponse:
     """
     Generates invariants for based on the provided project structure, flattened contracts,
@@ -32,6 +33,7 @@ async def generate_invariants(
 
         # Generate the invariant prompt
         invariant_prompt = INVARIANTS_PROMPT.format(
+            max_invariants=max_invariants,
             contracts_in_scope=formatted_contracts,
             flattened_contracts=flattened_contracts,
         )

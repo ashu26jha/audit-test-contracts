@@ -28,9 +28,10 @@ async def context_scan(request: ContextScanRequest):
         findings (List[Finding]): The result of the context scan
     """
     response = await run_context_scan(
-        request.summary,
-        request.docs,
-        request.contracts,
-        request.profile,
+        contracts=request.contracts,
+        summary=request.summary,
+        docs=request.docs,
+        invariants=None,
+        profile=request.profile,
     )
     return SuccessResponse(data=response)

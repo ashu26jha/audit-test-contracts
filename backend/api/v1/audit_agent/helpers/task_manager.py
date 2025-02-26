@@ -17,4 +17,5 @@ class AuditAgentTaskManager(BaseTaskManager):
             "context_scan": True,
             "static_analysis": True,
             "fuzzing": False,
+            "multi_agents": False,
         }

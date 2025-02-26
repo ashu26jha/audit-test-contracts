@@ -17,4 +17,5 @@ class AgenticTaskManager(BaseTaskManager):
             "context_scan": True,
             "static_analysis": False,
             "fuzzing": False,
+            "multi_agents": False,
         }

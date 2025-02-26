@@ -29,6 +29,7 @@ class BenchmarkTaskManager(BaseTaskManager):
             "context_scan": True,
             "static_analysis": is_full_scan,  # Only run static analysis for full scan
             "fuzzing": False,
+            "multi_agents": False,  # Only run multi-agents for full scan
         }
 
     @property

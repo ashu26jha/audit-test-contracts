@@ -20,9 +20,9 @@ The output should **only** be in a well-formed JSON as follows, without any addi
 ```
 """
 CONTEXT_PROMPT = """
-    You are an expert smart contract security auditor. Analyze the following Solidity smart contracts and look for any potential vulnerabilities. For each issue, include a very detailed description in proper markdown format, the severity level, the affected contract(s), and some code snippets. Then order them by decreasing severity.
+    You are an expert smart contract security auditor. Analyze the following Solidity smart contracts and look for any potential vulnerabilities. Think step by step, reason about the code for every issue, and ensure they could actually be harmful for the protocol. Then include a very detailed description of the issue and its potential onsequences with code snippets in proper markdown format. Also include the severity level and the affected contract(s). Then order them by decreasing severity.
 
-    **Additional Considerations:**
+    ### **Instructions:**
     - Leverage the provided summary and invariants (if any) to get a better understanding of the protocol.
     - Ensure that there is no duplicate issue.
     - Ensure every finding is valid and that you do not report false-positives.
@@ -31,6 +31,22 @@ CONTEXT_PROMPT = """
     - Do not use single sentence generic descriptions.
     - Do not include the recommendation part. Leave it as empty string. Feel free to add vague suggestions inside the description, as long as it is not a direct recommendation, and can't introduce any liability.
 
+    ### **Severity Matrix:**
+    Use this severity matrix to determine the appropriate severity level based on both impact and likelihood:
+
+    | Impact/Likelihood | High Impact | Medium Impact | Low Impact |
+    |-------------------|-------------|---------------|------------|
+    | High Likelihood   | High (H)    | High/Medium (H/M) | Medium (M) |
+    | Medium Likelihood | High/Medium (H/M) | Medium (M)  | Medium/Low (M/L) |
+    | Low Likelihood    | Medium (M)        | Medium/Low (M/L) | Low (L) |
+
+    When assessing severity:
+    1. First evaluate the potential impact (what could happen if exploited)
+    2. Then assess the likelihood (how probable is it that the vulnerability will be exploited)
+    3. Use the matrix above to determine the final severity rating
+    4. When in doubt between two severity levels, always pick the lower one
+
+    ### **Output Format:**
     Return the output in the following JSON format, without any additional text, explanations, comments or chains of thought:
     ```json
     {{
@@ -46,22 +62,24 @@ CONTEXT_PROMPT = """
     }}
     ```
 
-    **Summary of the project:**
+    ### **Summary of the project:**
     {summary}
 
-    **Invariants to consider (if any):**
+    ### **Invariants to consider (if any):**
     {invariants}
 
-    **Contracts to audit:**
+    ---
+
+    ### **Contracts to audit:**
     ```solidity
     {flattened_contracts}
     ```
 """
 
 CONTEXT_PROMPT_WITH_DOCS = """
-    You are an expert smart contract security auditor. Analyze the following Solidity smart contracts and look for any potential vulnerabilities. For each issue, include a very detailed description in proper markdown format, the severity level, the affected contract(s), and some code snippets. Then order them by decreasing severity.
+    You are an expert smart contract security auditor. Analyze the following Solidity smart contracts and look for any potential vulnerabilities. Think step by step, reason about the code for every issue, and ensure they could actually be harmful for the protocol. Then include a very detailed description of the issue and its potential onsequences with code snippets in proper markdown format. Also include the severity level and the affected contract(s). Then order them by decreasing severity.
 
-    **Additional Considerations:**
+    ### **Instructions:**
     - Leverage the provided documentation, invariants (if any) and summary to get a better understanding of the protocol.
     - Ensure that there is no duplicate issue.
     - Ensure every finding is valid and that you do not report false-positives.
@@ -70,6 +88,22 @@ CONTEXT_PROMPT_WITH_DOCS = """
     - Do not use single sentence generic descriptions.
     - Do not include the recommendation part. Leave it as empty string. Feel free to add vague suggestions inside the description, as long as it is not a direct recommendation, and can't introduce any liability.
 
+    ### **Severity Matrix:**
+    Use this severity matrix to determine the appropriate severity level based on both impact and likelihood:
+
+    | Impact/Likelihood | High Impact | Medium Impact | Low Impact |
+    |-------------------|-------------|---------------|------------|
+    | High Likelihood   | High (H)    | High/Medium (H/M) | Medium (M) |
+    | Medium Likelihood | High/Medium (H/M) | Medium (M)  | Medium/Low (M/L) |
+    | Low Likelihood    | Medium (M)        | Medium/Low (M/L) | Low (L) |
+
+    When assessing severity:
+    1. First evaluate the potential impact (what could happen if exploited)
+    2. Then assess the likelihood (how probable is it that the vulnerability will be exploited)
+    3. Use the matrix above to determine the final severity rating
+    4. When in doubt between two severity levels, always pick the lower one
+
+    ### **Output Format:**
     Return the output in the following JSON format, without any additional text, explanations, comments or chains of thought:
     ```json
     {{
@@ -85,16 +119,18 @@ CONTEXT_PROMPT_WITH_DOCS = """
     }}
     ```
 
-    **Documentation of the project:**
+    ### **Documentation of the project:**
     {docs}
 
-    **Summary of the project:**
+    ### **Summary of the project:**
     {summary}
 
-    **Invariants to consider (if any):**
+    ### **Invariants to consider (if any):**
     {invariants}
 
-    **Contracts to audit:**
+    ---
+
+    ### **Contracts to audit:**
     ```solidity
     {flattened_contracts}
     ```

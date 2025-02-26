@@ -29,6 +29,12 @@ LLM_ENDPOINTS = {
     "/api/v1/remove-duplicates",
     "/api/v1/mitigate-findings",
     "/api/v1/static-analyzer",
+    "/api/v1/tools/duckduckgo-search",
+    "/api/v1/tools/jina-parse",
+    "/api/v1/tools/perplexity-search",
+    "/api/v1/autonomous-agent/launch",
+    "/api/v1/generate-invariants",
+    "/api/v1/generate-ast-tree",
 }
 
 PUBLIC_ENDPOINTS = {
@@ -39,6 +45,12 @@ PUBLIC_ENDPOINTS = {
     "/api/v1/auth/test-auth/token",
     "/api/v1/auth/logout",
     "/api/v1/etherscan/source-code",
+    "/api/v1/autonomous-agent/launch",
+    "/api/v1/tools/duckduckgo-search",
+    "/api/v1/tools/jina-parse",
+    "/api/v1/tools/perplexity-search",
+    "/api/v1/multi-agents/launch",
+    "/api/v1/generate-ast-tree",
 }
 
 # Add to the top with other constants

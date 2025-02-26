@@ -28,7 +28,7 @@ class AuditAgentService(BaseScanService):
         request: AuditAgentRequest = kwargs["request"]
         user: User = kwargs["user"]
 
-        # Format docs if provided and user is a subscriber
+        # Format docs if provided
         formatted_docs = await self._format_docs(request, user) if request.docs else None
 
         # Get next scan number before creating context
