@@ -368,3 +368,27 @@ class UserRepository:
                 message="Failed to create test user",
                 details={"username": username, "error": str(e)},
             ) from e
+
+    @staticmethod
+    async def update_cycle_end_status(user: User, cancel_at_period_end: bool) -> User:
+        """
+        Update the cycle end status for a user's subscription while preserving the Stripe customer ID.
+
+        Raises:
+            DatabaseError: If cycle end status update fails
+        """
+        try:
+            # Update cycle end status
+            subscription_update = {
+                "subscription.cancelAtPeriodEnd": cancel_at_period_end,
+            }
+
+            await user.update({"$set": subscription_update})
+            return await UserRepository.get_by_github_id(user.githubId)
+
+        except Exception as e:
+            logger.error(f"Error updating cycle end status for user {user.username}: {str(e)}")
+            raise DatabaseError(
+                message="Failed to update cycle end status",
+                details={"username": user.username, "github_id": user.githubId, "error": str(e)},
+            ) from e

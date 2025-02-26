@@ -6,6 +6,7 @@ import Image from "next/image";
 import { tv } from "tailwind-variants";
 
 import { PAGES } from "@/config/constants";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { formatDate } from "@/utils/datetime";
 
@@ -36,6 +37,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   currentSubscriptionType,
 }) => {
   const { handleSubscribe, isLoading: isSubscribing, handleCustomerPortalSession } = useSubscription();
+  const { user } = useAuth();
   const button = tv({
     base: "mr-auto text-white mx-6 w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg",
     variants: {
@@ -158,7 +160,8 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
         <CardFooter className="p-0 border-t border-[#22262F]">
           <div className="mt-6 text-[#F59E0B] text-sm flex items-center gap-2 px-6 pb-4 w-full">
             <Image src="/svg/payment-circle.svg" alt="payment" width={16} height={16} />
-            Next payment is on {formatDate(nextPaymentDate)}
+            {!user?.subscription.cancelAtPeriodEnd && `Next payment is on ${formatDate(nextPaymentDate)}`}
+            {user?.subscription.cancelAtPeriodEnd && `Subscription will end on ${formatDate(nextPaymentDate)}`}
           </div>
         </CardFooter>
       )}

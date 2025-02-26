@@ -44,7 +44,9 @@ const ScanLoadingStateView: FC<ScanLoadingStateViewProps> = ({ scanData }) => {
   ];
 
   const renderFailed = () => (
-    <StateMessage icon={<AlertTriangle size={40} className="text-red-500" />} message="Scan failed" />
+    <div className="relative h-[calc(100%-6rem)]">
+      <StateMessage icon={<AlertTriangle size={40} className="text-red-500" />} message="Scan failed" />
+    </div>
   );
 
   const renderInProgress = () => (

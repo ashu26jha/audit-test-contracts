@@ -214,6 +214,7 @@ class StripeWebhookHelper:
             subscription_type = metadata.get("type")
             customer_id = subscription.get("customer")
             scan_id = metadata.get("scanId")
+            cancel_at_period_end = subscription.get("cancel_at_period_end")
 
             # Validate status
             valid_statuses = [
@@ -238,6 +239,10 @@ class StripeWebhookHelper:
             if not user:
                 logger.error(StripeWebhookHelper.ERROR_MESSAGES["NO_USER"])
                 return
+
+            # Handle subscription cancellation at period end
+            await UserRepository.update_cycle_end_status(user, cancel_at_period_end)
+            logger.info(f"Subscription canceled at period end for user {user.githubId}")
 
             # Handle status changes
             if status == "past_due":

@@ -17,6 +17,7 @@ class SubscriptionData(BaseModel):
     monthlyCredits: int = 0
     expiresAt: Optional[datetime] = None
     lastRenewalAt: Optional[datetime] = None
+    cancelAtPeriodEnd: Optional[bool] = False
 
     model_config = ConfigDict(from_attributes=True)
 

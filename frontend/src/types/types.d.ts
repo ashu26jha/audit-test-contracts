@@ -76,6 +76,7 @@ interface Subscription {
   monthlyCredits: number;
   expiresAt: Date;
   lastRenewalAt: Date;
+  cancelAtPeriodEnd: boolean;
 }
 
 type SubscriptionType = "free" | "pro" | "enterprise";

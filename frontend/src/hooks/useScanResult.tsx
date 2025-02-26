@@ -38,7 +38,7 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
 
       return result;
     },
-    enabled: !!user && !!scanId && shouldPoll,
+    enabled: !!user && !!scanId,
     refetchInterval: shouldPoll ? pollingInterval : false,
     refetchIntervalInBackground: shouldPoll,
     retry: 3,

@@ -46,7 +46,7 @@ const LoginView: FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center h-[70vh]">
+    <div className="absolute inset-0 flex items-center justify-center">
       <Card className="max-w-[420px] p-5">
         <CardBody className="py-10">
           <div className="flex flex-col items-center">

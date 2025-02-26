@@ -29,6 +29,9 @@ class SubscriptionData(BaseModel):
     stripeSubscriptionId: Optional[str] = Field(None, description="Stripe subscription ID")
     stripeCustomerId: Optional[str] = Field(None, description="Stripe customer ID")
     lastRenewalAt: Optional[datetime] = Field(None, description="Last subscription renewal date")
+    cancelAtPeriodEnd: Optional[bool] = Field(
+        False, description="Whether subscription will canceled at period end"
+    )
 
     @property
     def is_pro(self) -> bool:
@@ -109,6 +112,7 @@ class User(Document):
                     "expiresAt": "2023-10-01T12:00:02Z",
                     "stripeSubscriptionId": "sub_xxxxxxxxxxxxx",
                     "lastRenewalAt": "2023-10-01T12:00:03Z",
+                    "cancelAtPeriodEnd": False,
                 },
             }
         }

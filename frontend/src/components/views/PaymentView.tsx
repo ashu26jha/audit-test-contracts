@@ -23,7 +23,7 @@ const PaymentView: FC = () => {
   const redirectUrl = scanId ? `/scan-results/${scanId}` : "/dashboard";
 
   return (
-    <div className="h-full bg-black text-white flex flex-col items-center justify-center">
+    <div className="absolute inset-0 bg-black text-white flex flex-col items-center justify-center">
       {status === "success" ? (
         <SuccessPayment scanId={scanId} userEmail={user?.email} onBack={() => router.push(redirectUrl)} />
       ) : (
