@@ -11,6 +11,8 @@ from api.v1.payments.schema import (
 )
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.utils import logger
+from core.utils.errors import SubscriptionError
 
 from .service import StripeSubscriptionService, StripeWebhookService
 
@@ -37,7 +39,9 @@ async def create_subscription(
         current_user.subscription.isActive
         and current_user.subscription.type == request.subscription_type
     ):
-        raise HTTPException(status_code=400, detail="Subscription plan already active")
+        raise SubscriptionError(
+            message="Subscription plan already active", details={"user_id": current_user.githubId}
+        )
 
     session = await StripeSubscriptionService.create_subscription_session(
         current_user,
@@ -83,6 +87,7 @@ async def stripe_webhook(request: Request):
     sig_header = request.headers.get("stripe-signature")
 
     if not sig_header:
+        logger.error(f"No signature header for payload: {payload}")
         raise HTTPException(status_code=400, detail="No signature header")
 
     event = await StripeWebhookService.handle_webhook(payload, sig_header)

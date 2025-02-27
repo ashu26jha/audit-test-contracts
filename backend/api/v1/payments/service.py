@@ -5,6 +5,7 @@ from config.settings import STRIPE_API_KEY
 from core.db.repositories.user import UserRepository
 from core.models.user import SubscriptionType, User
 from core.utils import logger
+from core.utils.errors import AuthError, SubscriptionError
 
 from .helpers.stripe_subscription import StripeSubscriptionHelper
 from .helpers.stripe_webhook import StripeWebhookHelper
@@ -44,18 +45,23 @@ class StripeSubscriptionService:
         if github_id:
             user = await UserRepository.get_by_github_id(github_id)
             if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+                logger.error(f"User with github_id {github_id} not found")
+                raise AuthError(message="User not found", details={"github_id": github_id})
         elif email:
             user = await UserRepository.get_by_email(email)
             if not user:
-                raise HTTPException(status_code=404, detail="User not found")
+                logger.error(f"User with email {email} not found")
+                raise AuthError(message="User not found", details={"email": email})
         else:
-            raise HTTPException(
-                status_code=400, detail="Either email or github_id must be provided"
-            )
+            logger.error("No email or github_id provided")
+            raise AuthError(message="Either email or github_id must be provided")
 
         if user.subscription.isActive and user.subscription.type == SubscriptionType.ENTERPRISE:
-            raise HTTPException(status_code=400, detail="Enterprise subscription already active")
+            logger.error(f"Enterprise subscription already active for user {user.githubId}")
+            raise SubscriptionError(
+                message="Enterprise subscription already active",
+                details={"user_id": user.githubId},
+            )
 
         return await StripeSubscriptionHelper.create_enterprise_subscription_session(
             user_id=user.githubId
