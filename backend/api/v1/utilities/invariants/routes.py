@@ -17,14 +17,14 @@ router = APIRouter(tags=["Invariants"])
 )
 async def get_invariants(request: InvariantsRequest):
     """
-    Generate up to 25 invariants for a contract.
+    Generate up to 30 invariants for a contract.
     Requires API key authentication.
     """
     try:
         invariants = await generate_invariants(
             contracts_in_scope=request.contracts_in_scope,
             flattened_contracts=request.flattened_contracts,
-            max_invariants=25,
+            max_invariants=30,
         )
         return SuccessResponse(data=invariants)
     except Exception as e:

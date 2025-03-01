@@ -18,6 +18,11 @@ class FunctionCall(BaseModel):
         pattern="^(public|private|internal|external)$",
         description="Function visibility in Solidity",
     )
+    state_mutability: str = Field(
+        ...,
+        pattern="^(read|write)$",
+        description="State mutability of the function",
+    )
     modifiers: List[str] = Field(
         default_factory=list, description="List of modifiers for the function"
     )

@@ -3,7 +3,7 @@ ENTRY_POINTS_PROMPT = """You are an expert Solidity code analyzer. Your task is 
 ### **Instructions:**
 Identify functions that meet **all** of the following criteria:
 1. **Visibility**: Must be `public` or `external`
-2. **State Modifying**: Must **not** be `view` or `pure`
+2. **State Mutability**: **Must be `write`** only
 3. **Access Control**: Must **not** have and admin or owner access control modifiers (`onlyOwner`, `onlyAdmin`, etc.) We are interested in the functions that can be called by protocol users.
 
 **For each function, extract the following details:**

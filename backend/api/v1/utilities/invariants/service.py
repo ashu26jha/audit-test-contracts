@@ -1,5 +1,7 @@
 from typing import List, Optional
 
+from langfuse.decorators import observe
+
 from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.prompts.invariants_prompts import INVARIANTS_PROMPT
 from config.settings import LLM_SCAN_3
@@ -7,10 +9,11 @@ from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
 
 
+@observe(name="invariants_generation")
 async def generate_invariants(
     contracts_in_scope: List[str],
     flattened_contracts: str,
-    max_invariants: Optional[int] = 25,
+    max_invariants: Optional[int] = 30,
 ) -> InvariantsResponse:
     """
     Generates invariants for based on the provided project structure, flattened contracts,

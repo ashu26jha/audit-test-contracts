@@ -13,6 +13,7 @@ You are an expert Solidity static analyzer. Your task is to analyze the followin
 1. **Extract all function definitions** from this contract:
    - List their **exact function names**.
    - Include their **visibility** (`public`, `private`, `internal`, `external`).
+   - Include their **state mutability** (`read`, `write`). Any function modifying the state of the contract should be marked as `write`.
    - Include their **modifiers** (e.g., `onlyOwner`, `onlyAdmin`, etc.).
    - Include their **parameters** (e.g., `paramA`, `paramB`, etc.) as a list of dictionaries with `name` and `type`.
    - Identify and list **all functions called** within each function.
@@ -40,6 +41,7 @@ Your response must be in **valid JSON format**, without explanations, additional
             "functions": {{
                 "functionName": {{
                     "visibility": "public | private | internal | external",
+                    "state_mutability": "read | write",
                     "modifiers": ["functionA", "functionB"],
                     "parameters": [
                         {{

@@ -1,5 +1,7 @@
 from typing import List
 
+from langfuse.decorators import observe
+
 from api.v1.detectors.multi_agents.schema import EntryPoint, EntryPointResponse
 from config.prompts.multiagent_prompts import ENTRY_POINTS_PROMPT
 from config.settings import LLM_SCAN_3
@@ -7,6 +9,7 @@ from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
 
 
+@observe(name="entry_points_extraction")
 async def extract_entry_points(contracts_in_scope: List[str], ast_tree: str) -> List[EntryPoint]:
     """
     Uses an LLM to extract entry points from the smart contracts.

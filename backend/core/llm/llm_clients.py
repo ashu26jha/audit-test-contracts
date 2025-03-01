@@ -61,7 +61,7 @@ def get_claude_client():
 # Getter for Gemini client
 def get_gemini_client():
     """Get a configured Gemini client instance."""
-    genai.configure(api_key=GEMINI_API_KEY, enable_prompt_caching=True)
+    genai.configure(api_key=GEMINI_API_KEY)
     return genai
 
 

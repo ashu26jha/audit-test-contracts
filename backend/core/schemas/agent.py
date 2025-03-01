@@ -1,4 +1,4 @@
-from typing import Generic, List, TypeVar
+from typing import Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +27,9 @@ class Agent(BaseModel, Generic[ResponseType]):
     response_model: type[ResponseType] = Field(
         description="A Pydantic model used to parse the LLM response"
     )
+    thinking: Optional[bool] = Field(
+        default=False, description="Whether the agent should think before responding"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -42,6 +45,7 @@ class Agent(BaseModel, Generic[ResponseType]):
             model_type=self.model,
             messages=self.prompt,
             response_model=self.response_model,
+            thinking=self.thinking,
         )
 
         logger.info(f"[Agent] {self.name} responded successfully")

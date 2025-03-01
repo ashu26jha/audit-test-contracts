@@ -5,18 +5,78 @@ from langfuse.decorators import observe
 
 from api.v1.utilities.critics.schema import IndexedFindingList
 from config.prompts.duplicate_prompts import DUPLICATE_PROMPT
-from config.settings import LLM_UTILITY
+from config.settings import DEDUP_MAX_BATCHES, DEDUP_MIN_BATCH_SIZE, LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.models.scan import Finding
 from core.utils.errors import CriticError
 from core.utils.logger import logger
 
 
-@observe(name="remove_duplicates")
-async def remove_duplicates_async(findings: List[Finding]) -> List[Finding]:
+@observe(name="remove_duplicates_batched")
+async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
     """
-    Remove duplicate findings using LLM. This is a critical operation that will fail
-    the entire scan if unsuccessful to ensure result quality.
+    Remove duplicate findings using LLM in a hierarchical batched approach.
+
+    This function handles large lists of findings by:
+    1. Splitting findings into configurable batch sizes
+    2. Deduplicating each batch independently
+    3. Progressively merging and deduplicating pairs of results until a single list remains
+
+    Args:
+        findings: List of findings to deduplicate
+
+    Returns:
+        List of deduplicated findings
+
+    Note:
+        This is a critical operation that will fail the entire scan if unsuccessful
+        to ensure result quality.
+    """
+
+    if not findings:
+        return []
+
+    # Calculate the number of batches using configurable settings
+    min_batch_size = DEDUP_MIN_BATCH_SIZE
+    num_batches = min(DEDUP_MAX_BATCHES, (len(findings) + min_batch_size - 1) // min_batch_size)
+    batch_size = (len(findings) + num_batches - 1) // num_batches
+
+    # Split findings into batches
+    groups = [findings[i : i + batch_size] for i in range(0, len(findings), batch_size)]
+
+    # First level - process initial groups
+    first_level_results = []
+    for group in groups:
+        deduped_group = await remove_duplicates(group)
+        first_level_results.append(deduped_group)
+
+    # Keep merging pairs until we have one final list
+    current_level = first_level_results
+    while len(current_level) > 1:
+        next_level = []
+        # Process pairs
+        for i in range(0, len(current_level), 2):
+            if i + 1 < len(current_level):
+                # Merge pair and deduplicate
+                merged = current_level[i] + current_level[i + 1]
+                deduped = await remove_duplicates(merged)
+                next_level.append(deduped)
+            else:
+                # Odd one out - pass through
+                next_level.append(current_level[i])
+        current_level = next_level
+    return current_level[0] if current_level else []
+
+
+@observe(name="remove_duplicates")
+async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
+    """
+    Remove duplicate findings from a list of findings using LLM analysis.
+
+    This function:
+    1. Indexes each finding with a unique identifier
+    2. Sends the findings to an LLM with a specialized prompt
+    3. Processes the LLM response to extract the deduplicated findings
 
     Args:
         findings: List of findings to deduplicate
