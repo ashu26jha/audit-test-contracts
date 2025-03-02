@@ -99,7 +99,7 @@ async def process_entry_point(
             attempt += 1
 
         logger.info(
-            f"[MultiAgents] Entry point {entry_point.function_name} completed with {len(findings)} findings"
+            f"[MultiAgents] Entry point {entry_point.function_name}() completed with {len(findings)} findings"
         )
         return findings
 

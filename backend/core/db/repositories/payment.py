@@ -38,7 +38,7 @@ class PaymentRepository:
         try:
             existing_payment = await PaymentRepository.get_by_scan_id(scan_id)
             if existing_payment:
-                logger.info(f"Payment record already exists for scan {scan_id}")
+                logger.info(f"[Scan Init] Payment record already exists for scan {scan_id}")
                 return existing_payment
 
             payment = Payment(
@@ -52,11 +52,13 @@ class PaymentRepository:
                 payment_type=payment_type,
             )
             await payment.save()
-            logger.info(f"Created initial payment record for scan {scan_id}")
+            logger.info(f"[Scan Init] Created initial payment record for scan {scan_id}")
             return payment
 
         except Exception as e:
-            logger.error(f"Error creating initial payment record for scan {scan_id}: {str(e)}")
+            logger.error(
+                f"[Scan Init] Error creating initial payment record for scan {scan_id}: {str(e)}"
+            )
             raise DatabaseError(
                 message="Failed to create initial payment record",
                 details={"scan_id": str(scan_id), "user_id": user_id, "error": str(e)},
@@ -219,7 +221,7 @@ class PaymentRepository:
             return payment
 
         except Exception as e:
-            logger.error(f"Error updating payment for scan {scan_id}: {str(e)}")
+            logger.error(f"[Scan Init] Error updating payment for scan {scan_id}: {str(e)}")
             raise DatabaseError(
                 message=error_message,
                 details={

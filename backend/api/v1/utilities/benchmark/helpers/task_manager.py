@@ -27,8 +27,8 @@ class BenchmarkTaskManager(BaseTaskManager):
 
         return {
             "context_scan": True,
-            "static_analysis": is_full_scan,  # Only run static analysis for full scan
-            "fuzzing": False,
+            "static_analyzer": is_full_scan,  # Only run static analyzer for full scan
+            "fuzzer": False,
             "multi_agents": False,  # Only run multi-agents for full scan
         }
 

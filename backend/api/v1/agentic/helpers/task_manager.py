@@ -15,7 +15,7 @@ class AgenticTaskManager(BaseTaskManager):
         """Define available detectors for Agentic scan."""
         return {
             "context_scan": True,
-            "static_analysis": False,
-            "fuzzing": False,
+            "static_analyzer": False,
+            "fuzzer": False,
             "multi_agents": False,
         }

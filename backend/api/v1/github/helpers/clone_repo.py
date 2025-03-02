@@ -28,6 +28,8 @@ async def clone_repo(
     Raises:
         HTTPException: With appropriate status code and message for different failure scenarios
     """
+    logger.info(f"[Scan Init] Cloning repository from {repository_url} to {target_dir}...")
+
     try:
         repo_dir = prepare_repo_directory(repository_url, target_dir)
         clone_cmd = prepare_clone_command(repository_url, repo_dir, access_token, branch)
@@ -42,7 +44,9 @@ async def clone_repo(
             cwd=repo_dir,
         )
 
-        logger.info(f"Successfully cloned repository from branch '{branch}' to {repo_dir}")
+        logger.info(
+            f"[Scan Init] Successfully cloned repository from branch '{branch}' to {repo_dir}"
+        )
         return repo_dir
 
     except HTTPException:
@@ -51,7 +55,7 @@ async def clone_repo(
         safe_error = str(e)
         if access_token:
             safe_error = safe_error.replace(access_token, "***")
-        logger.exception(f"Unexpected error during repository cloning: {safe_error}")
+        logger.exception(f"[Scan Init] Unexpected error during repository cloning: {safe_error}")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
@@ -102,7 +106,7 @@ def handle_clone_error(stderr: Union[str, bytes], access_token: Optional[str], b
             detail="Repository not found. Please check the repository URL.",
         )
 
-    logger.error(f"Git clone failed with error: {safe_stderr}")
+    logger.error(f"[Scan Init] Git clone failed with error: {safe_stderr}")
     raise HTTPException(
         status_code=400,
         detail="Failed to clone repository. Please check the repository URL and authentication credentials.",

@@ -24,7 +24,7 @@ async def flatten_and_count_contracts(
         CodeAnalysisResult: count of lines
     """
     if not project_dir or not os.path.exists(project_dir):
-        logger.error("Repository directory not provided or does not exist")
+        logger.error("[Scan Init] Repository directory not provided or does not exist")
         raise EnvironmentError(
             message="Invalid repository directory", details={"project_dir": project_dir}
         )
@@ -35,7 +35,7 @@ async def flatten_and_count_contracts(
         for file_path in contract_files:
             full_path = os.path.join(project_dir, file_path)
             if not os.path.isfile(full_path):
-                logger.error(f"Contract file '{file_path}' not found")
+                logger.error(f"[Scan Init] Contract file '{file_path}' not found")
                 raise EnvironmentError(
                     message=f"Contract file '{file_path}' not found",
                     details={"file_path": file_path},
@@ -47,13 +47,13 @@ async def flatten_and_count_contracts(
                 count_code += file_content
 
         code_analysis = await count_lines_of_code(count_code)
-        logger.info("Selected contracts flattened code successfully")
+        logger.info("[Scan Init] Selected contracts flattened code successfully")
         return flattened_code, code_analysis
 
     except EnvironmentError:
         raise
     except Exception as e:
-        logger.exception(f"Failed to flatten contracts: {str(e)}")
+        logger.exception(f"[Scan Init] Failed to flatten contracts: {str(e)}")
         raise InitializationError(
             message="Failed to flatten contracts", details={"error": str(e)}
         ) from e

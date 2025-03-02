@@ -20,7 +20,7 @@ class DocsRepository:
         try:
             return await ReadmeDocs.find_one({"repository_url": repository_url, "user_id": user_id})
         except Exception as e:
-            logger.error(f"Failed to fetch repository docs: {str(e)}")
+            logger.error(f"[Scan Init] Failed to fetch repository docs: {str(e)}")
             raise QueryError(
                 message="Failed to fetch repository docs",
                 details={"repository_url": repository_url, "user_id": user_id, "error": str(e)},
@@ -44,7 +44,9 @@ class DocsRepository:
                 )
                 await new_docs.save()
 
-            logger.info(f"Stored docs for repository {repository_url} and user {user_id}")
+            logger.info(
+                f"[Scan Init] Stored docs for repository {repository_url} and user {user_id}"
+            )
         except Exception as e:
-            logger.error(f"Failed to store repository docs: {str(e)}")
+            logger.error(f"[Scan Init] Failed to store repository docs: {str(e)}")
             # Don't raise the exception - we don't want to fail the scan if docs storage fails

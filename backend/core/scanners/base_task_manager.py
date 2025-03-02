@@ -170,9 +170,9 @@ class BaseTaskManager(ABC):
         for detector in self.active_detectors:
             if detector == "context_scan":
                 await self._initialize_context_scan(detectors)
-            elif detector == "static_analysis":
+            elif detector == "static_analyzer":
                 await self._initialize_static_analysis(detectors)
-            elif detector == "fuzzing":
+            elif detector == "fuzzer":
                 await self._initialize_fuzzing(detectors)
             elif detector == "multi_agents":
                 await self._initialize_multi_agent(detectors)
@@ -242,11 +242,7 @@ class BaseTaskManager(ABC):
     @final
     async def _initialize_multi_agent(self, detectors: Dict) -> None:
         """Initialize multi-agent detector."""
-        if (
-            isinstance(self.context, CompilationContext)
-            and self.context.setup_result
-            and self.ast_tree
-        ):
+        if isinstance(self.context, CompilationContext) and self.context.setup_result:
             detectors["multi_agents"] = None
 
     # Run detectors
@@ -259,11 +255,11 @@ class BaseTaskManager(ABC):
             detector_tasks = []
 
             # Static Analysis, Fuzzing, and Multi-Agents can run in parallel
-            if "static_analysis" in self.active_detectors:
+            if "static_analyzer" in self.active_detectors:
                 task = asyncio.create_task(self._run_static_analysis())
                 detector_tasks.append(task)
 
-            if "fuzzing" in self.active_detectors:
+            if "fuzzer" in self.active_detectors:
                 task = asyncio.create_task(self._run_fuzzing())
                 detector_tasks.append(task)
 

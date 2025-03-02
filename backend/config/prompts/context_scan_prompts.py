@@ -36,15 +36,16 @@ CONTEXT_PROMPT = """
 
     | Impact/Likelihood | High Impact | Medium Impact | Low Impact |
     |-------------------|-------------|---------------|------------|
-    | High Likelihood   | High (H)    | High/Medium (H/M) | Medium (M) |
-    | Medium Likelihood | High/Medium (H/M) | Medium (M)  | Medium/Low (M/L) |
-    | Low Likelihood    | Medium (M)        | Medium/Low (M/L) | Low (L) |
+    | High Likelihood   | High        | Medium        | Medium     |
+    | Medium Likelihood | High        | Medium        | Low        |
+    | Low Likelihood    | Medium      | Low           | Low        |
 
     When assessing severity:
     1. First evaluate the potential impact (what could happen if exploited)
     2. Then assess the likelihood (how probable is it that the vulnerability will be exploited)
     3. Use the matrix above to determine the final severity rating
     4. When in doubt between two severity levels, always pick the lower one
+    5. Only use the exact severity levels: "High", "Medium", "Low", "Info", or "Best Practices"
 
     ### **Output Format:**
     Return the output in the following JSON format, without any additional text, explanations, comments or chains of thought:
@@ -93,15 +94,16 @@ CONTEXT_PROMPT_WITH_DOCS = """
 
     | Impact/Likelihood | High Impact | Medium Impact | Low Impact |
     |-------------------|-------------|---------------|------------|
-    | High Likelihood   | High (H)    | High/Medium (H/M) | Medium (M) |
-    | Medium Likelihood | High/Medium (H/M) | Medium (M)  | Medium/Low (M/L) |
-    | Low Likelihood    | Medium (M)        | Medium/Low (M/L) | Low (L) |
+    | High Likelihood   | High        | Medium        | Medium     |
+    | Medium Likelihood | High        | Medium        | Low        |
+    | Low Likelihood    | Medium      | Low           | Low        |
 
     When assessing severity:
     1. First evaluate the potential impact (what could happen if exploited)
     2. Then assess the likelihood (how probable is it that the vulnerability will be exploited)
     3. Use the matrix above to determine the final severity rating
     4. When in doubt between two severity levels, always pick the lower one
+    5. Only use the exact severity levels: "High", "Medium", "Low", "Info", or "Best Practices"
 
     ### **Output Format:**
     Return the output in the following JSON format, without any additional text, explanations, comments or chains of thought:

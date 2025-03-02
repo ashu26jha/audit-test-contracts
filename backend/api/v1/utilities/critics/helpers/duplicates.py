@@ -36,6 +36,8 @@ async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
     if not findings:
         return []
 
+    logger.info(f"[Critics] Removing duplicates from {len(findings)} findings...")
+
     # Calculate the number of batches using configurable settings
     min_batch_size = DEDUP_MIN_BATCH_SIZE
     num_batches = min(DEDUP_MAX_BATCHES, (len(findings) + min_batch_size - 1) // min_batch_size)
@@ -43,6 +45,10 @@ async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
 
     # Split findings into batches
     groups = [findings[i : i + batch_size] for i in range(0, len(findings), batch_size)]
+
+    logger.info(
+        f"[Critics] Configured {len(groups)} batches with batch size ~{batch_size} for {len(findings)} findings"
+    )
 
     # First level - process initial groups
     first_level_results = []
@@ -65,6 +71,11 @@ async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
                 # Odd one out - pass through
                 next_level.append(current_level[i])
         current_level = next_level
+
+    logger.info(
+        f"[Critics] Total findings after duplicate removal: {len(current_level[0])} (from {len(findings)})"
+    )
+
     return current_level[0] if current_level else []
 
 
@@ -88,7 +99,6 @@ async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
         CriticError: If deduplication fails or returns invalid results. This will fail the entire
             scan process as duplicate removal is essential for result quality.
     """
-    logger.info(f"[Critics] Removing duplicates from {len(findings)} findings...")
 
     try:
         if not findings:
@@ -139,10 +149,6 @@ async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
 
         # Get deduplicated findings using returned indexes
         deduplicated_findings = [findings[idx] for idx in valid_indexes]
-
-        logger.info(
-            f"[Critics] Total findings after duplicate removal: {len(deduplicated_findings)} (from {len(findings)})"
-        )
 
         return deduplicated_findings
 

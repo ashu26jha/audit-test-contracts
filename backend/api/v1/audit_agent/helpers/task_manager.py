@@ -15,7 +15,7 @@ class AuditAgentTaskManager(BaseTaskManager):
         """Define available detectors for Agentic scan."""
         return {
             "context_scan": True,
-            "static_analysis": True,
-            "fuzzing": False,
+            "static_analyzer": True,
+            "fuzzer": False,
             "multi_agents": False,
         }
