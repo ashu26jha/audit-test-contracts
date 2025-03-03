@@ -10,7 +10,7 @@ import { usePaymentStore } from "@/store/paymentStore";
 
 export type PaymentType = "single" | "subscription";
 
-export const useScanResult = (scanId: string, pollingInterval = 5000) => {
+export const useScanResult = (scanId: string | null, pollingInterval = 5000) => {
   const { user } = useAuth();
   const {
     isProcessing,
@@ -36,6 +36,10 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
       setIsScanLoading(true);
       const result = await getScanResults(scanId);
 
+      if (result.scan.status === "completed" || result.scan.status === "failed") {
+        setIsScanLoading(false);
+      }
+
       return result;
     },
     enabled: !!user && !!scanId,
@@ -49,9 +53,6 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
     if (scanData) {
       const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
       setShouldPoll(!isCompleted);
-      if (isCompleted) {
-        setIsScanLoading(false);
-      }
     }
 
     return () => {
@@ -61,7 +62,7 @@ export const useScanResult = (scanId: string, pollingInterval = 5000) => {
   }, [scanData, setError, setShouldPoll, setIsScanLoading]);
 
   useEffect(() => {
-    if (shouldPoll && scanData && !toastStarted) {
+    if (scanId && shouldPoll && scanData && !toastStarted) {
       toast.custom((t) => <ScanProgressToast t={t} scanId={scanId} />, {
         duration: Infinity,
         position: "bottom-right",

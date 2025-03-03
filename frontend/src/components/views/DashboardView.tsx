@@ -17,7 +17,7 @@ const DashboardView: FC = () => {
   const { repositories, scanHistory, isLoading, refetch } = useFetchScanHistory();
   const { hasGithubApp } = useGithubApp();
   const [inProgressScan, setInProgressScan] = useState<string | null>(null);
-  const { isScanLoading } = useScanResult(inProgressScan ?? "");
+  const { isScanLoading } = useScanResult(inProgressScan);
 
   useEffect(() => {
     if (repositories.length > 0) {
