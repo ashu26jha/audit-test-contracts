@@ -196,7 +196,7 @@ const ScanStepperView: FC = () => {
         <TalkToSalesModal
           isOpen={openWarningDialog}
           setIsOpen={setOpenWarningDialog}
-          creditsPerMonth={user?.subscription.credits}
+          creditsPerMonth={user?.subscription.monthlyCredits}
         />
       )}
 
