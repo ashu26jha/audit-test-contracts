@@ -507,13 +507,21 @@ class BaseTaskManager(ABC):
         self.scan.completed_detectors += 1
         self.scan.detectors[detector_name] = success
 
+        # Calculate progress as an integer percentage
         current_progress = PRE_DETECTOR_WEIGHT
         for name, completed in self.scan.detectors.items():
             if completed is not None:
                 weight = self.detector_weights.get(name, 0)
                 current_progress += weight
 
-        self.scan.progress = max(self.scan.progress, current_progress)
+        # Convert to integer and ensure we reach exactly 100% when all detectors are complete
+        progress_int = int(current_progress)
+
+        # If all detectors are complete, set progress to 100%
+        if self.scan.completed_detectors == self.scan.total_detectors:
+            progress_int = 100
+
+        self.scan.progress = max(self.scan.progress, progress_int)
         await self.scan.save()
 
     @final

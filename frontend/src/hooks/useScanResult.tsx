@@ -53,13 +53,18 @@ export const useScanResult = (scanId: string | null, pollingInterval = 5000) => 
     if (scanData) {
       const isCompleted = scanData.scan.status === "completed" || scanData.scan.status === "failed";
       setShouldPoll(!isCompleted);
+
+      // Reset toastStarted when scan completes or fails
+      if (isCompleted) {
+        setToastStarted(false);
+      }
     }
 
     return () => {
       // Cleanup when unmounting
       setError(null);
     };
-  }, [scanData, setError, setShouldPoll, setIsScanLoading]);
+  }, [scanData, setError, setShouldPoll, setIsScanLoading, setToastStarted]);
 
   useEffect(() => {
     if (scanId && shouldPoll && scanData && !toastStarted) {

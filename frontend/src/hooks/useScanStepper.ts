@@ -39,7 +39,7 @@ export const useScanStepper = () => {
     async (owner: string, repo: string) => {
       const res = await getRepositoryDocs(owner, repo);
 
-      if (res?.docs && user?.subscription.type === "enterprise") {
+      if (res?.docs) {
         // Set previous readme files and QA answers if they exist
         setRepoDocs(res.docs);
       } else {

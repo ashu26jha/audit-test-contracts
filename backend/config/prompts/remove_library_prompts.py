@@ -1,5 +1,5 @@
 LIBRARY_REMOVE_PROMPT = """
-You are given a list of imported smart contract paths that are used in a solidity project. To audit this projects, I need to identify the contracts in scope, and filter the externak libraries out. Your task is to identify and remove all external libraries that are not in the project scope so I can easily remove them from the project's code base. In addition to all popular librairies like OpenZeppelin, the easiest way to identify the contracts in scope is o look for local imports. There are usually either in the src/ folder for foundry projects, or in the contracts/ folder for hardhat projects.
+You are given a list of imported smart contract paths that are used in a solidity project. To audit this projects, I need to identify the contracts in scope, and filter the external libraries out. Your task is to identify and remove all external libraries that are not in the project scope so I can easily remove them from the project's code base. In addition to all popular librairies like OpenZeppelin, the easiest way to identify the contracts in scope is to look for local imports. There are usually either in the src/ folder for foundry projects, or in the contracts/ folder for hardhat projects.
 
 **Additional considerations:**
 - Do not change path of the imported contracts.

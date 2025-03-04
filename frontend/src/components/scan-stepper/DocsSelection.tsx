@@ -6,7 +6,6 @@ import { Search } from "lucide-react";
 
 import { ENTERPRISE_PLAN_DETAILS } from "@/config/constants";
 import { HELP_DESCRIPTION } from "@/config/helpDescription";
-import { useAuth } from "@/contexts/AuthContext";
 import { useScanStepper } from "@/hooks";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 import { organizeFilesByFolder } from "@/utils/helpers";
@@ -28,7 +27,6 @@ export const DocsSelection: FC = () => {
     isFileLimitExceeded,
   } = useScanStepperStore();
 
-  const { user } = useAuth();
   const { fetchReadmeFiles, fetchPreviousDocs } = useScanStepper();
   const [isAllSelected, setIsAllSelected] = useState(false);
 
@@ -73,10 +71,10 @@ export const DocsSelection: FC = () => {
 
   // Fetch previous docs if user is a subscriber
   useEffect(() => {
-    if (user?.subscription.isActive && selectedOwner && selectedRepo) {
+    if (selectedOwner && selectedRepo) {
       fetchPreviousDocs(selectedOwner.login, selectedRepo.name);
     }
-  }, [selectedOwner, selectedRepo, user?.subscription.isActive, fetchPreviousDocs]);
+  }, [selectedOwner, selectedRepo, fetchPreviousDocs]);
 
   // Fetch readme files when owner/repo/branch changes
   useEffect(() => {
