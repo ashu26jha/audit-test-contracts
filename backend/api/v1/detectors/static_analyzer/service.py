@@ -1,3 +1,4 @@
+import os
 import shutil
 import tempfile
 from typing import List, Optional
@@ -61,25 +62,28 @@ async def run_static_analyzer(
             "Low", 0
         ) + aderyn_output["severity_counts"].get("Low", 0)
 
+        # Log the number of findings from each source
+        logger.info(f"[Static Analyzer] Slither found {len(slither_output['findings'])} findings")
+        logger.info(f"[Static Analyzer] Aderyn found {len(aderyn_output['findings'])} findings")
+
         static_analysis_findings = {
             "findings": slither_output["findings"] + aderyn_output["findings"],
             "total_findings": len(slither_output["findings"]) + len(aderyn_output["findings"]),
             "severity_counts": slither_output["severity_counts"],
         }
 
-        # 5. Improve Static Analysis descriptions
-        if (
-            static_analysis_findings
-            and "findings" in static_analysis_findings
-            and len(static_analysis_findings["findings"]) > 0
-        ):
-            static_analysis_findings["findings"] = await improve_slither_findings(
-                static_analysis_findings["findings"]
-            )
-            static_analysis_findings["total_findings"] = len(static_analysis_findings["findings"])
+        # 5. Improve the descriptions of the findings
+        improved_findings = await improve_slither_findings(static_analysis_findings["findings"])
 
-        # 6. Remove temporary directory if created locally
-        if is_local_temp_dir:
+        # 6. Create the final output with the improved findings
+        static_analysis_output = StaticAnalysisOutput(
+            total_findings=static_analysis_findings["total_findings"],
+            severity_counts=static_analysis_findings["severity_counts"],
+            findings=improved_findings,
+        )
+
+        # 7. Clean up the temporary directory if it was created locally
+        if is_local_temp_dir and os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
         # Determine status message based on what succeeded
@@ -98,7 +102,7 @@ async def run_static_analyzer(
             status="Success",
             project_type=setup_result.project_type,
             environment_setup="Analysis completed successfully",
-            static_analysis_output=StaticAnalysisOutput(**static_analysis_findings),
+            static_analysis_output=static_analysis_output,
         )
 
     except ValueError as e:

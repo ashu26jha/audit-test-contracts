@@ -72,23 +72,9 @@ def transform_slither_output(
         transformed_results, selected_contracts, contract_field="Contracts"
     )
 
-    # Convert back to dict format for the return
-    filtered_dicts = [
-        {
-            "Issue": finding.Issue,
-            "Severity": (
-                finding.Severity.value if hasattr(finding.Severity, "value") else finding.Severity
-            ),
-            "Contracts": finding.Contracts,
-            "Description": finding.Description,
-            "Recommendation": finding.Recommendation,
-        }
-        for finding in filtered_results
-    ]
-
     # Count severities and total findings after filtering
-    for result in filtered_dicts:
-        severity = result["Severity"]
+    for result in filtered_results:
+        severity = result.Severity.value if hasattr(result.Severity, "value") else result.Severity
         if severity in severity_counts:
             severity_counts[severity] += 1
         elif severity == "Info":
@@ -96,15 +82,11 @@ def transform_slither_output(
         elif severity == "Best Practices":
             severity_counts["Optimization"] += 1
         total_findings += 1
-    # Added this as a patch to correctly count the Informational findings.
-    # Slither returns the severity as "Info", but we need to count it as "Informational".
-    # This patch is better than changing the schema which will break the frontend.
-    # The total count of findings must be equal to the sum of all severity counts.
 
     return {
-        "findings": filtered_dicts,
-        "total_findings": total_findings,
+        "findings": filtered_results,  # Return Finding objects directly
         "severity_counts": severity_counts,
+        "total_findings": total_findings,
     }
 
 

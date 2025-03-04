@@ -10,7 +10,17 @@ from core.utils.run_command import run_command
 from core.utils.severity import Severity
 
 
-async def run_aderyn(temp_dir: str, contracts: List[str]):
+async def run_aderyn(temp_dir: str, contracts: List[str] = None):
+    """
+    Run Aderyn analysis on the project.
+
+    Args:
+        temp_dir: Path to the project directory
+        contracts: List of contract paths/names to filter by (if None, include all)
+
+    Returns:
+        Dictionary containing findings, total_findings, and severity_counts
+    """
     if not await check_aderyn_installation():
         raise ValueError("[Aderyn] Aderyn is not installed or not working correctly")
 
@@ -27,30 +37,15 @@ async def run_aderyn(temp_dir: str, contracts: List[str]):
     with open(report_path, "r", encoding="utf-8") as file:
         report_content = file.read()
 
-    aderyn_finding_list = parse_aderyn_report(report_content, contracts)
+    # Pass the contracts list for filtering (or empty list if None)
+    aderyn_finding_list = parse_aderyn_report(report_content, contracts or [])
 
     findings_count = len(aderyn_finding_list)
     severity_counts = {
-        "High": sum(
-            1
-            for finding in aderyn_finding_list
-            if (
-                finding["Severity"].value
-                if hasattr(finding["Severity"], "value")
-                else finding["Severity"]
-            )
-            == "High"
-        ),
-        "Low": sum(
-            1
-            for finding in aderyn_finding_list
-            if (
-                finding["Severity"].value
-                if hasattr(finding["Severity"], "value")
-                else finding["Severity"]
-            )
-            == "Low"
-        ),
+        "High": sum(1 for finding in aderyn_finding_list if finding.Severity.value == "High"),
+        "Low": sum(1 for finding in aderyn_finding_list if finding.Severity.value == "Low"),
+        "Medium": 0,
+        "Info": 0,
     }
 
     return {
@@ -60,10 +55,17 @@ async def run_aderyn(temp_dir: str, contracts: List[str]):
     }
 
 
-def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
+def parse_aderyn_report(report_content: str, filter_contracts: List[str]):
     """
     Parses the Aderyn report and returns a list of findings.
     Intuition is get the section(s) that contains the vulnerability and then parse it.
+
+    Args:
+        report_content: The content of the Aderyn report
+        filter_contracts: List of contract paths/names to filter by (if empty, include all)
+
+    Returns:
+        List of Finding objects
     """
     vulnerability_pattern = (
         r"##\s+([HL]-\d+:.+?)\n\n(.*?)\n\n<details>.*?<summary>.*?</summary>\n\n(.*?)\n\n</details>"
@@ -73,7 +75,7 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
     vulnerabilities = list(re.finditer(vulnerability_pattern, report_content, re.DOTALL))
 
     logger.info(f"[Aderyn] Parsing {len(vulnerabilities)} Aderyn vulnerabilities...")
-    parsed_results = []
+    parsed_results: List[Finding] = []
 
     for vuln in vulnerabilities:
         title = vuln.group(1).strip()
@@ -89,7 +91,6 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
         # Replace the title with the title from ADERYN_DETECTORS_TITLE
         try:
             new_title = ADERYN_DETECTORS_TITLE[title]["title"]
-
         except KeyError:
             continue
 
@@ -110,15 +111,23 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
             contract_code_map[contract] = code
             code_blocks.append(code)
 
-        filtered_contracts = [normalize_contract_name(contract) for contract in fitler_contracts]
-        contracts = [
-            contract
-            for contract in contracts
-            if normalize_contract_name(contract) in filtered_contracts
-        ]
+        # Only filter if filter_contracts is provided
+        if filter_contracts:
+            normalized_filter_contracts = [
+                normalize_contract_name(contract) for contract in filter_contracts
+            ]
+            filtered_contracts = [
+                contract
+                for contract in contracts
+                if normalize_contract_name(contract) in normalized_filter_contracts
+            ]
 
-        if not contracts:
-            continue
+            # Skip this finding if none of its contracts match the filter
+            if not filtered_contracts:
+                continue
+
+            # Use the filtered contracts
+            contracts = filtered_contracts
 
         code_snippets = []
         for contract in contracts:
@@ -129,7 +138,7 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
 
         description += "\n" + "\n".join(code_snippets)
 
-        # Create a dictionary for each vulnerability
+        # Create a Finding object for each vulnerability
         transformed_result = Finding(
             Issue=new_title,
             Severity=Severity.validate(severity),
