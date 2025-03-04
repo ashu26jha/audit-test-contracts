@@ -151,7 +151,7 @@ Conduct your analysis in the following structured format. The output should **on
     "findings": [
         {{
             "Issue": "Short description of the issue",
-            "Severity": "High/Medium/Low/Info/Best Practices",
+            "Severity": "High | Medium | Low | Info | Best Practices",
             "Contracts": ["ContractName.sol"],
             "Description": "Detailed description of the issue.",
             "Recommendation": "Suggestion on how to fix the issue."

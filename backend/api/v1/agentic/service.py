@@ -42,7 +42,7 @@ class AgenticService(BaseScanService):
         return AgenticTaskManager(context)
 
     @staticmethod
-    @huey.task(retries=2, retry_delay=10)
+    @huey.task()
     def perform_scan_background(context: AgenticScanContext) -> None:
         """Background task to perform the agentic scan."""
 

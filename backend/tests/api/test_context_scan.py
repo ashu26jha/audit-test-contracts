@@ -9,6 +9,7 @@ from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan
 from core.models.scan import Finding
 from core.utils.profiles import Profiles
+from core.utils.severity import Severity
 from main import app
 
 client = TestClient(app)
@@ -24,7 +25,7 @@ def create_mock_context_scan_response(
     mock_findings = [
         Finding(
             Issue=issue,
-            Severity=severity,
+            Severity=Severity.validate(severity),
             Contracts=contracts,
             Description=description,
             Recommendation=recommendation,
@@ -69,7 +70,11 @@ async def test_run_context_scan_success(mock_send_prompt_to_llm_async):
     assert len(result["findings"]) == 1
     finding = result["findings"][0]
     assert finding["Issue"] == "Test Issue"
-    assert finding["Severity"] == "High"
+    # Check if Severity is an enum or a string
+    severity = (
+        finding["Severity"].value if hasattr(finding["Severity"], "value") else finding["Severity"]
+    )
+    assert severity == "High"
     assert finding["Contracts"] == ["TestContract"]
     assert finding["Description"] == "Test Description"
     assert finding["Recommendation"] == "Test Recommendation"
@@ -110,7 +115,13 @@ async def test_run_context_scan_different_profiles(mock_send_prompt_to_llm_async
         assert len(result["findings"]) == 1
         finding = result["findings"][0]
         assert finding["Issue"] == "Test Issue"
-        assert finding["Severity"] == "High"
+        # Check if Severity is an enum or a string
+        severity = (
+            finding["Severity"].value
+            if hasattr(finding["Severity"], "value")
+            else finding["Severity"]
+        )
+        assert severity == "High"
         assert finding["Contracts"] == ["TestContract"]
         assert finding["Description"] == "Test Description"
         assert finding["Recommendation"] == "Test Recommendation"
@@ -141,7 +152,11 @@ async def test_run_context_scan_claude_model(mock_send_prompt_to_llm_async):
     assert len(result["findings"]) == 1
     finding = result["findings"][0]
     assert finding["Issue"] == "Test Issue Claude"
-    assert finding["Severity"] == "Medium"
+    # Check if Severity is an enum or a string
+    severity = (
+        finding["Severity"].value if hasattr(finding["Severity"], "value") else finding["Severity"]
+    )
+    assert severity == "Medium"
     assert finding["Contracts"] == ["TestContractClaude"]
     assert finding["Description"] == "Test Description Claude"
     assert finding["Recommendation"] == "Test Recommendation Claude"
@@ -176,7 +191,11 @@ async def test_run_context_scan_no_profile(mock_send_prompt_to_llm_async):
     assert len(result["findings"]) == 1
     finding = result["findings"][0]
     assert finding["Issue"] == "Test Issue No Profile"
-    assert finding["Severity"] == "Low"
+    # Check if Severity is an enum or a string
+    severity = (
+        finding["Severity"].value if hasattr(finding["Severity"], "value") else finding["Severity"]
+    )
+    assert severity == "Low"
     assert finding["Contracts"] == ["TestContractNoProfile"]
     assert finding["Description"] == "Test Description No Profile"
     assert finding["Recommendation"] == "Test Recommendation No Profile"

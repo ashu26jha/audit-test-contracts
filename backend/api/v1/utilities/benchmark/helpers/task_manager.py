@@ -39,14 +39,41 @@ class BenchmarkTaskManager(BaseTaskManager):
                 f"Context type {type(self.context).__name__} does not support Benchmark operations"
             )
 
+        # For MODEL scan type
         if self.context.type_of_scan == TypeOfScan.MODEL:
-            return [self.context.model, self.context.model, self.context.model]
+            if self.context.mode == ModeType.VANILLA:
+                return [self.context.model, self.context.model]  # 2 models for VANILLA
+            else:
+                return [self.context.model]  # 1 model for FEW_SHOTS
 
+        # For AUDIT_AGENT scan type
         return [LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3]
 
     @property
     def context_scan_profiles(self) -> List[Profiles]:
-        if self.context.mode == ModeType.VANILLA:
-            return [Profiles.NONE, Profiles.NONE]
+        if not isinstance(self.context, BenchmarkContext):
+            return super().context_scan_profiles
 
+        # For MODEL scan type
+        if self.context.type_of_scan == TypeOfScan.MODEL:
+            if self.context.mode == ModeType.VANILLA:
+                return [Profiles.NONE]  # 1 profile for VANILLA mode
+
+        # For AUDIT_AGENT scan type
         return [Profiles.DEFAULT, Profiles.DEFAULT_2]
+
+    @property
+    def context_scan_batch_size(self) -> int:
+        """
+        Customize batch size based on scan type.
+        For model benchmarking, use smaller batches to avoid rate limits.
+        """
+        if not isinstance(self.context, BenchmarkContext):
+            return super().context_scan_batch_size
+
+        # For model benchmarking, use batch size of 2
+        if self.context.type_of_scan == TypeOfScan.MODEL:
+            return 2  # Run identical configurations in the same batch
+
+        # For full scans, use standard batch size
+        return super().context_scan_batch_size

@@ -4,8 +4,10 @@ from typing import List
 
 from api.v1.common.contract_utils import normalize_contract_name
 from api.v1.detectors.static_analyzer.helpers.aderyn_detectors_title import ADERYN_DETECTORS_TITLE
+from core.models.scan import Finding
 from core.utils.logger import logger
 from core.utils.run_command import run_command
+from core.utils.severity import Severity
 
 
 async def run_aderyn(temp_dir: str, contracts: List[str]):
@@ -29,8 +31,26 @@ async def run_aderyn(temp_dir: str, contracts: List[str]):
 
     findings_count = len(aderyn_finding_list)
     severity_counts = {
-        "High": sum(1 for finding in aderyn_finding_list if finding["Severity"] == "High"),
-        "Low": sum(1 for finding in aderyn_finding_list if finding["Severity"] == "Low"),
+        "High": sum(
+            1
+            for finding in aderyn_finding_list
+            if (
+                finding["Severity"].value
+                if hasattr(finding["Severity"], "value")
+                else finding["Severity"]
+            )
+            == "High"
+        ),
+        "Low": sum(
+            1
+            for finding in aderyn_finding_list
+            if (
+                finding["Severity"].value
+                if hasattr(finding["Severity"], "value")
+                else finding["Severity"]
+            )
+            == "Low"
+        ),
     }
 
     return {
@@ -110,15 +130,15 @@ def parse_aderyn_report(report_content: str, fitler_contracts: List[str]):
         description += "\n" + "\n".join(code_snippets)
 
         # Create a dictionary for each vulnerability
-        vulnerability = {
-            "Issue": new_title,
-            "Severity": severity,
-            "Contracts": contracts,
-            "Description": description,
-            "Recommendation": "",
-        }
+        transformed_result = Finding(
+            Issue=new_title,
+            Severity=Severity.validate(severity),
+            Contracts=contracts,
+            Description=description,
+            Recommendation="",
+        )
 
-        parsed_results.append(vulnerability)
+        parsed_results.append(transformed_result)
 
     return parsed_results
 

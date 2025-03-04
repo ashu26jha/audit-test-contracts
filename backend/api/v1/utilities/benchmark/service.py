@@ -48,7 +48,7 @@ class BenchmarkService(BaseScanService):
         return BenchmarkTaskManager(context)
 
     @staticmethod
-    @huey.task(retries=2, retry_delay=10)
+    @huey.task()
     def perform_scan_background(context: BenchmarkScanContext) -> None:
         """Background task to perform a new benchmark scan."""
 

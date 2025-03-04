@@ -23,7 +23,7 @@ from core.utils.logger import logger
 from core.utils.profiles import Profiles
 
 TOTAL_SCAN_TIMEOUT = 1200  # 20 minutes for entire scan
-CONTEXT_SCAN_BATCH_SIZE = 3  # Constants for batch processing
+CONTEXT_SCAN_BATCH_SIZE = 3  # Number of context scans per batch
 
 # Progress stage weights
 PRE_DETECTOR_WEIGHT = 25  # Setup, cloning, etc. (0-25%)
@@ -88,6 +88,15 @@ class BaseTaskManager(ABC):
         Returns a list of profiles.
         """
         return [Profiles.DEFAULT, Profiles.DEFAULT_2]
+
+    @property
+    def context_scan_batch_size(self) -> int:
+        """
+        Define the number of context scans to run in each batch.
+        Can be overridden by child classes to customize batch size.
+        Returns an integer representing the batch size.
+        """
+        return CONTEXT_SCAN_BATCH_SIZE
 
     @final
     async def execute_scan(self) -> TaskResults:
@@ -345,25 +354,31 @@ class BaseTaskManager(ABC):
 
     @final
     async def _run_context_scans(self) -> None:
-        """Run context scans in parallel batches."""
-        batch_size = CONTEXT_SCAN_BATCH_SIZE
+        """Run context scans in sequential batches."""
+        batch_size = self.context_scan_batch_size
         configs = self.context_scan_configs
         total_configs = len(configs)
 
-        for i in range(0, total_configs, batch_size * 2):
-            batch1 = configs[i : i + batch_size]  # noqa: E203
-            batch2 = configs[i + batch_size : i + (batch_size * 2)]  # noqa: E203
+        # Calculate how many batches we'll need
+        total_batches = (total_configs + batch_size - 1) // batch_size
+        logger.info(
+            f"[TaskManager] Running {total_batches} context scan batches with batch size {batch_size}"
+        )
 
-            tasks = []
-            for batch_num, batch in enumerate([batch1, batch2], 1):
-                if batch:
-                    logger.info(
-                        f"[TaskManager] Starting batch {batch_num} with models: {[c['model'] for c in batch]}"
-                    )
-                    task = asyncio.create_task(self._run_context_scan_batch(batch))
-                    tasks.append(task)
+        # Process all configs in batches sequentially
+        for i in range(0, total_configs, batch_size):
+            batch_end = min(i + batch_size, total_configs)
+            batch = configs[i:batch_end]
 
-            await asyncio.gather(*tasks, return_exceptions=True)
+            if batch:
+                batch_num = (i // batch_size) + 1
+                logger.info(
+                    f"[TaskManager] Starting batch {batch_num}/{total_batches} with models: {[c['model'] for c in batch]}"
+                )
+                await self._run_context_scan_batch(batch)
+
+                # Add a small delay between batches to avoid rate limits
+                await asyncio.sleep(1)
 
     @final
     async def _run_context_scan_batch(self, batch_configs: List[Dict]) -> None:

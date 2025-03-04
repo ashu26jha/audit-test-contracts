@@ -9,6 +9,7 @@ from config.settings import LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.models.scan import Finding
 from core.utils.logger import logger
+from core.utils.severity import Severity
 
 
 @observe(name="mitigate_findings")
@@ -37,7 +38,7 @@ async def mitigate_findings_async(
         # Add index to each finding
         indexed_findings = []
         for idx, finding in enumerate(findings):
-            finding_dict = finding.model_dump()
+            finding_dict = finding.model_dump(mode="json")
             finding_dict["index"] = idx
             indexed_findings.append(finding_dict)
 
@@ -83,7 +84,9 @@ async def mitigate_findings_async(
 
                 # Apply severity update
                 if update.severity != updated_findings[update.index].Severity:
-                    updated_findings[update.index].Severity = update.severity
+                    # Convert string severity to Severity enum
+                    severity_enum = Severity.validate(update.severity)
+                    updated_findings[update.index].Severity = severity_enum
                     update_count += 1
 
                 # Apply comments update if present

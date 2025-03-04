@@ -10,7 +10,7 @@ The output should **only** be in a well-formed JSON as follows, without any addi
     "findings": [
         {
             "Issue": "Short description of the issue",
-            "Severity": "High/Medium/Low/Info/Best Practices",
+            "Severity": "High | Medium | Low | Info | Best Practices",
             "Contracts": ["ContractName.sol"],
             "Description": "Detailed description of the issue. Example:\\n```solidity\\nfunction vulnerable() {{\\n    // show exact vulnerable code here\\n}}\\n```\\nExplain why this is vulnerable...",
             "Recommendation": ""
@@ -54,7 +54,7 @@ CONTEXT_PROMPT = """
         "findings": [
             {{
                 "Issue": "Short description of the issue",
-                "Severity": "High/Medium/Low/Info/Best Practices",
+                "Severity": "High | Medium | Low | Info | Best Practices",
                 "Contracts": ["ContractName.sol"],
                 "Description":  "Detailed description of the issue. Example:\\n```solidity\\nfunction vulnerable() {{\\n    // show exact vulnerable code here\\n}}\\n```\\nExplain why this is vulnerable...",
                 "Recommendation": ""
@@ -112,7 +112,7 @@ CONTEXT_PROMPT_WITH_DOCS = """
         "findings": [
             {{
                 "Issue": "Short description of the issue",
-                "Severity": "High/Medium/Low/Info/Best Practices",
+                "Severity": "High | Medium | Low | Info | Best Practices",
                 "Contracts": ["ContractName.sol"],
                 "Description":  "Detailed description of the issue. Example:\\n```solidity\\nfunction vulnerable() {{\\n    // show exact vulnerable code here\\n}}\\n```\\nExplain why this is vulnerable...",
                 "Recommendation": ""

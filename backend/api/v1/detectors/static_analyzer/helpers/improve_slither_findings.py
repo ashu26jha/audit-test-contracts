@@ -12,15 +12,6 @@ from core.models.scan import Finding
 from core.utils.logger import logger
 from core.utils.severity import Severity
 
-# Mapping from our severity to Slither's severity
-SEVERITY_TO_SLITHER = {
-    Severity.HIGH: "High",
-    Severity.MEDIUM: "Medium",
-    Severity.LOW: "Low",
-    Severity.INFO: "Informational",
-    Severity.BEST_PRACTICES: "Optimization",
-}
-
 
 @observe(name="improve_slither_findings")
 async def improve_slither_findings(
@@ -88,13 +79,16 @@ def transform_findings(original_vulns: List[Finding], llm_findings: List[Finding
 
 def create_transformed_finding(finding: Finding, original_vuln: dict) -> TransformedSlitherResult:
     """Helper function to create a transformed finding."""
-    severity_enum = Severity.from_str(finding.Severity)
-    slither_severity = SEVERITY_TO_SLITHER[severity_enum]
+    severity_enum = (
+        finding.Severity
+        if isinstance(finding.Severity, Severity)
+        else Severity.from_str(finding.Severity)
+    )
 
     return TransformedSlitherResult(
         Issue=finding.Issue,
         OriginalIssue=original_vuln.get("OriginalIssue", ""),
-        Severity=slither_severity,
+        Severity=severity_enum,  # Use the Severity enum directly
         Confidence=original_vuln.get("Confidence", "High"),
         Contracts=finding.Contracts,
         Description=finding.Description,

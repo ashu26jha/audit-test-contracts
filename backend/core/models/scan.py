@@ -20,7 +20,7 @@ class Finding(BaseModel):
     """
 
     Issue: str = Field(..., description="A short description of the vulnerability or issue")
-    Severity: str = Field(..., description="Severity level of the issue")
+    Severity: Severity
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
@@ -48,9 +48,9 @@ class Finding(BaseModel):
 
     @field_validator("Severity", mode="before")
     @classmethod
-    def validate_severity(cls, v: str) -> str:
-        # Use the centralized Severity enum
-        return Severity.from_str(v).value
+    def validate_severity(cls, v):
+        """Validate severity using the centralized Severity.validate method."""
+        return Severity.validate(v)
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

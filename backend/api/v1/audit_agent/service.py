@@ -58,7 +58,7 @@ class AuditAgentService(BaseScanService):
         return AuditAgentTaskManager(context)
 
     @staticmethod
-    @huey.task(retries=2, retry_delay=10)
+    @huey.task()
     def perform_scan_background(context: AuditAgentScanContext) -> None:
         """Background task to perform the audit agent scan."""
 

@@ -107,7 +107,7 @@ async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
         # Add index to each finding
         indexed_findings = []
         for idx, finding in enumerate(findings):
-            finding_dict = finding.model_dump()
+            finding_dict = finding.model_dump(mode="json")
             finding_dict["index"] = idx
             indexed_findings.append(finding_dict)
 

@@ -37,12 +37,21 @@ def prepare_findings_data(findings: List[Finding]) -> List[Dict[str, str]]:
     }
 
     # Sort findings by severity using the defined severity order
-    sorted_findings = sorted(findings, key=lambda x: severity_order.get(x.Severity, 6))
+    # Convert Severity enum to string value for comparison
+    sorted_findings = sorted(
+        findings,
+        key=lambda x: severity_order.get(
+            x.Severity.value if hasattr(x.Severity, "value") else x.Severity, 6
+        ),
+    )
 
     return [
         {
             "issue": finding.Issue,
-            "severity": severity_map.get(finding.Severity, "chip6"),
+            "severity": severity_map.get(
+                finding.Severity.value if hasattr(finding.Severity, "value") else finding.Severity,
+                "chip6",
+            ),
             "contracts": finding.Contracts,
             "description": finding.Description,
         }

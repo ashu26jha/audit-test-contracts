@@ -52,3 +52,36 @@ class Severity(Enum):
         # Unknown severity fallback
         logger.warning(f"Unknown severity '{value}', defaulting to 'Info'")
         return cls.INFO
+
+    @classmethod
+    def validate(cls, value) -> "Severity":
+        """
+        Validate and convert a value to a Severity enum.
+
+        This method centralizes the validation logic for Severity values,
+        handling both enum instances and string values.
+
+        Args:
+            value: The value to validate. Can be a Severity enum or a string.
+
+        Returns:
+            Severity: A valid Severity enum instance.
+        """
+        # If already a Severity enum, return it directly
+        if isinstance(value, cls):
+            return value
+
+        # Otherwise, convert string to Severity enum
+        return cls.from_str(value)
+
+    def __str__(self):
+        """String representation of the enum value."""
+        return self.value
+
+    def __repr__(self):
+        """Representation of the enum value."""
+        return f"{self.__class__.__name__}.{self.name}"
+
+    def to_json(self):
+        """Convert the enum to a JSON serializable format."""
+        return self.value

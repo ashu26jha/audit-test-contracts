@@ -9,6 +9,7 @@ from config.solidity_settings import CONFIDENCE_LEVELS
 from core.models.scan import Finding
 from core.utils.logger import logger
 from core.utils.run_command import run_command
+from core.utils.severity import Severity
 
 
 def extract_contract_from_lines(lines: str) -> str:
@@ -59,7 +60,7 @@ def transform_slither_output(
             # Convert dict to Finding model before filtering
             transformed_result = Finding(
                 Issue=issue_title,
-                Severity=severity,
+                Severity=Severity.validate(severity),
                 Contracts=contracts,
                 Description=full_description,
                 Recommendation="",
@@ -75,7 +76,9 @@ def transform_slither_output(
     filtered_dicts = [
         {
             "Issue": finding.Issue,
-            "Severity": finding.Severity,
+            "Severity": (
+                finding.Severity.value if hasattr(finding.Severity, "value") else finding.Severity
+            ),
             "Contracts": finding.Contracts,
             "Description": finding.Description,
             "Recommendation": finding.Recommendation,

@@ -1,7 +1,8 @@
-from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, HttpUrl
+
+from core.utils.severity import Severity
 
 
 class StaticAnalyzerRequest(BaseModel):
@@ -9,14 +10,6 @@ class StaticAnalyzerRequest(BaseModel):
     contracts: Optional[List[str]] = None
     oauth_token: Optional[str] = None
     contracts: Optional[List[str]] = None
-
-
-class Severity(str, Enum):
-    HIGH = "High"
-    MEDIUM = "Medium"
-    LOW = "Low"
-    INFORMATIONAL = "Informational"
-    OPTIMIZATION = "Optimization"
 
 
 class TransformedSlitherResult(BaseModel):

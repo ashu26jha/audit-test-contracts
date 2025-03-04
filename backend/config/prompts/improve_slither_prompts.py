@@ -12,7 +12,7 @@ Respond with only a valid JSON object containing a single key "findings" with an
     "findings": [
         {{
             "Issue": "Improved issue description",
-            "Severity": "High/Medium/Low/Info/Best Practices",
+            "Severity": "High | Medium | Low | Info | Best Practices",
             "Contracts": ["ContractName.sol"],
             "Description": "Improved detailed description in markdown format",
         }}
