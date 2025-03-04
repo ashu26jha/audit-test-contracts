@@ -87,7 +87,7 @@ class BaseTaskManager(ABC):
         Can be overridden by child classes to customize profile selection.
         Returns a list of profiles.
         """
-        return [Profiles.DEFAULT, Profiles.DEFAULT_2]
+        return [Profiles.DEFAULT, Profiles.DEFAULT_2, Profiles.NONE]
 
     @property
     def context_scan_batch_size(self) -> int:
@@ -373,7 +373,7 @@ class BaseTaskManager(ABC):
             if batch:
                 batch_num = (i // batch_size) + 1
                 logger.info(
-                    f"[TaskManager] Starting batch {batch_num}/{total_batches} with models: {[c['model'] for c in batch]}"
+                    f"[TaskManager] Starting batch {batch_num}/{total_batches} with models: {[c['model'] for c in batch]} and profiles: {[c['profile'] for c in batch]}"
                 )
                 await self._run_context_scan_batch(batch)
 

@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 from api.v1.utilities.benchmark.schema import BenchmarkScanContext
-from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.scanners.base_task_manager import BaseTaskManager
 from core.schemas.context_protocols import BenchmarkContext
 from core.schemas.scan_schema import ModeType, TypeOfScan
@@ -47,7 +46,7 @@ class BenchmarkTaskManager(BaseTaskManager):
                 return [self.context.model]  # 1 model for FEW_SHOTS
 
         # For AUDIT_AGENT scan type
-        return [LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3]
+        return super().context_scan_models
 
     @property
     def context_scan_profiles(self) -> List[Profiles]:
@@ -60,7 +59,7 @@ class BenchmarkTaskManager(BaseTaskManager):
                 return [Profiles.NONE]  # 1 profile for VANILLA mode
 
         # For AUDIT_AGENT scan type
-        return [Profiles.DEFAULT, Profiles.DEFAULT_2]
+        return super().context_scan_profiles
 
     @property
     def context_scan_batch_size(self) -> int:
