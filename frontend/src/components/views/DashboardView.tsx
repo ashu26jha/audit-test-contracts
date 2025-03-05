@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 
 import { Container, Loading } from "@/components/layout";
 import ScanCard from "@/components/ScanCard";
-import { SERVICES } from "@/config/constants";
 import { useFetchScanHistory, useGithubApp, useScanResult } from "@/hooks";
 import { checkInProgressScan } from "@/utils/helpers";
 
@@ -33,11 +32,6 @@ const DashboardView: FC = () => {
     if (typeof window !== "undefined" && window._mtm != undefined) {
         window._mtm.push({ "event": "repository-selection" });
       }
-
-    if (!hasGithubApp) {
-      window.location.href = SERVICES.GITHUB_APP_URL;
-      return;
-    }
     // Trigger a refetch when starting a new scan
     refetch();
 
