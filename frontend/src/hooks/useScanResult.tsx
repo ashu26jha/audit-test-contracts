@@ -8,10 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getScanResults } from "@/services/api";
 import { usePaymentStore } from "@/store/paymentStore";
 
+import { useSubscription } from "./useSubscription";
+
 export type PaymentType = "single" | "subscription";
 
 export const useScanResult = (scanId: string | null, pollingInterval = 5000) => {
   const { user } = useAuth();
+  const { checkIfFreeScanAllowed } = useSubscription();
   const {
     isProcessing,
     error,
@@ -38,6 +41,11 @@ export const useScanResult = (scanId: string | null, pollingInterval = 5000) => 
 
       if (result.scan.status === "completed" || result.scan.status === "failed") {
         setIsScanLoading(false);
+
+        // If user is on free plan, check if free scan is still allowed
+        if (user.subscription.type === "free") {
+          checkIfFreeScanAllowed();
+        }
       }
 
       return result;

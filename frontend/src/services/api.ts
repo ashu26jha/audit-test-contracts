@@ -11,6 +11,18 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Add response interceptor
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !window.location.pathname.includes("/login")) {
+      // Only redirect if we're not already on the login page
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  },
+);
+
 export const initiateGithubLogin = () => {
   if (typeof window !== "undefined") {
     window.location.href = `${SERVICES.API_URL}/api/v1/auth/github-login`;
