@@ -24,6 +24,7 @@ async def run_context_scan(
     summary: Optional[str],
     docs: Optional[str],
     invariants: Optional[InvariantsResponse],
+    duckduckgo_results: Optional[str] = None,
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_1,
 ) -> dict:
@@ -34,6 +35,8 @@ async def run_context_scan(
             summary,
             docs,
             invariants,
+            duckduckgo_results,
+            profile,
         )
 
         # Build full messages with profile
@@ -76,6 +79,7 @@ async def run_context_scan_batch(
     summary: Optional[str],
     docs: Optional[str],
     invariants: Optional[InvariantsResponse],
+    duckduckgo_results: Optional[str],
     batch_configs: List[Dict],
 ) -> List[dict]:
     """Run multiple context scans in a batch"""
@@ -87,6 +91,7 @@ async def run_context_scan_batch(
                 summary=summary,
                 docs=docs,
                 invariants=invariants,
+                duckduckgo_results=duckduckgo_results,
                 profile=config["profile"],
                 model=config["model"],
             )

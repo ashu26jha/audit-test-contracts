@@ -27,7 +27,6 @@ if ENVIRONMENT in ["development", "test"]:
     # Removed individual tools imports:
     # from .tools.duckduckgo import router as duckduckgo_router
     # from .tools.jina import router as jina_router
-    # from .tools.perplexity import router as perplexity_router
     from .utilities.benchmark import router as benchmark_router
     from .utilities.critics import router as critics_router
     from .utilities.summary import router as summary_router

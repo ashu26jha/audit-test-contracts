@@ -1,13 +1,18 @@
 from typing import Dict, List
 
 from duckduckgo_search import DDGS
-from openai import OpenAI
 
 from api.v1.tools.helpers.jina import parse
-from api.v1.tools.schema import DuckDuckGoResponse, DuckDuckGoSearchResult
-from config.prompts.summarise_prompt import SUMMARISE_PROMPT
-from config.settings import OPENAI_API_KEY
+from config.prompts.summarise_prompt import (
+    BEST_LINK_SELECTION_PROMPT,
+    CLEAN_RESPONSE_PROMPT,
+    SUMMARISE_PROMPT,
+)
+from config.settings import LLM_SCAN_3
+from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
+
+MAX_DDGS_RESULTS = 10
 
 
 class DuckDuckGoSearcher:
@@ -16,13 +21,12 @@ class DuckDuckGoSearcher:
         self.default_region = "wt-wt"
         self.default_safesearch = "moderate"
 
-    async def search(self, query: str, max_results: int = 3) -> List[Dict[str, str]]:
+    async def search(self, query: str, max_results: int = MAX_DDGS_RESULTS) -> List[Dict[str, str]]:
         try:
             results = list(
                 self.ddgs.text(
                     keywords=query,
                     region=self.default_region,
-                    safesearch=self.default_safesearch,
                     max_results=max_results,
                 )
             )
@@ -39,21 +43,7 @@ async def search(query: str) -> List[Dict[str, str]]:
     return await ddg_searcher.search(query)
 
 
-def get_description() -> str:
-    """
-    Returns the description for the duckduckgo_search tool.
-    """
-    return """
-        duckduckgo_search: Searches for information using DuckDuckGo and returns search results along with the webpage links. Good for indepth research. Exploring EIPs etc. Good for exploring docs and exploring the web.
-        Sample use case scenario:
-        Scenario 1: If a protocol uses Balancer V3 or Uniswap V3 or Curve V2, you can use this tool to search for vulnerabilities related improper integration of the protocol.
-        Query: "Balancer V3 security considerations"
-        Scenario 2: You can search about a particular library, contract or EIP.
-        Query: "EIP-7777"
-    """
-
-
-async def perform_duckduckgo_search(query: str, max_results: int = 3) -> str:
+async def perform_duckduckgo_search(query: str) -> str:
     """
     Perform a DuckDuckGo search and return the summarized results.
 
@@ -65,28 +55,35 @@ async def perform_duckduckgo_search(query: str, max_results: int = 3) -> str:
         str: Summarized search results
     """
     try:
-        results = await ddg_searcher.search(query, max_results)
+        from api.v1.tools.schema import DuckDuckGoSearchResult
 
-        # Fix: Map the correct dictionary keys from DuckDuckGo results
-        response = DuckDuckGoSearchResult(
-            results=[
-                DuckDuckGoResponse(
-                    title=r.get("title", ""), href=r.get("href", ""), body=r.get("snippet", "")
-                )
-                for r in results
-            ]
+        results = await ddg_searcher.search(query)
+        if len(results) == 0:
+            logger.info("No results found, skipping this query")
+            return ""
+        best_link_selection_prompt = BEST_LINK_SELECTION_PROMPT.format(query=query, links=results)
+        response = await send_prompt_to_llm_async(
+            model_type=LLM_SCAN_3,
+            messages=best_link_selection_prompt,
+            response_model=DuckDuckGoSearchResult,
         )
-        get_content = await parse_duckduckgo_search(response)
-        summary = await summarize_duckduckgo_search(get_content)
 
-        return summary
+        if len(response.results) == 0:
+            logger.info("No relevant links found, skipping this query")
+            return ""
+
+        logger.info(f"Rathering info from {len(response.results)} links")
+
+        get_content = await parse_duckduckgo_search(response)
+
+        return get_content
 
     except Exception as e:
         print(f"Error in DuckDuckGo search pipeline: {e}")
         return f"Failed to perform search: {str(e)}"
 
 
-async def parse_duckduckgo_search(results: DuckDuckGoSearchResult) -> str:
+async def parse_duckduckgo_search(results) -> str:
     """
     Summarize the results of a DuckDuckGo search by parsing content from result URLs.
 
@@ -97,16 +94,20 @@ async def parse_duckduckgo_search(results: DuckDuckGoSearchResult) -> str:
         str: Combined content from parsing all result URLs
     """
     try:
+
         # Extract links using list comprehension
         links = [result.href for result in results.results]
         logger.info(f"Links: {links}")
-        # Parse URLs with delay between requests to avoid rate limiting
         parsed_contents = []
         for link in links:
             try:
+                logger.info(f"Parsing link: {link}")
                 content = await parse(link)
-                logger.info(f"Parsed content: {content}")
-                parsed_contents.append(content)
+                if content == "":
+                    logger.info("No content found, skipping this link")
+                    continue
+                summary = await summarise_content(content)
+                parsed_contents.append(summary)
             except Exception as e:
                 parsed_contents.append(e)
 
@@ -119,16 +120,25 @@ async def parse_duckduckgo_search(results: DuckDuckGoSearchResult) -> str:
         return ""
 
 
-async def summarize_duckduckgo_search(content: str) -> str:
+async def summarise_content(content: str) -> str:
     """
-    Summarize the parsed content of a DuckDuckGo search.
+    Summarize the parsed content of a webpage.
     """
-    openai = OpenAI(api_key=OPENAI_API_KEY)
     summarise_prompt = SUMMARISE_PROMPT.format(text=content)
-    response = openai.chat.completions.create(
-        model="o3-mini",
-        messages=[
-            {"role": "user", "content": summarise_prompt},
-        ],
+    response = await send_prompt_to_llm_async(
+        model_type=LLM_SCAN_3,
+        messages=summarise_prompt,
     )
-    return response.choices[0].message.content
+    return response
+
+
+async def clean_response(summary: str, ast: str, docs: str) -> str:
+    """
+    Clean the response from the summarise_content function.
+    """
+    clean_response_prompt = CLEAN_RESPONSE_PROMPT.format(summary=summary, ast=ast, docs=docs)
+    response = await send_prompt_to_llm_async(
+        model_type=LLM_SCAN_3,
+        messages=clean_response_prompt,
+    )
+    return response

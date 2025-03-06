@@ -14,6 +14,7 @@ async def generate_invariants(
     contracts_in_scope: List[str],
     flattened_contracts: str,
     max_invariants: Optional[int] = 30,
+    docs: Optional[str] = None,
 ) -> InvariantsResponse:
     """
     Generates invariants for based on the provided project structure, flattened contracts,
@@ -24,7 +25,8 @@ async def generate_invariants(
     Args:
         contracts_in_scope (List[str]): List of contract file paths to analyze.
         flattened_contracts (str): The complete Solidity code of the contracts, flattened into a single string.
-
+        max_invariants (int): Invariants to be generated
+        docs (str): Optional docs if available
     Returns:
         InvariantsResponse: The generated invariants parsed from the LLM's response.
     """
@@ -39,6 +41,7 @@ async def generate_invariants(
             max_invariants=max_invariants,
             contracts_in_scope=formatted_contracts,
             flattened_contracts=flattened_contracts,
+            docs=docs,
         )
 
         # Send the invariant prompt to the LLM

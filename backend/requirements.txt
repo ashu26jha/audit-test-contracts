@@ -31,5 +31,4 @@ toml==0.10.2
 stripe==10.11.0
 slackclient==2.9.4
 uvicorn==0.30.6
-git+https://github.com/nvnhat95/perplexityai.git
 duckduckgo-search==7.3.0

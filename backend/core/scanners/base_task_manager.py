@@ -9,6 +9,7 @@ from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.detectors.fuzzer.service import FuzzerService
 from api.v1.detectors.multi_agents.service import run_multi_agent
 from api.v1.detectors.static_analyzer.service import run_static_analyzer
+from api.v1.tools.service import build_and_execute_queries_service
 from api.v1.utilities.ast_tree.schema import ProjectAST
 from api.v1.utilities.ast_tree.service import generate_ast_for_project
 from api.v1.utilities.invariants.schema import InvariantsResponse
@@ -50,6 +51,7 @@ class BaseTaskManager(ABC):
         self.detected_type: Optional[Profiles] = None
         self.invariants: Optional[InvariantsResponse] = None
         self.ast_tree: Optional[ProjectAST] = None
+        self.duckduckgo_results: Optional[str] = None
         self.task_results: Dict = {}
         self.task_detector_names: List[str] = []  # Track detector order
         self.active_detectors: List[str] = []  # Track enabled detectors
@@ -105,12 +107,13 @@ class BaseTaskManager(ABC):
             # 1. Initialize detectors
             await self._initialize_detectors()
 
-            # 2. Run summary, invariants, and AST tree generation in parallel
+            # 2. Run summary, invariants, duckduckgo and AST tree generation in parallel
             summary_task = asyncio.create_task(generate_summary(self.flattened_contracts))
             invariants_task = asyncio.create_task(
                 generate_invariants(
                     contracts_in_scope=self.contract_files,
                     flattened_contracts=self.flattened_contracts,
+                    docs=getattr(self.context, "formatted_docs", None),
                 )
             )
 
@@ -136,15 +139,24 @@ class BaseTaskManager(ABC):
             )
 
             # Process results and handle any exceptions
+            # @dev: TODO: This approach can cause problems if the tasks are not completed in order or one failed
             self.summary_result, self.detected_type = results[0]
             self.invariants = results[1]
             self.ast_tree = results[2] if len(results) > 2 else None
-
             # Log any errors that occurred
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
                     task_name = ["summary", "invariants", "ast_tree"][i]
                     logger.error(f"[TaskManager] Error in {task_name} generation: {str(result)}")
+
+            # Perform duckduckgo search
+            self.duckduckgo_results = await build_and_execute_queries_service(
+                contracts=self.flattened_contracts,
+                docs=getattr(self.context, "formatted_docs", None),
+                num_queries=5,
+                ast_tree=self.ast_tree,
+            )
+            logger.info(f"[TaskManager] Duckduckgo result length: {len(self.duckduckgo_results)}")
 
             # 4. Execute detectors (failures handled silently)
             await self._run_detectors()
@@ -396,6 +408,7 @@ class BaseTaskManager(ABC):
                 summary=self.summary_result,
                 docs=None if is_model_scan else getattr(self.context, "formatted_docs", None),
                 invariants=None if is_model_scan else self.invariants,
+                duckduckgo_results=self.duckduckgo_results,
                 batch_configs=batch_configs,
             )
 

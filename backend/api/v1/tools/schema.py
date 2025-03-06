@@ -1,3 +1,5 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
@@ -23,9 +25,12 @@ class JinaParseResult(BaseModel):
     response: str
 
 
-class PerplexitySearchRequest(BaseModel):
-    query: str
+class BuildQueriesRequest(BaseModel):
+    github_url: str
+    contracts_in_scope: List[str]
+    contracts: str
+    num_queries: int
 
 
-class PerplexitySearchResult(BaseModel):
-    response: str
+class BuildQueriesResult(BaseModel):
+    queries: List[str]

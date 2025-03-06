@@ -24,6 +24,7 @@ async def get_invariants(request: InvariantsRequest):
         invariants = await generate_invariants(
             contracts_in_scope=request.contracts_in_scope,
             flattened_contracts=request.flattened_contracts,
+            docs=request.docs,
             max_invariants=30,
         )
         return SuccessResponse(data=invariants)

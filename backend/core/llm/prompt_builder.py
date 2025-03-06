@@ -4,21 +4,19 @@ from typing import Dict, List, Optional, Union
 from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.prompts.context_scan_prompts import (
     CONTEXT_PROMPT,
-    CONTEXT_PROMPT_WITH_DOCS,
     SYSTEM_PROMPT,
 )
 from config.settings import SUPPORTED_MODELS
 from core.schemas.llm_schema import Message
 from core.utils.profiles import Profiles, load_profile
 
+EMPTY_RESPONSE = "None Given"
+
 
 class PromptBuilder:
     def __init__(self):
         """Initialize with cached static data"""
-        self._prompt_templates = {
-            "with_docs": CONTEXT_PROMPT_WITH_DOCS,
-            "without_docs": CONTEXT_PROMPT,
-        }
+        self._prompt_templates = {"context_scan_template": CONTEXT_PROMPT}
         self._system_prompts = {"default": SYSTEM_PROMPT}
         # Cache profiles
         self._profiles: Dict[Profiles, List[Message]] = {}
@@ -86,25 +84,25 @@ class PromptBuilder:
         summary: Optional[str],
         docs: Optional[str],
         invariants: Optional[InvariantsResponse],
+        duckduckgo_results: Optional[str] = None,
+        profile: Optional[Profiles] = None,
     ) -> str:
         """Build the context scan specific prompt"""
-        template = self._prompt_templates["with_docs" if docs else "without_docs"]
-        invariants_str = json.dumps(invariants.model_dump()) if invariants else "None Given"
+        invariants_str = json.dumps(invariants.model_dump()) if invariants else EMPTY_RESPONSE
 
-        if docs:
-            clean_docs = docs.replace("```", "")
+        # Adjustment for docs provided
+        docs = docs.replace("```", "") if docs else EMPTY_RESPONSE
 
-            return template.format(
-                summary=summary,
-                docs=clean_docs,
-                flattened_contracts=contracts,
-                invariants=invariants_str,
-            )
+        # Adjustment for zero shot learning will happen here
+        duckduckgo_results = duckduckgo_results if profile == Profiles.NONE else EMPTY_RESPONSE
 
+        template = self._prompt_templates["context_scan_template"]
         return template.format(
             summary=summary,
+            docs=docs,
             flattened_contracts=contracts,
             invariants=invariants_str,
+            duckduckgo_results=duckduckgo_results,
         )
 
     def _build_gemini_format(

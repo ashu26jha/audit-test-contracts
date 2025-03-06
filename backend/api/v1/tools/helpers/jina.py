@@ -1,23 +1,17 @@
 import requests
 
-from config.settings import JINA_API_KEY
-from core.utils.logger import logger
-
 
 class JinaParser:
     def __init__(self):
         self.base_url = "https://r.jina.ai"
-        self.headers = {"Authorization": f"Bearer {JINA_API_KEY}"}
 
     async def parse(self, url: str) -> str:
         try:
             jina_url = f"{self.base_url}/{url}"
-            response = requests.get(jina_url, headers=self.headers)
+            response = requests.get(jina_url)
             return response.text
         except Exception as e:
-            error_msg = f"Unexpected error with Jina API: {str(e)}"
-            logger.error(error_msg)
-            return {"error": error_msg}
+            return f"Error parsing {url}: {e}"
 
 
 jina_parser = JinaParser()

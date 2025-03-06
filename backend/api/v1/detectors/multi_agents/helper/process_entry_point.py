@@ -35,6 +35,7 @@ async def process_entry_point(
         invariants = await generate_invariants(
             contracts_in_scope=[entry_point.contract_name],
             flattened_contracts=flattened_contracts,
+            docs=docs,
             max_invariants=10,
         )
 

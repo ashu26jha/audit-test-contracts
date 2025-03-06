@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,7 @@ class InvariantsRequest(BaseModel):
         str,
         Field(description="The complete flattened source code of all contracts"),
     ]
+    docs: Optional[str]
 
 
 class InvariantsResponse(BaseModel):

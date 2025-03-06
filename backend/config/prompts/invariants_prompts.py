@@ -35,6 +35,9 @@ Your response should be in the following JSON format, without any additional tex
 ### Contracts in scope (if any):
 {contracts_in_scope}
 
+### Additional context:
+{docs}
+
 ### Solidity code of the protocol:
 ```solidity
 {flattened_contracts}

@@ -31,7 +31,6 @@ LLM_ENDPOINTS = {
     "/api/v1/static-analyzer",
     "/api/v1/tools/duckduckgo-search",
     "/api/v1/tools/jina-parse",
-    "/api/v1/tools/perplexity-search",
     "/api/v1/autonomous-agent/launch",
     "/api/v1/generate-invariants",
     "/api/v1/generate-ast-tree",
@@ -48,7 +47,6 @@ PUBLIC_ENDPOINTS = {
     "/api/v1/autonomous-agent/launch",
     "/api/v1/tools/duckduckgo-search",
     "/api/v1/tools/jina-parse",
-    "/api/v1/tools/perplexity-search",
     "/api/v1/multi-agents/launch",
     "/api/v1/generate-ast-tree",
 }

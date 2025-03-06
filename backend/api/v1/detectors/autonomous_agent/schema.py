@@ -133,27 +133,23 @@ class Tools:
 
     def __init__(self):
         from api.v1.tools.helpers.duckduckgo import search as duckduckgo_search
-        from api.v1.tools.helpers.perplexity import search as perplexity_search
 
         self.duckduckgo_search = duckduckgo_search
-        self.perplexity_search = perplexity_search
 
     def list_tools(self) -> list:
         """
         Returns a list of available tool names.
         """
-        return ["duckduckgo_search", "perplexity_search"]
+        return ["duckduckgo_search"]
 
     def list_tool_descriptions(self) -> str:
         """
         Returns a string containing the descriptions for all available tools.
         """
         from api.v1.tools.helpers.duckduckgo import get_description as duckduckgo_desc
-        from api.v1.tools.helpers.perplexity import get_description as perplexity_desc
 
         return "\n".join(
             [
                 duckduckgo_desc(),
-                perplexity_desc(),
             ]
         )
