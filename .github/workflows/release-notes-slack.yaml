@@ -7,54 +7,61 @@ on:
 jobs:
   post-to-slack:
     runs-on: ubuntu-latest
-    env: 
+    env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
-      - name: Send release notes to Slack
+      - name: Transform and send release notes with Python
+        env:
+          RELEASE_BODY: "${{ github.event.release.body }}"
+          RELEASE_TAG: "${{ github.event.release.tag_name }}"
+          RELEASE_URL: "${{ github.event.release.html_url }}"
+          REPO_FULL_NAME: "${{ github.repository }}"
         run: |
-          echo "Release Tag: ${{ github.event.release.tag_name }}"
+          echo "Release Tag: ${RELEASE_TAG}"
+          echo "Original Body:"
+          echo "${RELEASE_BODY}"
+          
+          cat > process_release.py << 'EOL'
+          import os, re, json
 
-          # Transform markdown to Slack format
-          TRANSFORMED_BODY=$(echo '${{ github.event.release.body }}' | \
-            # Remove carriage returns
-            sed 's/\r//g' | \
-            # Replace heading lines "### Something" with "\n*Something*"
-            sed 's/^### \(.*\)/\n*\1*/g' | \
-            sed 's/[[:space:]]### \(.*\)/\n*\1*/g' | \
-            # Convert bullet points while preserving bold
-            sed 's/^\* /• /' | \
-            sed 's/^  - /    • /g' | \
-            # Convert markdown links to Slack format
-            sed 's/\[\(#[0-9]*\)\]([^)]*)/\1/g' | \
-            # Convert PR/Issue references to links
-            sed 's/#\([0-9]*\)/<https:\/\/github.com\/NethermindEth\/ai-auditor\/pull\/\1|\1>/g' | \
-            # Replace remaining **bold** with *bold*
-            sed 's/\*\*\([^*]*\)\*\*/*\1*/' \
-          )
+          body = os.environ.get('RELEASE_BODY', '')
+          tag_name = os.environ.get('RELEASE_TAG', '')
+          url = os.environ.get('RELEASE_URL', '')
+          repo_full_name = os.environ.get('REPO_FULL_NAME', '')
 
-          # Build our JSON payload using jq to ensure valid JSON.
-          payload=$(jq -n \
-            --arg tag_name "${{ github.event.release.tag_name }}" \
-            --arg body "$TRANSFORMED_BODY" \
-            --arg url "${{ github.event.release.html_url }}" '
-            {
-              blocks: [
-                {
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: ("🚀 *New Release:* \($tag_name)\n\n\($body)\n\n<\($url)|View Release on GitHub>")
+          body = body.replace('\r', '')
+
+          # Parsing for conversion from .md to slack support messages
+          body = re.sub(r'^### (.*)', r'\n*\1*', body, flags=re.MULTILINE)
+          body = re.sub(r'[[:space:]]### (.*)', r'\n*\1*', body, flags=re.MULTILINE)
+          body = re.sub(r'^\* ', r'• ', body, flags=re.MULTILINE)
+          body = re.sub(r'^  - ', r'    • ', body, flags=re.MULTILINE)
+
+          # Link parsing goes here
+          body = re.sub(r'\[(#[0-9]+)\]\([^)]*\)', r'\1', body)
+          body = re.sub(r'#([0-9]+)', r'<https://github.com/' + repo_full_name + r'/pull/\1|\1>', body)
+          body = re.sub(r'\*\*(.+?)\*\*', r'*\1*', body)
+
+          # Build the Slack payload
+          payload = {
+              "blocks": [
+                  {
+                      "type": "section",
+                      "text": {
+                          "type": "mrkdwn",
+                          "text": f"🚀 *New Release:* {tag_name}\n\n{body}\n\n<{url}|View Release on GitHub>"
+                      }
                   }
-                }
               ]
-            }
-          ')
+          }
 
-          echo "Slack Payload: $payload"
-
-          RESPONSE=$(curl -v -X POST \
-            -H "Content-Type: application/json" \
-            --data "$payload" \
-            "$SLACK_WEBHOOK_URL")
-
+          print(json.dumps(payload))
+          EOL
+          
+          # Run the Python script and save output to a file
+          python process_release.py > payload.json
+          
+          echo "Payload:"
+          cat payload.json
+          RESPONSE=$(curl -v -X POST -H "Content-Type: application/json" --data @payload.json "$SLACK_WEBHOOK_URL")
           echo "Slack Response: $RESPONSE"
