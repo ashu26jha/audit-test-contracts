@@ -39,6 +39,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: version-sync
+        name: Version Sync
+        entry: python scripts/sync_version.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: frontend-lint
         name: Frontend Lint
         entry: bash -c 'cd frontend && npm run lint'
