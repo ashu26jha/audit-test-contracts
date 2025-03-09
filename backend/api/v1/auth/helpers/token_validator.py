@@ -4,6 +4,7 @@ from config import settings
 from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
 from core.models.user import User
+from core.utils.errors import TokenError
 from core.utils.http_client import get_http_client
 
 
@@ -45,11 +46,18 @@ async def refresh_access_token(user: User) -> User:
         )
 
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code, detail="Failed to authenticate with GitHub"
+            raise TokenError(
+                message="Failed to authenticate with GitHub",
             )
 
         token_data = response.json()
+
+        if token_data.get("error"):
+            raise TokenError(
+                message="Invalid refresh token",
+                details={"error": token_data.get("error_description")},
+            )
+
         access_token = token_data.get("access_token")
         refresh_token = token_data.get("refresh_token")
 
