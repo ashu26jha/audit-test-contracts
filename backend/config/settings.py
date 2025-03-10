@@ -43,10 +43,7 @@ SUPPORTED_MODELS = {
     "gemini": [
         "gemini-1.5-pro",
         "gemini-1.5-pro-latest",
-        "gemini-exp-1206",
-        "gemini-2.0-flash-exp",
-        "gemini-2.0-pro-exp",
-        "gemini-2.0-flash-thinking-exp-01-21",
+        "gemini-2.0-flash",
     ],
     "grok": [
         "grok-beta",
