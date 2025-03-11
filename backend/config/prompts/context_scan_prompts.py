@@ -19,6 +19,7 @@ The output should **only** be in a well-formed JSON as follows, without any addi
 }
 ```
 """
+
 CONTEXT_PROMPT = """
     You are an expert smart contract security auditor. Analyze the following Solidity smart contracts and look for any potential vulnerabilities. Think step by step, reason about the code for every issue, and ensure they could actually be harmful for the protocol. Then include a very detailed description of the issue and its potential onsequences with code snippets in proper markdown format. Also include the severity level and the affected contract(s). Then order them by decreasing severity.
 
@@ -66,14 +67,14 @@ CONTEXT_PROMPT = """
     ### **Summary of the project:**
     {summary}
 
+    ### **Documentation of the project (if any):**
+    {docs}
+
     ### **Invariants to consider (if any):**
     {invariants}
 
     ### **Additional context from web to assist with the audit (if any):**
     {duckduckgo_results}
-
-    ### **Documentation of the project (if any):**
-    {docs}
 
     ---
 

@@ -64,7 +64,7 @@ async def github_callback(
         httponly=True,
         secure=settings.ENVIRONMENT == "production",
         samesite="strict",
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # 1 week (same as JWT token)
         path="/",
     )
     return response

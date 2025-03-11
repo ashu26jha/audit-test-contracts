@@ -15,7 +15,7 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
 from core.utils.validate import validate_free_scan_limit
 
-router = APIRouter()
+router = APIRouter(tags=["scanner"])
 
 
 @router.post(

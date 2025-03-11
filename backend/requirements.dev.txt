@@ -40,4 +40,4 @@ stripe==10.11.0
 slackclient==2.9.4
 uvicorn==0.30.6
 vcrpy==7.0.0
-duckduckgo-search==7.3.0
+duckduckgo-search==7.5.1

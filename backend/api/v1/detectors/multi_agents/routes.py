@@ -11,11 +11,11 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from .schema import MultiAgentRequest, MultiAgentResponse
 from .service import run_multi_agent
 
-router = APIRouter(prefix="/multi-agents", tags=["Multi-Agents"])
+router = APIRouter()
 
 
 @router.post(
-    "/launch",
+    "/multi-agents",
     response_model=Union[SuccessResponse[MultiAgentResponse], ErrorResponse],
 )
 async def launch_multi_agent(request: MultiAgentRequest):

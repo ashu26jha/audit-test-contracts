@@ -9,7 +9,7 @@ from api.v1.utilities.ast_tree.schema import ASTTreeRequest, ASTTreeResponse
 from api.v1.utilities.ast_tree.service import generate_ast_for_project
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 
-router = APIRouter(tags=["AST Tree"])
+router = APIRouter(tags=["utilities"])
 
 
 @router.post(

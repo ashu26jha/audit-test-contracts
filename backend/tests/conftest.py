@@ -179,7 +179,7 @@ def mock_email_functions():
 @pytest.fixture(autouse=True)
 def mock_tool_searches():
     with patch(
-        "api.v1.tools.helpers.duckduckgo.ddg_searcher.search", new_callable=AsyncMock
+        "api.v1.tools.helpers.duckduckgo.perform_duckduckgo_search", new_callable=AsyncMock
     ) as mock_ddg_search, patch(
         "openai.chat.completions.create", new_callable=AsyncMock
     ) as mock_openai_chat, patch(

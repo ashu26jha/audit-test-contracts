@@ -85,24 +85,38 @@ class PromptBuilder:
         docs: Optional[str],
         invariants: Optional[InvariantsResponse],
         duckduckgo_results: Optional[str] = None,
-        profile: Optional[Profiles] = None,
     ) -> str:
-        """Build the context scan specific prompt"""
+        """
+        Build the context scan specific prompt
+
+        Args:
+            contracts: The flattened contracts to scan
+            summary: The summary of the contracts (if any)
+            docs: The documentation of the contracts (if any)
+            invariants: The invariants of the contracts (if any)
+            duckduckgo_results: The duckduckgo results of the contracts (if any)
+            contract_language: The language of the contracts
+        """
+
+        # 1. Add summary as string if provided
+        summary_str = summary or EMPTY_RESPONSE
+
+        # 2. Add invariants as string if provided
         invariants_str = json.dumps(invariants.model_dump()) if invariants else EMPTY_RESPONSE
 
-        # Adjustment for docs provided
-        docs = docs.replace("```", "") if docs else EMPTY_RESPONSE
+        # 3. Add duckduckgo results as string if provided
+        duckduckgo_results_str = duckduckgo_results or EMPTY_RESPONSE
 
-        # Adjustment for zero shot learning will happen here
-        duckduckgo_results = duckduckgo_results if profile == Profiles.NONE else EMPTY_RESPONSE
+        # 4. Add docs as string if provided
+        docs_str = docs.replace("```", "") if docs else EMPTY_RESPONSE
 
         template = self._prompt_templates["context_scan_template"]
         return template.format(
-            summary=summary,
-            docs=docs,
-            flattened_contracts=contracts,
+            summary=summary_str,
+            docs=docs_str,
             invariants=invariants_str,
-            duckduckgo_results=duckduckgo_results,
+            duckduckgo_results=duckduckgo_results_str,
+            flattened_contracts=contracts,
         )
 
     def _build_gemini_format(

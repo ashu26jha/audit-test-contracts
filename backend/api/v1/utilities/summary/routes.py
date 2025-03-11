@@ -7,7 +7,7 @@ from api.v1.utilities.summary.service import generate_summary
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.utils.errors import LLMError, ValidationError
 
-router = APIRouter(tags=["Utilities"])
+router = APIRouter(tags=["utilities"])
 
 
 @router.post(

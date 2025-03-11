@@ -7,7 +7,7 @@ from langfuse.decorators import observe
 
 from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.utilities.invariants.schema import InvariantsResponse
-from config.settings import LLM_SCAN_1
+from config.settings import LLM_SCAN_3
 from core.llm.prompt_builder import PromptBuilder
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
@@ -26,7 +26,7 @@ async def run_context_scan(
     invariants: Optional[InvariantsResponse],
     duckduckgo_results: Optional[str] = None,
     profile: Profiles = Profiles.NONE,
-    model: str = LLM_SCAN_1,
+    model: str = LLM_SCAN_3,
 ) -> dict:
     try:
         # Build context scan specific prompt
@@ -36,7 +36,6 @@ async def run_context_scan(
             docs,
             invariants,
             duckduckgo_results,
-            profile,
         )
 
         # Build full messages with profile

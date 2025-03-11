@@ -7,7 +7,7 @@ from api.v1.utilities.invariants.schema import InvariantsRequest, InvariantsResp
 from api.v1.utilities.invariants.service import generate_invariants
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 
-router = APIRouter(tags=["Invariants"])
+router = APIRouter(tags=["utilities"])
 
 
 @router.get(

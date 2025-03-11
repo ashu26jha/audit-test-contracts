@@ -12,7 +12,7 @@ class AuditAgentTaskManager(BaseTaskManager):
 
     @property
     def available_detectors(self) -> Dict[str, bool]:
-        """Define available detectors for Agentic scan."""
+        """Define available detectors for AuditAgent scan."""
         return {
             "context_scan": True,
             "static_analyzer": True,

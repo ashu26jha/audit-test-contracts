@@ -7,11 +7,11 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from .schema import AutonomousAgentRequest
 from .service import autonomous_agent_service
 
-router = APIRouter(prefix="/autonomous-agent", tags=["Autonomous Agent"])
+router = APIRouter()
 
 
 @router.post(
-    "/launch",
+    "/autonomous-agent",
     response_model=Union[SuccessResponse, ErrorResponse],
     status_code=status.HTTP_202_ACCEPTED,
     description="Initiate an autonomous agent scan",

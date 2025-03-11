@@ -64,7 +64,7 @@ Your response must be in **valid JSON format**, without explanations, additional
 ---
 
 ### **Contract code to analyze:**
+```solidity
 {flattened_contracts}
-
----
+```
 """

@@ -4,6 +4,8 @@ from typing import Dict, List
 from pypdf import PdfReader, PdfWriter
 
 from core.models.scan import Finding
+from core.utils.finding_utils import sort_findings
+from core.utils.severity import Severity
 
 from ..config import TEMPLATE_DIR
 
@@ -18,40 +20,24 @@ def prepare_findings_data(findings: List[Finding]) -> List[Dict[str, str]]:
     Returns:
         List of dictionaries containing processed finding data
     """
-    severity_order = {
-        "Critical": 1,
-        "High": 2,
-        "Medium": 3,
-        "Low": 4,
-        "Info": 5,
-        "Best Practices": 6,
-    }
-
+    # Map severity values to CSS class names for styling
     severity_map = {
+        Severity.HIGH: "chip2",
+        Severity.MEDIUM: "chip3",
+        Severity.LOW: "chip4",
+        Severity.INFO: "chip5",
+        Severity.BEST_PRACTICES: "chip6",
+        # Add special case for Critical if needed
         "Critical": "chip1",
-        "High": "chip2",
-        "Medium": "chip3",
-        "Low": "chip4",
-        "Info": "chip5",
-        "Best Practices": "chip6",
     }
 
-    # Sort findings by severity using the defined severity order
-    # Convert Severity enum to string value for comparison
-    sorted_findings = sorted(
-        findings,
-        key=lambda x: severity_order.get(
-            x.Severity.value if hasattr(x.Severity, "value") else x.Severity, 6
-        ),
-    )
+    # Sort findings by severity using the utility function
+    sorted_findings = sort_findings(findings)
 
     return [
         {
             "issue": finding.Issue,
-            "severity": severity_map.get(
-                finding.Severity.value if hasattr(finding.Severity, "value") else finding.Severity,
-                "chip6",
-            ),
+            "severity": severity_map.get(Severity.validate(finding.Severity), "chip6"),
             "contracts": finding.Contracts,
             "description": finding.Description,
         }

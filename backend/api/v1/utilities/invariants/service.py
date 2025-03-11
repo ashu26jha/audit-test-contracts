@@ -13,7 +13,7 @@ from core.utils.logger import logger
 async def generate_invariants(
     contracts_in_scope: List[str],
     flattened_contracts: str,
-    max_invariants: Optional[int] = 30,
+    max_invariants: Optional[int] = 50,
     docs: Optional[str] = None,
 ) -> InvariantsResponse:
     """

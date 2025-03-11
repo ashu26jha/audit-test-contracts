@@ -31,36 +31,3 @@ Return the output in the following JSON format, without any additional text, com
 **List of findings:**
 {vulnerabilities}
 """
-
-COMPARE_FINDINGS_PROMPT = """
-You are a smart contracts security expert. Compare the following new finding against the list of existing unique findings.
-
-### **Task:**
-Determine if the new finding is a duplicate of any existing finding. A duplicate has the same underlying issue, affected function, description and consequences. In doubt, keep the new finding.
-
-### **Instructions:**
-1. Compare the new finding against each existing finding
-2. If it's a duplicate:
-   - Keep the more detailed/better described version
-   - Return the list of indexes excluding the less detailed version
-3. If it's unique:
-   - Add it to the list
-   - Return the updated list of indexes
-
-Return the output in the following JSON format, without any additional text, comments, explanations or chain of thought:
-```json
-{{
-    "indexes": [2, 3, 5],  // List of indexes to keep
-}}
-```
-
----
-
-### **New Finding:**
-{new_finding}
-
----
-
-### **Existing Unique Findings:**
-{unique_findings}
-"""

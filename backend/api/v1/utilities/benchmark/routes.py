@@ -8,7 +8,7 @@ from core.db.repositories.scan import ScanRepository
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
 
-router = APIRouter(prefix="/benchmark", tags=["benchmark"])
+router = APIRouter(prefix="/benchmark", tags=["scanner"])
 
 
 @router.post("/launch")

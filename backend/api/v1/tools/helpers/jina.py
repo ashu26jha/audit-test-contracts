@@ -1,24 +1,15 @@
 import requests
 
-
-class JinaParser:
-    def __init__(self):
-        self.base_url = "https://r.jina.ai"
-
-    async def parse(self, url: str) -> str:
-        try:
-            jina_url = f"{self.base_url}/{url}"
-            response = requests.get(jina_url)
-            return response.text
-        except Exception as e:
-            return f"Error parsing {url}: {e}"
+BASE_URL = "https://r.jina.ai"
 
 
-jina_parser = JinaParser()
-
-
-async def parse(url: str) -> str:
-    return await jina_parser.parse(url)
+async def jina_parse(url: str) -> str:
+    try:
+        jina_url = f"{BASE_URL}/{url}"
+        response = requests.get(jina_url)
+        return response.text
+    except Exception as e:
+        return f"Error parsing {url}: {e}"
 
 
 def get_description() -> str:

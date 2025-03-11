@@ -8,6 +8,7 @@ from api.v1.detectors.multi_agents.schema import EntryPoint
 from api.v1.utilities.ast_tree.helpers.solidity_files_storage import SolidityFileStorage
 from api.v1.utilities.ast_tree.schema import ProjectAST
 from core.models.scan import Finding
+from core.utils.finding_utils import sort_findings
 from core.utils.logger import logger
 
 from .helper.extract_entry_points import extract_entry_points
@@ -119,8 +120,7 @@ async def run_multi_agent(
                 continue
 
         # 4. Sort by severity and return results
-        severity_order = {"High": 0, "Medium": 1, "Low": 2, "Info": 3, "Best Practices": 4}
-        final_findings = sorted(all_findings, key=lambda x: severity_order[x.Severity])
+        final_findings = sort_findings(all_findings)
         return FindingList(findings=final_findings)
 
     except Exception as e:

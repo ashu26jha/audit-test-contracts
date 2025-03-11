@@ -7,7 +7,7 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from .schema import ContractSourceCodeResponse, GetContractSourceCodeRequest
 from .service import EtherscanService
 
-router = APIRouter(prefix="/etherscan", tags=["etherscan"])
+router = APIRouter(prefix="/etherscan", tags=["utilities"])
 
 
 @router.post(

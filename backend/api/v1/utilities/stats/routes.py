@@ -8,7 +8,7 @@ from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 
 from .service import StatsService
 
-router = APIRouter(tags=["Stats"])
+router = APIRouter(tags=["stats"])
 
 
 @router.get(

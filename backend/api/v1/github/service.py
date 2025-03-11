@@ -101,7 +101,7 @@ class GitHubService:
             files = [
                 item
                 for item in response["tree"]
-                if item["type"] == "blob" and item["path"].lower().endswith("readme.md")
+                if item["type"] == "blob" and item["path"].lower().endswith(".md")
             ]
         else:  # Default to .sol files
             files = [

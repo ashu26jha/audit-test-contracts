@@ -2,6 +2,8 @@ import asyncio
 import os
 from typing import List, Optional
 
+from langfuse.decorators import observe
+
 from api.v1.utilities.ast_tree.helpers.solidity_files_storage import SolidityFileStorage
 from api.v1.utilities.ast_tree.schema import ContractAST, ProjectAST
 from config.prompts.ast_prompt import AST_PROMPT
@@ -10,6 +12,7 @@ from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
 
 
+@observe(name="genrate_ast")
 async def generate_ast_per_contract(
     filename: str, file_path: str, contracts_in_scope: List[str]
 ) -> Optional[ContractAST]:

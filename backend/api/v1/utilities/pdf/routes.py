@@ -12,7 +12,7 @@ from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.utils.throttling import throttle
 
-router = APIRouter()
+router = APIRouter(tags=["utilities"])
 
 
 @router.get(

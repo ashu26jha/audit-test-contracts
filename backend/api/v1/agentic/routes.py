@@ -9,7 +9,7 @@ from api.v1.auth.helpers.dependencies import get_agentic_api_key
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
 
-router = APIRouter(prefix="/agentic", tags=["agentic"])
+router = APIRouter(prefix="/agentic", tags=["scanner"])
 
 
 @router.post(

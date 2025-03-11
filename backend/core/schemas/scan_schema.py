@@ -28,6 +28,7 @@ class ScanType(str, Enum):
     AUDIT_AGENT = "AUDIT_AGENT"
     AGENTIC = "AGENTIC"
     BENCHMARK = "BENCHMARK"
+    CAIRO = "CAIRO"
 
 
 class ModeType(str, Enum):

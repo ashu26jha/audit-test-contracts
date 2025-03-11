@@ -3,10 +3,6 @@ from typing import List
 from pydantic import BaseModel
 
 
-class DuckDuckGoSearchRequest(BaseModel):
-    query: str
-
-
 class DuckDuckGoResponse(BaseModel):
     title: str
     href: str

@@ -6,13 +6,13 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from api.v1.auth.helpers.auth_helpers import blacklist_token, verify_oauth_state
+from api.v1.auth.helpers.token_validator import get_github_access_token
 from api.v1.auth.schema import TestAuthResponse, UserResponse
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
 from config import settings
 from core.db.repositories.user import UserRepository
 from core.models.user import User
-from core.utils.http_client import get_http_client
 from core.utils.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -106,7 +106,12 @@ async def handle_github_callback(
         raise HTTPException(status_code=400, detail="State parameter required for OAuth flow")
 
     # Exchange code for access token
-    access_token, refresh_token = await exchange_github_code(code)
+    data = {
+        "client_id": settings.GITHUB_CLIENT_ID,
+        "client_secret": settings.GITHUB_CLIENT_SECRET,
+        "code": code,
+    }
+    access_token, refresh_token = await get_github_access_token(data)
 
     # If this is a GitHub App callback, verify installation
     if installation_id is not None:
@@ -117,36 +122,6 @@ async def handle_github_callback(
     user = await handle_user_data(user_data, access_token, refresh_token)
 
     return access_token, user
-
-
-async def exchange_github_code(code: str) -> Tuple[str, str]:
-    """Exchange GitHub code for access token"""
-    token_url = "https://github.com/login/oauth/access_token"
-    data = {
-        "client_id": settings.GITHUB_CLIENT_ID,
-        "client_secret": settings.GITHUB_CLIENT_SECRET,
-        "code": code,
-    }
-
-    async with get_http_client() as client:
-        response = await client.post(
-            token_url,
-            data=data,
-        )
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to authenticate with GitHub")
-
-        token_data = response.json()
-        if "error" in token_data:
-            raise HTTPException(status_code=400, detail=token_data.get("error_description"))
-
-        access_token = token_data.get("access_token")
-        refresh_token = token_data.get("refresh_token")
-        if not access_token:
-            raise HTTPException(status_code=400, detail="Invalid token response")
-
-        return access_token, refresh_token
 
 
 async def verify_installation_id(access_token: str, installation_id: str) -> None:

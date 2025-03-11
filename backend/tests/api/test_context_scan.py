@@ -62,6 +62,7 @@ async def test_run_context_scan_success(mock_send_prompt_to_llm_async):
         summary="Test Summary",
         docs=None,
         invariants=None,
+        duckduckgo_results="Test DuckDuckGo Results",
         profile=Profiles.NFT,
     )
 
@@ -212,7 +213,7 @@ def test_context_scan_endpoint(mock_send_prompt_to_llm_async):
     mock_send_prompt_to_llm_async.return_value = mock_response
 
     response = client.post(
-        "/api/v1/context-scan",
+        "/api/v1/detectors/context-scan",
         json={
             "summary": "Test Summary",
             "contracts": "Test Contracts",
@@ -233,7 +234,7 @@ def test_context_scan_endpoint_error(mock_send_prompt_to_llm_async):
     )
 
     response = client.post(
-        "/api/v1/context-scan",
+        "/api/v1/detectors/context-scan",
         json={
             "summary": "Test Summary",
             "contracts": "Test Contracts",

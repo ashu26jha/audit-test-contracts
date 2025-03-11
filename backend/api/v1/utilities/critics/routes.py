@@ -11,7 +11,7 @@ from api.v1.utilities.critics.schema import (
 from api.v1.utilities.critics.service import CriticService
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 
-router = APIRouter()
+router = APIRouter(tags=["utilities"])
 
 
 @router.post(
