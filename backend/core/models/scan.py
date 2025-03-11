@@ -71,6 +71,12 @@ class CodeAnalysisResult(BaseModel):
     )
 
 
+class Invariant(BaseModel):
+    description: str = Field(description="The description of the invariants")
+    function: str = Field(description="The function name of the invariant")
+    condition: str = Field(description="The condition of the invariant")
+
+
 class Scan(Document):
     """
     Main scan document model for database storage.
@@ -210,6 +216,7 @@ class ScanResult(Document):
     findings_before_removal: Optional[List[Finding]] = Field(
         None, description="Original findings before deduplication"
     )
+    invariants: Optional[List[Invariant]] = Field(None, description="Invariants generated")
     createdAt: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="When the result was created",
@@ -236,6 +243,13 @@ class ScanResult(Document):
                         "Contracts": ["MyContract.sol"],
                         "Description": "Potential reentrancy in function withdraw().",
                         "Recommendation": "Use mutex or check-effects-interactions pattern.",
+                    }
+                ],
+                "invariants": [
+                    {
+                        "description": "Reentrancy Vulnerability",
+                        "function": "withdraw",
+                        "condition": "Potential reentrancy in function withdraw().",
                     }
                 ],
                 "createdAt": "2023-10-01T12:20:00Z",

@@ -1,4 +1,4 @@
-INVARIANTS_PROMPT = """
+INVARIANTS_PROMPT = """Formatting re-enabled
 You are a smart contract security expert focused on identifying and articulating the critical invariants that ensure a protocol's security and integrity.
 
 ### Your Task
@@ -26,7 +26,7 @@ Your response should be in the following JSON format, without any additional tex
     {{
       "description": "Brief description of the invariant",
       "function": "Name of the function where the invariant applies",
-      "condition": "Formal or pseudo-code representation of the invariant condition"
+      "condition": "Formal or pseudo-code representation of the invariant condition in markdown format with proper spacing, line breaks, and code blocks"
     }}
   ]
 }}

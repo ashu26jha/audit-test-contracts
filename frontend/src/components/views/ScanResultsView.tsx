@@ -11,6 +11,8 @@ import { CodeSummary, FindingsMenu, Finding, SendFeedback } from "@/components/s
 import ScanInfo from "@/components/ScanInfo";
 import { useSendReport } from "@/hooks";
 
+import Invariants from "../scan-results/Invariants";
+
 interface ScanResultsViewProps {
   scanData: ScanResult;
 }
@@ -141,6 +143,8 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
               </div>
 
               <CodeSummary summary={scanData.summary} />
+
+              {scanData.invariants && <Invariants invariants={scanData.invariants} />}
 
               {scanData.findings.map((finding: Finding, index: number) => (
                 <Finding

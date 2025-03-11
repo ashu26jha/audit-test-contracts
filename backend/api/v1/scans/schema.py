@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.models.scan import CodeAnalysisResult, Finding
+from core.models.scan import CodeAnalysisResult, Finding, Invariant
 from core.utils.profiles import Profiles
 
 
@@ -42,6 +42,7 @@ class ScanResultResponse(BaseModel):
     type: Optional[Profiles]
     total_findings: Optional[int] = None
     findings: List[Finding]
+    invariants: Optional[List[Invariant]] = None
     createdAt: datetime
     completedAt: datetime
 

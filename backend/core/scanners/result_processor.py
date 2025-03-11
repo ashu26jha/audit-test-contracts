@@ -7,7 +7,7 @@ from typing_extensions import final
 from api.v1.common import contract_utils
 from api.v1.utilities.critics.service import CriticService
 from core.db.repositories.scan import ScanRepository
-from core.models.scan import Finding, ScanResult
+from core.models.scan import Finding, Invariant, ScanResult
 from core.utils import logger
 from core.utils.profiles import Profiles
 
@@ -22,6 +22,7 @@ class BaseResultsProcessor:
         flattened_contracts: str,
         summary_result: str,
         detected_type: Profiles,
+        invariants: List[Invariant],
     ):
         self.scan_id = scan_id
         self.user_id = user_id
@@ -31,6 +32,7 @@ class BaseResultsProcessor:
         self.flattened_contracts = flattened_contracts
         self.summary_result = summary_result
         self.detected_type = detected_type
+        self.invariants = invariants
 
     @final
     async def process_results(self) -> int:
@@ -79,4 +81,5 @@ class BaseResultsProcessor:
         scan_result.total_findings = len(self.combined_findings)
         scan_result.findings = self.combined_findings
         scan_result.findings_before_removal = self.findings_before_removal
+        scan_result.invariants = self.invariants
         return scan_result

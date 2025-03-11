@@ -335,6 +335,7 @@ class BaseScanService(ABC):
                 flattened_contracts=context.flattened_contracts,
                 summary_result=results["summary_result"],
                 detected_type=results["detected_type"],
+                invariants=results["invariants"],
             )
             total_findings_after_dedup = await result_processor.process_results()
 

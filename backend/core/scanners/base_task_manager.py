@@ -12,7 +12,7 @@ from api.v1.detectors.static_analyzer.service import run_static_analyzer
 from api.v1.tools.service import build_and_execute_queries_service
 from api.v1.utilities.ast_tree.schema import ProjectAST
 from api.v1.utilities.ast_tree.service import generate_ast_for_project
-from api.v1.utilities.invariants.schema import InvariantsResponse
+from api.v1.utilities.invariants.schema import Invariant, InvariantsResponse
 from api.v1.utilities.invariants.service import generate_invariants
 from api.v1.utilities.summary.service import generate_summary
 from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
@@ -36,6 +36,7 @@ class TaskResults(TypedDict):
     combined_findings: List[Finding]
     summary_result: str
     detected_type: Profiles
+    invariants: List[Invariant]
 
 
 class BaseTaskManager(ABC):
@@ -495,6 +496,7 @@ class BaseTaskManager(ABC):
             "combined_findings": combined_findings,
             "summary_result": self.summary_result,
             "detected_type": self.detected_type,
+            "invariants": self.invariants.invariants,
         }
 
     @final

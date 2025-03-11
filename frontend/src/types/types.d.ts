@@ -43,6 +43,12 @@ interface Finding {
   Recommendation: string;
 }
 
+interface Invariant {
+  condition: string;
+  description: string;
+  function: string;
+}
+
 type ScanType = "default" | "defi" | "nft" | "dao" | "utility" | "identity";
 
 interface ScanResult {
@@ -56,6 +62,7 @@ interface ScanResult {
   total_findings: number;
   type: ScanType;
   progress: number;
+  invariants: Invariant[] | null;
 }
 
 interface RepositoriesData {
