@@ -14,8 +14,8 @@ class PerAddressAgenticRequest(BaseModel):
 
     contractAddress: str = Field(..., description="Contract address to scan")
     chainId: int = Field(..., description="Chain ID to scan")
-    userEmail: str = Field(..., description="User email to send scan results to")
-    userName: str = Field(..., description="Twitter handle of the user")
+    userEmail: Optional[str] = Field(None, description="User email to send scan results to")
+    userName: Optional[str] = Field(None, description="Twitter handle of the user")
 
     @field_validator("contractAddress")
     @classmethod
@@ -33,8 +33,8 @@ class PerAddressAgenticResponse(BaseModel):
 class AgenticScanContext(BaseScanContext):
     """Context for Agentic scans with chain and user capabilities."""
 
-    user_email: str
-    user_name: str
+    user_email: Optional[str] = None
+    user_name: Optional[str] = None
     contract_address: str
     chain_id: int
 

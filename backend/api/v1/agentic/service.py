@@ -67,5 +67,5 @@ class AgenticService(BaseScanService):
             message=f"[Agentic] Scan completed successfully with {total_findings} findings",
         )
 
-        if self.context.user_email:
-            await generate_and_send_agentic_pdf(self.context.scan_id, self.context.user_email)
+        if context.user_email:
+            await generate_and_send_agentic_pdf(context.scan_id, context.user_email)
