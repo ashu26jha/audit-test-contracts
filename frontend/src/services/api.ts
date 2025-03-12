@@ -14,9 +14,10 @@ const api = axios.create({
 // Add response interceptor
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401 && !window.location.pathname.includes("/login")) {
       // Only redirect if we're not already on the login page
+      await logUserOut();
       window.location.href = "/login";
     }
     return Promise.reject(error);

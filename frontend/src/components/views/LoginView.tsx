@@ -42,6 +42,7 @@ const LoginView: FC = () => {
     if (urlError === "no_token") return "Login failed. Please try again.";
     if (urlError === "timeout") return "Login timed out. Please try again.";
     if (urlError === "auth_failed") return "Authentication failed. Please try again.";
+    if (urlError === "session_expired") return "Session expired. Please login again.";
     return error;
   };
 

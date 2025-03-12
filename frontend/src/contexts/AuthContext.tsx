@@ -85,8 +85,8 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
       } catch (error) {
         if (!isActive) return;
         console.error("Auth error:", error);
-        setError("Authentication failed. Please try again.");
-        await logout("/login?error=auth_failed");
+        setError("Session expired. Please login again.");
+        await logout("/login?error=session_expired");
       } finally {
         if (isActive) {
           setLoading(false);
