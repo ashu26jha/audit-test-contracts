@@ -7,7 +7,7 @@ from beanie import Document, Indexed
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.models.user import SubscriptionType
-from core.schemas.scan_schema import ScanType
+from core.schemas.scan_schema import Detectors, ScanType
 from core.utils.ensure_utc import ensure_utc_datetime
 from core.utils.profiles import Profiles
 from core.utils.severity import Severity
@@ -24,6 +24,7 @@ class Finding(BaseModel):
     Contracts: List[str] = Field(..., description="List of affected contract names")
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
+    Detector: Optional[str] = Field(None, description="Name of the detector that found this issue")
 
     def __hash__(self):
         # Create a hash based on immutable fields that define a finding's identity
@@ -149,12 +150,12 @@ class Scan(Document):
                 "createdAt": "2023-10-01T12:00:00Z",
                 "updatedAt": "2023-10-01T12:52:12Z",
                 "detectors": {
-                    "context_scan_1": True,
-                    "context_scan_2": True,
-                    "context_scan_3": True,
-                    "context_scan_4": True,
-                    "static_analyzer": True,
-                    "fuzzer": False,
+                    f"{Detectors.CONTEXT_SCAN.value}_1": True,
+                    f"{Detectors.CONTEXT_SCAN.value}_2": True,
+                    f"{Detectors.CONTEXT_SCAN.value}_3": True,
+                    f"{Detectors.CONTEXT_SCAN.value}_4": True,
+                    Detectors.STATIC_ANALYZER.value: True,
+                    Detectors.FUZZER.value: False,
                 },
                 "total_detectors": 5,
                 "type": "free",

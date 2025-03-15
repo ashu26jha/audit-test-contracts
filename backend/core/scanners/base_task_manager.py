@@ -4,7 +4,6 @@ import itertools
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, TypedDict, final
 
-from api.v1.detectors.context_scan.schema import ContextScanResponse
 from api.v1.detectors.context_scan.service import run_context_scan_batch
 from api.v1.detectors.fuzzer.service import FuzzerService
 from api.v1.detectors.multi_agents.service import run_multi_agent
@@ -19,7 +18,7 @@ from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Finding, Scan
 from core.schemas.context_protocols import BenchmarkContext, CompilationContext
-from core.schemas.scan_schema import BaseScanContext, TypeOfScan
+from core.schemas.scan_schema import BaseScanContext, Detectors, TypeOfScan
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
 
@@ -191,13 +190,13 @@ class BaseTaskManager(ABC):
         # Initialize detectors based on active ones
         detectors: Dict[str, bool | None] = {}
         for detector in self.active_detectors:
-            if detector == "context_scan":
+            if detector == Detectors.CONTEXT_SCAN.value:
                 await self._initialize_context_scan(detectors)
-            elif detector == "static_analyzer":
+            elif detector == Detectors.STATIC_ANALYZER.value:
                 await self._initialize_static_analysis(detectors)
-            elif detector == "fuzzer":
+            elif detector == Detectors.FUZZER.value:
                 await self._initialize_fuzzing(detectors)
-            elif detector == "multi_agents":
+            elif detector == Detectors.MULTI_AGENTS.value:
                 await self._initialize_multi_agent(detectors)
 
         # Save initial detectors to scan
@@ -210,7 +209,11 @@ class BaseTaskManager(ABC):
         self.detector_weights = {}
 
         # Reserve fixed weights for core detectors if they're active
-        reserved_weights = {"static_analyzer": 5, "fuzzer": 5, "multi_agents": 30}
+        reserved_weights = {
+            Detectors.STATIC_ANALYZER.value: 5,
+            Detectors.FUZZER.value: 5,
+            Detectors.MULTI_AGENTS.value: 30,
+        }
 
         # Calculate how much weight is reserved for ACTIVE core detectors
         total_reserved = sum(
@@ -219,14 +222,16 @@ class BaseTaskManager(ABC):
 
         # Calculate remaining weight for context scans
         remaining_weight = total_weight - total_reserved
-        context_scan_count = sum(1 for d in detectors if d.startswith("context_scan_"))
+        context_scan_count = sum(
+            1 for d in detectors if d.startswith(f"{Detectors.CONTEXT_SCAN.value}_")
+        )
 
         # Assign weights
         for detector in detectors:
             if detector in reserved_weights:
                 # Core detectors get their fixed weights
                 self.detector_weights[detector] = reserved_weights[detector]
-            elif detector.startswith("context_scan_") and context_scan_count > 0:
+            elif detector.startswith(f"{Detectors.CONTEXT_SCAN.value}_") and context_scan_count > 0:
                 # Each context scan gets an equal share of remaining weight, rounded to 1 decimal
                 context_scan_weight = round(remaining_weight / context_scan_count, 1)
                 self.detector_weights[detector] = context_scan_weight
@@ -243,8 +248,8 @@ class BaseTaskManager(ABC):
         profiles = self.context_scan_profiles
         models = self.context_scan_models
 
-        for i, (profile, model) in enumerate(itertools.product(profiles, models), 1):
-            detector_name = f"context_scan_{i}"
+        for profile, model in itertools.product(profiles, models):
+            detector_name = f"{Detectors.CONTEXT_SCAN.value}_{profile.value}_{model}"
             detectors[detector_name] = None
             self.context_scan_configs.append(
                 {"detector_name": detector_name, "profile": profile, "model": model}
@@ -254,19 +259,19 @@ class BaseTaskManager(ABC):
     async def _initialize_static_analysis(self, detectors: Dict) -> None:
         """Initialize static analysis detector."""
         if isinstance(self.context, CompilationContext) and self.context.setup_result:
-            detectors["static_analyzer"] = None
+            detectors[Detectors.STATIC_ANALYZER.value] = None
 
     @final
     async def _initialize_fuzzing(self, detectors: Dict) -> None:
         """Initialize fuzzing detector."""
         if isinstance(self.context, CompilationContext) and self.context.setup_result:
-            detectors["fuzzer"] = None
+            detectors[Detectors.FUZZER.value] = None
 
     @final
     async def _initialize_multi_agent(self, detectors: Dict) -> None:
         """Initialize multi-agent detector."""
         if isinstance(self.context, CompilationContext) and self.context.setup_result:
-            detectors["multi_agents"] = None
+            detectors[Detectors.MULTI_AGENTS.value] = None
 
     # Run detectors
 
@@ -278,15 +283,15 @@ class BaseTaskManager(ABC):
             detector_tasks = []
 
             # Static Analysis, Fuzzing, and Multi-Agents can run in parallel
-            if "static_analyzer" in self.active_detectors:
+            if Detectors.STATIC_ANALYZER.value in self.active_detectors:
                 task = asyncio.create_task(self._run_static_analysis())
                 detector_tasks.append(task)
 
-            if "fuzzer" in self.active_detectors:
+            if Detectors.FUZZER.value in self.active_detectors:
                 task = asyncio.create_task(self._run_fuzzing())
                 detector_tasks.append(task)
 
-            if "multi_agents" in self.active_detectors:
+            if Detectors.MULTI_AGENTS.value in self.active_detectors:
                 task = asyncio.create_task(self._run_multi_agent())
                 detector_tasks.append(task)
 
@@ -295,7 +300,7 @@ class BaseTaskManager(ABC):
                 await asyncio.gather(*detector_tasks, return_exceptions=True)
 
             # Run context scans last (they need summary but not other results)
-            if "context_scan" in self.active_detectors:
+            if Detectors.CONTEXT_SCAN.value in self.active_detectors:
                 await self._run_context_scans()
 
         except Exception as e:
@@ -314,12 +319,12 @@ class BaseTaskManager(ABC):
                 selected_contracts=self.contract_files,
                 setup_result=self.context.setup_result,
             )
-            self.task_results["static_analyzer"] = result
-            await self._update_progress("static_analyzer", True)
+            self.task_results[Detectors.STATIC_ANALYZER.value] = result
+            await self._update_progress(Detectors.STATIC_ANALYZER.value, True)
         except Exception as e:
             logger.error(f"[TaskManager] Static analysis failed: {str(e)}")
-            self.task_results["static_analyzer"] = e
-            await self._update_progress("static_analyzer", False)
+            self.task_results[Detectors.STATIC_ANALYZER.value] = e
+            await self._update_progress(Detectors.STATIC_ANALYZER.value, False)
 
     @final
     async def _run_fuzzing(self) -> None:
@@ -335,12 +340,12 @@ class BaseTaskManager(ABC):
                 flattened_contracts=self.flattened_contracts,
                 setup_result=self.context.setup_result,
             )
-            self.task_results["fuzzer"] = result
-            await self._update_progress("fuzzer", True)
+            self.task_results[Detectors.FUZZER.value] = result
+            await self._update_progress(Detectors.FUZZER.value, True)
         except Exception as e:
             logger.error(f"[TaskManager] Fuzzing failed: {str(e)}")
-            self.task_results["fuzzer"] = e
-            await self._update_progress("fuzzer", False)
+            self.task_results[Detectors.FUZZER.value] = e
+            await self._update_progress(Detectors.FUZZER.value, False)
 
     @final
     async def _run_multi_agent(self) -> None:
@@ -359,12 +364,12 @@ class BaseTaskManager(ABC):
                 project_dir=self.context.setup_result.repo_root,
                 docs=getattr(self.context, "formatted_docs", None),
             )
-            self.task_results["multi_agents"] = result
-            await self._update_progress("multi_agents", True)
+            self.task_results[Detectors.MULTI_AGENTS.value] = result
+            await self._update_progress(Detectors.MULTI_AGENTS.value, True)
         except Exception as e:
             logger.error(f"[TaskManager] Multi-agents analysis failed: {str(e)}")
-            self.task_results["multi_agents"] = e
-            await self._update_progress("multi_agents", False)
+            self.task_results[Detectors.MULTI_AGENTS.value] = e
+            await self._update_progress(Detectors.MULTI_AGENTS.value, False)
 
     @final
     async def _run_context_scans(self) -> None:
@@ -422,8 +427,7 @@ class BaseTaskManager(ABC):
             if results:
                 for config, result in zip(batch_configs, results):
                     detector_name = config["detector_name"]
-                    # Validate and store result
-                    self.task_results[detector_name] = ContextScanResponse.model_validate(result)
+                    self.task_results[detector_name] = result
                     self.task_detector_names.append(detector_name)
                     await self._update_progress(detector_name, True)
 
@@ -450,6 +454,8 @@ class BaseTaskManager(ABC):
 
             if not isinstance(result, (Exception, asyncio.TimeoutError)):
                 findings = result.findings
+                for finding in findings:
+                    finding.Detector = detector_name
                 findings_by_detector[detector_name] = findings
                 combined_findings.extend(findings)
             else:
@@ -457,41 +463,47 @@ class BaseTaskManager(ABC):
                 logger.error(f"Context scan failed - Detector: {detector_name}")
 
         # Process static analysis results
-        if "static_analyzer" in self.task_results:
-            static_result = self.task_results["static_analyzer"]
+        if Detectors.STATIC_ANALYZER.value in self.task_results:
+            static_result = self.task_results[Detectors.STATIC_ANALYZER.value]
             if not isinstance(static_result, Exception):
                 try:
-                    slither_findings = static_result.static_analysis_output.findings
-                    findings_by_detector["static_analyzer"] = slither_findings
-                    combined_findings.extend(slither_findings)
+                    static_findings = static_result.findings
+                    for finding in static_findings:
+                        finding.Detector = Detectors.STATIC_ANALYZER.value
+                    findings_by_detector[Detectors.STATIC_ANALYZER.value] = static_findings
+                    combined_findings.extend(static_findings)
                 except Exception as e:
                     logger.error(f"Static analysis results processing failed: {str(e)}")
-                    findings_by_detector["static_analyzer"] = []
+                    findings_by_detector[Detectors.STATIC_ANALYZER.value] = []
             else:
                 logger.error(f"Static analysis failed: {static_result}")
-                findings_by_detector["static_analyzer"] = []
+                findings_by_detector[Detectors.STATIC_ANALYZER.value] = []
 
         # Process fuzzing results
-        if "fuzzer" in self.task_results:
-            fuzzing_result = self.task_results["fuzzer"]
+        if Detectors.FUZZER.value in self.task_results:
+            fuzzing_result = self.task_results[Detectors.FUZZER.value]
             if not isinstance(fuzzing_result, Exception):
                 fuzzing_findings = getattr(fuzzing_result.data, "findings", [])
-                findings_by_detector["fuzzer"] = fuzzing_findings
+                for finding in fuzzing_findings:
+                    finding.Detector = Detectors.FUZZER.value
+                findings_by_detector[Detectors.FUZZER.value] = fuzzing_findings
                 combined_findings.extend(fuzzing_findings)
             else:
                 logger.error(f"Fuzzing failed: {fuzzing_result}")
-                findings_by_detector["fuzzer"] = []
+                findings_by_detector[Detectors.FUZZER.value] = []
 
         # Process multi-agents results
-        if "multi_agents" in self.task_results:
-            multi_agents_result = self.task_results["multi_agents"]
+        if Detectors.MULTI_AGENTS.value in self.task_results:
+            multi_agents_result = self.task_results[Detectors.MULTI_AGENTS.value]
             if not isinstance(multi_agents_result, Exception):
                 multi_agents_findings = multi_agents_result.findings
-                findings_by_detector["multi_agents"] = multi_agents_findings
+                for finding in multi_agents_findings:
+                    finding.Detector = Detectors.MULTI_AGENTS.value
+                findings_by_detector[Detectors.MULTI_AGENTS.value] = multi_agents_findings
                 combined_findings.extend(multi_agents_findings)
             else:
                 logger.error(f"Multi-agents analysis failed: {multi_agents_result}")
-                findings_by_detector["multi_agents"] = []
+                findings_by_detector[Detectors.MULTI_AGENTS.value] = []
 
         # Update scan status in database
         if self.scan:
@@ -569,30 +581,32 @@ class BaseTaskManager(ABC):
         running_tasks = []
 
         # Add context scan tasks if any are running
-        context_scan_detectors = [d for d in self.active_detectors if d.startswith("context_scan_")]
+        context_scan_detectors = [
+            d for d in self.active_detectors if d.startswith(f"{Detectors.CONTEXT_SCAN.value}_")
+        ]
         for detector in context_scan_detectors:
             if detector in self.task_results:
                 task = self.task_results[detector]
                 if isinstance(task, asyncio.Task):
-                    running_tasks.append((task, f"context_scan_{detector}"))
+                    running_tasks.append((task, f"{Detectors.CONTEXT_SCAN.value}_{detector}"))
 
         # Add static analysis task if running
-        if "static_analyzer" in self.task_results:
-            task = self.task_results["static_analyzer"]
+        if Detectors.STATIC_ANALYZER.value in self.task_results:
+            task = self.task_results[Detectors.STATIC_ANALYZER.value]
             if isinstance(task, asyncio.Task):
-                running_tasks.append((task, "static_analyzer"))
+                running_tasks.append((task, Detectors.STATIC_ANALYZER.value))
 
         # Add fuzzing task if running
-        if "fuzzer" in self.task_results:
-            task = self.task_results["fuzzer"]
+        if Detectors.FUZZER.value in self.task_results:
+            task = self.task_results[Detectors.FUZZER.value]
             if isinstance(task, asyncio.Task):
-                running_tasks.append((task, "fuzzer"))
+                running_tasks.append((task, Detectors.FUZZER.value))
 
         # Add multi-agents task if running
-        if "multi_agents" in self.task_results:
-            task = self.task_results["multi_agents"]
+        if Detectors.MULTI_AGENTS.value in self.task_results:
+            task = self.task_results[Detectors.MULTI_AGENTS.value]
             if isinstance(task, asyncio.Task):
-                running_tasks.append((task, "multi_agents"))
+                running_tasks.append((task, Detectors.MULTI_AGENTS.value))
 
         # Cancel all running tasks
         for task, name in running_tasks:

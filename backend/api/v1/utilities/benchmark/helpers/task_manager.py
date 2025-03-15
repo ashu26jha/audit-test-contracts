@@ -3,7 +3,7 @@ from typing import Dict, List
 from api.v1.utilities.benchmark.schema import BenchmarkScanContext
 from core.scanners.base_task_manager import BaseTaskManager
 from core.schemas.context_protocols import BenchmarkContext
-from core.schemas.scan_schema import ModeType, TypeOfScan
+from core.schemas.scan_schema import Detectors, ModeType, TypeOfScan
 from core.utils.errors import UnsupportedOperationError
 from core.utils.profiles import Profiles
 
@@ -25,10 +25,10 @@ class BenchmarkTaskManager(BaseTaskManager):
         is_full_scan = self.context.type_of_scan == TypeOfScan.AUDIT_AGENT
 
         return {
-            "context_scan": True,
-            "static_analyzer": is_full_scan,  # Only run static analyzer for full scan
-            "fuzzer": False,
-            "multi_agents": False,  # Only run multi-agents for full scan
+            Detectors.CONTEXT_SCAN.value: True,
+            Detectors.STATIC_ANALYZER.value: is_full_scan,  # Only run static analyzer for full scan
+            Detectors.FUZZER.value: False,
+            Detectors.MULTI_AGENTS.value: False,  # Only run multi-agents for full scan
         }
 
     @property

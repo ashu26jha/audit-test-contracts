@@ -56,3 +56,11 @@ class BaseScanContext:
     # Analysis related (common to all)
     detected_type: Optional[Profiles] = None
     summary_result: Optional[str] = None
+
+
+class Detectors(Enum):
+    CONTEXT_SCAN = "context_scan"
+    STATIC_ANALYZER = "static_analyzer"
+    FUZZER = "fuzzer"
+    MULTI_AGENTS = "multi_agents"
+    SPECIALIZED_AGENTS = "specialized_agents"

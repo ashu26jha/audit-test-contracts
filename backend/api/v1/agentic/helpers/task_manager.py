@@ -2,6 +2,7 @@ from typing import Dict
 
 from api.v1.agentic.schema import AgenticScanContext
 from core.scanners.base_task_manager import BaseTaskManager
+from core.schemas.scan_schema import Detectors
 
 
 class AgenticTaskManager(BaseTaskManager):
@@ -14,8 +15,8 @@ class AgenticTaskManager(BaseTaskManager):
     def available_detectors(self) -> Dict[str, bool]:
         """Define available detectors for Agentic scan."""
         return {
-            "context_scan": True,
-            "static_analyzer": False,
-            "fuzzer": False,
-            "multi_agents": False,
+            Detectors.CONTEXT_SCAN.value: True,
+            Detectors.STATIC_ANALYZER.value: False,
+            Detectors.FUZZER.value: False,
+            Detectors.MULTI_AGENTS.value: False,
         }

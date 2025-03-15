@@ -3,7 +3,6 @@ from typing import List
 from langfuse.decorators import observe
 
 from api.v1.detectors.context_scan.schema import FindingList
-from api.v1.detectors.static_analyzer.schema import TransformedSlitherResult
 from config.prompts.improve_slither_prompts import IMPROVE_SLITHER_PROMPT
 from config.settings import LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
@@ -14,7 +13,7 @@ from core.utils.severity import Severity
 
 
 @observe(name="improve_slither_findings")
-async def improve_slither_findings(findings: List[Finding]) -> List[TransformedSlitherResult]:
+async def improve_slither_findings(findings: List[Finding]) -> List[Finding]:
     """
     Improve the descriptions of the findings using LLM.
 
@@ -87,9 +86,7 @@ async def process_llm_response(vulns: List[Finding]) -> List[Finding]:
         return vulns
 
 
-def transform_findings(
-    original_vulns: List[Finding], llm_findings: List[Finding]
-) -> List[TransformedSlitherResult]:
+def transform_findings(original_vulns: List[Finding], llm_findings: List[Finding]) -> List[Finding]:
     """
     Helper function to transform findings with error handling.
 
@@ -100,7 +97,7 @@ def transform_findings(
     Returns:
         List of transformed findings as TransformedSlitherResult objects
     """
-    improved_findings = []
+    improved_findings: List[Finding] = []
 
     for i, finding in enumerate(llm_findings):
         try:
@@ -113,7 +110,7 @@ def transform_findings(
                 )
                 continue
 
-            improved_finding = create_transformed_finding(finding, original_vuln)
+            improved_finding = adjust_severity_enum(finding)
             improved_findings.append(improved_finding)
         except Exception as e:
             logger.error(f"[Improve Findings] Error transforming finding {i}: {e}")
@@ -125,18 +122,15 @@ def transform_findings(
     return improved_findings
 
 
-def create_transformed_finding(
-    finding: Finding, original_vuln: Finding
-) -> TransformedSlitherResult:
+def adjust_severity_enum(finding: Finding) -> Finding:
     """
-    Helper function to create a transformed finding.
+    Helper function to adjust the severity of a finding.
 
     Args:
         finding: The finding from LLM with improved description
-        original_vuln: The original Finding object
 
     Returns:
-        A TransformedSlitherResult object
+        A Finding object
     """
     severity_enum = (
         finding.Severity
@@ -144,15 +138,9 @@ def create_transformed_finding(
         else Severity.from_str(finding.Severity)
     )
 
-    # Extract the original issue from the finding
-    original_issue = getattr(original_vuln, "Issue", "")
-
-    return TransformedSlitherResult(
+    return Finding(
         Issue=finding.Issue,
-        OriginalIssue=original_issue,
         Severity=severity_enum,
-        Confidence=getattr(original_vuln, "Confidence", "High"),
         Contracts=finding.Contracts,
         Description=finding.Description,
-        Lines=getattr(original_vuln, "Lines", ""),
     )

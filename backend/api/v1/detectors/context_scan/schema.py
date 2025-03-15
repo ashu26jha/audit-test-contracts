@@ -10,10 +10,6 @@ class FindingList(BaseModel):
     findings: List[Finding]
 
 
-class InterestingFindings(BaseModel):
-    interesting_findings: List[int]
-
-
 class ContextScanRequest(BaseModel):
     summary: Optional[str] = Field(None, description="An optional summary of the context")
     docs: Optional[str] = Field(None, description="An optional documentation of the context")

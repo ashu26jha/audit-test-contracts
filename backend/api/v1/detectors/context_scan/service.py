@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from langfuse.decorators import observe
 
-from api.v1.detectors.context_scan.schema import ContextScanResponse
+from api.v1.detectors.context_scan.schema import FindingList
 from api.v1.utilities.invariants.schema import InvariantsResponse
 from config.settings import LLM_SCAN_3
 from core.llm.prompt_builder import PromptBuilder
@@ -27,7 +27,7 @@ async def run_context_scan(
     duckduckgo_results: Optional[str] = None,
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_3,
-) -> dict:
+) -> FindingList:
     try:
         # Build context scan specific prompt
         formatted_prompt = _prompt_builder.build_context_scan_prompt(
@@ -47,30 +47,29 @@ async def run_context_scan(
 
         # Send prompt to LLM
         start_time = time.time()
-        llm_response: Optional[ContextScanResponse] = await retry_async_operation(
+        llm_response: Optional[FindingList] = await retry_async_operation(
             send_prompt_to_llm_async,
             model_type=model,
             messages=messages,
-            response_model=ContextScanResponse,
+            response_model=FindingList,
         )
         elapsed = time.time() - start_time
 
-        if not llm_response or not isinstance(llm_response, ContextScanResponse):
+        if not llm_response or not isinstance(llm_response, FindingList):
             logger.error("[ContextScan] LLM response was empty or invalid")
-            return {"findings": []}
+            return FindingList(findings=[])
 
-        # Convert Pydantic model to dict for serialization
-        response_dict = {"findings": [finding.model_dump() for finding in llm_response.findings]}
+        # Log success and return findings
         logger.debug(
-            f"[ContextScan] Scan completed successfully for {model} with {len(response_dict['findings'])} findings in {elapsed:.2f}s"
+            f"[ContextScan] Scan completed successfully for {model} with {len(llm_response.findings)} findings in {elapsed:.2f}s"
         )
-        return response_dict
+        return llm_response
 
     except Exception as e:
         logger.error(
             f"[ContextScan] Context scan failed for model {model}: {str(e)}", exc_info=True
         )
-        return {"findings": []}
+        return FindingList(findings=[])
 
 
 async def run_context_scan_batch(
@@ -80,7 +79,7 @@ async def run_context_scan_batch(
     invariants: Optional[InvariantsResponse],
     duckduckgo_results: Optional[str],
     batch_configs: List[Dict],
-) -> List[dict]:
+) -> List[FindingList]:
     """Run multiple context scans in a batch"""
     try:
         tasks = []
@@ -99,7 +98,8 @@ async def run_context_scan_batch(
         # Run all tasks concurrently and gather results
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return [
-            result if not isinstance(result, Exception) else {"findings": []} for result in results
+            result if not isinstance(result, Exception) else FindingList(findings=[])
+            for result in results
         ]
     finally:
         # Cleanup after batch completion
