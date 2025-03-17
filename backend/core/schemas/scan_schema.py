@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -52,6 +52,7 @@ class BaseScanContext:
     contract_files: List[str]
     is_subscription_scan: bool = False
     flattened_contracts: Optional[str] = None
+    contract_contents: Optional[Dict[str, str]] = None
 
     # Analysis related (common to all)
     detected_type: Optional[Profiles] = None

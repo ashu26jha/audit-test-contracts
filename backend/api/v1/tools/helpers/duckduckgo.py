@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from duckduckgo_search import DDGS
@@ -15,6 +16,11 @@ from core.utils.logger import logger
 # Initialize global constants
 _DEFAULT_REGION = "wt-wt"
 MAX_DDGS_RESULTS = 3
+
+# Semaphore to control concurrent link parsing
+LINK_PARSE_SEMAPHORE = asyncio.Semaphore(5)
+# Delay between link parsing in seconds
+LINK_PARSE_DELAY = 0.2
 
 
 async def perform_duckduckgo_search(query: str) -> str:
@@ -81,7 +87,7 @@ async def _select_best_links(query: str, results: List[DuckDuckGoResponse]) -> L
 
 async def _parse_search_results(results: List[str]) -> str:
     """
-    Summarize the results of a DuckDuckGo search by parsing content from result URLs.
+    Summarize the results of a DuckDuckGo search by parsing content from result URLs in parallel.
 
     Args:
         results: DuckDuckGo search results containing URLs to parse
@@ -90,27 +96,41 @@ async def _parse_search_results(results: List[str]) -> str:
         str: Combined content from parsing all result URLs
     """
     try:
-
         # Extract links using list comprehension
         links = [result.href for result in results]
-        logger.info(f"[DuckDuckGo] Links: {links}")
-        parsed_contents = []
+        logger.info(f"[DuckDuckGo] Processing {len(links)} links in parallel")
 
-        for link in links:
-            try:
-                logger.info(f"[DuckDuckGo] Parsing link: {link}")
-                content = await jina_parse(link)
-                if content == "":
-                    logger.info(f"[DuckDuckGo] No content found, skipping this link: {link}")
-                    continue
+        async def process_single_link(link: str) -> str:
+            """Process a single link with rate limiting"""
+            async with LINK_PARSE_SEMAPHORE:
+                # Add a small delay to avoid rate limiting
+                await asyncio.sleep(LINK_PARSE_DELAY)
+                try:
+                    logger.info(f"[DuckDuckGo] Parsing link: {link}")
+                    content = await jina_parse(link)
+                    if content == "":
+                        logger.info(f"[DuckDuckGo] No content found, skipping this link: {link}")
+                        return ""
 
-                summary = await _summarise_content(content)
-                parsed_contents.append(summary)
-            except Exception as e:
-                logger.exception(f"[DuckDuckGo] Error parsing link {link}: {e}")
+                    summary = await _summarise_content(content)
+                    return summary
+                except Exception as e:
+                    logger.exception(f"[DuckDuckGo] Error parsing link {link}: {e}")
+                    return ""
 
-        # Filter out any failed parses and join successful ones
-        valid_contents = [content for content in parsed_contents if isinstance(content, str)]
+        # Process all links in parallel with controlled concurrency
+        parsed_contents = await asyncio.gather(
+            *[process_single_link(link) for link in links], return_exceptions=True
+        )
+
+        # Filter out exceptions and empty results
+        valid_contents = []
+        for i, content in enumerate(parsed_contents):
+            if isinstance(content, Exception):
+                logger.warning(f"[DuckDuckGo] Link {i + 1} processing failed: {str(content)}")
+            elif content:  # Only add non-empty content
+                valid_contents.append(content)
+
         return "".join(valid_contents)
 
     except Exception as e:

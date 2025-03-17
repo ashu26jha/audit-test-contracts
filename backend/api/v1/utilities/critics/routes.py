@@ -3,10 +3,9 @@ from typing import Union
 from fastapi import APIRouter
 
 from api.v1.utilities.critics.schema import (
+    CriticPhaseRequest,
+    CriticResponse,
     DeduplicateRequest,
-    DeduplicateResponse,
-    MitigationRequest,
-    MitigationResponse,
 )
 from api.v1.utilities.critics.service import CriticService
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
@@ -16,7 +15,7 @@ router = APIRouter(tags=["utilities"])
 
 @router.post(
     "/remove-duplicates",
-    response_model=Union[SuccessResponse[DeduplicateResponse], ErrorResponse],
+    response_model=Union[SuccessResponse[CriticResponse], ErrorResponse],
     description="Remove duplicates from a list of security findings.",
 )
 async def remove_duplicates(request: DeduplicateRequest):
@@ -37,12 +36,12 @@ async def remove_duplicates(request: DeduplicateRequest):
         - findings_count: Number of findings after deduplication
         - findings: List of unique findings
     """
-    dedups_findings = await CriticService.remove_duplicates(
+    dedups_findings = await CriticService.run_deduplication(
         findings=request.findings,
     )
 
     return SuccessResponse(
-        data=DeduplicateResponse(
+        data=CriticResponse(
             original_count=len(request.findings),
             findings_count=len(dedups_findings),
             findings=dedups_findings,
@@ -52,10 +51,10 @@ async def remove_duplicates(request: DeduplicateRequest):
 
 @router.post(
     "/mitigate-findings",
-    response_model=Union[SuccessResponse[MitigationResponse], ErrorResponse],
+    response_model=Union[SuccessResponse[CriticResponse], ErrorResponse],
     description="Analyze and potentially adjust finding severities based on specific criteria.",
 )
-async def test_mitigation(request: MitigationRequest):
+async def test_mitigation(request: CriticPhaseRequest):
     """
     Analyze and potentially adjust finding severities based on specific criteria.
 
@@ -71,7 +70,7 @@ async def test_mitigation(request: MitigationRequest):
 
     Args:
         findings: List of findings to analyze
-        flattened_contracts: Contract code for context
+        contract_contents: Contract code for context
 
     Returns:
         MitigationResponse containing:
@@ -79,15 +78,43 @@ async def test_mitigation(request: MitigationRequest):
         - findings_count: Number of findings after mitigation
         - findings: List of findings with adjusted severities
     """
-    mitigated_findings = await CriticService.mitigate_findings(
+    mitigated_findings = await CriticService.run_mitigation(
         findings=request.findings,
-        flattened_contracts=request.flattened_contracts,
+        contract_contents=request.contract_contents,
     )
 
     return SuccessResponse(
-        data=MitigationResponse(
+        data=CriticResponse(
             original_count=len(request.findings),
             findings_count=len(mitigated_findings),
             findings=mitigated_findings,
+        )
+    )
+
+
+@router.post(
+    "/test-critic-phase",
+    response_model=Union[SuccessResponse[CriticResponse], ErrorResponse],
+    description="Remove duplicates from a list of security findings.",
+)
+async def test_critic_phase(request: CriticPhaseRequest):
+    """
+    Perform a full critic phase on a list of security findings.
+
+    This includes:
+    - Removing duplicates
+    - Validating findings
+    - Mitigating findings
+    """
+    dedups_findings = await CriticService.run_full_critic_phase(
+        findings=request.findings,
+        contract_contents=request.contract_contents,
+    )
+
+    return SuccessResponse(
+        data=CriticResponse(
+            original_count=len(request.findings),
+            findings_count=len(dedups_findings),
+            findings=dedups_findings,
         )
     )

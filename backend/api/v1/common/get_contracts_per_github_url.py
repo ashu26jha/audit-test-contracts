@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 from dataclasses import dataclass
-from typing import List
+from typing import Dict, List
 from uuid import UUID
 
 from api.v1.common.flatten_contracts import flatten_and_count_contracts
@@ -30,6 +30,7 @@ class GithubSourceInfo:
     repo_name: str
     flattened_contracts: str
     lines_of_code: CodeAnalysisResult
+    contract_contents: Dict[str, str]
 
 
 async def get_contracts_per_github_url(
@@ -87,7 +88,7 @@ async def get_contracts_per_github_url(
         await ScanRepository.update_scan_commit_hash(scan_id, commit_hash)
 
         # Flatten contracts
-        flattened_contracts, lines_of_code = await flatten_and_count_contracts(
+        flattened_contracts, lines_of_code, contract_contents = await flatten_and_count_contracts(
             contract_files,
             project_dir=repo_dir,
         )
@@ -105,6 +106,7 @@ async def get_contracts_per_github_url(
             repo_name=repo_info.repo_name,
             flattened_contracts=flattened_contracts,
             lines_of_code=lines_of_code,
+            contract_contents=contract_contents,
         )
 
     except Exception as e:

@@ -1,18 +1,22 @@
 import json
-from typing import List
+from typing import List, Set
 
 from langfuse.decorators import observe
 
-from api.v1.utilities.critics.schema import IndexedFindingList
+from api.v1.utilities.critics.helpers.batch_processor import (
+    calculate_optimal_batch_size,
+    process_findings_in_batches,
+)
+from api.v1.utilities.critics.schema import IndexedFinding, IndexedFindingList
 from config.prompts.duplicate_prompts import DUPLICATE_PROMPT
-from config.settings import DEDUP_MAX_BATCHES, DEDUP_MIN_BATCH_SIZE, LLM_UTILITY
+from config.settings import LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.models.scan import Finding
 from core.utils.errors import CriticError
 from core.utils.logger import logger
 
 
-@observe(name="remove_duplicates_batched")
+@observe(name="[CRITICS] deduplicate findings")
 async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
     """
     Remove duplicate findings using LLM in a hierarchical batched approach.
@@ -22,72 +26,10 @@ async def remove_duplicates_batched(findings: List[Finding]) -> List[Finding]:
     2. Deduplicating each batch independently
     3. Progressively merging and deduplicating pairs of results until a single list remains
 
-    Args:
-        findings: List of findings to deduplicate
-
-    Returns:
-        List of deduplicated findings
-
-    Note:
-        This is a critical operation that will fail the entire scan if unsuccessful
-        to ensure result quality.
-    """
-
-    if not findings:
-        return []
-
-    logger.info(f"[Critics] Removing duplicates from {len(findings)} findings...")
-
-    # Calculate the number of batches using configurable settings
-    min_batch_size = DEDUP_MIN_BATCH_SIZE
-    num_batches = min(DEDUP_MAX_BATCHES, (len(findings) + min_batch_size - 1) // min_batch_size)
-    batch_size = (len(findings) + num_batches - 1) // num_batches
-
-    # Split findings into batches
-    groups = [findings[i : i + batch_size] for i in range(0, len(findings), batch_size)]
-
-    logger.info(
-        f"[Critics] Configured {len(groups)} batches with batch size ~{batch_size} for {len(findings)} findings"
-    )
-
-    # First level - process initial groups
-    first_level_results = []
-    for group in groups:
-        deduped_group = await remove_duplicates(group)
-        first_level_results.append(deduped_group)
-
-    # Keep merging pairs until we have one final list
-    current_level = first_level_results
-    while len(current_level) > 1:
-        next_level = []
-        # Process pairs
-        for i in range(0, len(current_level), 2):
-            if i + 1 < len(current_level):
-                # Merge pair and deduplicate
-                merged = current_level[i] + current_level[i + 1]
-                deduped = await remove_duplicates(merged)
-                next_level.append(deduped)
-            else:
-                # Odd one out - pass through
-                next_level.append(current_level[i])
-        current_level = next_level
-
-    logger.info(
-        f"[Critics] Total findings after duplicate removal: {len(current_level[0])} (from {len(findings)})"
-    )
-
-    return current_level[0] if current_level else []
-
-
-@observe(name="remove_duplicates")
-async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
-    """
-    Remove duplicate findings from a list of findings using LLM analysis.
-
-    This function:
-    1. Indexes each finding with a unique identifier
-    2. Sends the findings to an LLM with a specialized prompt
-    3. Processes the LLM response to extract the deduplicated findings
+    Hierarchical processing is essential for deduplication because:
+    - Duplicates may exist across different initial batches
+    - All findings must eventually be compared against each other
+    - The merge-and-process approach ensures comprehensive comparison
 
     Args:
         findings: List of findings to deduplicate
@@ -96,59 +38,91 @@ async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
         List of deduplicated findings
 
     Raises:
-        CriticError: If deduplication fails or returns invalid results. This will fail the entire
-            scan process as duplicate removal is essential for result quality.
+        CriticError: If deduplication fails, to ensure result quality
+        (This is a critical operation that will fail the entire scan if unsuccessful
+        to ensure result quality.)
     """
+    if not findings:
+        return []
+
+    logger.info(f"[DEDUPLICATION] Removing duplicates from {len(findings)} findings...")
+
+    # Calculate batch size based on configuration
+    batch_size = calculate_optimal_batch_size(
+        items_count=len(findings),
+    )
 
     try:
-        if not findings:
-            return []
+        # Define the processor function that will be applied to each batch
+        async def process_batch(
+            indexed_findings_batch: List[IndexedFinding],
+        ) -> List[IndexedFinding]:
+            try:
+                return await remove_duplicates(indexed_findings_batch)
+            except CriticError as e:
+                # Re-raise CriticError to ensure it's properly handled
+                raise e
+            except Exception as e:
+                # Convert other exceptions to CriticError
+                raise CriticError(
+                    message=f"Error in deduplication batch: {str(e)}",
+                    details={"batch_size": len(indexed_findings_batch)},
+                ) from e
 
-        # Add index to each finding
-        indexed_findings = []
-        for idx, finding in enumerate(findings):
-            finding_dict = finding.model_dump(mode="json")
-            finding_dict["index"] = idx
-            indexed_findings.append(finding_dict)
-
-        # Format findings for LLM
-        formatted_findings = json.dumps(indexed_findings)
-        prompt = DUPLICATE_PROMPT.format(vulnerabilities=formatted_findings)
-
-        # Send the prompt to LLM
-        llm_response: IndexedFindingList = await send_prompt_to_llm_async(
-            model_type=LLM_UTILITY,
-            messages=prompt,
-            response_model=IndexedFindingList,
+        # Process all findings in batches with hierarchical merging
+        return await process_findings_in_batches(
+            findings=findings,
+            processor=process_batch,
+            batch_size=batch_size,
+            description="findings for deduplication",
+            hierarchical=True,  # Deduplication needs hierarchical processing
         )
 
-        if not llm_response or not llm_response.indexes:
-            logger.warning("[Critics] No findings returned from LLM, returning original findings")
-            raise CriticError(
-                message="LLM returned no findings during deduplication",
-                details={"original_count": len(findings)},
-            )
+    except CriticError:
+        # Re-raise CriticError to ensure it's properly handled at the scan level
+        raise
 
-        # Validate indexes are within bounds
-        max_index = len(findings) - 1
-        valid_indexes = [idx for idx in llm_response.indexes if 0 <= idx <= max_index]
+    except Exception as e:
+        error_msg = f"[DEDUPLICATION] Failed to remove duplicates: {str(e)}"
+        logger.exception(error_msg)
+        raise CriticError(
+            message=error_msg,
+            details={"original_count": len(findings), "error_type": type(e).__name__},
+        ) from e
 
-        if len(valid_indexes) != len(llm_response.indexes):
-            logger.warning(
-                f"[Critics] LLM returned {len(llm_response.indexes) - len(valid_indexes)} invalid indexes - filtering them out"
-            )
 
-        if not valid_indexes:
-            raise CriticError(
-                message="No valid indexes returned during deduplication",
-                details={
-                    "original_count": len(findings),
-                    "returned_indexes": llm_response.indexes,
-                },
-            )
+async def remove_duplicates(indexed_findings: List[IndexedFinding]) -> List[IndexedFinding]:
+    """
+    Remove duplicate findings from a set of indexed findings using LLM analysis.
+
+    Args:
+        indexed_findings: List of indexed findings to deduplicate
+
+    Returns:
+        List of deduplicated indexed findings
+
+    Raises:
+        CriticError: If deduplication fails or returns invalid results
+    """
+    try:
+        if not indexed_findings:
+            return []
+
+        # Get indexes of findings to keep from LLM
+        llm_response = await _get_deduplication_indexes(indexed_findings)
+
+        # Validate and filter indexes
+        valid_indexes = _validate_deduplication_indexes(llm_response.indexes, indexed_findings)
+
+        # Create a map for efficient lookup
+        index_map = {finding.index: finding for finding in indexed_findings}
 
         # Get deduplicated findings using returned indexes
-        deduplicated_findings = [findings[idx] for idx in valid_indexes]
+        deduplicated_findings = [index_map[idx] for idx in valid_indexes]
+
+        logger.info(
+            f"[DEDUPLICATION] Batch deduplication: {len(deduplicated_findings)}/{len(indexed_findings)} findings kept"
+        )
 
         return deduplicated_findings
 
@@ -156,9 +130,85 @@ async def remove_duplicates(findings: List[Finding]) -> List[Finding]:
         raise
 
     except Exception as e:
-        error_msg = f"[Critics] Failed to remove duplicates: {str(e)}"
+        error_msg = f"[DEDUPLICATION] Failed to remove duplicates: {str(e)}"
         logger.exception(error_msg)
         raise CriticError(
             message=error_msg,
-            details={"original_count": len(findings), "error_type": type(e).__name__},
+            details={"original_count": len(indexed_findings), "error_type": type(e).__name__},
         ) from e
+
+
+async def _get_deduplication_indexes(indexed_findings: List[IndexedFinding]) -> IndexedFindingList:
+    """
+    Get indexes of findings to keep from LLM.
+
+    Args:
+        indexed_findings: List of indexed findings to analyze
+
+    Returns:
+        LLM response with indexes of findings to keep
+
+    Raises:
+        CriticError: If LLM returns no findings
+    """
+    # Convert indexed findings to dictionaries for the LLM
+    findings_dicts = [finding.to_dict() for finding in indexed_findings]
+
+    # Format findings for LLM
+    formatted_findings = json.dumps(findings_dicts)
+    prompt = DUPLICATE_PROMPT.format(vulnerabilities=formatted_findings)
+
+    # Send the prompt to LLM
+    llm_response: IndexedFindingList = await send_prompt_to_llm_async(
+        model_type=LLM_UTILITY,
+        messages=prompt,
+        response_model=IndexedFindingList,
+    )
+
+    if not llm_response or not llm_response.indexes:
+        logger.warning("[DEDUPLICATION] No findings returned from LLM, returning original findings")
+        raise CriticError(
+            message="LLM returned no findings during deduplication",
+            details={"original_count": len(indexed_findings)},
+        )
+
+    return llm_response
+
+
+def _validate_deduplication_indexes(
+    indexes: List[int], indexed_findings: List[IndexedFinding]
+) -> Set[int]:
+    """
+    Validate and filter indexes returned by LLM.
+
+    Args:
+        indexes: List of indexes returned by LLM
+        indexed_findings: List of indexed findings
+
+    Returns:
+        Set of valid indexes
+
+    Raises:
+        CriticError: If no valid indexes are found
+    """
+    # Create a set of valid indexes for O(1) lookup
+    valid_index_set = {finding.index for finding in indexed_findings}
+
+    # Filter out invalid indexes
+    valid_indexes = [idx for idx in indexes if idx in valid_index_set]
+
+    if len(valid_indexes) != len(indexes):
+        logger.warning(
+            f"[DEDUPLICATION] LLM returned {len(indexes) - len(valid_indexes)} invalid indexes - filtering them out"
+        )
+
+    if not valid_indexes:
+        raise CriticError(
+            message="No valid indexes returned during deduplication",
+            details={
+                "original_count": len(indexed_findings),
+                "returned_indexes": indexes,
+            },
+        )
+
+    return set(valid_indexes)  # Convert to set for faster lookups

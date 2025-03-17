@@ -1,9 +1,9 @@
 import io
 
-from fastapi import HTTPException
 from pygount import SourceAnalysis
 
 from core.models.scan import CodeAnalysisResult
+from core.utils.errors import ContractError
 from core.utils.logger import logger
 
 
@@ -38,7 +38,7 @@ async def _count_characters(content: str) -> CodeAnalysisResult:
         )
     except Exception as e:
         logger.exception(f"Failed to count characters: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        raise ContractError(message="Failed to count characters", details={"error": str(e)}) from e
 
 
 async def _analyze_code(
@@ -78,4 +78,6 @@ async def _analyze_code(
 
     except Exception as e:
         logger.exception(f"Failed to analyze code content: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        raise ContractError(
+            message="Failed to analyze code content", details={"error": str(e)}
+        ) from e

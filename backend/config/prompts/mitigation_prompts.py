@@ -10,13 +10,13 @@ Otherwise, mark arithmetic checks as informational best practices, not security 
 
 ### **Reentrancy Mitigation Rules:**
 When analyzing for reentrancy vulnerabilities:
-1. Only flag reentrancy if ALL conditions are met:
-   - External calls to untrusted contracts
-   - State changes after the call
+1. Only flag reentrancy if **ALL** conditions are met:
    - No reentrancy guard present
+   - External calls to untrusted contracts
+   - **State changes AFTER the external call**.
 2. Carefully check for existing protections:
    - ReentrancyGuard implementation
-   - CEI (Checks-Effects-Interactions) pattern
+   - CEI (Checks-Effects-Interactions) pattern. Check = validations; Effects = state changes; Interactions = external calls.
    - Internal transfers within the same contract are safe
 
 ### **Access Control Mitigation Rules:**
@@ -59,7 +59,7 @@ When assessing severity:
 
 ### **Additional considerations:**
 - For each finding you want to adjust, return only the index, the adjusted severity, and optional comments that will be added to the finding and returned to the user
-- You don't need to return findings where you agree with the current severity
+- You don't need to return findings for which you agree with the current severity
 - If you do provide comments, they should explain the reason for your severity adjustment
 - Be concise but clear in your comments
 - Ensure the index matches the original finding's index in the array

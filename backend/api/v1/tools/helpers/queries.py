@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from api.v1.detectors.multi_agents.schema import EntryPoint
@@ -11,6 +12,12 @@ from config.prompts.summarise_prompt import CLEAN_RESPONSE_PROMPT
 from config.settings import LLM_SCAN_3
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
+
+# Semaphore to control concurrent DuckDuckGo requests
+# Limiting to 3 concurrent requests to avoid rate limiting
+DDG_SEMAPHORE = asyncio.Semaphore(3)
+# Delay between API calls in seconds
+DDG_REQUEST_DELAY = 0.5
 
 
 async def build_queries(
@@ -37,7 +44,7 @@ async def build_queries(
 
 async def execute_queries(queries: List[str], docs: str, ast_tree: str = None) -> str:
     """
-    Execute a list of queries and return the summarized results.
+    Execute a list of queries in parallel and return the summarized results.
 
     Args:
         queries: List of search queries
@@ -47,20 +54,38 @@ async def execute_queries(queries: List[str], docs: str, ast_tree: str = None) -
     Returns:
         str: Summarized results
     """
-    results = []
+    if not queries:
+        return ""
 
-    for query in queries:
-        ddg_result = await perform_duckduckgo_search(query=query)
-        if ddg_result:  # Only add non-empty results
-            results.append(ddg_result)
+    logger.info(f"[Tools] Executing {len(queries)} queries in parallel with rate limiting")
 
-    # If no results were found, return an empty list
-    if not results:
+    async def execute_single_query(query: str) -> str:
+        """Execute a single query with rate limiting"""
+        async with DDG_SEMAPHORE:
+            # Add a small delay to avoid rate limiting
+            await asyncio.sleep(DDG_REQUEST_DELAY)
+            return await perform_duckduckgo_search(query=query)
+
+    # Execute all queries in parallel with controlled concurrency
+    results = await asyncio.gather(
+        *[execute_single_query(query) for query in queries], return_exceptions=True
+    )
+
+    # Filter out exceptions and empty results
+    valid_results = []
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            logger.warning(f"[Tools] Query {i + 1} failed: {str(result)}")
+        elif result:  # Only add non-empty results
+            valid_results.append(result)
+
+    # If no results were found, return an empty string
+    if not valid_results:
         return ""
 
     # summarise all the results from the queries
     logger.info("[Tools] Cleaning the response from DDG")
-    return await _clean_response(docs=docs, ast=ast_tree, search_results=results)
+    return await _clean_response(docs=docs, ast=ast_tree, search_results=valid_results)
 
 
 async def _clean_response(search_results: List[str], ast: str, docs: str) -> str:

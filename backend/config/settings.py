@@ -56,10 +56,6 @@ LLM_SCAN_1 = os.getenv("LLM_SCAN_1", "o1-2024-12-17")
 LLM_SCAN_2 = os.getenv("LLM_SCAN_2", "claude-3-7-sonnet-20250219")
 LLM_SCAN_3 = os.getenv("LLM_SCAN_3", "o3-mini")
 
-# Deduplication parameters
-DEDUP_MIN_BATCH_SIZE = 12
-DEDUP_MAX_BATCHES = 6
-
 # Tokens encoding: "cl100k_base" || "p50k_base"
 TOKENS_ENCODING = "cl100k_base"
 
@@ -67,6 +63,17 @@ TOKENS_ENCODING = "cl100k_base"
 TEMPERATURE = 0
 MAX_RETRIES = 3
 DELAY = 2
+
+
+##################################################
+#              CRITICS PARAMETERS
+##################################################
+
+# Minimum number of items to process in each batch
+MIN_BATCH_SIZE = 15
+
+# Maximum number of batches to process
+MAX_BATCHES = 6
 
 
 ##################################################

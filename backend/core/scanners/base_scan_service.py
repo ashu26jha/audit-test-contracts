@@ -137,6 +137,7 @@ class BaseScanService(ABC):
         combined_findings: List[Finding],
         summary_result: str,
         detected_type: Profiles,
+        contract_contents: Dict[str, str] = None,
     ) -> BaseResultsProcessor:
         """Create results processor with scan results."""
         return BaseResultsProcessor(
@@ -144,9 +145,9 @@ class BaseScanService(ABC):
             user_id=self.context.user_id,
             contract_files=self.context.contract_files,
             combined_findings=combined_findings,
-            flattened_contracts=self.context.flattened_contracts,
             summary_result=summary_result,
             detected_type=detected_type,
+            contract_contents=contract_contents,
         )
 
     @final
@@ -240,6 +241,9 @@ class BaseScanService(ABC):
         # Update context with GitHub info
         context.commit_hash = github_info.commit_hash
         context.flattened_contracts = github_info.flattened_contracts
+        context.contract_contents = (
+            github_info.contract_contents
+        )  # Store contract contents dictionary
         context.repo_dir = github_info.repo_dir
         context.temp_dir = github_info.temp_dir
         context.repository_name = github_info.repo_name
@@ -332,10 +336,10 @@ class BaseScanService(ABC):
                 user_id=context.user_id,
                 contract_files=context.contract_files,
                 combined_findings=results["combined_findings"],
-                flattened_contracts=context.flattened_contracts,
                 summary_result=results["summary_result"],
                 detected_type=results["detected_type"],
                 invariants=results["invariants"],
+                contract_contents=context.contract_contents,
             )
             total_findings_after_dedup = await result_processor.process_results()
 

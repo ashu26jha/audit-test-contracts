@@ -44,8 +44,6 @@ class BaseTaskManager(ABC):
     def __init__(self, context: BaseScanContext):
         self.context = context
         self.scan_id = context.scan_id
-        self.flattened_contracts = context.flattened_contracts
-        self.contract_files = context.contract_files
         self.scan: Optional[Scan] = None
         self.summary_result: Optional[str] = None
         self.detected_type: Optional[Profiles] = None
@@ -108,11 +106,11 @@ class BaseTaskManager(ABC):
             await self._initialize_detectors()
 
             # 2. Run summary, invariants, and AST tree generation in parallel
-            summary_task = asyncio.create_task(generate_summary(self.flattened_contracts))
+            summary_task = asyncio.create_task(generate_summary(self.context.flattened_contracts))
             invariants_task = asyncio.create_task(
                 generate_invariants(
-                    contracts_in_scope=self.contract_files,
-                    flattened_contracts=self.flattened_contracts,
+                    contracts_in_scope=self.context.contract_files,
+                    flattened_contracts=self.context.flattened_contracts,
                     docs=getattr(self.context, "formatted_docs", None),
                 )
             )
@@ -126,7 +124,7 @@ class BaseTaskManager(ABC):
                 ast_tree_task = asyncio.create_task(
                     generate_ast_for_project(
                         repo_path=self.context.setup_result.project_dir,
-                        contracts=self.contract_files,
+                        contracts=self.context.contract_files,
                     )
                 )
 
@@ -153,7 +151,7 @@ class BaseTaskManager(ABC):
 
             # 3. Run duckduckgo search
             self.duckduckgo_results = await query_and_search_service(
-                contracts=self.flattened_contracts,
+                contracts=self.context.flattened_contracts,
                 num_queries=5,
                 docs=getattr(self.context, "formatted_docs", None),
                 ast_tree=self.ast_tree,
@@ -163,7 +161,7 @@ class BaseTaskManager(ABC):
             await self._run_detectors()
 
             # Clear memory after all detectors are complete
-            self.flattened_contracts = None
+            self.context.flattened_contracts = None
             gc.collect()
 
             # 5. Gather results after all tasks are complete
@@ -316,7 +314,7 @@ class BaseTaskManager(ABC):
             result = await run_static_analyzer(
                 github_url="",
                 oauth_token="",
-                selected_contracts=self.contract_files,
+                selected_contracts=self.context.contract_files,
                 setup_result=self.context.setup_result,
             )
             self.task_results[Detectors.STATIC_ANALYZER.value] = result
@@ -336,8 +334,8 @@ class BaseTaskManager(ABC):
             result = await FuzzerService.run_fuzzer(
                 github_url="",
                 oauth_token="",
-                selected_contracts=self.contract_files,
-                flattened_contracts=self.flattened_contracts,
+                selected_contracts=self.context.contract_files,
+                flattened_contracts=self.context.flattened_contracts,
                 setup_result=self.context.setup_result,
             )
             self.task_results[Detectors.FUZZER.value] = result
@@ -359,7 +357,7 @@ class BaseTaskManager(ABC):
 
         try:
             result = await run_multi_agent(
-                contracts_in_scope=self.contract_files,
+                contracts_in_scope=self.context.contract_files,
                 ast_tree=self.ast_tree,
                 project_dir=self.context.setup_result.repo_root,
                 docs=getattr(self.context, "formatted_docs", None),
@@ -411,7 +409,7 @@ class BaseTaskManager(ABC):
 
         try:
             results = await run_context_scan_batch(
-                contracts=self.flattened_contracts,
+                contracts=self.context.flattened_contracts,
                 summary=self.summary_result,
                 docs=None if is_model_scan else getattr(self.context, "formatted_docs", None),
                 invariants=None if is_model_scan else self.invariants,
