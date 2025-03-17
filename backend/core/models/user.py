@@ -49,7 +49,7 @@ class SubscriptionData(BaseModel):
         return (
             self.type == SubscriptionType.ENTERPRISE
             and self.isActive
-            and self.expiresAt > datetime.now(timezone.utc)
+            and (self.expiresAt is None or self.expiresAt > datetime.now(timezone.utc))
             and self.credits > 0
         )
 

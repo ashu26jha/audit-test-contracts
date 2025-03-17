@@ -6,12 +6,13 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 
 from api.v1.auth.helpers.auth_helpers import generate_and_store_oauth_state, track_login_attempt
 from api.v1.auth.helpers.dependencies import get_current_user
-from api.v1.auth.schema import TestAuthResponse, UsernameRequest, UserResponse
+from api.v1.auth.schema import InternalUserResponse, TestAuthResponse, UsernameRequest, UserResponse
 from api.v1.auth.service import (
     create_access_token,
     generate_test_token,
     handle_github_callback,
     handle_logout,
+    is_internal_user,
 )
 from config import settings
 from core.models.user import User
@@ -71,11 +72,28 @@ async def github_callback(
 
 
 @router.get("/me", response_model=Union[SuccessResponse[UserResponse], ErrorResponse])
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    """
-    Get the current user's information.
-    """
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information."""
     return SuccessResponse(data=UserResponse.model_validate(current_user))
+
+
+@router.get(
+    "/check-internal-status",
+    response_model=Union[SuccessResponse[InternalUserResponse], ErrorResponse],
+)
+async def check_internal_status(current_user: User = Depends(get_current_user)):
+    """
+    Check if the current user is a member of the internal organization and
+    manage their subscription accordingly:
+    - Activate Enterprise subscription if they are a member
+    - Downgrade to Free if they were Enterprise but are no longer a member
+
+    This endpoint is meant to be called by the frontend after GitHub App installation
+    and before initiating scans.
+    """
+    result = await is_internal_user(current_user)
+
+    return SuccessResponse(data=result)
 
 
 @router.post("/logout")

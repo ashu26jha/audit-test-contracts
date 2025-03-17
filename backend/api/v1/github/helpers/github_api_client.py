@@ -10,6 +10,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
+from core.utils.logger import logger
 
 
 def should_retry_github_request(exc: Exception) -> bool:
@@ -261,6 +262,33 @@ class GitHubAPIClient:
         if not match:
             raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
         return match.group("owner"), match.group("repo").replace(".git", "")
+
+    async def is_org_member(self, access_token: str, org_name: str) -> bool:
+        """
+        Check if the authenticated user is a member of the specified organization.
+
+        Args:
+            access_token: GitHub access token
+            org_name: Organization name to check membership for
+
+        Returns:
+            True if user is a member of the organization, False otherwise
+        """
+        try:
+            user_data = await self.get("user", access_token)
+            username = user_data.get("login")
+
+            if not username:
+                return False
+
+            url = f"{GITHUB_API_URL}/orgs/{org_name}/members/{username}"
+            headers = self._create_headers(access_token)
+
+            response = await self.client.get(url, headers=headers)
+            return response.status_code == 204  # 204 No Content means the user is a member
+        except Exception as e:
+            logger.warning(f"Error checking organization membership: {str(e)}")
+            return False
 
     async def get_file_content(
         self, access_token: str, owner: str, repo: str, path: str, branch: str

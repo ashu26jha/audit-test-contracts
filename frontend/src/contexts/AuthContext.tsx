@@ -1,9 +1,10 @@
 "use client";
 import { type FC, createContext, useState, useContext, useEffect, useCallback, useMemo } from "react";
 
+import type { AxiosError } from "axios";
 import { useRouter, usePathname } from "next/navigation";
 
-import { getUser, logUserOut } from "@/services/api";
+import { getUser, logUserOut, initiateGithubLogin } from "@/services/api";
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +14,8 @@ interface AuthContextType {
   isPublicRoute: (pathname: string) => boolean;
   logout: (url?: string) => Promise<void>;
   refetchUser: () => Promise<void>;
+  login: () => void;
+  loginLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -25,6 +28,7 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loginLoading, setLoginLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isPublicRoute = useCallback((pathname: string): boolean => {
@@ -35,12 +39,28 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     );
   }, []);
 
+  // Reset authentication state when returning to login page
+  useEffect(() => {
+    if (pathname === "/login" && !pathname.includes("login-success")) {
+      setLoginLoading(false);
+    }
+
+    // If we're on login-success page, we know the auth flow completed successfully
+    if (pathname === "/login-success") {
+      setLoginLoading(false);
+    }
+  }, [pathname]);
+
+  const login = useCallback(() => {
+    setLoginLoading(true);
+    initiateGithubLogin();
+  }, []);
+
   const logout = useCallback(
     async (url: string = "/login") => {
       setLoading(true);
       try {
         setUser(null);
-        localStorage.removeItem("token");
         router.push(url);
         await logUserOut();
       } catch (error) {
@@ -74,19 +94,18 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
         }
 
         setUser(userData);
-
-        // Check for legacy auth
-        const hasLegacyToken = Boolean(localStorage.getItem("token"));
-
-        if (hasLegacyToken) {
-          await logout();
-          router.push("/login?migrate=true");
-        }
       } catch (error) {
         if (!isActive) return;
-        console.error("Auth error:", error);
-        setError("Session expired. Please login again.");
-        await logout("/login?error=session_expired");
+
+        // Check if the session is expired (401)
+        if ((error as AxiosError)?.status === 401) {
+          setError("Session expired. Please login again.");
+          await logout("/login?error=session_expired");
+        } else {
+          // For other errors, just set user to null without error message
+          // This handles the case of a user with no session yet
+          setUser(null);
+        }
       } finally {
         if (isActive) {
           setLoading(false);
@@ -116,13 +135,15 @@ export const AuthProvider: FC<{ children: React.ReactNode }> = ({ children }) =>
     () => ({
       user,
       loading,
+      loginLoading,
       error,
       refetchUser,
       setError,
       isPublicRoute,
       logout,
+      login,
     }),
-    [user, loading, error, refetchUser, setError, isPublicRoute, logout],
+    [user, loading, loginLoading, error, refetchUser, setError, isPublicRoute, logout, login],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

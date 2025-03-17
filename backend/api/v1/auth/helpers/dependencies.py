@@ -12,7 +12,7 @@ from core.utils.logger import logger
 async def get_current_user(request: Request) -> User:
     token = request.cookies.get("auth_token")
     if not token:
-        raise HTTPException(status_code=401, detail="No token found")
+        raise HTTPException(status_code=403, detail="No token found")
 
     try:
         # Check blacklist first
@@ -27,7 +27,7 @@ async def get_current_user(request: Request) -> User:
         user = await UserRepository.get_by_github_id(github_id)
 
         if user is None:
-            raise HTTPException(status_code=401, detail="User not found")
+            raise HTTPException(status_code=403, detail="User not found")
 
         # Ensure user has token_version field
         await user.ensure_token_version()

@@ -106,7 +106,10 @@ async def process_entry_point(
 
     except Exception as e:
         logger.error(f"Error processing entry point {entry_point.function_name}: {str(e)}")
-        return []  # Silent failure for individual entry points
+        # Return any findings collected before the error occurred
+        # This preserves partial results instead of losing everything
+        logger.warning(f"Returning {len(findings)} findings collected before error")
+        return findings  # Return partial findings instead of empty list
 
 
 def _format_conversation_entry(role: str, message: str) -> str:

@@ -7,7 +7,7 @@ from jose import JWTError, jwt
 
 from api.v1.auth.helpers.auth_helpers import blacklist_token, verify_oauth_state
 from api.v1.auth.helpers.token_validator import get_github_access_token
-from api.v1.auth.schema import TestAuthResponse, UserResponse
+from api.v1.auth.schema import InternalUserResponse, TestAuthResponse, UserResponse
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.service import GitHubService
 from config import settings
@@ -121,16 +121,105 @@ async def handle_github_callback(
     user_data = await github_service.get_user_data(access_token)
     user = await handle_user_data(user_data, access_token, refresh_token)
 
+    # Check organization membership and manage subscription
+    await is_internal_user(user)
+
+    # Refresh user data to get updated subscription status
+    user = await UserRepository.get_by_github_id(user.githubId)
+
     return access_token, user
 
 
 async def verify_installation_id(access_token: str, installation_id: str) -> None:
-    """Verify that the installation_id is valid for the user"""
+    """
+    Verify that the installation ID is valid for the authenticated user.
+
+    Args:
+        access_token: GitHub access token
+        installation_id: GitHub App installation ID
+
+    Raises:
+        HTTPException: If installation ID is invalid
+    """
     installations = await github_api_client.get_installations(access_token)
     installation_ids = [str(inst["id"]) for inst in installations]
 
     if installation_id not in installation_ids:
-        raise HTTPException(status_code=403, detail="Invalid installation_id")
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid installation ID. The GitHub App is not installed for this user.",
+        )
+
+
+async def is_internal_user(user: User) -> InternalUserResponse:
+    """
+    Check if the authenticated user is a member of the internal organization
+    and manage their subscription accordingly.
+
+    This method:
+    - Checks if the user is a member of the specified organization
+    - Activates Enterprise subscription if they are a member but don't have it
+    - Downgrades to Free if they were Enterprise (without Stripe) but are no longer a member
+    - Converts Stripe Enterprise subscriptions to internal Enterprise subscriptions for internal users
+
+    Args:
+        user: User object to check for organization membership and manage subscription
+
+    Returns:
+        InternalUserResponse with status information:
+        - is_internal: Whether user is a member of the organization
+        - subscription_activated: Whether Enterprise subscription is currently active
+        - subscription_downgraded: Whether subscription was downgraded to Free
+    """
+
+    org_name = settings.GITHUB_INTERNAL_ORG
+    access_token = user.accessToken
+
+    subscription_activated = False
+    subscription_downgraded = False
+
+    if not org_name or not access_token:
+        return InternalUserResponse(
+            is_internal=False,
+            subscription_activated=subscription_activated,
+            subscription_downgraded=subscription_downgraded,
+        )
+
+    # Check if user is a member of the organization
+    is_internal = await github_api_client.is_org_member(access_token, org_name)
+
+    if is_internal:
+        # Case 1: User is internal and doesn't have Enterprise subscription - upgrade
+        if not user.is_enterprise:
+            logger.info(f"Activating Enterprise subscription for internal user {user.username}")
+            await UserRepository.activate_internal_subscription(user)
+            subscription_activated = True
+
+        # Case 2: User is internal and has Enterprise subscription without Stripe - do nothing
+        elif not user.subscription.stripeSubscriptionId:
+            subscription_activated = True
+
+        # Case 3: User is internal but has Enterprise subscription through Stripe - convert to internal
+        else:  # user.is_enterprise and user.subscription.stripeSubscriptionId must be true here
+            logger.info(f"Converting Stripe subscription to internal for user {user.username}")
+            # First deactivate the current subscription (this preserves the Stripe customer ID)
+            await UserRepository.deactivate_subscription(user)
+            # Then activate an internal subscription
+            await UserRepository.activate_internal_subscription(user)
+            subscription_activated = True
+    else:
+        # Case 4: User is not internal but has Enterprise subscription without Stripe ID - downgrade
+        if user.is_enterprise and not user.subscription.stripeSubscriptionId:
+            # Only downgrade users who got Enterprise through org membership (no Stripe subscription)
+            logger.info(f"Downgrading non-internal user {user.username} from Enterprise")
+            await UserRepository.deactivate_subscription(user)
+            subscription_downgraded = True
+
+    return InternalUserResponse(
+        is_internal=is_internal,
+        subscription_activated=subscription_activated,
+        subscription_downgraded=subscription_downgraded,
+    )
 
 
 async def handle_logout(request: Request) -> None:

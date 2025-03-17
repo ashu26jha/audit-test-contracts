@@ -7,10 +7,9 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import { Loading } from "@/components/layout";
 import { useAuth } from "@/contexts/AuthContext";
-import { initiateGithubLogin } from "@/services/api";
 
 const LoginView: FC = () => {
-  const { user, loading, error, setError } = useAuth();
+  const { user, loading, loginLoading, error, setError, login } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -57,9 +56,11 @@ const LoginView: FC = () => {
             <Button
               color="secondary"
               startContent={<Image src="/svg/github.svg" alt="GitHub" width={20} height={20} />}
-              onPress={initiateGithubLogin}
+              onPress={login}
+              isLoading={loginLoading}
+              isDisabled={loginLoading}
             >
-              Continue with GitHub
+              {loginLoading ? "Redirecting..." : "Continue with GitHub"}
             </Button>
             {getErrorMessage() && <p className="text-red-500 mt-4 text-center text-sm">{getErrorMessage()}</p>}
           </div>

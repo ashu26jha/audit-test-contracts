@@ -213,6 +213,56 @@ class UserRepository:
             ) from e
 
     @staticmethod
+    async def activate_internal_subscription(user: User) -> User:
+        """
+        Activate an internal user's Enterprise subscription without Stripe integration.
+
+        Args:
+            user: User object to update
+
+        Returns:
+            Updated User object
+
+        Raises:
+            DatabaseError: If subscription activation fails
+        """
+        try:
+            subscription_type = SubscriptionType.ENTERPRISE
+            subscription = SUBSCRIPTION_SETTINGS[subscription_type]
+            now = datetime.now(timezone.utc)
+
+            # Create a new SubscriptionData object with all the fields
+            # Note: No Stripe IDs for internal users
+            subscription_data = SubscriptionData(
+                isActive=True,
+                type=subscription_type,
+                stripeSubscriptionId=None,
+                stripeCustomerId=None,
+                credits=subscription["monthly_credits"],
+                monthlyCredits=subscription["monthly_credits"],
+                lastRenewalAt=now,
+                expiresAt=now + subscription["credit_expiry_period"],
+            )
+
+            # Update using the model
+            await user.update({"$set": {"subscription": subscription_data.model_dump()}})
+            logger.info(f"Activated internal Enterprise subscription for user {user.githubId}")
+            return await UserRepository.get_by_github_id(user.githubId)
+
+        except Exception as e:
+            logger.error(
+                f"Error activating internal subscription for user {user.username}: {str(e)}"
+            )
+            raise DatabaseError(
+                message="Failed to activate internal subscription",
+                details={
+                    "username": user.username,
+                    "github_id": user.githubId,
+                    "error": str(e),
+                },
+            ) from e
+
+    @staticmethod
     async def deactivate_subscription(user: User) -> User:
         """
         Deactivate a user's subscription while preserving the Stripe customer ID.

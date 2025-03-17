@@ -36,6 +36,12 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class InternalUserResponse(BaseModel):
+    is_internal: bool
+    subscription_activated: bool
+    subscription_downgraded: bool
+
+
 class TestAuthResponse(BaseModel):
     access_token: str
     token_type: str

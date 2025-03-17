@@ -7,7 +7,7 @@ load_dotenv()
 
 TITLE = "AuditAgent - APIs"
 DESCRIPTION = "API for auditing smart contracts and detecting vulnerabilities"
-VERSION = "1.1.3"  # Auto-updated by pre-commit hook
+VERSION = "1.2.0"  # Auto-updated by pre-commit hook
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")
@@ -107,8 +107,9 @@ GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET")
 GITHUB_INSTALLATION_URL: str = os.getenv("GITHUB_INSTALLATION_URL")
 GITHUB_APP_URL: str = (
-    f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=user:email"
+    f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&scope=user:email%20read:org"
 )
+GITHUB_INTERNAL_ORG: str = os.getenv("GITHUB_INTERNAL_ORG", "NethermindEth")
 
 
 ##################################################
