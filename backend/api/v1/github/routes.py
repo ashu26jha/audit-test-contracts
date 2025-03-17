@@ -37,16 +37,42 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
     Returns:
         List of unique organizations with their type and login name
     """
-    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
-    organizations: List[GitHubOrganizationResponse] = [
-        GitHubOrganizationResponse(
-            login=repo["owner"],
-            type="user",
+    # Get installations directly from GitHub API
+    installations = await github_service.client.get_installations(current_user.accessToken)
+
+    # Create a mapping of login to organization data
+    organizations_map = {
+        current_user.username: GitHubOrganizationResponse(
+            login=current_user.username,
+            type="User",
+            avatar_url=current_user.avatarUrl,
+            url=f"https://github.com/{current_user.username}",
         )
-        for repo in accessible_repos
-    ]
-    unique_organizations = list({org.login: org for org in organizations}.values())
-    return SuccessResponse(data=unique_organizations)
+    }
+
+    # Add organizations from installations
+    for installation in installations:
+        if "account" in installation and "login" in installation["account"]:
+            login = installation["account"]["login"]
+            if login != current_user.username:  # Skip if already added
+                organizations_map[login] = GitHubOrganizationResponse(
+                    login=login,
+                    type=installation["account"].get("type", "User"),
+                    avatar_url=installation["account"].get("avatar_url"),
+                    url=installation["account"].get("html_url"),
+                )
+
+    # Add any missing organizations from repositories
+    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
+    for repo in accessible_repos:
+        owner = repo["owner"]
+        if owner not in organizations_map:
+            organizations_map[owner] = GitHubOrganizationResponse(
+                login=owner,
+                type="User",  # Default to User
+            )
+
+    return SuccessResponse(data=list(organizations_map.values()))
 
 
 @router.get(

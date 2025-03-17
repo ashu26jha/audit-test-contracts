@@ -266,27 +266,32 @@ class GitHubAPIClient:
     async def is_org_member(self, access_token: str, org_name: str) -> bool:
         """
         Check if the authenticated user is a member of the specified organization.
+        Works for both public and private memberships.
 
         Args:
             access_token: GitHub access token
             org_name: Organization name to check membership for
 
         Returns:
-            True if user is a member of the organization, False otherwise
+            True if user is an active member of the organization, False otherwise
         """
         try:
-            user_data = await self.get("user", access_token)
-            username = user_data.get("login")
+            # Use the membership endpoint which works for both public and private memberships
+            url = f"user/memberships/orgs/{org_name}"
 
-            if not username:
+            membership_data = await self.get(url, access_token)
+
+            # User is a member if state is 'active' (not 'pending')
+            is_member = membership_data.get("state") == "active"
+
+            return is_member
+
+        except Exception as e:
+            # If we get a 404, the user is not a member
+            if hasattr(e, "status_code") and e.status_code == 404:
                 return False
 
-            url = f"{GITHUB_API_URL}/orgs/{org_name}/members/{username}"
-            headers = self._create_headers(access_token)
-
-            response = await self.client.get(url, headers=headers)
-            return response.status_code == 204  # 204 No Content means the user is a member
-        except Exception as e:
+            # For other errors, log and return False
             logger.warning(f"Error checking organization membership: {str(e)}")
             return False
 

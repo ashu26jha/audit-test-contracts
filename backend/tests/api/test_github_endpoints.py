@@ -19,24 +19,62 @@ def mock_github_service():
         mock_service.get_accessible_repositories = AsyncMock()
         mock_service.get_repository_branches = AsyncMock()
         mock_service.validate_repository_access = AsyncMock()
+        mock_service.client = AsyncMock()
+        mock_service.client.get_installations = AsyncMock()
         yield mock_service
 
 
 @pytest.mark.usefixtures("mock_auth")
 class TestGitHubEndpoints:
     def test_get_organizations(self, client, mock_github_service):
+        mock_github_service.client.get_installations.return_value = [
+            {
+                "id": 1,
+                "account": {
+                    "login": "org1",
+                    "type": "Organization",
+                    "avatar_url": "https://github.com/avatar.png",
+                    "html_url": "https://github.com/org1",
+                },
+            }
+        ]
+
         mock_github_service.get_accessible_repositories.return_value = [
-            {"owner": "org1", "type": "organization"},
-            {"owner": "user1", "type": "user"},
+            {
+                "name": "repo1",
+                "updatedAt": "2023-01-01T00:00:00Z",
+                "private": False,
+                "owner": "org1",
+                "all_repos_access": False,
+            },
+            {
+                "name": "repo2",
+                "updatedAt": "2023-01-02T00:00:00Z",
+                "private": True,
+                "owner": "user1",
+                "all_repos_access": False,
+            },
         ]
 
         response = client.get("/api/v1/github/organizations")
         assert response.status_code == 200
+
         assert response.json() == {
             "success": True,
             "data": [
-                {"login": "org1", "type": "user", "avatar_url": None, "url": None},
-                {"login": "user1", "type": "user", "avatar_url": None, "url": None},
+                {
+                    "login": "testuser",
+                    "type": "User",
+                    "avatar_url": None,
+                    "url": "https://github.com/testuser",
+                },
+                {
+                    "login": "org1",
+                    "type": "Organization",
+                    "avatar_url": "https://github.com/avatar.png",
+                    "url": "https://github.com/org1",
+                },
+                {"login": "user1", "type": "User", "avatar_url": None, "url": None},
             ],
         }
 

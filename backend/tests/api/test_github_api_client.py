@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -20,16 +20,10 @@ async def test_is_org_member_active(setup_db):
     # Create an instance of GitHubAPIClient
     github_api_client = GitHubAPIClient()
 
-    # Mock the get method to return user data with a login
-    mock_user_data = {"login": "testuser"}
+    # Mock the get method to return membership data with active state
+    mock_membership_data = {"state": "active", "role": "member"}
 
-    # Mock the client.get method to return a 204 response (user is a member)
-    mock_response = MagicMock()
-    mock_response.status_code = 204
-
-    with patch.object(
-        github_api_client, "get", AsyncMock(return_value=mock_user_data)
-    ), patch.object(github_api_client.client, "get", AsyncMock(return_value=mock_response)):
+    with patch.object(github_api_client, "get", AsyncMock(return_value=mock_membership_data)):
         result = await github_api_client.is_org_member("test_token", "test-org")
 
     # Assert the result
@@ -42,20 +36,14 @@ async def test_is_org_member_pending(setup_db):
     # Create an instance of GitHubAPIClient
     github_api_client = GitHubAPIClient()
 
-    # Mock the get method to return user data with a login
-    mock_user_data = {"login": "testuser"}
+    # Mock the get method to return membership data with pending state
+    mock_membership_data = {"state": "pending", "role": "member"}
 
-    # Mock the client.get method to return a 204 response (user is a member)
-    mock_response = MagicMock()
-    mock_response.status_code = 204
-
-    with patch.object(
-        github_api_client, "get", AsyncMock(return_value=mock_user_data)
-    ), patch.object(github_api_client.client, "get", AsyncMock(return_value=mock_response)):
+    with patch.object(github_api_client, "get", AsyncMock(return_value=mock_membership_data)):
         result = await github_api_client.is_org_member("test_token", "test-org")
 
     # Assert the result
-    assert result is True
+    assert result is False
 
 
 @pytest.mark.asyncio
@@ -64,15 +52,11 @@ async def test_is_org_member_not_member(setup_db):
     # Create an instance of GitHubAPIClient
     github_api_client = GitHubAPIClient()
 
-    # Mock the get method to return user data with a login
-    mock_user_data = {"login": "testuser"}
+    # Mock the get method to raise a 404 exception
+    mock_exception = Exception("Not found")
+    mock_exception.status_code = 404
 
-    # Mock the client.get method to return a 404 response
-    mock_response = MockResponse(404)
-
-    with patch.object(
-        github_api_client, "get", AsyncMock(return_value=mock_user_data)
-    ), patch.object(github_api_client.client, "get", AsyncMock(return_value=mock_response)):
+    with patch.object(github_api_client, "get", AsyncMock(side_effect=mock_exception)):
         result = await github_api_client.is_org_member("test_token", "test-org")
 
     # Assert the result
@@ -85,16 +69,10 @@ async def test_is_org_member_other_state(setup_db):
     # Create an instance of GitHubAPIClient
     github_api_client = GitHubAPIClient()
 
-    # Mock the get method to return user data with a login
-    mock_user_data = {"login": "testuser"}
+    # Mock the get method to return membership data with an unknown state
+    mock_membership_data = {"state": "unknown", "role": "member"}
 
-    # Mock the client.get method to return a non-204 response (user is not a member)
-    mock_response = MagicMock()
-    mock_response.status_code = 200  # Any status code other than 204
-
-    with patch.object(
-        github_api_client, "get", AsyncMock(return_value=mock_user_data)
-    ), patch.object(github_api_client.client, "get", AsyncMock(return_value=mock_response)):
+    with patch.object(github_api_client, "get", AsyncMock(return_value=mock_membership_data)):
         result = await github_api_client.is_org_member("test_token", "test-org")
 
     # Assert the result
