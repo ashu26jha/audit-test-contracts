@@ -46,7 +46,7 @@ export const useScanStepper = () => {
         setRepoDocs({ readme: [], qa: {} });
       }
     },
-    [setRepoDocs, user],
+    [setRepoDocs],
   );
 
   const fetchRepositories = useCallback(
@@ -153,7 +153,7 @@ export const useScanStepper = () => {
           const owner = pathParts[0];
           const repo = pathParts[1];
 
-          setSelectedOwner({ login: owner, type: "user" });
+          setSelectedOwner({ login: owner, type: "user", hasGithubApp: false });
           setSelectedRepo({ name: repo, updatedAt: "", private: false });
           setRepositoryURL(url);
 
