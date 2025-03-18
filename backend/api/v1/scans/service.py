@@ -15,7 +15,7 @@ class ScanResultService:
         scan = await ScanRepository.get_scan(scan_id)
         full_result = await ScanRepository.get_scan_result(scan_id)
 
-        if user.is_free:
+        if not user.subscription.isActive:
             full_result.invariants = None
 
         return FullScanResultResponse(

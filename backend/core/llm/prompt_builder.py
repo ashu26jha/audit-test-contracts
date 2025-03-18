@@ -58,6 +58,11 @@ class PromptBuilder:
         # Use provided message history or profile's history
         final_history = message_history if message_history is not None else profile_history
 
+        # Apply cache control to profile messages if using Anthropic
+        if model_type in SUPPORTED_MODELS["anthropic"] and profile is not None:
+            # Transform profile messages to include cache control
+            final_history = self._add_cache_control_to_messages(final_history)
+
         # Handle different model types
         if model_type in SUPPORTED_MODELS["gemini"]:
             return self._build_gemini_format(user_input, system_prompt, final_history)
@@ -118,6 +123,28 @@ class PromptBuilder:
             duckduckgo_results=duckduckgo_results_str,
             flattened_contracts=contracts,
         )
+
+    def _add_cache_control_to_messages(self, messages: List[Message]) -> List[Message]:
+        """Add cache_control to message content for Anthropic caching."""
+        cached_messages = []
+
+        for message in messages:
+            # Clone the message to avoid modifying the original
+            new_message = message.copy()
+
+            # If message has content in string format, transform to structured format with cache control
+            if "content" in new_message and isinstance(new_message["content"], str):
+                new_message["content"] = [
+                    {
+                        "type": "text",
+                        "text": new_message["content"],
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ]
+
+            cached_messages.append(new_message)
+
+        return cached_messages
 
     def _build_gemini_format(
         self,

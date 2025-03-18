@@ -71,7 +71,7 @@ const Navbar: FC = () => {
                     <p className="text-xs">{`${freeScanAllowed ? "1" : "0"} Free Scan Left`}</p>
                   )}
                   {user?.subscription.type !== "free" && (
-                    <p className="text-xs">{`${user.subscription.credits} Scans Left`}</p>
+                    <p className="text-xs">{`${user.subscription.credits} ${user.subscription.credits === 1 ? "Scan" : "Scans"} Left`}</p>
                   )}
                 </div>
                 <ChevronDownIcon className="w-4 h-4 text-neutral-50" />

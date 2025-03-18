@@ -320,8 +320,8 @@ class BaseScanService(ABC):
                         context.branch_name,
                         context.contract_files,
                     )
-                    # Update progress after successful setup (25%)
-                    await ScanRepository.update_scan_progress(context.scan_id, 25)
+                    # Update progress after successful setup (15%)
+                    await ScanRepository.update_scan_progress(context.scan_id, 15)
                 except Exception as e:
                     logger.error(f"[{context.scan_type.value}] Environment setup failed: {str(e)}")
                     # Continue with setup_result as None

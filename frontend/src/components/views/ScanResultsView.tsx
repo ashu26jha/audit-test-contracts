@@ -144,8 +144,6 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
 
               <CodeSummary summary={scanData.summary} />
 
-              {scanData.invariants && <Invariants invariants={scanData.invariants} />}
-
               {scanData.findings.map((finding: Finding, index: number) => (
                 <Finding
                   key={index}
@@ -157,6 +155,9 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
                   }}
                 />
               ))}
+
+              {scanData.invariants && <Invariants invariants={scanData.invariants} />}
+
               <SendFeedback scanData={scanData} />
             </div>
           </div>

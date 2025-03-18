@@ -28,7 +28,7 @@ CONTEXT_SCAN_BATCH_SIZE = 3  # Number of context scans per batch
 # Progress stage weights
 PRE_DETECTOR_WEIGHT = 25  # Setup, cloning, etc. (0-25%)
 DETECTOR_WEIGHT = 55  # Detectors (25-80%)
-POST_DETECTOR_WEIGHT = 20  # Deduplication, cleanup (80-100%)
+POST_DETECTOR_WEIGHT = 20  # Result processing (80-100%)
 
 
 class TaskResults(TypedDict):
@@ -149,6 +149,8 @@ class BaseTaskManager(ABC):
             self.invariants = results[1]
             self.ast_tree = results[2] if len(results) > 2 else None
 
+            await ScanRepository.update_scan_progress(self.scan_id, 20)
+
             # 3. Run duckduckgo search
             self.duckduckgo_results = await query_and_search_service(
                 contracts=self.context.flattened_contracts,
@@ -156,6 +158,7 @@ class BaseTaskManager(ABC):
                 docs=getattr(self.context, "formatted_docs", None),
                 ast_tree=self.ast_tree,
             )
+            await ScanRepository.update_scan_progress(self.scan_id, 25)
 
             # 4. Execute detectors (failures handled silently)
             await self._run_detectors()
@@ -537,19 +540,22 @@ class BaseTaskManager(ABC):
         self.scan.completed_detectors += 1
         self.scan.detectors[detector_name] = success
 
-        # Calculate progress as an integer percentage
+        # Calculate progress as an integer percentage, up to maximum of 80%
+        # This leaves room for result_processor to continue from 80% to 100%
         current_progress = PRE_DETECTOR_WEIGHT
         for name, completed in self.scan.detectors.items():
             if completed is not None:
                 weight = self.detector_weights.get(name, 0)
                 current_progress += weight
 
-        # Convert to integer and ensure we reach exactly 100% when all detectors are complete
-        progress_int = int(current_progress)
+        # Convert to integer and scale to max 80%
+        max_detector_progress = 80
+        progress_int = min(int(current_progress), max_detector_progress)
 
-        # If all detectors are complete, set progress to 100%
+        # If all detectors are complete, set progress to 80% (not 100%)
+        # so that result_processor can continue from there
         if self.scan.completed_detectors == self.scan.total_detectors:
-            progress_int = 100
+            progress_int = max_detector_progress
 
         self.scan.progress = max(self.scan.progress, progress_int)
         await self.scan.save()

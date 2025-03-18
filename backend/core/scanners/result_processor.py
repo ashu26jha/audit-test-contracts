@@ -56,6 +56,8 @@ class BaseResultsProcessor:
             Number of findings after processing
         """
 
+        await ScanRepository.update_scan_progress(self.scan_id, 80)
+
         # 1. Filter findings to ensure they all belong to the selected contracts
         initial_count = len(self.findings_before_removal)
         self.findings_before_removal = contract_utils.filter_by_contracts(
