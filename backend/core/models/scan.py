@@ -25,6 +25,13 @@ class Finding(BaseModel):
     Description: str = Field(..., description="Detailed description of the issue")
     Recommendation: Optional[str] = Field(None, description="Suggested fix for the issue.")
     Detector: Optional[str] = Field(None, description="Name of the detector that found this issue")
+    Mitigation: Optional[str] = Field(None, description="Mitigation analysis for the issue")
+    CounterArguments: Optional[List[str]] = Field(
+        None, description="Counter-arguments against the issue"
+    )
+    Justification: Optional[str] = Field(
+        None, description="Justification for the issue after counter-arguments"
+    )
 
     def __hash__(self):
         # Create a hash based on immutable fields that define a finding's identity

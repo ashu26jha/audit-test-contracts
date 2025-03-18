@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.v1.auth.helpers.dependencies import get_current_user
 from api.v1.common.docs_helpers import get_json_docs
@@ -17,6 +17,7 @@ from api.v1.github.schema import (
 )
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.utils.errors import AuthError, HTTPClientError, RepositoryError, ValidationError
 
 from .service import GitHubService
 
@@ -37,42 +38,53 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
     Returns:
         List of unique organizations with their type and login name
     """
-    # Get installations directly from GitHub API
-    installations = await github_service.client.get_installations(current_user.accessToken)
+    try:
+        # Get installations directly from GitHub API
+        installations = await github_service.client.get_installations(current_user.accessToken)
 
-    # Create a mapping of login to organization data
-    organizations_map = {
-        current_user.username: GitHubOrganizationResponse(
-            login=current_user.username,
-            type="User",
-            avatar_url=current_user.avatarUrl,
-            url=f"https://github.com/{current_user.username}",
+        # Create a mapping of login to organization data
+        organizations_map = {
+            current_user.username: GitHubOrganizationResponse(
+                login=current_user.username,
+                type="User",
+                avatar_url=current_user.avatarUrl,
+                url=f"https://github.com/{current_user.username}",
+            )
+        }
+
+        # Add organizations from installations
+        for installation in installations:
+            if "account" in installation and "login" in installation["account"]:
+                login = installation["account"]["login"]
+                if login != current_user.username:  # Skip if already added
+                    organizations_map[login] = GitHubOrganizationResponse(
+                        login=login,
+                        type=installation["account"].get("type", "User"),
+                        avatar_url=installation["account"].get("avatar_url"),
+                        url=installation["account"].get("html_url"),
+                    )
+
+        # Add any missing organizations from repositories
+        accessible_repos = await github_service.get_accessible_repositories(
+            current_user.accessToken
         )
-    }
-
-    # Add organizations from installations
-    for installation in installations:
-        if "account" in installation and "login" in installation["account"]:
-            login = installation["account"]["login"]
-            if login != current_user.username:  # Skip if already added
-                organizations_map[login] = GitHubOrganizationResponse(
-                    login=login,
-                    type=installation["account"].get("type", "User"),
-                    avatar_url=installation["account"].get("avatar_url"),
-                    url=installation["account"].get("html_url"),
+        for repo in accessible_repos:
+            owner = repo["owner"]
+            if owner not in organizations_map:
+                organizations_map[owner] = GitHubOrganizationResponse(
+                    login=owner,
+                    type="User",  # Default to User
                 )
 
-    # Add any missing organizations from repositories
-    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
-    for repo in accessible_repos:
-        owner = repo["owner"]
-        if owner not in organizations_map:
-            organizations_map[owner] = GitHubOrganizationResponse(
-                login=owner,
-                type="User",  # Default to User
-            )
-
-    return SuccessResponse(data=list(organizations_map.values()))
+        return SuccessResponse(data=list(organizations_map.values()))
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -93,9 +105,20 @@ async def get_repositories(
     Returns:
         List of repositories with their details
     """
-    accessible_repos = await github_service.get_accessible_repositories(current_user.accessToken)
-    repos = [repo for repo in accessible_repos if repo["owner"] == owner]
-    return SuccessResponse(data=repos)
+    try:
+        accessible_repos = await github_service.get_accessible_repositories(
+            current_user.accessToken
+        )
+        repos = [repo for repo in accessible_repos if repo["owner"] == owner]
+        return SuccessResponse(data=repos)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -118,8 +141,19 @@ async def get_repository_branches(
     Returns:
         List of branches with their details
     """
-    branches = await github_service.get_repository_branches(current_user.accessToken, owner, repo)
-    return SuccessResponse(data=branches)
+    try:
+        branches = await github_service.get_repository_branches(
+            current_user.accessToken, owner, repo
+        )
+        return SuccessResponse(data=branches)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -148,15 +182,24 @@ async def get_repository_contents(
     Returns:
         List of files with their contents and analysis
     """
-    contents = await github_service.get_repository_contents(
-        current_user.accessToken,
-        owner,
-        repo,
-        branch,
-        path,
-        file_type=file_type,
-    )
-    return SuccessResponse(data=contents)
+    try:
+        contents = await github_service.get_repository_contents(
+            current_user.accessToken,
+            owner,
+            repo,
+            branch,
+            path,
+            file_type=file_type,
+        )
+        return SuccessResponse(data=contents)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -183,15 +226,24 @@ async def get_repository_readme(
     Returns:
         List of README files with their contents and analysis
     """
-    contents = await github_service.get_repository_contents(
-        current_user.accessToken,
-        owner,
-        repo,
-        branch,
-        path,
-        file_type=FileType.README,
-    )
-    return SuccessResponse(data=contents)
+    try:
+        contents = await github_service.get_repository_contents(
+            current_user.accessToken,
+            owner,
+            repo,
+            branch,
+            path,
+            file_type=FileType.README,
+        )
+        return SuccessResponse(data=contents)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -212,8 +264,17 @@ async def get_github_repo_info(
     Returns:
         Repository information including name, owner, and default branch
     """
-    repo_info = await github_service.get_github_repo_info(current_user.accessToken, repo_url)
-    return SuccessResponse(data=repo_info)
+    try:
+        repo_info = await github_service.get_github_repo_info(current_user.accessToken, repo_url)
+        return SuccessResponse(data=repo_info)
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -236,16 +297,25 @@ async def get_repository_docs(
     Returns:
         Repository documentation and URL
     """
-    # Construct the repository URL in the same format as stored
-    repository_url = f"https://github.com/{owner}/{repo}"
-    docs = await get_json_docs(repository_url, current_user.githubId)
+    try:
+        # Construct the repository URL in the same format as stored
+        repository_url = f"https://github.com/{owner}/{repo}"
+        docs = await get_json_docs(repository_url, current_user.githubId)
 
-    return SuccessResponse(
-        data=GitHubRepositoryDocs(
-            docs=docs or QAResponse(readme=[], qa={}),
-            repository_url=repository_url,
+        return SuccessResponse(
+            data=GitHubRepositoryDocs(
+                docs=docs or QAResponse(readme=[], qa={}),
+                repository_url=repository_url,
+            )
         )
-    )
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)
 
 
 @router.get(
@@ -269,5 +339,14 @@ async def validate_repository(
     Raises:
         HTTPException: If repository is private or inaccessible
     """
-    await github_service.validate_repository_access(current_user.accessToken, repo_url)
-    return SuccessResponse(data=GitHubRepositoryValidation(accessible=True))
+    try:
+        await github_service.validate_repository_access(current_user.accessToken, repo_url)
+        return SuccessResponse(data=GitHubRepositoryValidation(accessible=True))
+    except AuthError as e:
+        raise HTTPException(status_code=401, detail=e.message)
+    except RepositoryError as e:
+        raise HTTPException(status_code=404, detail=e.message)
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.message)
+    except HTTPClientError as e:
+        raise HTTPException(status_code=503, detail=e.message)

@@ -42,9 +42,6 @@ async def validate_findings_batched(
     4. Then, evaluate those counter-arguments to assign a detection confidence score
     5. Keep, modify, or remove findings based on detection confidence
 
-    For large contract groups (more than MAX_FINDINGS_PER_BATCH findings),
-    the findings are processed in smaller batches to manage token usage.
-
     Args:
         findings: List of findings to validate
         contract_contents: Dictionary mapping contract filenames to their source code
@@ -202,9 +199,13 @@ async def _execute_two_step_validation(
                 logger.info(f"[VALIDATION] Discard justification: {judgement.justification}")
                 continue
             elif confidence >= LOW_CONFIDENCE_THRESHOLD and confidence <= HIGH_CONFIDENCE_THRESHOLD:
-                # For findings with medium confidence, add counter-arguments to description
+                # For findings with medium confidence, add counter-arguments and justification to finding
                 if index in counter_arg_map:
-                    _add_counter_arguments_to_finding(finding, counter_arg_map[index], confidence)
+                    finding.CounterArguments = [
+                        counter_arg_map[index].argument_1,
+                        counter_arg_map[index].argument_2,
+                    ]
+                    finding.Justification = judgement.justification
 
             validated_findings.append(indexed_finding)
         else:
@@ -243,23 +244,6 @@ async def _generate_counter_arguments(
         messages=prompt,
         response_model=CounterArgumentsList,
     )
-
-
-def _add_counter_arguments_to_finding(
-    finding: Finding, counter_arg: CounterArgument, confidence: int
-) -> None:
-    """
-    Add counter-arguments to a finding's description.
-
-    Args:
-        finding: The finding to modify
-        counter_arg: The counter-arguments to add
-        confidence: The confidence score
-    """
-    finding.Description += "\n\nPotential issues with this finding:\n"
-    finding.Description += f"1. {counter_arg.argument_1}\n"
-    finding.Description += f"2. {counter_arg.argument_2}\n"
-    finding.Description += f"\nDetection confidence: {confidence}/100."
 
 
 async def _judge_findings_with_counter_arguments(

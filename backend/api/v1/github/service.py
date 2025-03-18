@@ -1,8 +1,6 @@
 import asyncio
 from typing import List
 
-from fastapi import HTTPException
-
 from api.v1.common.lines_of_code import analyze_file_content
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
 from api.v1.github.schema import (
@@ -12,6 +10,7 @@ from api.v1.github.schema import (
     GitHubRepoInfo,
     GitHubRepository,
 )
+from core.utils.errors import HTTPClientError, RepositoryError, ValidationError
 from core.utils.token_count import count_tokens
 
 
@@ -30,6 +29,11 @@ class GitHubService:
 
         Returns:
             User data including email
+
+        Raises:
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found
+            HTTPClientError: On other HTTP errors
         """
         user_data = await self.client.get("user", access_token)
 
@@ -49,13 +53,16 @@ class GitHubService:
             Primary email address
 
         Raises:
-            HTTPException: If no primary email is found
+            ValidationError: If no primary email is found
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found
+            HTTPClientError: On other HTTP errors
         """
         emails = await self.client.get("user/emails", access_token)
         primary_email = next((email["email"] for email in emails if email["primary"]), None)
 
         if not primary_email:
-            raise HTTPException(status_code=400, detail="No primary email found")
+            raise ValidationError("No primary email found", {"access_token_valid": True})
 
         return primary_email
 
@@ -83,13 +90,16 @@ class GitHubService:
             List of GitHubFileContent information including content analysis
 
         Raises:
-            HTTPException: If file type is invalid or branch doesn't exist
+            ValidationError: If file type is invalid
+            RepositoryError: If no matching files found or branch doesn't exist
+            AuthError: On authentication or permission issues
+            HTTPClientError: On other HTTP errors
         """
         if not isinstance(file_type, FileType):
             if file_type not in [t.value for t in FileType]:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid file type. Must be one of: {', '.join([t.value for t in FileType])}",
+                raise ValidationError(
+                    f"Invalid file type. Must be one of: {', '.join([t.value for t in FileType])}",
+                    {"provided_file_type": file_type, "valid_types": [t.value for t in FileType]},
                 )
             file_type = FileType(file_type)
 
@@ -112,8 +122,9 @@ class GitHubService:
 
         if not files:
             file_desc = "README" if file_type == FileType.README else "Solidity"
-            raise HTTPException(
-                status_code=404, detail=f"No {file_desc} files found in the repository"
+            raise RepositoryError(
+                f"No {file_desc} files found in the repository",
+                {"owner": owner, "repo": repo, "branch": branch, "file_type": str(file_type)},
             )
 
         # Fetch contents in parallel
@@ -150,6 +161,11 @@ class GitHubService:
 
         Returns:
             List of repository information
+
+        Raises:
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found
+            HTTPClientError: On other HTTP errors
         """
         installations = await self.client.get_installations(access_token)
         all_repos: list[GitHubRepository] = []
@@ -190,6 +206,11 @@ class GitHubService:
 
         Returns:
             List of branch information
+
+        Raises:
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found
+            HTTPClientError: On other HTTP errors
         """
         repo_data = await self.client.get(f"repos/{owner}/{repo}", access_token)
         default_branch = repo_data.get("default_branch")
@@ -213,6 +234,11 @@ class GitHubService:
 
         Returns:
             GitHubRepoInfo object
+
+        Raises:
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or invalid URL
+            HTTPClientError: On other HTTP errors
         """
         owner, repo = self.client.parse_github_url(repo_url)
         repo_data = await self.client.get(f"repos/{owner}/{repo}", access_token)
@@ -240,7 +266,9 @@ class GitHubService:
             Commit hash
 
         Raises:
-            HTTPException: If commit hash cannot be fetched
+            HTTPClientError: If commit hash cannot be fetched
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or invalid URL
         """
         owner, repo = self.client.parse_github_url(repository_url)
         url = f"repos/{owner}/{repo}/commits/{branch_name}"
@@ -249,7 +277,9 @@ class GitHubService:
         commit_hash = commit_data.get("sha")
 
         if not commit_hash:
-            raise HTTPException(status_code=500, detail="Failed to fetch commit hash")
+            raise HTTPClientError(
+                "Failed to fetch commit hash", {"owner": owner, "repo": repo, "branch": branch_name}
+            )
 
         return commit_hash
 
@@ -265,7 +295,9 @@ class GitHubService:
             True if repository is accessible
 
         Raises:
-            HTTPException: If repository is private or inaccessible
+            AuthError: When authentication to the repository fails
+            RepositoryError: When repository is not found or URL is invalid
+            HTTPClientError: On other HTTP errors
         """
         await self.get_github_repo_info(access_token, repo_url)
         return True

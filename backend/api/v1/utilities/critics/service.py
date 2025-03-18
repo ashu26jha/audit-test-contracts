@@ -3,6 +3,7 @@ from typing import Dict, List
 from langfuse.decorators import observe
 
 from api.v1.utilities.critics.helpers.duplicates import remove_duplicates_batched
+from api.v1.utilities.critics.helpers.enrichment import enrich_findings_batched
 from api.v1.utilities.critics.helpers.mitigation import mitigate_findings_async
 from api.v1.utilities.critics.helpers.validation import validate_findings_batched
 from core.models.scan import Finding
@@ -77,6 +78,23 @@ class CriticService:
         return await mitigate_findings_async(findings, contract_contents)
 
     @staticmethod
+    async def enrich_findings(
+        findings: List[Finding], contract_contents: Dict[str, str]
+    ) -> List[Finding]:
+        """
+        Enhance findings by improving their descriptions and recommendations based on
+        information from mitigation and validation phases.
+
+        Args:
+            findings: List of findings to enhance
+            contract_contents: Dictionary mapping filenames to contract source code
+
+        Returns:
+            List of findings with enhanced descriptions and recommendations
+        """
+        return await enrich_findings_batched(findings, contract_contents)
+
+    @staticmethod
     @observe(name="[CRITICS] run full critic phase")
     async def run_full_critic_phase(
         findings: List[Finding], contract_contents: Dict[str, str]
@@ -91,6 +109,9 @@ class CriticService:
         validated_findings = await CriticService.run_validation(
             findings=mitigated_findings, contract_contents=contract_contents
         )
-        deduplicated_findings = await CriticService.run_deduplication(validated_findings)
+        enriched_findings = await CriticService.enrich_findings(
+            findings=validated_findings, contract_contents=contract_contents
+        )
+        deduplicated_findings = await CriticService.run_deduplication(enriched_findings)
 
         return deduplicated_findings

@@ -1,6 +1,6 @@
 import { type FC } from "react";
 
-import { Button, Card, CardBody, CardFooter, Divider } from "@nextui-org/react";
+import { Button, Card, CardBody, CardFooter, Chip, Divider } from "@nextui-org/react";
 import { ArrowUpRight, CircleCheck } from "lucide-react";
 import Image from "next/image";
 import { tv } from "tailwind-variants";
@@ -38,6 +38,8 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
 }) => {
   const { handleSubscribe, isLoading: isSubscribing, handleCustomerPortalSession } = useSubscription();
   const { user } = useAuth();
+  const isInternal = isSubscribed && subscriptionType === "enterprise" && !user?.subscription.expiresAt;
+
   const button = tv({
     base: "mr-auto text-white mx-6 w-36 my-6 flex items-center justify-center gap-2 px-4 py-2 rounded-lg",
     variants: {
@@ -156,7 +158,18 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
         </div>
       </CardBody>
 
-      {isSubscribed && subscriptionType !== "free" && (
+      {isInternal && (
+        <CardFooter className="p-0 border-t border-[#22262F]">
+          <Chip color="success" variant="flat" className="mt-[1rem] mb-[0.25rem] ml-6">
+            <span className="flex items-center">
+              <Image src="/svg/check-circle.svg" alt="Enterprise" width={16} height={16} className="mr-1" />
+              Enterprise features enabled for internal use
+            </span>
+          </Chip>
+        </CardFooter>
+      )}
+
+      {isSubscribed && subscriptionType !== "free" && !isInternal && (
         <CardFooter className="p-0 border-t border-[#22262F]">
           <div className="mt-6 text-[#F59E0B] text-sm flex items-center gap-2 px-6 pb-4 w-full">
             <Image src="/svg/payment-circle.svg" alt="payment" width={16} height={16} />

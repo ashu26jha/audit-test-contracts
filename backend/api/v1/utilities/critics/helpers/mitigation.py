@@ -169,9 +169,9 @@ def _apply_mitigation_updates(
                 indexed_finding.finding.Severity = severity_enum
                 update_count += 1
 
-            # Apply comments update if present
+            # Save comments update if present
             if update.comments:
-                _add_mitigation_comments(indexed_finding.finding, update.comments)
+                indexed_finding.finding.Mitigation = f"\n\nMitigation Analysis: {update.comments}"
 
         # Add to result list (unless removed)
         result_findings.append(indexed_finding)
@@ -180,17 +180,3 @@ def _apply_mitigation_updates(
         f"[MITIGATION] Mitigation completed: Updated {update_count} findings, removed {removal_count} findings."
     )
     return result_findings
-
-
-def _add_mitigation_comments(finding: Finding, comments: str) -> None:
-    """
-    Add mitigation comments to a finding.
-
-    Args:
-        finding: Finding to update
-        comments: Comments to add
-    """
-    if finding.Description:
-        finding.Description += f"\n\nMitigation Analysis: {comments}"
-    else:
-        finding.Description = f"Mitigation Analysis: {comments}"

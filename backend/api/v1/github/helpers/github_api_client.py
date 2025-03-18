@@ -5,11 +5,11 @@ from typing import Dict, List, Optional, Tuple
 from urllib.parse import urljoin
 
 import httpx
-from fastapi import HTTPException
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
 from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
+from core.utils.errors import AuthError, HTTPClientError, RepositoryError
 from core.utils.logger import logger
 
 
@@ -23,8 +23,8 @@ def should_retry_github_request(exc: Exception) -> bool:
     Returns:
         bool: True if request should be retried, False otherwise
     """
-    if isinstance(exc, HTTPException):
-        return False  # Never retry 4xx errors
+    if isinstance(exc, (AuthError, RepositoryError)):
+        return False  # Never retry auth or resource not found errors
     return isinstance(exc, (httpx.ConnectTimeout, httpx.ReadTimeout))
 
 
@@ -78,33 +78,37 @@ class GitHubAPIClient:
 
     async def _handle_response(self, response: httpx.Response, error_message: str):
         """
-        Handle GitHub API response and raise appropriate exceptions.
+        Handle GitHub API response and raise appropriate domain-specific exceptions.
 
         Args:
             response: HTTP response from GitHub
             error_message: Base error message to use in exceptions
 
         Raises:
-            HTTPException: On API errors with appropriate status codes and messages
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or repository access issues
+            HTTPClientError: On other HTTP errors
         """
         if response.status_code == 401:
-            raise HTTPException(
-                status_code=401, detail="Unauthorized access. Access token required."
+            raise AuthError(
+                "Unauthorized access. Access token required.", {"status_code": response.status_code}
             )
 
         if response.status_code == 403:
-            raise HTTPException(
-                status_code=403,
-                detail="This repository is private or inaccessible. Please make sure you have access to it.",
+            raise AuthError(
+                "This repository is private or inaccessible. Please make sure you have access to it.",
+                {"status_code": response.status_code},
             )
 
         if response.status_code == 404:
-            raise HTTPException(status_code=404, detail=f"{error_message}: Resource not found.")
+            raise RepositoryError(
+                f"{error_message}: Resource not found.", {"status_code": response.status_code}
+            )
 
         if response.status_code != 200:
-            raise HTTPException(
-                status_code=response.status_code,
-                detail=f"{error_message}. Status {response.status_code}",
+            raise HTTPClientError(
+                f"{error_message}. Status {response.status_code}",
+                {"status_code": response.status_code, "response": response.text},
             )
 
     @retry(
@@ -125,7 +129,9 @@ class GitHubAPIClient:
             Response data as dictionary
 
         Raises:
-            HTTPException: On API errors or invalid responses
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or repository access issues
+            HTTPClientError: On other HTTP errors
         """
         # First sanitize the endpoint parts to handle invalid characters
         endpoint_parts = endpoint.split("/")
@@ -184,6 +190,11 @@ class GitHubAPIClient:
 
         Returns:
             List of all items from paginated response
+
+        Raises:
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or repository access issues
+            HTTPClientError: On other HTTP errors
         """
         results = []
         params = params or {}
@@ -220,7 +231,9 @@ class GitHubAPIClient:
             List of installation data
 
         Raises:
-            HTTPException: On API errors or invalid responses
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or repository access issues
+            HTTPClientError: On other HTTP errors
         """
         url = "user/installations"
         headers = {
@@ -253,14 +266,14 @@ class GitHubAPIClient:
             Tuple of (owner, repo_name)
 
         Raises:
-            HTTPException: If URL format is invalid
+            RepositoryError: If URL format is invalid
         """
         pattern = (
             r"(?:https?://)?(?:www\.)?github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)(?:\.git)?/?"
         )
         match = re.match(pattern, repo_url)
         if not match:
-            raise HTTPException(status_code=400, detail="Invalid GitHub repository URL")
+            raise RepositoryError("Invalid GitHub repository URL", {"repo_url": repo_url})
         return match.group("owner"), match.group("repo").replace(".git", "")
 
     async def is_org_member(self, access_token: str, org_name: str) -> bool:
@@ -312,7 +325,9 @@ class GitHubAPIClient:
             File contents as string
 
         Raises:
-            HTTPException: If file is not found or inaccessible
+            AuthError: On authentication or permission issues
+            RepositoryError: On resource not found or repository access issues
+            HTTPClientError: On other HTTP errors
         """
         content_data = await self.get(
             f"repos/{owner}/{repo}/contents/{path}", access_token, {"ref": branch}

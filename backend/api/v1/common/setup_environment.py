@@ -17,6 +17,7 @@ from api.v1.common.project_helpers import compile_project, get_project_structure
 from api.v1.github.helpers.clone_repo import clone_repo
 from config.solidity_settings import FORGE_INSTALL_COMMAND
 from core.schemas.scan_schema import SetupResult
+from core.utils.errors import AuthError, BranchError, CloneError
 from core.utils.logger import logger
 from core.utils.run_command import run_command
 
@@ -32,6 +33,15 @@ async def setup_environment(
     Sets up the environment for analysis. The temp_dir might:
     - Already contain a cloned repo (when called from audit_agent_service)
     - Need to be created (when called standalone from other services)
+
+    Returns:
+        Optional[SetupResult]: Contains project directory, type, remappings, and structure,
+                              or None if non-critical setup operations fail
+
+    Raises:
+        AuthError: When authentication to the repository fails
+        BranchError: When the specified branch doesn't exist
+        CloneError: When the repository cannot be cloned
     """
     remappings = None
     project_dir = temp_dir
@@ -42,6 +52,7 @@ async def setup_environment(
         os.makedirs(temp_dir, exist_ok=True)
         if not os.listdir(temp_dir):
             github_url_str = str(github_url)
+            # Repository cloning is critical - let any AuthError, BranchError, or CloneError propagate
             cloned_repo_dir = await clone_repo(github_url_str, temp_dir, oauth_token, branch)
         else:
             cloned_repo_dir = temp_dir
@@ -60,9 +71,10 @@ async def setup_environment(
         elif project_type == "foundry":
             remappings = await setup_foundry_environment(project_dir)
         else:
-            raise NotImplementedError("This framework is not supported.")
+            logger.error(f"Unsupported framework: {project_type}")
+            return None
 
-        # Step 4: Compile the project
+        # Step 4: Compile the project - non-critical, return None on failure
         try:
             await compile_project(project_dir)
         except Exception as e:
@@ -82,6 +94,10 @@ async def setup_environment(
             repo_root=temp_dir,
         )
 
+    # Let repository cloning errors propagate
+    except (AuthError, BranchError, CloneError):
+        raise
+    # For other non-critical errors, log and return None
     except Exception as e:
         logger.error(f"Environment setup failed: {str(e)}")
         return None

@@ -241,7 +241,7 @@ class UserRepository:
                 credits=subscription["monthly_credits"],
                 monthlyCredits=subscription["monthly_credits"],
                 lastRenewalAt=now,
-                expiresAt=now + subscription["credit_expiry_period"],
+                expiresAt=None,
             )
 
             # Update using the model

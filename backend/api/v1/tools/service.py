@@ -40,7 +40,7 @@ async def query_and_search_service(
 
     try:
         queries = await build_queries(contracts, docs, num_queries, entry_point)
-        return await execute_queries(queries, ast_tree, docs)
+        return await execute_queries(queries=queries, docs=docs, ast_tree=ast_tree)
     except Exception as e:
         logger.error(f"[Tools] Error building and executing queries: {e}")
         return ""

@@ -1,8 +1,7 @@
 import os
 from typing import List, Optional, Union
 
-from fastapi import HTTPException
-
+from core.utils.errors import AuthError, BranchError, CloneError
 from core.utils.logger import logger
 from core.utils.run_command import run_command
 
@@ -26,7 +25,9 @@ async def clone_repo(
         str: Path to the cloned repository directory
 
     Raises:
-        HTTPException: With appropriate status code and message for different failure scenarios
+        AuthError: When authentication to the repository fails
+        BranchError: When the specified branch doesn't exist
+        CloneError: When the repository cannot be cloned for other reasons
     """
     logger.info(f"[Scan Init] Cloning repository from {repository_url} to {target_dir}...")
 
@@ -49,14 +50,16 @@ async def clone_repo(
         )
         return repo_dir
 
-    except HTTPException:
+    except (AuthError, BranchError, CloneError):
         raise
     except Exception as e:
         safe_error = str(e)
         if access_token:
             safe_error = safe_error.replace(access_token, "***")
         logger.exception(f"[Scan Init] Unexpected error during repository cloning: {safe_error}")
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        raise CloneError(
+            "Internal Server Error during repository cloning", {"original_error": safe_error}
+        ) from e
 
 
 def prepare_repo_directory(repository_url: str, target_dir: str) -> str:
@@ -82,32 +85,30 @@ def prepare_clone_command(
 
 
 def handle_clone_error(stderr: Union[str, bytes], access_token: Optional[str], branch: str) -> None:
-    """Handles git clone errors and raises appropriate HTTP exceptions."""
+    """Handles git clone errors and raises appropriate domain-specific exceptions."""
     stderr_str = stderr.decode("utf-8") if isinstance(stderr, bytes) else stderr
     safe_stderr = stderr_str.replace(access_token, "***") if access_token else stderr_str
 
     if "Authentication failed" in stderr_str or "could not read Username" in stderr_str:
-        raise HTTPException(
-            status_code=401,
-            detail="Unauthorized access to Git repository. Please check your access token.",
+        raise AuthError(
+            "Unauthorized access to Git repository. Please check your access token.",
+            {"stderr": safe_stderr},
         )
 
     if (
         f"Remote branch {branch} not found" in stderr_str
         or "did not match any file(s) known to git" in stderr_str
     ):
-        raise HTTPException(
-            status_code=404,
-            detail=f"Branch '{branch}' not found in repository.",
+        raise BranchError(
+            f"Branch '{branch}' not found in repository.", {"branch": branch, "stderr": safe_stderr}
         )
     if "Repository not found" in stderr_str:
-        raise HTTPException(
-            status_code=404,
-            detail="Repository not found. Please check the repository URL.",
+        raise CloneError(
+            "Repository not found. Please check the repository URL.", {"stderr": safe_stderr}
         )
 
     logger.error(f"[Scan Init] Git clone failed with error: {safe_stderr}")
-    raise HTTPException(
-        status_code=400,
-        detail="Failed to clone repository. Please check the repository URL and authentication credentials.",
+    raise CloneError(
+        "Failed to clone repository. Please check the repository URL and authentication credentials.",
+        {"stderr": safe_stderr},
     )

@@ -143,3 +143,22 @@ class ValidationJudgementList(BaseModel):
     """List of validation judgements for findings"""
 
     judgements: List[ValidationJudgement]
+
+
+# ------------------------------------------
+#  ENRICHMENT
+# ------------------------------------------
+
+
+class EnrichedFinding(BaseModel):
+    """Enhanced finding with a detailed summary of insights and potentially updated severity."""
+
+    index: int
+    insight_summary: str
+    updated_severity: Optional[str] = None
+
+
+class EnrichedFindingList(BaseModel):
+    """List of enriched findings with insight summaries and potentially updated severities."""
+
+    enriched_findings: List[EnrichedFinding]
