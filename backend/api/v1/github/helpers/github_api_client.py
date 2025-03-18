@@ -300,8 +300,8 @@ class GitHubAPIClient:
             return is_member
 
         except Exception as e:
-            # If we get a 404, the user is not a member
-            if hasattr(e, "status_code") and e.status_code == 404:
+            # If we get a 403 or 404, the user is not a member
+            if hasattr(e, "status_code") and (e.status_code == 404 or e.status_code == 403):
                 return False
 
             # For other errors, log and return False

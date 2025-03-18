@@ -11,8 +11,11 @@ export const useGithubApp = () => {
     try {
       const owners = await getOrganizationsAndPersonal();
       setOwners(owners);
-      setHasGithubApp(owners.length > 0);
-      return owners.length > 0;
+
+      // Check if any owner has the GitHub app installed
+      const hasApp = owners.some((owner: Owner) => owner.hasGithubApp);
+      setHasGithubApp(hasApp);
+      return hasApp;
     } catch (error) {
       console.error("Error checking GitHub App installation:", error);
       setHasGithubApp(false);

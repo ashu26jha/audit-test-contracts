@@ -1,6 +1,9 @@
 interface Owner {
   login: string;
   type: "user" | "organization";
+  hasGithubApp: boolean;
+  avatar_url?: string;
+  url?: string;
 }
 
 interface Repository {

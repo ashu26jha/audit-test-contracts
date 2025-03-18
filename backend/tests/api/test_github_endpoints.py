@@ -67,14 +67,22 @@ class TestGitHubEndpoints:
                     "type": "User",
                     "avatar_url": None,
                     "url": "https://github.com/testuser",
+                    "hasGithubApp": False,
                 },
                 {
                     "login": "org1",
                     "type": "Organization",
                     "avatar_url": "https://github.com/avatar.png",
                     "url": "https://github.com/org1",
+                    "hasGithubApp": True,
                 },
-                {"login": "user1", "type": "User", "avatar_url": None, "url": None},
+                {
+                    "login": "user1",
+                    "type": "User",
+                    "avatar_url": None,
+                    "url": None,
+                    "hasGithubApp": False,
+                },
             ],
         }
 

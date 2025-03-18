@@ -50,6 +50,9 @@ class GitHubOrganizationResponse(BaseModel):
     type: str = Field(..., description="Type of account (user/organization)")
     avatar_url: Optional[str] = Field(None, description="URL to the avatar image")
     url: Optional[str] = Field(None, description="API URL for this resource")
+    hasGithubApp: bool = Field(
+        ..., description="Indicates if the GitHub App is installed for this organization"
+    )
 
 
 class GitHubRepository(BaseModel):

@@ -42,6 +42,13 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
         # Get installations directly from GitHub API
         installations = await github_service.client.get_installations(current_user.accessToken)
 
+        # Create a set of logins with GitHub App installed
+        installed_logins = {
+            installation["account"]["login"]
+            for installation in installations
+            if "account" in installation and "login" in installation["account"]
+        }
+
         # Create a mapping of login to organization data
         organizations_map = {
             current_user.username: GitHubOrganizationResponse(
@@ -49,6 +56,7 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
                 type="User",
                 avatar_url=current_user.avatarUrl,
                 url=f"https://github.com/{current_user.username}",
+                hasGithubApp=current_user.username in installed_logins,
             )
         }
 
@@ -62,6 +70,7 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
                         type=installation["account"].get("type", "User"),
                         avatar_url=installation["account"].get("avatar_url"),
                         url=installation["account"].get("html_url"),
+                        hasGithubApp=True,  # Always true for installations
                     )
 
         # Add any missing organizations from repositories
@@ -74,6 +83,7 @@ async def get_organizations(current_user: User = Depends(get_current_user)):
                 organizations_map[owner] = GitHubOrganizationResponse(
                     login=owner,
                     type="User",  # Default to User
+                    hasGithubApp=owner in installed_logins,
                 )
 
         return SuccessResponse(data=list(organizations_map.values()))
