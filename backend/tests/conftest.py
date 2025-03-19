@@ -11,6 +11,7 @@ from core.models.credit_transaction import CreditTransaction
 from core.models.docs import ReadmeDocs
 from core.models.payment import Payment
 from core.models.scan import Scan, ScanResult
+from core.models.search_results import CachedContent
 from core.models.throttling import ThrottleRecord
 from core.models.user import User
 from main import app
@@ -152,6 +153,7 @@ async def setup_db():
             LoginAttempt,
             OAuthState,
             ThrottleRecord,
+            CachedContent,
         ],
     )
 

@@ -53,14 +53,6 @@ def mock_get_full_scan_result():
         yield mock
 
 
-@pytest.fixture
-def mock_get_partial_scan_result():
-    with patch(
-        "api.v1.scans.service.ScanResultService.get_partial_result", new_callable=AsyncMock
-    ) as mock:
-        yield mock
-
-
 @pytest.mark.usefixtures("mock_auth")
 class TestScanResultsEndpoints:
     async def test_get_full_scan_result(

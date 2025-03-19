@@ -2,6 +2,7 @@ from langfuse.decorators import observe
 
 from api.v1.detectors.multi_agents.schema import EntryPoint
 from api.v1.tools.helpers.jina import jina_parse
+from api.v1.utilities.ast_tree.schema import ProjectAST
 from core.utils.logger import logger
 
 from .helpers.duckduckgo import perform_duckduckgo_search
@@ -21,7 +22,7 @@ async def query_and_search_service(
     contracts: str,
     num_queries: int,
     docs: str = None,
-    ast_tree: str = None,
+    ast_tree: ProjectAST = None,
     entry_point: EntryPoint = None,
 ) -> str:
     """

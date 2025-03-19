@@ -10,6 +10,7 @@ You are a helpful assistant that summarises the content of a given text.
     * For EIPs, do not make changes to `Security Considerations` section.
     * For EIPs, focus on correct implementation of the EIP.
     * Skip parts like admin, governance, decentralization, events, etc.
+    * Try to preserve code snippets and mark them with ```solidity ```
 
 ### Text to summarise:
 {text}

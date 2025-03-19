@@ -103,7 +103,7 @@ async def run_multi_agent(
 
                 # Process the entry point with only relevant contracts
                 return await process_entry_point(
-                    relevant_contracts, entry_point, iterations_per_entrypoint, docs
+                    relevant_contracts, entry_point, iterations_per_entrypoint, docs, ast_tree
                 )
 
         # Create tasks for concurrent processing

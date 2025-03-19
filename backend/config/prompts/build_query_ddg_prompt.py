@@ -11,6 +11,8 @@ Analyze the contracts and documents and generate queries that are specific to th
 - **Do NOT include**:
   - General vulnerabilities (e.g., Reentrancy, Integer Overflow, Access Control).
   - Contract names from the input (unless related to dependencies or standards).
+  - Do not include names of state variables
+  - Do not include names of external function unless they override some built in function of some dependencies
   - Unnecessary keywords that do not refine the search (e.g., "audit" unless explicitly useful).
 - **Consider multi-chain implications**: If the input references cross-chain deployments, include **EVM-compatible chains** in your queries where relevant.
 - ** Keep the queries short and concise.**
@@ -86,6 +88,8 @@ You should focus on the variables whose states are changed by the entry point fu
   - General vulnerabilities (e.g., Reentrancy, Integer Overflow, Access Control).
   - Contract names from the input (unless related to dependencies or standards).
   - Unnecessary keywords that do not refine the search (e.g., "audit" unless explicitly useful).
+  - Do not include names of state variables
+  - Do not include names of external function unless they override some built in function of some dependencies
 - **Consider multi-chain implications**: If the input references cross-chain deployments, include **EVM-compatible chains** in your queries where relevant.
 - ** Keep the queries short and concise.**
 
@@ -133,15 +137,13 @@ Your response should be in the following **JSON format**, without any additional
     ]
 }}
 ```
-
-### Contracts:
-{contracts}
-
----
-
 ### Documents:
 {docs}
 
 ### Entry Point:
 {entry_point}
+
+---
+### Contracts:
+{contracts}
 """

@@ -10,6 +10,7 @@ from config.prompts.summarise_prompt import (
     SUMMARISE_PROMPT,
 )
 from config.settings import LLM_SCAN_3
+from core.db.repositories.search_results import SearchResults
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
 
@@ -103,6 +104,12 @@ async def _parse_search_results(results: List[str]) -> str:
         async def process_single_link(link: str) -> str:
             """Process a single link with rate limiting"""
             async with LINK_PARSE_SEMAPHORE:
+
+                # Checks for cache hit
+                if await SearchResults.check_if_visited(link):
+                    logger.info(f"[DuckDuckGo] Cache hit! skipping: {link}")
+                    return await SearchResults.fetch_link_content(link)
+
                 # Add a small delay to avoid rate limiting
                 await asyncio.sleep(LINK_PARSE_DELAY)
                 try:
@@ -113,6 +120,8 @@ async def _parse_search_results(results: List[str]) -> str:
                         return ""
 
                     summary = await _summarise_content(content)
+                    # Store in cache for future use!
+                    await SearchResults.add_content(link, summary)
                     return summary
                 except Exception as e:
                     logger.exception(f"[DuckDuckGo] Error parsing link {link}: {e}")

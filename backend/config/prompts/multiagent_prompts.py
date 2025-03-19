@@ -96,6 +96,9 @@ WHITE_HAT_PROMPT = """You are an expert smart contract security researcher. Your
 - **Function:** `{function_name}`
 - **Contract:** `{contract_name}`
 
+### **Additional context from web to assist with the audit (if any):**
+{duckduckgo_results}
+
 ### **Function Analyzer's Input:**
 {analysis}
 
@@ -176,6 +179,9 @@ Provide a **strictly formatted** JSON response with no explanations, comments, a
 ### **Function to Analyze:**
 - **Function:** `{function_name}`
 - **Contract:** `{contract_name}`
+
+### **Additional context from web to assist with the audit (if any):**
+{duckduckgo_results}
 
 ### **Exploit to validate:**
 {exploit}

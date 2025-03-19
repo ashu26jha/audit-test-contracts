@@ -6,6 +6,7 @@ from api.v1.detectors.multi_agents.helper.agents import (
     WhiteHatAgent,
 )
 from api.v1.detectors.multi_agents.schema import EntryPoint
+from api.v1.utilities.ast_tree.schema import ProjectAST
 from api.v1.utilities.invariants.service import generate_invariants
 from core.models.scan import Finding
 from core.utils.logger import logger
@@ -16,6 +17,7 @@ async def process_entry_point(
     entry_point: EntryPoint,
     iterations_per_entrypoint: int,
     docs: Optional[str] = None,
+    ast_tree: ProjectAST = None,
 ) -> List[Finding]:
     """
     Process a single entry point through a group of agents.
@@ -28,6 +30,8 @@ async def process_entry_point(
         List of validated findings for this entry point
     """
     try:
+        from api.v1.tools.service import query_and_search_service
+
         findings: List[Finding] = []
         max_validation_attempts = iterations_per_entrypoint
 
@@ -52,6 +56,14 @@ async def process_entry_point(
 
         # 3. Validation loop
         attempt = 0
+
+        duckduckgo_results = await query_and_search_service(
+            contracts=flattened_contracts,
+            num_queries=2,
+            docs=docs,
+            entry_point=entry_point,
+            ast_tree=ast_tree,
+        )
         while attempt < max_validation_attempts:
             # 4. Get exploit from hacker
             logger.info(
@@ -66,6 +78,7 @@ async def process_entry_point(
                 history=conversation_history,
                 previous_findings=findings,
                 docs=docs,
+                duckduckgo_analysis=duckduckgo_results,
             )
             exploit = await hacker.run()
 
@@ -78,6 +91,7 @@ async def process_entry_point(
                 flattened_contracts=flattened_contracts,
                 entry_point=entry_point,
                 exploit=exploit,
+                duckduckgo_analysis=duckduckgo_results,
             )
             validation = await validator.run()
 

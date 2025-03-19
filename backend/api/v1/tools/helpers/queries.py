@@ -4,6 +4,7 @@ from typing import List
 from api.v1.detectors.multi_agents.schema import EntryPoint
 from api.v1.tools.helpers.duckduckgo import perform_duckduckgo_search
 from api.v1.tools.schema import BuildQueriesResult
+from api.v1.utilities.ast_tree.schema import ProjectAST
 from config.prompts.build_query_ddg_prompt import (
     BUILD_QUERY_DDG_PROMPT,
     BUILD_QUERY_DDG_PROMPT_WITH_ENTRY_POINT,
@@ -37,12 +38,12 @@ async def build_queries(
     response = await send_prompt_to_llm_async(
         model_type=LLM_SCAN_3, messages=prompt, response_model=BuildQueriesResult
     )
-
     logger.info(f"[Tools] {num_queries} queries generated successfully: {response.queries}")
+
     return response.queries
 
 
-async def execute_queries(queries: List[str], docs: str, ast_tree: str = None) -> str:
+async def execute_queries(queries: List[str], docs: str, ast_tree: ProjectAST = None) -> str:
     """
     Execute a list of queries in parallel and return the summarized results.
 
@@ -88,7 +89,7 @@ async def execute_queries(queries: List[str], docs: str, ast_tree: str = None) -
     return await _clean_response(docs=docs, ast=ast_tree, search_results=valid_results)
 
 
-async def _clean_response(search_results: List[str], ast: str, docs: str) -> str:
+async def _clean_response(search_results: List[str], ast: ProjectAST, docs: str) -> str:
     """
     Clean the response from search results.
 
@@ -104,7 +105,7 @@ async def _clean_response(search_results: List[str], ast: str, docs: str) -> str
     search_results_str = "".join([s for s in search_results if s])
 
     clean_response_prompt = CLEAN_RESPONSE_PROMPT.format(
-        docs=docs, ast=ast, search_results=search_results_str
+        docs=docs, ast=str(ast), search_results=search_results_str
     )
     response: str | None = await send_prompt_to_llm_async(
         model_type=LLM_SCAN_3,

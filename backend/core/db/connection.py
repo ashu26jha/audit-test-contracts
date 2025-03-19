@@ -7,11 +7,13 @@ from huey import SqliteHuey
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import settings
+from core.db.repositories.search_results import SearchResults
 from core.models.auth import BlacklistedToken, LoginAttempt, OAuthState
 from core.models.credit_transaction import CreditTransaction
 from core.models.docs import ReadmeDocs
 from core.models.payment import Payment
 from core.models.scan import Scan, ScanResult
+from core.models.search_results import CachedContent
 from core.models.throttling import ThrottleRecord
 from core.models.user import User
 from core.utils.logger import logger
@@ -24,6 +26,7 @@ DOCUMENT_MODELS = [
     Payment,
     CreditTransaction,
     ReadmeDocs,
+    CachedContent,
     BlacklistedToken,
     LoginAttempt,
     OAuthState,
@@ -143,3 +146,15 @@ async def cleanup_huey_tasks():
     except Exception as e:
         logger.error(f"[Huey] Error during tasks cleanup: {str(e)}")
         # Don't raise the error to prevent scheduler from stopping
+
+
+async def cleanup_cached_content():
+    """Cleanup cached content older than 14 days"""
+    try:
+        deleted_count = await SearchResults.cleanup_old_results(days=14)
+        logger.info(
+            f"Cleaned up {deleted_count.deleted_count} cached content entries older than 14 days"
+        )
+    except Exception as e:
+        logger.error(f"Error cleaning up cached content: {e}")
+        return None

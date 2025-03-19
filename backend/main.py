@@ -12,6 +12,7 @@ from huey.consumer import Consumer
 from api.v1.router import router as api_v1_router
 from config import settings
 from core.db.connection import (
+    cleanup_cached_content,
     cleanup_huey_tasks,
     cleanup_login_attempts,
     close_database,
@@ -72,6 +73,17 @@ async def lifespan(app: FastAPI):
         minute=0,
         name="cleanup_huey_tasks",
         misfire_grace_time=3600,
+    )
+
+    # Clean up cache job - run every two weeks
+    scheduler.add_job(
+        cleanup_cached_content,
+        "cron",
+        hour=16,
+        minute=00,
+        name="cleanup_cached_content",
+        misfire_grace_time=3600,
+        timezone="Asia/Kolkata",
     )
 
     scheduler.start()
