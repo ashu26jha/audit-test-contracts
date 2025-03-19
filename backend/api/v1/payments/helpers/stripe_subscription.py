@@ -9,7 +9,7 @@ from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.db.repositories.user import UserRepository
 from core.models.user import SubscriptionType, User
 from core.utils import logger
-from core.utils.errors import PaymentError, SubscriptionError
+from core.utils.errors import AuthorizationError, PaymentError, SubscriptionError
 from core.utils.validate import validate_user_scan_access
 
 
@@ -76,7 +76,7 @@ class StripeSubscriptionHelper:
                         "error": str(e),
                     },
                 )
-        except (SubscriptionError, PaymentError, PermissionError):
+        except (SubscriptionError, PaymentError, AuthorizationError):
             raise
         except Exception as e:
             logger.error(

@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from api.v1.utilities.benchmark.schema import BenchmarkScanContext
+from api.v1.scanner.benchmark.schema import BenchmarkScanContext
 from core.scanners.base_task_manager import BaseTaskManager
 from core.schemas.context_protocols import BenchmarkContext
 from core.schemas.scan_schema import Detectors, ModeType, TypeOfScan

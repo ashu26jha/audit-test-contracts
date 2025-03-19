@@ -4,6 +4,9 @@ export const CONTACT = {
   TELEGRAM: "https://t.me/ai_smart_contract_auditor",
 } as const;
 
+// @Dev: Set to true to enable Cairo scans
+export const IS_CAIRO_LIVE = false;
+
 // API and External Services
 export const SERVICES = {
   API_URL: process.env.NEXT_PUBLIC_API_URL ?? "https://api.auditagent.nethermind.io",

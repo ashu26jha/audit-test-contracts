@@ -67,8 +67,16 @@ export const getBranches = async (owner: string, repo: string) => {
   return response.data.data;
 };
 
-export const getRepositoryContents = async (owner: string, repo: string, branch: string, path: string = "") => {
-  const response = await api.get(`/api/v1/github/repository-contents/${owner}/${repo}?branch=${branch}&path=${path}`);
+export const getRepositoryContents = async (
+  owner: string,
+  repo: string,
+  branch: string,
+  language: ScanLanguage,
+  path: string = "",
+) => {
+  const response = await api.get(
+    `/api/v1/github/repository-contents/${owner}/${repo}?branch=${branch}&path=${path}&file_type=${language}`,
+  );
   return response.data.data;
 };
 
@@ -88,7 +96,7 @@ export const getScanHistory = async () => {
 };
 
 export const isFreeScanAllowed = async () => {
-  const response = await api.get("/api/v1/is-free-scan-allowed");
+  const response = await api.get("/api/v1/scanner/audit-agent/is-free-scan-allowed");
   return response.data.data;
 };
 

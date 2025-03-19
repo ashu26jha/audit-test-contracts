@@ -33,6 +33,7 @@ const ScanStepperView: FC = () => {
     selectedOwner,
     selectedRepo,
     selectedBranch,
+    selectedLanguage,
     selectedContracts,
     isScanning,
     repositoryURL,
@@ -45,7 +46,7 @@ const ScanStepperView: FC = () => {
     setIsNextEnabled,
     resetStepper,
   } = useScanStepperStore();
-  const { fetchRepositories, fetchBranches, fetchSolidityFiles, initiateScanProcess, stepsData } = useScanStepper();
+  const { fetchRepositories, fetchBranches, fetchContractFiles, initiateScanProcess, stepsData } = useScanStepper();
   const [openWarningDialog, setOpenWarningDialog] = useState<boolean>(false);
   const { user, refetchUser } = useAuth();
   const { freeScanAllowed, checkIfFreeScanAllowed, handleSubscribe } = useSubscription();
@@ -73,10 +74,10 @@ const ScanStepperView: FC = () => {
   }, [selectedOwner, selectedRepo, fetchBranches]);
 
   useEffect(() => {
-    if (selectedOwner && selectedRepo && selectedBranch) {
-      fetchSolidityFiles(selectedOwner, selectedRepo, selectedBranch);
+    if (selectedOwner && selectedRepo && selectedBranch && selectedLanguage) {
+      fetchContractFiles(selectedOwner, selectedRepo, selectedBranch, selectedLanguage);
     }
-  }, [selectedOwner, selectedRepo, selectedBranch, fetchSolidityFiles]);
+  }, [selectedOwner, selectedRepo, selectedBranch, selectedLanguage, fetchContractFiles]);
 
   const isNextStepEnabled = useCallback(() => {
     let isStep0Valid =

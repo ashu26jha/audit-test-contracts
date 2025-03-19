@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body: InitiateScanRequest = await request.json();
     const baseURL = process.env.DOCKER_ENV === "true" ? "http://backend:8000" : SERVICES.API_URL;
+    const url = body.file_type === "cairo" ? "/api/v1/scanner/cairo/launch" : "/api/v1/scanner/audit-agent/launch";
 
-    const response = await axios.post(`/api/v1/audit-agent`, body, {
+    const response = await axios.post(url, body, {
       baseURL,
       headers: {
         Cookie: `auth_token=${token}`,

@@ -106,6 +106,7 @@ interface InitiateScanRequest {
     readme: string[];
     qa: Record<string, string>;
   };
+  file_type: ScanLanguage;
 }
 
 interface FolderStructure {

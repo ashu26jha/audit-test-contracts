@@ -3,11 +3,11 @@ import os
 from typing import Dict, Optional
 from uuid import UUID
 
-from api.v1.audit_agent.helpers.scan_initializer import AuditAgentScanInitializer
-from api.v1.audit_agent.helpers.task_manager import AuditAgentTaskManager
-from api.v1.audit_agent.schema import AuditAgentRequest, AuditAgentScanContext
 from api.v1.common.docs_helpers import format_docs_for_prompt
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
+from api.v1.scanner.audit_agent.helpers.scan_initializer import AuditAgentScanInitializer
+from api.v1.scanner.audit_agent.helpers.task_manager import AuditAgentTaskManager
+from api.v1.scanner.audit_agent.schema import AuditAgentRequest, AuditAgentScanContext
 from api.v1.utilities.pdf.service import generate_and_send_pdf_from_scan
 from core.db.connection import huey
 from core.db.repositories.docs import DocsRepository

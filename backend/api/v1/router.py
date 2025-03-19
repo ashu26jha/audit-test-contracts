@@ -2,8 +2,6 @@ from fastapi import APIRouter
 
 from config.settings import ENVIRONMENT
 
-from .agentic import router as agentic_router
-from .audit_agent import router as audit_agent_router
 from .auth import router as auth_router
 from .detectors import (
     autonomous_agent_router,
@@ -14,6 +12,12 @@ from .detectors import (
 )
 from .github import router as github_router
 from .payments import router as payments_router
+from .scanner import (
+    agentic_router,
+    audit_agent_router,
+    benchmark_router,
+    cairo_router,
+)
 from .scans import router as scans_router
 from .utilities.health_check import router as health_check_router
 from .utilities.pdf import router as pdf_router
@@ -23,7 +27,6 @@ from .utilities.stats import router as stats_router
 if ENVIRONMENT in ["development", "test"]:
     from .tools.routes import router as tools_router
     from .utilities.ast_tree import router as ast_tree_router
-    from .utilities.benchmark import router as benchmark_router
     from .utilities.critics import router as critics_router
     from .utilities.etherscan import router as etherscan_router
     from .utilities.invariants import router as invariants_router
@@ -62,3 +65,4 @@ if ENVIRONMENT in ["development", "test"]:
     router.include_router(tools_router)
     # Scanners
     router.include_router(benchmark_router)
+    router.include_router(cairo_router)

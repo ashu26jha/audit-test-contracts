@@ -3,10 +3,10 @@ import os
 from typing import Optional
 from uuid import UUID
 
-from api.v1.agentic.helpers.eliza_callback import send_callback_status
-from api.v1.agentic.helpers.scan_initializer import AgenticScanInitializer
-from api.v1.agentic.helpers.task_manager import AgenticTaskManager
-from api.v1.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
+from api.v1.scanner.agentic.helpers.eliza_callback import send_callback_status
+from api.v1.scanner.agentic.helpers.scan_initializer import AgenticScanInitializer
+from api.v1.scanner.agentic.helpers.task_manager import AgenticTaskManager
+from api.v1.scanner.agentic.schema import AgenticScanContext, PerAddressAgenticRequest
 from api.v1.utilities.pdf.service import generate_and_send_agentic_pdf
 from core.db.connection import huey
 from core.models.user import User

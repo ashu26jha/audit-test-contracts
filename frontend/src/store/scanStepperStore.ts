@@ -7,6 +7,7 @@ interface ScanStepperState {
   selectedRepo: Repository | null;
   branches: Branch[];
   selectedBranch: string | undefined;
+  selectedLanguage: ScanLanguage;
   selectedContracts: string[];
   contractSearch: string;
   solidityFiles: SolidityFile[];
@@ -26,6 +27,7 @@ interface ScanStepperState {
   setSelectedRepo: (repo: Repository | null) => void;
   setBranches: (branches: Branch[]) => void;
   setSelectedBranch: (branch: string) => void;
+  setSelectedLanguage: (language: ScanLanguage) => void;
   setSelectedContracts: (contracts: string[]) => void;
   setContractSearch: (search: string) => void;
   setSolidityFiles: (files: SolidityFile[]) => void;
@@ -49,6 +51,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   selectedRepo: null,
   branches: [],
   selectedBranch: "",
+  selectedLanguage: "sol",
   selectedContracts: [],
   contractSearch: "",
   solidityFiles: [],
@@ -73,6 +76,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setSelectedRepo: (repo) => set({ selectedRepo: repo }),
   setBranches: (branches) => set({ branches }),
   setSelectedBranch: (branch) => set({ selectedBranch: branch }),
+  setSelectedLanguage: (language) => set({ selectedLanguage: language }),
   setSelectedContracts: (contracts) => set({ selectedContracts: contracts }),
   setContractSearch: (search) => set({ contractSearch: search }),
   setSolidityFiles: (files) => set({ solidityFiles: files }),
@@ -91,6 +95,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
       selectedOwner: null,
       selectedRepo: null,
       selectedBranch: "",
+      selectedLanguage: "sol",
       selectedContracts: [],
       branches: [],
       solidityFiles: [],

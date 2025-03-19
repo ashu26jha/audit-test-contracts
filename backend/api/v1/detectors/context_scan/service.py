@@ -27,6 +27,7 @@ async def run_context_scan(
     duckduckgo_results: Optional[str] = None,
     profile: Profiles = Profiles.NONE,
     model: str = LLM_SCAN_3,
+    contract_language: str = "solidity",
 ) -> FindingList:
     try:
         # Build context scan specific prompt
@@ -36,6 +37,7 @@ async def run_context_scan(
             docs,
             invariants,
             duckduckgo_results,
+            contract_language,
         )
 
         # Build full messages with profile
@@ -79,6 +81,7 @@ async def run_context_scan_batch(
     invariants: Optional[InvariantsResponse],
     duckduckgo_results: Optional[str],
     batch_configs: List[Dict],
+    contract_language: str = "solidity",
 ) -> List[FindingList]:
     """Run multiple context scans in a batch"""
     try:
@@ -92,6 +95,7 @@ async def run_context_scan_batch(
                 duckduckgo_results=duckduckgo_results,
                 profile=config["profile"],
                 model=config["model"],
+                contract_language=contract_language,
             )
             tasks.append(task)
 

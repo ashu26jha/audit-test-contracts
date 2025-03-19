@@ -8,7 +8,7 @@ from api.v1.common import contract_utils
 from api.v1.utilities.critics.service import CriticService
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Finding, Invariant, ScanResult
-from core.schemas.scan_schema import Detectors
+from core.schemas.scan_schema import Detectors, ScanType
 from core.utils import logger
 from core.utils.profiles import Profiles
 
@@ -17,6 +17,7 @@ class BaseResultsProcessor:
     def __init__(
         self,
         scan_id: UUID,
+        scan_type: ScanType,
         user_id: str,
         contract_files: List[str],
         combined_findings: List[Finding],
@@ -26,6 +27,7 @@ class BaseResultsProcessor:
         contract_contents: Dict[str, str],
     ):
         self.scan_id = scan_id
+        self.scan_type = scan_type
         self.user_id = user_id
         self.combined_findings: List[Finding] = []  # Initialize empty
         self.findings_before_removal = combined_findings  # Store initial findings
@@ -74,15 +76,16 @@ class BaseResultsProcessor:
         await ScanRepository.update_scan_progress(self.scan_id, 82)
 
         # 3. Perform mitigation on non-static findings
-        processed_findings = await CriticService.run_mitigation(
-            findings=non_static_findings,
-            contract_contents=self.contract_contents,
-        )
+        if self.scan_type != ScanType.CAIRO:
+            non_static_findings = await CriticService.run_mitigation(
+                findings=non_static_findings,
+                contract_contents=self.contract_contents,
+            )
         await ScanRepository.update_scan_progress(self.scan_id, 85)
 
         # 4. Perform validation with non-static findings and contract contents
         processed_findings = await CriticService.run_validation(
-            findings=processed_findings, contract_contents=self.contract_contents
+            findings=non_static_findings, contract_contents=self.contract_contents
         )
         await ScanRepository.update_scan_progress(self.scan_id, 92)
 

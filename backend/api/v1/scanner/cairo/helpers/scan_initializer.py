@@ -7,7 +7,7 @@ from core.scanners.base_scan_initializer import BaseScanInitializer
 from core.schemas.scan_schema import ScanType
 from core.utils.errors import ValidationError
 from core.utils.validate import (
-    validate_contract_files,
+    validate_cairo_files,
     validate_free_scan_limit,
     validate_github_url,
     validate_no_in_progress_scans,
@@ -17,14 +17,14 @@ from core.utils.validate import (
 github_service = GitHubService()
 
 
-class AuditAgentScanInitializer(BaseScanInitializer):
-    """AuditAgent-specific scan initialization logic."""
+class CairoScanInitializer(BaseScanInitializer):
+    """Cairo-specific scan initialization logic."""
 
     async def validate_request(self) -> None:
         """Validate repository and contract files."""
         validate_user_has_github_token(self.user)
         validate_github_url(self.context.repository_url)
-        validate_contract_files(self.context.contract_files)
+        validate_cairo_files(self.context.contract_files)
         await validate_no_in_progress_scans(self.user)
 
         if self.user.is_free:
@@ -43,7 +43,7 @@ class AuditAgentScanInitializer(BaseScanInitializer):
         # Create scan record
         new_scan = Scan(
             scan_id=self.scan_id,
-            scan_type=ScanType.AUDIT_AGENT,
+            scan_type=ScanType.CAIRO,
             scan_number=self.context.scan_number,
             user_id=self.context.user_id,
             status="pending",

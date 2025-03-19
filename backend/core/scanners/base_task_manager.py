@@ -18,7 +18,7 @@ from config.settings import LLM_SCAN_1, LLM_SCAN_2, LLM_SCAN_3
 from core.db.repositories.scan import ScanRepository
 from core.models.scan import Finding, Scan
 from core.schemas.context_protocols import BenchmarkContext, CompilationContext
-from core.schemas.scan_schema import BaseScanContext, Detectors, TypeOfScan
+from core.schemas.scan_schema import BaseScanContext, Detectors, ScanType, TypeOfScan
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
 
@@ -410,6 +410,9 @@ class BaseTaskManager(ABC):
         ):
             is_model_scan = True
 
+        # Determine contract language based on scan type
+        contract_language = "cairo" if self.context.scan_type == ScanType.CAIRO else "solidity"
+
         try:
             results = await run_context_scan_batch(
                 contracts=self.context.flattened_contracts,
@@ -422,6 +425,7 @@ class BaseTaskManager(ABC):
                     else None
                 ),
                 batch_configs=batch_configs,
+                contract_language=contract_language,
             )
 
             # Process successful results

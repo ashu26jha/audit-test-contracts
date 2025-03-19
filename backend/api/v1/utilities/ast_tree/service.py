@@ -6,7 +6,7 @@ from langfuse.decorators import observe
 
 from api.v1.utilities.ast_tree.helpers.solidity_files_storage import SolidityFileStorage
 from api.v1.utilities.ast_tree.schema import ContractAST, ProjectAST
-from config.prompts.ast_prompt import AST_PROMPT
+from config.prompts.ast_prompt import AST_PROMPT, CAIRO_AST_PROMPT
 from config.settings import LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
 from core.utils.logger import logger
@@ -17,10 +17,11 @@ async def generate_ast_per_contract(
     filename: str, file_path: str, contracts_in_scope: List[str]
 ) -> Optional[ContractAST]:
     """
-    Generates an AST-like structure for a single Solidity contract, reading code from disk.
+    Generates an AST-like structure for a single contract, reading code from disk.
+    Supports both Solidity and Cairo contracts.
 
     Args:
-        filename (str): The Solidity contract filename.
+        filename (str): The contract filename.
         file_path (str): Path to the contract file.
         contracts_in_scope (List[str]): List of all contracts in scope for reference.
 
@@ -35,7 +36,15 @@ async def generate_ast_per_contract(
         # Format the contracts in scope as a string
         contracts_str = "\n".join(contracts_in_scope)
 
-        ast_prompt = AST_PROMPT.format(
+        # Determine contract language based on file extension
+        is_cairo = filename.lower().endswith(".cairo")
+
+        # Select the appropriate prompt template
+        prompt_template = CAIRO_AST_PROMPT if is_cairo else AST_PROMPT
+        logger.info(f"[AST] Using {'Cairo' if is_cairo else 'Solidity'} AST prompt for {filename}")
+
+        # Format the prompt with contract-specific information
+        ast_prompt = prompt_template.format(
             contracts_in_scope=contracts_str,
             flattened_contracts=contract_code,
         )
@@ -55,11 +64,11 @@ async def generate_ast_per_contract(
 
 async def generate_ast_for_project(repo_path: str, contracts: List[str]) -> ProjectAST:
     """
-    Generates an AST-like structure for the entire Solidity project by calling generate_ast_per_contract
-    for each contract in parallel.
+    Generates an AST-like structure for the entire project by calling generate_ast_per_contract
+    for each contract in parallel. Supports both Solidity and Cairo contracts.
 
     Args:
-        repo_path (str): The base path of the cloned Solidity project.
+        repo_path (str): The base path of the cloned project.
         contracts (List[str]): List of contract file paths relative to repo_path.
 
     Returns:

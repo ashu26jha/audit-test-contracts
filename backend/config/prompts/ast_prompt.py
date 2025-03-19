@@ -68,3 +68,74 @@ Your response must be in **valid JSON format**, without explanations, additional
 {flattened_contracts}
 ```
 """
+
+CAIRO_AST_PROMPT = """
+You are an expert Cairo smart contract analyzer. Your task is to analyze the provided Cairo smart contract and extract its Abstract Syntax Tree (AST) information in a structured format.
+
+### **Scope of Analysis**
+- **Extract all modules and their functions** from the provided Cairo code.
+- **Identify internal function calls** within the same contract.
+- **Identify functions that call other contracts' functions** and mark them as dependencies.
+- **Detect module imports and trait implementations** and mark them as dependencies **only if they are part of the contracts in scope**.
+- **Any contract that is not part of the contracts in scope** must be **completely excluded** from dependencies.
+- **Dependencies should only be contract filenames (`ContractName.cairo`), NOT full paths.**
+
+### **Instructions**
+1. **Extract all function definitions** from this contract:
+   - List their **exact function names**.
+   - Include their **visibility** (`external(v0)`, `constructor`, or part of an implementation).
+   - Include their **state mutability** (`read` for `self: @ContractState`, `write` for `ref self`).
+   - Include any **attributes** (e.g., `#[l1_handler]`, `#[constructor]`, etc.).
+   - Include their **parameters** as a list of dictionaries with `name` and `type`.
+   - Identify and list **all functions called** within each function.
+
+2. **Handle Function Calls Properly**:
+   - If a function calls another function **within the same contract**, include it in the `"calls"` list.
+   - If a function calls a function from **another module/contract** and that contract is part of the `contracts_in_scope`, add only its **filename** (`ContractName.cairo`) to `"dependencies"`.
+   - If the contract is **not** in `contracts_in_scope`, **do not** include it as a dependency.
+   - Ignore standard library imports.
+
+3. **Define Contract Dependencies Properly**:
+   - **Dependencies must be filenames only** (`ContractName.cairo`), **not paths**.
+   - **Remove paths like** `"src/contracts/token/ERC20.cairo"` → Store only `"ERC20.cairo"`.
+   - **Remove any dependencies that are NOT in `contracts_in_scope`**.
+   - **Do NOT include external dependencies from standard libraries**.
+   - **Ensure the response strictly follows the required format**.
+
+4. **Response Format**
+Your response must be in **valid JSON format**, without explanations, additional comments or chains of thought.
+
+```json
+{{
+    "contracts": {{
+        "ContractName.cairo": {{
+            "functions": {{
+                "functionName": {{
+                    "visibility": "external(v0) | constructor | implementation",
+                    "state_mutability": "read | write",
+                    "attributes": ["l1_handler", "constructor"],
+                    "parameters": [
+                        {{
+                            "name": "paramName",
+                            "type": "paramType"
+                        }}
+                    ],
+                    "calls": ["functionA", "functionB"]
+                }}
+            }},
+            "dependencies": ["OtherContract.cairo", "LibraryContract.cairo"]
+        }}
+    }}
+}}
+```
+
+### **Contracts in Scope (Only these contracts can be dependencies):**
+{contracts_in_scope}
+
+---
+
+### **Contract code to analyze:**
+```cairo
+{flattened_contracts}
+```
+"""

@@ -142,6 +142,7 @@ class BaseScanService(ABC):
         """Create results processor with scan results."""
         return BaseResultsProcessor(
             scan_id=self.context.scan_id,
+            scan_type=self.context.scan_type,
             user_id=self.context.user_id,
             contract_files=self.context.contract_files,
             combined_findings=combined_findings,
@@ -181,14 +182,18 @@ class BaseScanService(ABC):
 
             # 5. Send error notification
             if isinstance(self.context, UserContext) and send_email:
-                if self.context.user_email and self.context.scan_type == ScanType.AUDIT_AGENT:
+                should_send_email = (
+                    self.context.scan_type == ScanType.AUDIT_AGENT
+                    or self.context.scan_type == ScanType.CAIRO
+                )
+                if should_send_email and self.context.user_email:
                     from core.utils.email_utils import send_error_email
 
                     await send_error_email(self.context.user_email, self.context.scan_id)
 
             # 6. Send error notification for Agentic
             if self.context.scan_type == ScanType.AGENTIC and isinstance(self.context, UserContext):
-                from api.v1.agentic.helpers.eliza_callback import send_callback_status
+                from api.v1.scanner.agentic.helpers.eliza_callback import send_callback_status
 
                 await send_callback_status(
                     scan_id=self.context.scan_id,
@@ -307,8 +312,10 @@ class BaseScanService(ABC):
             if isinstance(context, BenchmarkContext):
                 is_model_scan = context.type_of_scan == TypeOfScan.MODEL
 
+            # Skip environment setup for Cairo scans
             if (
-                isinstance(context, CompilationContext)
+                context.scan_type != ScanType.CAIRO
+                and isinstance(context, CompilationContext)
                 and isinstance(context, GitHubContext)
                 and not is_model_scan
             ):
@@ -333,6 +340,7 @@ class BaseScanService(ABC):
             # BaseResultsProcessor: Aggregate, deduplicate, and mitigate results
             result_processor = BaseResultsProcessor(
                 scan_id=context.scan_id,
+                scan_type=context.scan_type,
                 user_id=context.user_id,
                 contract_files=context.contract_files,
                 combined_findings=results["combined_findings"],

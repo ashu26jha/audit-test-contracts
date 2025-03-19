@@ -2,6 +2,7 @@ import json
 from typing import Dict, List, Optional, Union
 
 from api.v1.utilities.invariants.schema import InvariantsResponse
+from config.prompts.cairo_prompt import CAIRO_PROMPT, CAIRO_SYSTEM_PROMPT
 from config.prompts.context_scan_prompts import (
     CONTEXT_PROMPT,
     SYSTEM_PROMPT,
@@ -16,8 +17,14 @@ EMPTY_RESPONSE = "None Given"
 class PromptBuilder:
     def __init__(self):
         """Initialize with cached static data"""
-        self._prompt_templates = {"context_scan_template": CONTEXT_PROMPT}
-        self._system_prompts = {"default": SYSTEM_PROMPT}
+        self._prompt_templates = {
+            "context_scan_template": CONTEXT_PROMPT,
+            "cairo_scan_template": CAIRO_PROMPT,
+        }
+        self._system_prompts = {
+            "default": SYSTEM_PROMPT,
+            "cairo": CAIRO_SYSTEM_PROMPT,
+        }
         # Cache profiles
         self._profiles: Dict[Profiles, List[Message]] = {}
 
@@ -51,7 +58,11 @@ class PromptBuilder:
             profile_history = self._profiles[profile]
             # Use profile's system prompt if none provided
             if system_prompt is None and profile != Profiles.NONE:
-                system_prompt = self._system_prompts["default"]
+                # Use Cairo system prompt for Cairo profile
+                if profile == Profiles.CAIRO:
+                    system_prompt = self._system_prompts["cairo"]
+                else:
+                    system_prompt = self._system_prompts["default"]
         else:
             profile_history = []
 
@@ -90,6 +101,7 @@ class PromptBuilder:
         docs: Optional[str],
         invariants: Optional[InvariantsResponse],
         duckduckgo_results: Optional[str] = None,
+        contract_language: str = "solidity",
     ) -> str:
         """
         Build the context scan specific prompt
@@ -115,7 +127,14 @@ class PromptBuilder:
         # 4. Add docs as string if provided
         docs_str = docs.replace("```", "") if docs else EMPTY_RESPONSE
 
-        template = self._prompt_templates["context_scan_template"]
+        # 5. Select the appropriate template based on contract language
+        template_key = (
+            "cairo_scan_template"
+            if contract_language.lower() == "cairo"
+            else "context_scan_template"
+        )
+        template = self._prompt_templates[template_key]
+
         return template.format(
             summary=summary_str,
             docs=docs_str,

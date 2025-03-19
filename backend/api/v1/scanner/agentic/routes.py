@@ -3,9 +3,12 @@ from uuid import uuid4
 
 from fastapi import APIRouter, Depends, status
 
-from api.v1.agentic.schema import PerAddressAgenticRequest, PerAddressAgenticResponse
-from api.v1.agentic.service import AgenticService
 from api.v1.auth.helpers.dependencies import get_agentic_api_key
+from api.v1.scanner.agentic.schema import (
+    PerAddressAgenticRequest,
+    PerAddressAgenticResponse,
+)
+from api.v1.scanner.agentic.service import AgenticService
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
 

@@ -169,7 +169,7 @@ async def get_repository_branches(
 @router.get(
     "/repository-contents/{owner}/{repo}",
     response_model=Union[SuccessResponse[List[GitHubFileContent]], ErrorResponse],
-    description="Get all Solidity files from the repository",
+    description="Get all Solidity or Cairo files from the repository",
 )
 async def get_repository_contents(
     owner: str,
@@ -187,10 +187,11 @@ async def get_repository_contents(
         repo: Repository name
         branch: Branch name
         path: Optional path within repository
-        file_type: Type of files to fetch (sol or readme)
+        file_type: Type of files to fetch (sol, cairo, or readme)
+        current_user: Current authenticated user
 
     Returns:
-        List of files with their contents and analysis
+        List of file contents matching the specified type
     """
     try:
         contents = await github_service.get_repository_contents(

@@ -1,6 +1,6 @@
 from typing import Dict
 
-from api.v1.audit_agent.schema import AuditAgentScanContext
+from api.v1.scanner.audit_agent.schema import AuditAgentScanContext
 from core.scanners.base_task_manager import BaseTaskManager
 from core.schemas.scan_schema import Detectors
 

@@ -18,6 +18,8 @@ interface Branch {
   isDefault: boolean;
 }
 
+type ScanLanguage = "sol" | "cairo";
+
 interface SolidityFile {
   name: string;
   path: string;

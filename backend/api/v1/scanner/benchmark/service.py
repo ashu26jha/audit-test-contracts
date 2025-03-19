@@ -5,9 +5,9 @@ from uuid import UUID
 
 from api.v1.common.docs_helpers import format_docs_for_benchmark
 from api.v1.github.helpers.github_api_client import GitHubAPIClient
-from api.v1.utilities.benchmark.helpers.scan_initializer import BenchmarkScanInitializer
-from api.v1.utilities.benchmark.helpers.task_manager import BenchmarkTaskManager
-from api.v1.utilities.benchmark.schema import BenchmarkScanContext, BenchmarkScanRequest
+from api.v1.scanner.benchmark.helpers.scan_initializer import BenchmarkScanInitializer
+from api.v1.scanner.benchmark.helpers.task_manager import BenchmarkTaskManager
+from api.v1.scanner.benchmark.schema import BenchmarkScanContext, BenchmarkScanRequest
 from core.db.connection import huey
 from core.models.user import User
 from core.scanners.base_scan_service import BaseScanService
@@ -65,6 +65,7 @@ class BenchmarkService(BaseScanService):
             raise
 
     async def handle_scan_completion(self, context: BenchmarkScanContext, _: int) -> None:
+        """Handle scan completion. Not needed for benchmark scans."""
         pass
 
     async def _format_docs(self, request: BenchmarkScanRequest) -> Optional[Dict]:

@@ -6,8 +6,8 @@ from uuid import UUID
 import pytest
 from fastapi.testclient import TestClient
 
-from api.v1.audit_agent.schema import AuditAgentRequest
 from api.v1.auth.helpers.dependencies import get_current_user
+from api.v1.scanner.audit_agent.schema import AuditAgentRequest
 from config import settings
 from core.models.user import SubscriptionData, SubscriptionType, User
 from core.schemas.scan_schema import ScanType
@@ -28,7 +28,7 @@ def mock_create_scan():
             priority = 10  # Lowest priority (default)
 
         # Queue the task with Huey
-        from api.v1.audit_agent.service import AuditAgentService
+        from api.v1.scanner.audit_agent.service import AuditAgentService
 
         AuditAgentService.perform_scan_background(
             str(scan_id),
@@ -43,7 +43,7 @@ def mock_create_scan():
         )
 
     with patch(
-        "api.v1.audit_agent.service.AuditAgentService.create_scan",
+        "api.v1.scanner.audit_agent.service.AuditAgentService.create_scan",
         new_callable=AsyncMock,
         side_effect=mock_impl,
     ) as mock:
@@ -62,7 +62,9 @@ class TestAuditAgentEndpoints:
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
         # Act
-        response = client.post("/api/v1/audit-agent", json=request_payload, headers=headers)
+        response = client.post(
+            "/api/v1/scanner/audit-agent/launch", json=request_payload, headers=headers
+        )
 
         # Assert
         assert response.status_code == 202
@@ -87,7 +89,9 @@ class TestAuditAgentEndpoints:
         headers = {"x-api-key": settings.ADMIN_API_KEY}
 
         # Act
-        response = client.post("/api/v1/audit-agent", json=invalid_payload, headers=headers)
+        response = client.post(
+            "/api/v1/scanner/audit-agent/launch", json=invalid_payload, headers=headers
+        )
 
         # Assert
         assert response.status_code == 422  # Unprocessable Entity
@@ -112,7 +116,7 @@ class TestAuditAgentEndpoints:
         with patch("core.models.user.User.get_motor_collection", new_callable=AsyncMock), patch(
             "core.models.user.User.get_settings"
         ) as mock_get_settings, patch(
-            "api.v1.audit_agent.service.AuditAgentService.perform_scan_background"
+            "api.v1.scanner.audit_agent.service.AuditAgentService.perform_scan_background"
         ) as mock_background:
             # Setup mocks
             mock_get_settings.return_value.motor_collection = AsyncMock()
@@ -168,7 +172,7 @@ class TestAuditAgentEndpoints:
 
                 try:
                     response = client.post(
-                        "/api/v1/audit-agent", json=base_payload, headers=headers
+                        "/api/v1/scanner/audit-agent/launch", json=base_payload, headers=headers
                     )
                     assert response.status_code == 202
 

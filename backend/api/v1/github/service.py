@@ -20,6 +20,24 @@ class GitHubService:
     def __init__(self):
         self.client = GitHubAPIClient()
 
+    @staticmethod
+    def get_file_type_description(file_type: FileType) -> str:
+        """
+        Get a human-readable description of the file type.
+
+        Args:
+            file_type: The FileType enum value
+
+        Returns:
+            A string description of the file type
+        """
+        if file_type == FileType.README:
+            return "README"
+        elif file_type == FileType.CAIRO:
+            return "Cairo"
+        else:
+            return "Solidity"
+
     async def get_user_data(self, access_token: str) -> dict:
         """
         Get user data from GitHub API.
@@ -84,7 +102,7 @@ class GitHubService:
             repo: Repository name
             branch: Branch name
             path: Optional path within repository
-            file_type: Type of files to fetch (sol or readme)
+            file_type: Type of files to fetch (sol, cairo, or readme)
 
         Returns:
             List of GitHubFileContent information including content analysis
@@ -113,15 +131,21 @@ class GitHubService:
                 for item in response["tree"]
                 if item["type"] == "blob" and item["path"].lower().endswith(".md")
             ]
+        elif file_type == FileType.CAIRO:
+            files = [
+                item
+                for item in response["tree"]
+                if item["type"] == "blob" and item["path"].lower().endswith(".cairo")
+            ]
         else:  # Default to .sol files
             files = [
                 item
                 for item in response["tree"]
-                if item["type"] == "blob" and item["path"].endswith(".sol")
+                if item["type"] == "blob" and item["path"].lower().endswith(".sol")
             ]
 
         if not files:
-            file_desc = "README" if file_type == FileType.README else "Solidity"
+            file_desc = self.get_file_type_description(file_type)
             raise RepositoryError(
                 f"No {file_desc} files found in the repository",
                 {"owner": owner, "repo": repo, "branch": branch, "file_type": str(file_type)},
@@ -133,6 +157,7 @@ class GitHubService:
                 access_token, owner, repo, file_item["path"], branch
             )
             is_readme = file_type == FileType.README
+            is_code = file_type in [FileType.SOLIDITY, FileType.CAIRO]
             analysis = await analyze_file_content(content, file_item["path"], is_readme)
 
             result = GitHubFileContent(
@@ -141,7 +166,7 @@ class GitHubService:
                 type="file",
                 download_url=f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{file_item['path']}",
                 token=count_tokens(content),
-                lineCount=analysis.total_lines if not is_readme else None,
+                lineCount=analysis.total_lines if is_code else None,
                 character_count=analysis.character_count if is_readme else None,
                 non_whitespace_character_count=(
                     analysis.non_whitespace_character_count if is_readme else None

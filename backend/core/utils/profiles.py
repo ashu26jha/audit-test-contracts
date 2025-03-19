@@ -20,6 +20,7 @@ class Profiles(Enum):
     NONE = "none"
     DEFAULT = "default"
     DEFAULT_2 = "default_2"
+    CAIRO = "cairo"
     DAO = "dao"
     DEFI = "defi"
     IDENTITY = "identity"
@@ -50,6 +51,7 @@ def load_profile(profile_name: Profiles) -> List[Dict[str, Any]]:
     profile_file_map = {
         Profiles.DEFAULT: "profile_default.json",
         Profiles.DEFAULT_2: "profile_default_2.json",
+        Profiles.CAIRO: "profile_cairo.json",
         Profiles.DAO: "profile_dao.json",
         Profiles.DEFI: "profile_defi.json",
         Profiles.IDENTITY: "profile_identity.json",

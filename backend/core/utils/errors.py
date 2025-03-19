@@ -102,7 +102,7 @@ class TokenError(AuthError):
     pass
 
 
-class PermissionError(AuthError):
+class AuthorizationError(AuthError):
     """Raised when permission checks fail."""
 
     pass

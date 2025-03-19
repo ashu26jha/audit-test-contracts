@@ -1,6 +1,6 @@
 from typing import Dict
 
-from api.v1.agentic.schema import AgenticScanContext
+from api.v1.scanner.agentic.schema import AgenticScanContext
 from core.scanners.base_task_manager import BaseTaskManager
 from core.schemas.scan_schema import Detectors
 

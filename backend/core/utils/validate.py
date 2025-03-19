@@ -11,9 +11,9 @@ from core.models.user import User
 from core.schemas.scan_schema import FreeScanStatus
 from core.utils.errors import (
     AuthError,
+    AuthorizationError,
     ContractError,
     DatabaseError,
-    PermissionError,
     RepositoryError,
     ScanError,
     SubscriptionError,
@@ -30,12 +30,12 @@ async def validate_user_scan_access(scan_id: UUID, current_user: User) -> Scan:
     Validate user's access to a scan.
 
     Raises:
-        PermissionError: If user doesn't have access to the scan
+        AuthorizationError: If user doesn't have access to the scan
         DatabaseError: From repository layer
     """
     scan = await ScanRepository.get_scan(scan_id)
     if not scan or scan.user_id != current_user.githubId:
-        raise PermissionError(
+        raise AuthorizationError(
             message=f"Scan with ID {scan_id} not found or access denied",
             details={"scan_id": str(scan_id), "user_id": current_user.githubId},
         )
@@ -88,7 +88,7 @@ def validate_github_url(url: str) -> None:
         raise RepositoryError(message="Invalid GitHub repository URL", details={"url": url})
 
 
-def validate_contract_files(contract_files: List[str]) -> None:
+def validate_solidity_files(contract_files: List[str]) -> None:
     """
     Validate if the given contract files are valid Solidity files.
 
@@ -101,6 +101,22 @@ def validate_contract_files(contract_files: List[str]) -> None:
         raise ContractError(
             message="Invalid contract files",
             details={"files": contract_files, "reason": "All files must have a .sol extension"},
+        )
+
+
+def validate_cairo_files(contract_files: List[str]) -> None:
+    """
+    Validate if the given contract files are valid Cairo files.
+
+    Raises:
+        ContractError: If the contract files are invalid
+    """
+    if not contract_files:
+        raise ContractError(message="No contract files provided", details={"files": contract_files})
+    if not all(file.endswith(".cairo") for file in contract_files):
+        raise ContractError(
+            message="Invalid contract files",
+            details={"files": contract_files, "reason": "All files must have a .cairo extension"},
         )
 
 

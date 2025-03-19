@@ -23,6 +23,7 @@ export const useScanStepper = () => {
     selectedRepo,
     selectedBranch,
     selectedContracts,
+    selectedLanguage,
     repoDocs,
     setSelectedOwner,
     setSelectedRepo,
@@ -79,11 +80,11 @@ export const useScanStepper = () => {
     [setBranches, setIsLoading],
   );
 
-  const fetchSolidityFiles = useCallback(
-    async (owner: Owner, repo: Repository, branch: string) => {
+  const fetchContractFiles = useCallback(
+    async (owner: Owner, repo: Repository, branch: string, language: ScanLanguage) => {
       try {
         setIsLoading(true);
-        const files = await getRepositoryContents(owner.login, repo.name, branch);
+        const files = await getRepositoryContents(owner.login, repo.name, branch, language, "");
         setSolidityFiles(files);
       } catch (error) {
         console.error("Error fetching Solidity files:", error);
@@ -135,13 +136,14 @@ export const useScanStepper = () => {
           readme: repoDocs.readme,
           qa,
         },
+        file_type: selectedLanguage,
       });
       return response;
     } catch (error) {
       console.error("Error initiating scan:", error);
       throw error;
     }
-  }, [repoDocs, selectedOwner, selectedRepo, selectedBranch, selectedContracts]);
+  }, [repoDocs, selectedOwner, selectedRepo, selectedBranch, selectedContracts, selectedLanguage]);
 
   const extractOwnerAndRepo = useCallback(
     (url: string) => {
@@ -179,7 +181,7 @@ export const useScanStepper = () => {
   return {
     fetchRepositories,
     fetchBranches,
-    fetchSolidityFiles,
+    fetchContractFiles,
     fetchReadmeFiles,
     fetchPreviousDocs,
     initiateScanProcess,

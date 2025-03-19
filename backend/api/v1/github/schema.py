@@ -12,6 +12,7 @@ class FileType(str, Enum):
     """Valid file types for repository contents"""
 
     SOLIDITY = "sol"
+    CAIRO = "cairo"
     README = "readme"
 
 
@@ -82,7 +83,7 @@ class GitHubFileContent(BaseModel):
     download_url: str = Field(..., description="Raw content download URL")
     token: int = Field(..., description="Number of tokens in the file content")
     lineCount: Optional[int] = Field(
-        None, description="Total number of lines in the file (for Solidity files)"
+        None, description="Total number of lines in the file (for Solidity and Cairo files)"
     )
     character_count: Optional[int] = Field(
         None, description="Total number of characters (for README files)"
@@ -95,9 +96,9 @@ class GitHubFileContent(BaseModel):
     @classmethod
     def validate_file_type(cls, v):
         """Validate file has correct extension based on endpoint usage"""
-        if v.lower().endswith(".md") or v.lower().endswith(".sol"):
+        if v.lower().endswith(".md") or v.lower().endswith(".sol") or v.lower().endswith(".cairo"):
             return v
-        raise ValueError("File must be a Solidity (.sol) or README (.md) file")
+        raise ValueError("File must be a Solidity (.sol), Cairo (.cairo), or README (.md) file")
 
 
 class GitHubRepoInfo(BaseModel):

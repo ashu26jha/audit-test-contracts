@@ -13,7 +13,7 @@ hypothesis==6.124.1
 instructor==1.7.2
 isort==6.0.0
 jsonref==1.1.0
-langfuse==2.54.1
+langfuse==2.59.7
 markdown==3.7
 motor==3.6.0
 mongomock_motor==0.0.35

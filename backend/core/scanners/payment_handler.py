@@ -31,7 +31,12 @@ class PaymentHandler:
             payment_type=self.payment_type,
         )
 
-        if self.context.scan_type == ScanType.AUDIT_AGENT and self.is_subscription_scan:
+        deduct_credit = (
+            self.context.scan_type == ScanType.AUDIT_AGENT
+            or self.context.scan_type == ScanType.CAIRO
+        )
+
+        if deduct_credit and self.is_subscription_scan:
             if not isinstance(self.context, GitHubContext):
                 raise UnsupportedOperationError(
                     f"Context type {type(self.context).__name__} requires GitHub information for subscription scans"

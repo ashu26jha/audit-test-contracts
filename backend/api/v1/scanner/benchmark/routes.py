@@ -2,8 +2,8 @@ from uuid import UUID, uuid4
 
 from fastapi import APIRouter
 
-from api.v1.utilities.benchmark.schema import BenchmarkScanRequest
-from api.v1.utilities.benchmark.service import BenchmarkService
+from api.v1.scanner.benchmark.schema import BenchmarkScanRequest
+from api.v1.scanner.benchmark.service import BenchmarkService
 from core.db.repositories.scan import ScanRepository
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType

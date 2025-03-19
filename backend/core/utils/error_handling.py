@@ -9,21 +9,31 @@ from core.schemas.api_response_schema import ErrorResponse
 from core.utils.errors import (
     AuditAgentError,
     AuthError,
+    AuthorizationError,
     BranchError,
+    CloneError,
+    ConfigurationError,
+    ConnectionError,
     ContractError,
     CreditError,
+    CriticError,
     DatabaseError,
+    DependencyError,
     DetectorError,
     EnvironmentError,
     HTTPClientError,
     InitializationError,
     LLMError,
+    ModelError,
     PaymentError,
+    PromptError,
+    QueryError,
     RateLimitError,
     RepositoryError,
     ScanError,
     SubscriptionError,
     TokenError,
+    UnsupportedOperationError,
     ValidationError,
 )
 from core.utils.logger import logger
@@ -33,15 +43,17 @@ ERROR_STATUS_CODES: Dict[Type[AuditAgentError], int] = {
     # Auth errors -> 401, 403
     AuthError: 401,
     TokenError: 401,
-    PermissionError: 403,
+    AuthorizationError: 403,
     # Validation errors -> 400, 422
     ValidationError: 422,
     RepositoryError: 400,
     ContractError: 400,
+    CloneError: 400,
     # Scan errors -> 400, 500
     ScanError: 400,  # Base scan errors are client errors by default
     InitializationError: 500,  # Initialization failures are server errors
     DetectorError: 500,  # Detector failures are server errors
+    CriticError: 500,  # Critic failures are server errors
     # Payment/subscription errors -> 402, 403
     PaymentError: 402,
     CreditError: 402,
@@ -52,8 +64,15 @@ ERROR_STATUS_CODES: Dict[Type[AuditAgentError], int] = {
     RateLimitError: 429,
     # Service errors -> 500, 503
     DatabaseError: 503,
+    ConnectionError: 503,
+    QueryError: 503,
     LLMError: 503,
+    ModelError: 503,
+    PromptError: 503,
     EnvironmentError: 500,
+    ConfigurationError: 500,
+    UnsupportedOperationError: 501,  # Not Implemented
+    DependencyError: 500,
     HTTPClientError: 503,  # External service errors -> 503 Service Unavailable
     # Default for AuditAgentError -> 500
     AuditAgentError: 500,
