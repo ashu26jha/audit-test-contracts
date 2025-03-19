@@ -46,12 +46,12 @@ class SubscriptionData(BaseModel):
     @property
     def is_enterprise(self) -> bool:
         """Check if user has an active enterprise subscription."""
-        return (
-            self.type == SubscriptionType.ENTERPRISE
-            and self.isActive
-            and (self.expiresAt is None or self.expiresAt > datetime.now(timezone.utc))
-            and self.credits > 0
-        )
+        # For internal enterprise users who bypass Stripe, expiresAt can be None
+        if self.type == SubscriptionType.ENTERPRISE and self.isActive and self.credits > 0:
+            # If expiresAt is None, consider it valid (internal user)
+            # Otherwise, check if it's in the future
+            return self.expiresAt is None or self.expiresAt > datetime.now(timezone.utc)
+        return False
 
     @property
     def is_free(self) -> bool:
