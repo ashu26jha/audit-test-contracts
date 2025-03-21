@@ -1,17 +1,25 @@
+from typing import Union
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
-from api.v1.scanner.benchmark.schema import BenchmarkScanRequest
+from api.v1.scanner.benchmark.schema import BenchmarkInitiateResponse, BenchmarkScanRequest
 from api.v1.scanner.benchmark.service import BenchmarkService
 from core.db.repositories.scan import ScanRepository
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
+from core.utils.decorators import handle_domain_errors
 
 router = APIRouter(prefix="/benchmark", tags=["scanner"])
 
 
-@router.post("/launch")
+@router.post(
+    "/launch",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=Union[SuccessResponse[BenchmarkInitiateResponse], ErrorResponse],
+    description="Initiate a benchmark scan",
+)
+@handle_domain_errors(scan_type="benchmark")
 async def benchmark(request: BenchmarkScanRequest):
     """
     Launch a benchmark scan.

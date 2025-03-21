@@ -10,6 +10,7 @@ from markdown.extensions.fenced_code import FencedCodeExtension
 from markdown.extensions.nl2br import Nl2BrExtension
 from markdown.extensions.sane_lists import SaneListExtension
 
+from core.utils.errors import PDFGenerationError
 from core.utils.logger import logger
 
 from ..config import TEMPLATE_DIR
@@ -54,8 +55,7 @@ def read_html(file_path: Path) -> str:
         Processed HTML content
 
     Raises:
-        FileNotFoundError: If the file doesn't exist
-        IOError: If there's an error reading the file
+        PDFGenerationError: If there's an error reading the template file
     """
     try:
         with open(file_path, "r", encoding="utf-8") as file:
@@ -64,12 +64,18 @@ def read_html(file_path: Path) -> str:
         html_lines = [line.lstrip() for line in html_content.splitlines()]
         processed_html_content = "\n".join(html_lines)
         return processed_html_content
-    except FileNotFoundError:
-        logger.error(f"Template file not found: {file_path}")
-        raise
+    except FileNotFoundError as e:
+        error_msg = f"Template file not found: {file_path}"
+        logger.error(error_msg)
+        raise PDFGenerationError(error_msg) from e
     except IOError as e:
-        logger.error(f"Error reading template file {file_path}: {str(e)}")
-        raise
+        error_msg = f"Error reading template file {file_path}: {str(e)}"
+        logger.error(error_msg)
+        raise PDFGenerationError(error_msg) from e
+    except Exception as e:
+        error_msg = f"Unexpected error reading template file {file_path}: {str(e)}"
+        logger.error(error_msg)
+        raise PDFGenerationError(error_msg) from e
 
 
 def create_finding_section(

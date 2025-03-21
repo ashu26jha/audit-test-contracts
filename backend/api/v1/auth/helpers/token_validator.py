@@ -1,12 +1,10 @@
 from typing import Tuple
 
-from fastapi import HTTPException
-
 from config import settings
 from config.settings import GITHUB_API_URL
 from core.db.repositories.user import UserRepository
 from core.models.user import User
-from core.utils.errors import TokenError
+from core.utils.errors import AuthError, TokenError
 from core.utils.http_client import get_http_client
 
 
@@ -58,7 +56,9 @@ async def validate_github_token(user: User) -> User:
             return updated_user
 
         if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="GitHub API error")
+            raise AuthError(
+                message="GitHub API error", details={"status_code": response.status_code}
+            )
 
         return user
 

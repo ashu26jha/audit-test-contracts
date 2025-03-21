@@ -1,11 +1,10 @@
 import stripe
-from fastapi import HTTPException
 
 from config.settings import STRIPE_API_KEY
 from core.db.repositories.user import UserRepository
 from core.models.user import SubscriptionType, User
 from core.utils import logger
-from core.utils.errors import AuthError, SubscriptionError
+from core.utils.errors import AuthError, PaymentConfigError, SubscriptionError
 
 from .helpers.stripe_subscription import StripeSubscriptionHelper
 from .helpers.stripe_webhook import StripeWebhookHelper
@@ -14,7 +13,7 @@ stripe.api_key = STRIPE_API_KEY
 if not STRIPE_API_KEY:
     MESSAGE = "Stripe API key is not set"
     logger.error(MESSAGE)
-    raise HTTPException(status_code=500, detail=MESSAGE)
+    raise PaymentConfigError(message=MESSAGE)
 
 
 class StripeWebhookService:

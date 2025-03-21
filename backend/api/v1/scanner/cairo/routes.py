@@ -12,6 +12,7 @@ from api.v1.scanner.cairo.service import CairoService
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
+from core.utils.decorators import handle_domain_errors
 
 router = APIRouter(prefix="/cairo", tags=["scanner"])
 
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/cairo", tags=["scanner"])
     status_code=status.HTTP_202_ACCEPTED,
     description="Initiate a full Cairo scan",
 )
+@handle_domain_errors(scan_type="cairo")
 async def perform_cairo(
     request: CairoRequest,
     current_user: User = Depends(get_current_user),

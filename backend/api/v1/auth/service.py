@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
@@ -13,6 +13,7 @@ from api.v1.github.service import GitHubService
 from config import settings
 from core.db.repositories.user import UserRepository
 from core.models.user import User
+from core.utils.errors import AuthError, ValidationError
 from core.utils.logger import logger
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -99,11 +100,11 @@ async def handle_github_callback(
     # Validate the callback parameters
     if installation_id is not None:
         if setup_action not in ["install", "update"]:
-            raise HTTPException(status_code=400, detail="Invalid setup_action parameter")
+            raise ValidationError(message="Invalid setup_action parameter")
     elif state and not await verify_oauth_state(state):
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
+        raise ValidationError(message="Invalid state parameter")
     elif not state and not installation_id:
-        raise HTTPException(status_code=400, detail="State parameter required for OAuth flow")
+        raise ValidationError(message="State parameter required for OAuth flow")
 
     # Exchange code for access token
     data = {
@@ -111,23 +112,31 @@ async def handle_github_callback(
         "client_secret": settings.GITHUB_CLIENT_SECRET,
         "code": code,
     }
-    access_token, refresh_token = await get_github_access_token(data)
 
-    # If this is a GitHub App callback, verify installation
-    if installation_id is not None:
-        await verify_installation_id(access_token, installation_id)
+    try:
+        access_token, refresh_token = await get_github_access_token(data)
 
-    # Get user data and create/update user
-    user_data = await github_service.get_user_data(access_token)
-    user = await handle_user_data(user_data, access_token, refresh_token)
+        # If this is a GitHub App callback, verify installation
+        if installation_id is not None:
+            await verify_installation_id(access_token, installation_id)
 
-    # Check organization membership and manage subscription
-    await is_internal_user(user)
+        # Get user data and create/update user
+        user_data = await github_service.get_user_data(access_token)
+        user = await handle_user_data(user_data, access_token, refresh_token)
 
-    # Refresh user data to get updated subscription status
-    user = await UserRepository.get_by_github_id(user.githubId)
+        # Check organization membership and manage subscription
+        await is_internal_user(user)
 
-    return access_token, user
+        # Refresh user data to get updated subscription status
+        user = await UserRepository.get_by_github_id(user.githubId)
+
+        return access_token, user
+    except AuthError:
+        # Re-raise these errors to be handled by the route
+        raise
+    except Exception as e:
+        logger.error(f"GitHub callback error: {str(e)}")
+        raise AuthError(message="Failed to process GitHub callback", details={"error": str(e)})
 
 
 async def verify_installation_id(access_token: str, installation_id: str) -> None:
@@ -139,15 +148,15 @@ async def verify_installation_id(access_token: str, installation_id: str) -> Non
         installation_id: GitHub App installation ID
 
     Raises:
-        HTTPException: If installation ID is invalid
+        ValidationError: If installation ID is invalid
     """
     installations = await github_api_client.get_installations(access_token)
     installation_ids = [str(inst["id"]) for inst in installations]
 
     if installation_id not in installation_ids:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid installation ID. The GitHub App is not installed for this user.",
+        raise ValidationError(
+            message="Invalid installation ID",
+            details={"error": "The GitHub App is not installed for this user."},
         )
 
 
@@ -246,6 +255,7 @@ async def handle_logout(request: Request) -> None:
 
         except Exception as e:
             logger.error(f"Error during logout: {str(e)}")
+            # We don't raise an error here as logout should fail silently for non-critical operations
 
 
 async def generate_test_token(username: str):

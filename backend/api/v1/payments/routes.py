@@ -1,6 +1,6 @@
 from typing import Union
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.v1.auth.helpers.dependencies import get_api_key, get_current_user
 from api.v1.payments.schema import (
@@ -12,7 +12,7 @@ from api.v1.payments.schema import (
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.utils import logger
-from core.utils.errors import SubscriptionError
+from core.utils.errors import AuthError, PaymentError, SubscriptionError
 
 from .service import StripeSubscriptionService, StripeWebhookService
 
@@ -43,14 +43,21 @@ async def create_subscription(
             message="Subscription plan already active", details={"user_id": current_user.githubId}
         )
 
-    session = await StripeSubscriptionService.create_subscription_session(
-        current_user,
-        scan_id=request.scanId or None,
-        subscription_type=request.subscription_type,
-    )
-    return SuccessResponse(
-        data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)
-    )
+    try:
+        session = await StripeSubscriptionService.create_subscription_session(
+            current_user,
+            scan_id=request.scanId or None,
+            subscription_type=request.subscription_type,
+        )
+        return SuccessResponse(
+            data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)
+        )
+    except PaymentError as e:
+        logger.error(f"Failed to create subscription: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 @router.post(
@@ -70,13 +77,26 @@ async def create_enterprise_subscription(request: EnterpriseSubscriptionRequest)
         session_id (str): The ID of the checkout session
         url (str): The URL of the checkout session
     """
-    session = await StripeSubscriptionService.create_enterprise_subscription_session(
-        email=request.email,
-        github_id=request.github_id,
-    )
-    return SuccessResponse(
-        data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)
-    )
+    try:
+        session = await StripeSubscriptionService.create_enterprise_subscription_session(
+            email=request.email,
+            github_id=request.github_id,
+        )
+        return SuccessResponse(
+            data=SubscriptionCheckoutResponse(session_id=session.id, url=session.url)
+        )
+    except AuthError as e:
+        logger.error(f"Authentication error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
+    except SubscriptionError as e:
+        logger.error(f"Subscription error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 # Stripe Webhook
@@ -90,8 +110,15 @@ async def stripe_webhook(request: Request):
         logger.error(f"No signature header for payload: {payload}")
         raise HTTPException(status_code=400, detail="No signature header")
 
-    event = await StripeWebhookService.handle_webhook(payload, sig_header)
-    return SuccessResponse(data={"event_type": event["type"]})
+    try:
+        event = await StripeWebhookService.handle_webhook(payload, sig_header)
+        return SuccessResponse(data={"event_type": event["type"]})
+    except PaymentError as e:
+        logger.error(f"Payment error in webhook: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
 
 # Stripe Portal
@@ -107,5 +134,12 @@ async def create_portal_session(current_user: User = Depends(get_current_user)):
     Returns:
         url (str): The URL of the Stripe Customer Portal
     """
-    session = await StripeSubscriptionService.create_portal_session(current_user)
-    return SuccessResponse(data=PortalSessionResponse(url=session.url))
+    try:
+        session = await StripeSubscriptionService.create_portal_session(current_user)
+        return SuccessResponse(data=PortalSessionResponse(url=session.url))
+    except PaymentError as e:
+        logger.error(f"Payment error creating portal session: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )

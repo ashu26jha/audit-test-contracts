@@ -5,11 +5,11 @@ from uuid import uuid4
 
 import pytest
 from beanie import PydanticObjectId
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from config import settings
 from core.models.user import User
+from core.utils.errors import AuthorizationError, ScanError
 from main import app
 
 
@@ -124,8 +124,8 @@ class TestScanResultsEndpoints:
         mock_get_full_scan_result,
     ):
         scan_id = uuid4()
-        mock_get_full_scan_result.side_effect = HTTPException(
-            status_code=404, detail=f"Scan with ID {scan_id} not found"
+        mock_get_full_scan_result.side_effect = ScanError(
+            message=f"No results found for scan {scan_id}", details={"scan_id": str(scan_id)}
         )
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}
@@ -141,8 +141,8 @@ class TestScanResultsEndpoints:
         mock_get_full_scan_result,
     ):
         scan_id = uuid4()
-        mock_get_full_scan_result.side_effect = HTTPException(
-            status_code=403, detail="Unauthorized access"
+        mock_get_full_scan_result.side_effect = AuthorizationError(
+            message="Unauthorized access", details={"scan_id": str(scan_id)}
         )
 
         headers = {"x-api-key": settings.ADMIN_API_KEY}

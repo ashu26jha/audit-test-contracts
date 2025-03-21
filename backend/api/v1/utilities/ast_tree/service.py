@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from langfuse.decorators import observe
 
@@ -9,10 +9,11 @@ from api.v1.utilities.ast_tree.schema import ContractAST, ProjectAST
 from config.prompts.ast_prompt import AST_PROMPT, CAIRO_AST_PROMPT
 from config.settings import LLM_UTILITY
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
+from core.utils.errors import LLMError
 from core.utils.logger import logger
 
 
-@observe(name="genrate_ast")
+@observe(name="generate_ast")
 async def generate_ast_per_contract(
     filename: str, file_path: str, contracts_in_scope: List[str]
 ) -> Optional[ContractAST]:
@@ -27,6 +28,10 @@ async def generate_ast_per_contract(
 
     Returns:
         Optional[ContractAST]: The structured AST representation for this contract, or None if generation fails.
+
+    Note:
+        This function will never raise exceptions - it returns None on failure to ensure the process
+        continues for other contracts even if one fails.
     """
     try:
         # Read contract code from disk
@@ -57,6 +62,9 @@ async def generate_ast_per_contract(
 
         return contract_ast
 
+    except LLMError as e:
+        logger.error(f"[AST] LLM error generating AST for {filename}: {e.message}")
+        return None  # Return None to indicate failure
     except Exception as e:
         logger.error(f"[AST] Error generating AST for {filename}: {e}")
         return None  # Return None to indicate failure
@@ -73,19 +81,24 @@ async def generate_ast_for_project(repo_path: str, contracts: List[str]) -> Proj
 
     Returns:
         ProjectAST: The structured AST representation of the entire project.
+        Always returns a valid ProjectAST object, even if empty.
     """
     logger.info(f"[AST] Generating AST for {len(contracts)} contracts from disk...")
 
     storage = SolidityFileStorage(repo_path)
 
     # Process each contract in parallel
-    async def process_contract(contract_path: str):
-        file_path = storage.get_contract_path(contract_path)
-        # Extract filename from path for the AST tree structure
-        filename = os.path.basename(contract_path)
-        return filename, await generate_ast_per_contract(
-            filename, file_path, contracts_in_scope=contracts
-        )
+    async def process_contract(contract_path: str) -> Tuple[str, Optional[ContractAST]]:
+        try:
+            file_path = storage.get_contract_path(contract_path)
+            # Extract filename from path for the AST tree structure
+            filename = os.path.basename(contract_path)
+            return filename, await generate_ast_per_contract(
+                filename, file_path, contracts_in_scope=contracts
+            )
+        except Exception as e:
+            logger.error(f"[AST] Error processing contract {contract_path}: {e}")
+            return os.path.basename(contract_path), None
 
     results = await asyncio.gather(
         *(process_contract(contract_path) for contract_path in contracts)
@@ -96,6 +109,7 @@ async def generate_ast_for_project(repo_path: str, contracts: List[str]) -> Proj
 
     if not valid_contracts:
         logger.warning("[AST] No valid ASTs were generated for any contracts.")
+        # Always return a valid but potentially empty ProjectAST
 
     project_ast = ProjectAST(contracts=valid_contracts)
 

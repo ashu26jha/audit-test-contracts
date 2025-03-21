@@ -29,6 +29,25 @@ async def run_context_scan(
     model: str = LLM_SCAN_3,
     contract_language: str = "solidity",
 ) -> FindingList:
+    """
+    Run a context scan to detect vulnerabilities.
+
+    Args:
+        contracts: The smart contract code to scan
+        summary: Optional summary of the project
+        docs: Optional documentation for the project
+        invariants: Optional invariants response
+        duckduckgo_results: Optional search results from DuckDuckGo
+        profile: The profile to use for the scan
+        model: The LLM model to use
+        contract_language: The language of the contracts (default: solidity)
+
+    Returns:
+        FindingList with detected issues or empty list on failure when called from scan
+
+    Raises:
+        Exception: When called from a route and an error occurs
+    """
     try:
         # Build context scan specific prompt
         formatted_prompt = _prompt_builder.build_context_scan_prompt(

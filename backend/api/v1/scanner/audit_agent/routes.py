@@ -13,6 +13,7 @@ from api.v1.scanner.audit_agent.service import AuditAgentService
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
+from core.utils.decorators import handle_domain_errors
 from core.utils.validate import validate_free_scan_limit
 
 router = APIRouter(prefix="/audit-agent", tags=["scanner"])
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/audit-agent", tags=["scanner"])
     status_code=status.HTTP_202_ACCEPTED,
     description="Initiate an audit agent scan",
 )
+@handle_domain_errors(scan_type="audit-agent")
 async def perform_audit_agent(
     request: AuditAgentRequest,
     current_user: User = Depends(get_current_user),

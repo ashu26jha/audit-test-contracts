@@ -11,6 +11,7 @@ from api.v1.scanner.agentic.schema import (
 from api.v1.scanner.agentic.service import AgenticService
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
 from core.schemas.scan_schema import ScanType
+from core.utils.decorators import handle_domain_errors
 
 router = APIRouter(prefix="/agentic", tags=["scanner"])
 
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/agentic", tags=["scanner"])
     status_code=status.HTTP_202_ACCEPTED,
     description="Initiate an agentic scan from a contract address",
 )
+@handle_domain_errors(scan_type="agentic")
 async def scan_per_address(request: PerAddressAgenticRequest):
     """
     Initiate an agentic scan for a smart contract address.

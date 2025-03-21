@@ -7,7 +7,7 @@ load_dotenv()
 
 TITLE = "AuditAgent - APIs"
 DESCRIPTION = "API for auditing smart contracts and detecting vulnerabilities"
-VERSION = "1.3.0"  # Auto-updated by pre-commit hook
+VERSION = "1.2.1"  # Auto-updated by pre-commit hook
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 FRONTEND_URL: str = os.getenv("FRONTEND_URL")

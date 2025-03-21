@@ -1,11 +1,12 @@
 from typing import Union
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.v1.auth.helpers.dependencies import get_api_key
 from api.v1.utilities.invariants.schema import InvariantsRequest, InvariantsResponse
 from api.v1.utilities.invariants.service import generate_invariants
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.utils.logger import logger
 
 router = APIRouter(tags=["utilities"])
 
@@ -29,8 +30,8 @@ async def get_invariants(request: InvariantsRequest):
         )
         return SuccessResponse(data=invariants)
     except Exception as e:
-        return ErrorResponse(
-            code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            message="An error occurred while generating invariants",
-            details=str(e),
+        logger.error(f"[Invariants] Error in invariants route: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while generating invariants",
         )

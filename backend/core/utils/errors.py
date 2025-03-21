@@ -77,6 +77,12 @@ class PaymentError(AuditAgentError):
     pass
 
 
+class PaymentConfigError(PaymentError):
+    """Raised when payment configuration fails."""
+
+    pass
+
+
 class CreditError(PaymentError):
     """Raised when credit operations fail."""
 
@@ -181,5 +187,48 @@ class RateLimitError(AuditAgentError):
 # HTTP errors
 class HTTPClientError(AuditAgentError):
     """Raised when HTTP client operations fail."""
+
+    pass
+
+
+# Tools-related errors
+class ToolError(AuditAgentError):
+    """Base class for tool-related errors."""
+
+    pass
+
+
+class SearchError(ToolError):
+    """Raised when search operations fail."""
+
+    pass
+
+
+class ParsingError(ToolError):
+    """Raised when content parsing fails."""
+
+    pass
+
+
+class QueryGenerationError(ToolError):
+    """Raised when query generation fails."""
+
+    pass
+
+
+class EtherscanError(ToolError):
+    """Raised when Etherscan operations fail."""
+
+    pass
+
+
+class PDFGenerationError(ToolError):
+    """Raised when PDF generation fails."""
+
+    pass
+
+
+class ReportError(ToolError):
+    """Raised when report generation or delivery fails."""
 
     pass

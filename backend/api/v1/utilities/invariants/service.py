@@ -29,6 +29,7 @@ async def generate_invariants(
         docs (str): Optional docs if available
     Returns:
         InvariantsResponse: The generated invariants parsed from the LLM's response.
+                           Returns empty invariants list on failure.
     """
     logger.info("[Invariants] Generating invariants with LLM...")
 
@@ -51,9 +52,14 @@ async def generate_invariants(
             response_model=InvariantsResponse,
         )
 
+        # Check if invariants were generated
+        if not invariants or not invariants.invariants:
+            logger.warning("[Invariants] LLM returned empty invariants list")
+            return InvariantsResponse(invariants=[])
+
         logger.info(f"[Invariants] {len(invariants.invariants)} invariants generated successfully")
         return invariants
 
     except Exception as e:
-        logger.error(f"[Invariants] Error generating invariants: {e}")
+        logger.error(f"[Invariants] Error generating invariants: {str(e)}", exc_info=True)
         return InvariantsResponse(invariants=[])

@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, TypeVar, final
 from uuid import UUID
 
-from fastapi import HTTPException
 from langfuse.decorators import langfuse_context, observe
 
 from api.v1.common.get_contracts_per_address import get_contracts_per_address
@@ -24,7 +23,13 @@ from core.schemas.context_protocols import (
     UserContext,
 )
 from core.schemas.scan_schema import BaseScanContext, ScanType, TypeOfScan
-from core.utils.errors import InitializationError, UnsupportedOperationError
+from core.utils.errors import (
+    InitializationError,
+    PaymentError,
+    RepositoryError,
+    UnsupportedOperationError,
+    ValidationError,
+)
 from core.utils.logger import logger
 from core.utils.profiles import Profiles
 from core.utils.validate import validate_subscription_limits
@@ -48,6 +53,17 @@ class BaseScanService(ABC):
         """
         Main entry point for scan creation.
         Handles the high-level flow of creating and starting a scan.
+
+        Returns:
+            Dict containing the scan_id
+
+        Raises:
+            InitializationError: If scan initialization fails
+            PaymentError: If payment processing fails
+            RepositoryError: If repository access or setup fails
+            UnsupportedOperationError: If the requested operation is not supported
+            ValidationError: If input validation fails
+            Any other domain-specific error from sub-components
         """
         user = kwargs.get("user")
 
@@ -75,10 +91,22 @@ class BaseScanService(ABC):
 
             return {"scan_id": str(scan_id)}
 
-        except Exception as e:
+        except (
+            PaymentError,
+            RepositoryError,
+            ValidationError,
+            UnsupportedOperationError,
+        ) as e:
+            # Handle known domain-specific errors, perform cleanup and re-raise
             error_msg = f"[{scan_type.value}] Failed to create scan: {str(e)}"
             await self.handle_scan_failure(error_msg, send_email=False)
-            raise HTTPException(status_code=500, detail=error_msg) from e
+            raise  # Re-raise the original domain error
+
+        except Exception as e:
+            # Handle unexpected errors by wrapping in InitializationError
+            error_msg = f"[{scan_type.value}] Failed to create scan: {str(e)}"
+            await self.handle_scan_failure(error_msg, send_email=False)
+            raise InitializationError(message=error_msg) from e
 
     @abstractmethod
     async def create_context(self, scan_id: UUID, **kwargs) -> BaseScanContext:

@@ -122,8 +122,7 @@ async def run_slither(
     returncode, _, stderr = await run_command(slither_command, temp_dir, env=env)
 
     if not os.path.exists(output_file):
-        logger.error(f"Slither output file not found. Return code: {returncode}")
-        # logger.error(f"Stderr: {stderr}")
+        logger.error(f"[Slither] Output file not found. Return code: {returncode}")
         raise ValueError(f"Slither analysis failed: {stderr}")
 
     try:
@@ -131,17 +130,10 @@ async def run_slither(
             slither_output = json.load(f)
 
         transformed_output = transform_slither_output(slither_output, selected_contracts)
-        contract_count = count_unique_contracts(transformed_output)
-        if selected_contracts and len(selected_contracts) > 0:
-            logger.info(
-                f"Slither found issues in {contract_count} out of {len(selected_contracts)} contracts."
-            )
-        else:
-            logger.info(f"Slither found issues in {contract_count} contracts.")
 
         return transformed_output
     except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse Slither output: {e}")
+        logger.error(f"[Slither] Failed to parse Slither output: {e}")
         raise ValueError("Failed to parse Slither output") from e
 
 
@@ -158,11 +150,11 @@ async def check_slither_installation():
     try:
         returncode, stdout, stderr = await run_command(["slither", "--version"], ".")
         if returncode == 0:
-            logger.info(f"Running Slither version: {stdout.strip()}...")
+            logger.info(f"[Slither] Running Slither version: {stdout.strip()}...")
             return True
 
-        logger.error(f"Slither not found or error checking version: {stderr}")
+        logger.error(f"[Slither] Slither not found or error checking version: {stderr}")
         return False
     except Exception as e:
-        logger.exception(f"Error checking Slither installation: {str(e)}")
+        logger.exception(f"[Slither] Error checking Slither installation: {str(e)}")
         return False

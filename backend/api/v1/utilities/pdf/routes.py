@@ -1,7 +1,7 @@
 from typing import Union
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from api.v1.auth.helpers.dependencies import get_agentic_api_key, get_api_key, get_current_user
 from api.v1.utilities.pdf.service import (
@@ -10,6 +10,8 @@ from api.v1.utilities.pdf.service import (
 )
 from core.models.user import User
 from core.schemas.api_response_schema import ErrorResponse, SuccessResponse
+from core.utils.errors import ReportError
+from core.utils.logger import logger
 from core.utils.throttling import throttle
 
 router = APIRouter(tags=["utilities"])
@@ -36,8 +38,12 @@ async def generate_pdf(
     Returns:
         SuccessResponse[str]: A message indicating the PDF report was sent by email
     """
-    await generate_and_send_pdf_from_scan(current_user, scan_id)
-    return SuccessResponse(data="Audit Agent report sent by email successfully")
+    try:
+        await generate_and_send_pdf_from_scan(current_user, scan_id)
+        return SuccessResponse(data="Audit Agent report sent by email successfully")
+    except ReportError as e:
+        logger.error(f"Failed to generate PDF report: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get(
@@ -61,5 +67,9 @@ async def generate_agentic_pdf(
     Returns:
         SuccessResponse[str]: A message indicating the PDF report was sent by email
     """
-    await generate_and_send_agentic_pdf(scan_id, email)
-    return SuccessResponse(data="AuditAgent report sent by email successfully")
+    try:
+        await generate_and_send_agentic_pdf(scan_id, email)
+        return SuccessResponse(data="AuditAgent report sent by email successfully")
+    except ReportError as e:
+        logger.error(f"Failed to generate agentic PDF report: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

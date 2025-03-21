@@ -223,20 +223,21 @@ Your webhook signing secret is whsec_ (^C to quit)
 backend/
 ├── api/                 # API Layer organized by features
 │   └── v1/              # API Version 1
-│       ├── agentic/     # Agentic endpoints
-│       ├── audit_agent/ # Audit Agent endpoints
 │       ├── auth/        # Authentication endpoints
 │       ├── common/      # Common API utilities
 │       ├── detectors/   # Detectors endpoints
 │       ├── github/      # GitHub integration endpoints
 │       ├── payments/    # Payment processing endpoints
+│       ├── scanner/     # All Scanner endpoints
 │       ├── scans/       # Scan management endpoints
+│       ├── tools/       # LLM tools endpoints
 │       └── utilities/   # Utility endpoints
 │
 ├── core/                # Core Business Logic
 │   ├── db/              # Database layer and data access
 │   ├── llm/             # LLM integration
 │   ├── models/          # Data models
+│   ├── scanners/        # Parent class for scan polymorphism
 │   ├── schemas/         # Pydantic schemas
 │   └── utils/           # Shared utility functions
 │
@@ -260,8 +261,8 @@ Key Files:
 > You can access the API endpoints and their descriptions using the following URLs: 
 > - development: http://localhost:8000/docs
 > - development: http://localhost:8000/redoc
-> - staging: http://api.auditagent.dev/docs
-> - staging: http://api.auditagent.dev/redoc
+> - staging: https://api.auditagent.staging-nethermind.xyz/docs
+> - staging: https://api.auditagent.staging-nethermind.xyz/redoc
 
 ### Authentication Endpoints
 

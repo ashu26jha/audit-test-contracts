@@ -1,11 +1,12 @@
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from jose import jwt
 
 from config import settings
 from core.models.auth import BlacklistedToken, LoginAttempt, OAuthState
+from core.utils.errors import RateLimitError, TokenError
 from core.utils.logger import logger
 
 # Security related constants
@@ -28,7 +29,7 @@ async def blacklist_token(token: str) -> None:
             await BlacklistedToken(token=token, blacklisted_at=now, expires_at=expires_at).insert()
     except Exception as e:
         logger.error(f"Error blacklisting token: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error processing logout") from e
+        raise TokenError(message="Error processing logout", details={"error": str(e)}) from e
 
 
 async def is_token_blacklisted(token: str) -> bool:
@@ -46,9 +47,7 @@ async def track_login_attempt(request: Request) -> None:
     """Track login attempts and block suspicious IPs"""
     ip = _get_client_ip(request)
     if await is_ip_blocked(ip):
-        raise HTTPException(
-            status_code=429, detail="Too many login attempts. Please try again later."
-        )
+        raise RateLimitError(message="Too many login attempts. Please try again later.")
 
     now = datetime.now(timezone.utc)
     attempt = await LoginAttempt.find_one({"ip_address": ip})
@@ -75,9 +74,7 @@ async def track_login_attempt(request: Request) -> None:
 
     if attempt.attempts > MAX_ATTEMPTS:
         await block_ip(ip)
-        raise HTTPException(
-            status_code=429, detail="Too many login attempts. Please try again later."
-        )
+        raise RateLimitError(message="Too many login attempts. Please try again later.")
 
 
 async def block_ip(ip: str) -> None:

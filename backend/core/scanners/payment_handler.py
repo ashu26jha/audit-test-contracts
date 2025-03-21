@@ -42,6 +42,7 @@ class PaymentHandler:
                     f"Context type {type(self.context).__name__} requires GitHub information for subscription scans"
                 )
 
+            # CreditHelper.deduct_credit will raise CreditError if credit can't be deducted
             await CreditHelper.deduct_credit(
                 self.user_id, self.scan_id, self.context.repository_url
             )

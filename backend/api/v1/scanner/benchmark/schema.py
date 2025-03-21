@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
@@ -109,3 +110,7 @@ class BenchmarkScanContext(BaseScanContext):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     _supports = (GitHubContext, CompilationContext, UserContext, BenchmarkContext)
+
+
+class BenchmarkInitiateResponse(BaseModel):
+    scan_id: UUID = Field(..., description="Unique identifier for the scan")

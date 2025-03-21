@@ -2,8 +2,6 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from fastapi import HTTPException
-
 from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.db.repositories.credit_transaction import CreditTransactionRepository
 from core.db.repositories.payment import PaymentRepository
@@ -13,6 +11,7 @@ from core.models.credit_transaction import CreditTransaction, TransactionStatus,
 from core.models.payment import Payment
 from core.models.user import SubscriptionType, User
 from core.utils.email_utils import send_failed_refund_email
+from core.utils.errors import CreditError, PaymentError
 from core.utils.logger import logger
 
 
@@ -22,69 +21,93 @@ class CreditHelper:
         """
         Deducts one credit for a pro scan.
         Should only be called after verifying user has active subscription.
-        Returns True if deduction was successful.
+
+        Raises:
+            CreditError: When credit deduction fails (critical operation that must succeed)
         """
-        # Find user and verify credits
-        user = await UserRepository.get_by_github_id(user_id)
-        if not user or user.subscription.credits <= 0:
-            logger.error(f"[Scan Init] No credits available for user {user_id}, scan {scan_id}")
-            raise HTTPException(status_code=400, detail="No credits available")
+        try:
+            # Find user and verify credits
+            user = await UserRepository.get_by_github_id(user_id)
+            if not user or user.subscription.credits <= 0:
+                logger.error(f"[Scan Init] No credits available for user {user_id}, scan {scan_id}")
+                raise CreditError(message="No credits available")
 
-        # Atomic credit deduction
-        if not await _update_user_credits(user, -1):
-            logger.error(f"[Scan Init] Failed to deduct credit for user {user_id}, scan {scan_id}")
-            raise HTTPException(status_code=400, detail="Failed to deduct credit")
+            # Atomic credit deduction
+            if not await _update_user_credits(user, -1):
+                logger.error(
+                    f"[Scan Init] Failed to deduct credit for user {user_id}, scan {scan_id}"
+                )
+                raise CreditError(message="Failed to deduct credit")
 
-        # Process credit transaction and update scan status
-        await _process_scan_credit(
-            user_id=user_id,
-            scan_id=scan_id,
-            repository_name=repository_name,
-            subscription_type=user.subscription.type,
-            renewal_period=user.subscription.lastRenewalAt,
-        )
+            # Process credit transaction and update scan status
+            await _process_scan_credit(
+                user_id=user_id,
+                scan_id=scan_id,
+                repository_name=repository_name,
+                subscription_type=user.subscription.type,
+                renewal_period=user.subscription.lastRenewalAt,
+            )
+
+        except CreditError:
+            # Re-raise CreditError as this is a critical operation that must succeed
+            raise
+        except Exception as e:
+            # Log unexpected errors but convert to CreditError since
+            # deduction is a critical operation
+            logger.error(f"[Scan Init] Unexpected error in credit deduction: {str(e)}")
+            raise CreditError(message=f"Failed to deduct credit: {str(e)}")
 
     @staticmethod
     async def refund_credit(user_id: str, scan_id: UUID) -> None:
         """Refunds a credit for a failed scan."""
-        # Find original transaction
-        transaction = await CreditTransaction.find_one(
-            {"scanId": scan_id, "userId": user_id, "status": TransactionStatus.COMPLETED}
-        )
-        if not transaction:
-            logger.error(f"[Scan Init] No transaction found for refund: scan {scan_id}")
+        try:
+            # Find original transaction
+            transaction = await CreditTransaction.find_one(
+                {"scanId": scan_id, "userId": user_id, "status": TransactionStatus.COMPLETED}
+            )
+            if not transaction:
+                logger.error(f"[Scan Init] No transaction found for refund: scan {scan_id}")
+                return
 
-            return
-        # Verify user and subscription
-        user = await UserRepository.get_by_github_id(user_id)
-        if not user or not user.subscription.isActive:
-            logger.error(f"[Scan Init] Invalid user/subscription for refund: {user_id}")
-            return
+            # Verify user and subscription
+            user = await UserRepository.get_by_github_id(user_id)
+            if not user or not user.subscription.isActive:
+                logger.error(f"[Scan Init] Invalid user/subscription for refund: {user_id}")
+                return
 
-        # Don't refund if in new period
-        if (
-            user.subscription.lastRenewalAt
-            and transaction.timestamp < user.subscription.lastRenewalAt
-        ):
-            logger.info(f"[Scan Init] Refund rejected - new period: {user_id}, scan {scan_id}")
+            # Don't refund if in new period
+            if (
+                user.subscription.lastRenewalAt
+                and transaction.timestamp < user.subscription.lastRenewalAt
+            ):
+                logger.info(f"[Scan Init] Refund rejected - new period: {user_id}, scan {scan_id}")
+                return
 
-        # Get monthly credit limit
-        monthly_credits = SUBSCRIPTION_SETTINGS[user.subscription.type].get("monthly_credits", 0)
+            # Get monthly credit limit
+            monthly_credits = SUBSCRIPTION_SETTINGS[user.subscription.type].get(
+                "monthly_credits", 0
+            )
 
-        # Atomic credit refund with monthly limit
-        if not await _update_user_credits(user, 1, monthly_credits):
+            # Atomic credit refund with monthly limit
+            if not await _update_user_credits(user, 1, monthly_credits):
+                send_failed_refund_email(user_id, scan_id)
+                logger.error(f"[Scan Init] Failed to refund credit: {user_id}, scan {scan_id}")
+                return
+
+            # Process credit transaction
+            await _process_scan_credit(
+                user_id=user_id,
+                scan_id=scan_id,
+                repository_name=transaction.repositoryName,
+                subscription_type=user.subscription.type,
+                renewal_period=user.subscription.lastRenewalAt,
+                is_refund=True,
+            )
+        except Exception as e:
+            # Log error but don't propagate exception since refund is a non-critical operation
+            logger.error(f"[Scan Init] Credit refund failed: {str(e)}")
+            # Optionally send email notification about failed refund
             send_failed_refund_email(user_id, scan_id)
-            logger.error(f"[Scan Init] Failed to refund credit: {user_id}, scan {scan_id}")
-
-        # Process credit transaction
-        await _process_scan_credit(
-            user_id=user_id,
-            scan_id=scan_id,
-            repository_name=transaction.repositoryName,
-            subscription_type=user.subscription.type,
-            renewal_period=user.subscription.lastRenewalAt,
-            is_refund=True,
-        )
 
 
 async def _process_scan_credit(
@@ -116,7 +139,7 @@ async def _process_scan_credit(
         existing_payment = await Payment.find_one(Payment.scan_id == scan_id)
         if not existing_payment:
             logger.error(f"[Scan Init] No payment record found for scan {scan_id}")
-            raise HTTPException(status_code=404, detail="Payment record not found")
+            raise PaymentError(message="Payment record not found")
 
         if is_refund:
             await PaymentRepository.update_failed_payment(scan_id, user_id)
@@ -126,12 +149,15 @@ async def _process_scan_credit(
             await ScanRepository.update_scan_paid_status(scan_id, True, False)
             logger.info(f"[Scan Init] Credit deducted for user {user_id}, scan {scan_id}")
 
-    except HTTPException as e:
+    except CreditError as e:
+        logger.error(f"[Scan Init] Failed to process credit transaction: {str(e)}")
+        raise e
+    except PaymentError as e:
         logger.error(f"[Scan Init] Failed to process credit transaction: {str(e)}")
         raise e
     except Exception as e:
         logger.error(f"[Scan Init] Failed to process credit transaction: {str(e)}")
-        raise e
+        raise PaymentError(message=f"Failed to process credit transaction: {str(e)}")
 
 
 async def _update_user_credits(

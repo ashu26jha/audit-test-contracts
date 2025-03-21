@@ -5,11 +5,11 @@ from uuid import uuid4
 
 import pytest
 from beanie import PydanticObjectId
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from api.v1.scans.service import ScanHistoryService
 from core.models.user import User
+from core.utils.errors import QueryError
 from main import app
 
 
@@ -86,7 +86,9 @@ class TestScanHistoryEndpoints:
         assert response.json() == {"success": True, "data": []}
 
     def test_get_scan_history_error(self, client, mock_scan_repository):
-        mock_scan_repository.side_effect = HTTPException(status_code=500, detail="Database error")
+        mock_scan_repository.side_effect = QueryError(
+            message="Failed to fetch scan history", details={"error": "Database error"}
+        )
 
         response = client.get("/api/v1/scans/history")
         assert response.status_code == 500
@@ -94,7 +96,7 @@ class TestScanHistoryEndpoints:
         assert error_response == {
             "success": False,
             "code": 500,
-            "message": "Database error",
+            "message": "Failed to retrieve scan history",
             "details": None,
         }
 

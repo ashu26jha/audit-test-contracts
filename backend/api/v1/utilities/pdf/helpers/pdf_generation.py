@@ -5,6 +5,7 @@ from typing import Union
 from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import async_playwright
 
+from core.utils.errors import PDFGenerationError
 from core.utils.logger import logger
 
 from ..config import TEMPLATE_DIR
@@ -19,10 +20,11 @@ async def html_to_pdf(html_file: Union[str, Path], pdf_file: Union[str, Path]) -
         pdf_file: Path where the PDF should be saved
 
     Raises:
-        PlaywrightError: If there's an error during PDF generation
+        PDFGenerationError: If there's an error during PDF generation
         FileNotFoundError: If the HTML file doesn't exist
     """
     if not os.path.exists(html_file):
+        logger.error(f"HTML file not found: {html_file}")
         raise FileNotFoundError(f"HTML file not found: {html_file}")
 
     try:
@@ -51,11 +53,11 @@ async def html_to_pdf(html_file: Union[str, Path], pdf_file: Union[str, Path]) -
             await page.pdf(**pdf_options)
             await browser.close()
     except PlaywrightError as e:
-        logger.error(f"Error during PDF generation: {str(e)}")
-        raise
+        logger.error(f"Playwright error during PDF generation: {str(e)}")
+        raise PDFGenerationError(f"PDF conversion failed: {str(e)}") from e
     except Exception as e:
         logger.error(f"Unexpected error during PDF generation: {str(e)}")
-        raise
+        raise PDFGenerationError(f"PDF conversion failed: {str(e)}") from e
 
 
 async def generate_pdf_from_html(html_content: str, pdf_filename: str) -> Path:
@@ -70,11 +72,7 @@ async def generate_pdf_from_html(html_content: str, pdf_filename: str) -> Path:
         Path to the generated PDF file
 
     Raises:
-        IOError: If there's an error writing the temporary HTML file
-        PlaywrightError: If there's an error during PDF generation
-
-    Note:
-        All files are created in and read from TEMPLATE_DIR for process safety.
+        PDFGenerationError: If there's an error during PDF generation process
     """
     # Ensure all paths are explicitly within TEMPLATE_DIR
     pdf_path = TEMPLATE_DIR / pdf_filename
@@ -87,14 +85,16 @@ async def generate_pdf_from_html(html_content: str, pdf_filename: str) -> Path:
                 file.write(html_content)
         except IOError as e:
             logger.error(f"Error writing temporary HTML file: {str(e)}")
-            raise
+            raise PDFGenerationError(f"Failed to write temporary HTML file: {str(e)}") from e
 
         # Convert to PDF
         await html_to_pdf(temp_html_path, pdf_path)
         return pdf_path
+    except PDFGenerationError:
+        raise
     except Exception as e:
         logger.error(f"Error during PDF generation process: {str(e)}")
-        raise
+        raise PDFGenerationError(f"PDF generation failed: {str(e)}") from e
     finally:
         # Always cleanup temporary HTML file
         cleanup_temp_file(temp_html_path)

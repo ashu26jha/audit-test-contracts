@@ -12,6 +12,7 @@ from config.prompts.summarise_prompt import (
 from config.settings import LLM_SCAN_3
 from core.db.repositories.search_results import SearchResults
 from core.llm.send_prompt_to_llm import send_prompt_to_llm_async
+from core.utils.errors import LLMError, SearchError
 from core.utils.logger import logger
 
 # Initialize global constants
@@ -31,9 +32,18 @@ async def perform_duckduckgo_search(query: str) -> str:
     2. Select best links
     3. Parse content from links
     4. Summarize content
+
+    Args:
+        query: Search query string
+
+    Returns:
+        str: Summarized content from search results
+
+    Raises:
+        SearchError: If there's an error during the search process
+        LLMError: If there's an error with the LLM
     """
     try:
-
         # 1. Get raw search results
         results = await _search_raw(query)
         if len(results) == 0:
@@ -52,9 +62,16 @@ async def perform_duckduckgo_search(query: str) -> str:
         content = await _parse_search_results(best_links)
         return content
 
+    except LLMError as e:
+        logger.error(f"[DuckDuckGo] LLM error during search: {e.message}")
+        # We'll pass this up to be handled in the service layer
+        raise
     except Exception as e:
         logger.exception(f"[DuckDuckGo] Error in DuckDuckGo search pipeline: {e}")
-        return f"Failed to perform search: {str(e)}"
+        raise SearchError(
+            message=f"Failed to perform search for query: {query}",
+            details={"error": str(e), "query": query},
+        )
 
 
 async def _search_raw(query: str, max_results: int = MAX_DDGS_RESULTS) -> List[DuckDuckGoResponse]:
@@ -70,12 +87,17 @@ async def _search_raw(query: str, max_results: int = MAX_DDGS_RESULTS) -> List[D
         return results
     except Exception as e:
         logger.exception(f"[DuckDuckGo] Error searching DuckDuckGo: {e}")
-        return []
+        raise SearchError(
+            message="Failed to search DuckDuckGo", details={"error": str(e), "query": query}
+        )
 
 
 async def _select_best_links(query: str, results: List[DuckDuckGoResponse]) -> List[str]:
     """
     Select the best links from the search results.
+
+    Raises:
+        LLMError: If there's an error with the LLM processing
     """
     best_link_selection_prompt = BEST_LINK_SELECTION_PROMPT.format(query=query, links=results)
     response = await send_prompt_to_llm_async(
@@ -95,6 +117,9 @@ async def _parse_search_results(results: List[str]) -> str:
 
     Returns:
         str: Combined content from parsing all result URLs
+
+    Raises:
+        SearchError: If there's a critical error in parsing all results
     """
     try:
         # Extract links using list comprehension
@@ -104,7 +129,6 @@ async def _parse_search_results(results: List[str]) -> str:
         async def process_single_link(link: str) -> str:
             """Process a single link with rate limiting"""
             async with LINK_PARSE_SEMAPHORE:
-
                 # Checks for cache hit
                 if await SearchResults.check_if_visited(link):
                     logger.info(f"[DuckDuckGo] Cache hit! skipping: {link}")
@@ -124,6 +148,7 @@ async def _parse_search_results(results: List[str]) -> str:
                     await SearchResults.add_content(link, summary)
                     return summary
                 except Exception as e:
+                    # We'll log but not fail the whole operation for a single link
                     logger.exception(f"[DuckDuckGo] Error parsing link {link}: {e}")
                     return ""
 
@@ -144,12 +169,15 @@ async def _parse_search_results(results: List[str]) -> str:
 
     except Exception as e:
         logger.exception(f"[DuckDuckGo] Error parsing search results: {e}")
-        return ""
+        raise SearchError(message="Failed to parse search results", details={"error": str(e)})
 
 
 async def _summarise_content(content: str) -> str:
     """
     Summarize the parsed content of a webpage.
+
+    Raises:
+        LLMError: If the LLM fails to summarize the content
     """
     summarise_prompt = SUMMARISE_PROMPT.format(text=content)
     response = await send_prompt_to_llm_async(

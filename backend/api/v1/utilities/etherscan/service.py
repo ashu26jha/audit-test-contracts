@@ -1,8 +1,8 @@
 import aiohttp
-from fastapi import HTTPException
 
 from config.settings import BASE_ETHERSCAN_URL, ETHERSCAN_API_KEY
 from core.utils import logger
+from core.utils.errors import EtherscanError
 
 from .helpers.etherscan_helper import parse_source_code, remove_external_libraries
 from .schema import ContractSourceCodeResponse
@@ -28,7 +28,7 @@ class EtherscanService:
             ContractSourceCodeResponse: Mapping of .sol file names to their content
 
         Raises:
-            HTTPException: If there is an error fetching or parsing the source code
+            EtherscanError: If there is an error fetching or parsing the source code
         """
         try:
             logger.info(
@@ -46,44 +46,39 @@ class EtherscanService:
             async with aiohttp.ClientSession() as session:
                 async with session.get(BASE_ETHERSCAN_URL, params=params) as response:
                     if response.status != 200:
-                        logger.error(f"[Etherscan] Etherscan API error: {response.status}")
-                        raise HTTPException(
-                            status_code=response.status,
-                            detail=f"Etherscan API returned status {response.status}",
-                        )
+                        error_msg = f"Etherscan API returned status {response.status}"
+                        logger.error(f"[Etherscan] {error_msg}")
+                        raise EtherscanError(error_msg)
 
                     data = await response.json()
 
                     if data["status"] != "1" or data["message"] != "OK":
-                        logger.error(
-                            f"[Etherscan] Etherscan API error: {data.get('message', 'Unknown error')}"
-                        )
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Etherscan API error: {data.get('message', 'Unknown error')}",
-                        )
+                        error_msg = f"Etherscan API error: {data.get('message', 'Unknown error')}"
+                        logger.error(f"[Etherscan] {error_msg}")
+                        raise EtherscanError(error_msg)
 
                     result = data["result"][0]
 
                     if result["SourceCode"] == "":
-                        logger.error(
-                            f"[Etherscan] No source code found for contract {contract_address}"
-                        )
-                        raise HTTPException(
-                            status_code=404, detail="Source code not found or not verified"
-                        )
+                        error_msg = f"No source code found for contract {contract_address}"
+                        logger.error(f"[Etherscan] {error_msg}")
+                        raise EtherscanError(error_msg)
 
                     parsed_source_code = parse_source_code(result["SourceCode"])
+                    if not parsed_source_code:
+                        raise EtherscanError(
+                            f"Failed to parse source code for contract {contract_address}"
+                        )
+
                     cleaned_source_code = await remove_external_libraries(parsed_source_code)
 
                     logger.info(
                         f"[Etherscan] Source code fetched and cleaned for contract {contract_address}"
                     )
                     return cleaned_source_code
-        except HTTPException:
+        except EtherscanError:
             raise
         except Exception as e:
-            logger.error(f"[Etherscan] Error fetching contract source code: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail="Error fetching contract source code"
-            ) from e
+            error_msg = f"Error fetching contract source code: {str(e)}"
+            logger.error(f"[Etherscan] {error_msg}")
+            raise EtherscanError(error_msg) from e

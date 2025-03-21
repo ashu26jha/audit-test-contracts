@@ -24,12 +24,29 @@ class SolidityFileStorage:
         """
         Returns the absolute file path for a given contract path.
         Contract paths are relative to project root.
+
+        Args:
+            contract_path: The relative path to the contract
+
+        Returns:
+            str: The absolute path to the contract
         """
         absolute_path = os.path.join(self.project_root, contract_path)
         return absolute_path
 
     def read_contract(self, contract_path: str) -> Optional[str]:
-        """Reads the Solidity contract file from disk when needed."""
+        """
+        Reads the Solidity contract file from disk when needed.
+
+        Args:
+            contract_path: The relative path to the contract
+
+        Returns:
+            Optional[str]: The contract content or None if not found
+
+        Raises:
+            ContractError: In API routes, when the file is not found
+        """
         file_path = self.get_contract_path(contract_path)
 
         try:

@@ -17,6 +17,7 @@ from config.subscription_settings import SUBSCRIPTION_SETTINGS
 from core.db.repositories.payment import PaymentRepository
 from core.db.repositories.scan import ScanRepository
 from core.db.repositories.user import UserRepository
+from core.utils.errors import PaymentError
 from core.utils.logger import logger
 
 
@@ -78,13 +79,13 @@ class StripeWebhookHelper:
 
         except json.JSONDecodeError as e:
             logger.error("Invalid payload received")
-            raise ValueError("Invalid payload") from e
+            raise PaymentError(message="Invalid webhook payload") from e
         except stripe.error.SignatureVerificationError as e:
             logger.error("Invalid Stripe signature")
-            raise ValueError("Invalid signature") from e
+            raise PaymentError(message="Invalid webhook signature") from e
         except Exception as e:
             logger.error(f"Error processing webhook: {str(e)}")
-            raise
+            raise PaymentError(message=f"Webhook processing error: {str(e)}")
 
     @staticmethod
     async def handle_subscription_created(event: dict):
