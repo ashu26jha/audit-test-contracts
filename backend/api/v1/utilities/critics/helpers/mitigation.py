@@ -171,7 +171,7 @@ def _apply_mitigation_updates(
 
             # Save comments update if present
             if update.comments:
-                indexed_finding.finding.Mitigation = f"\n\nMitigation Analysis: {update.comments}"
+                indexed_finding.finding.Mitigation = update.comments
 
         # Add to result list (unless removed)
         result_findings.append(indexed_finding)

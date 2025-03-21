@@ -45,9 +45,9 @@ class BaseResultsProcessor:
         The critic phase consists of sequential steps:
         1. Filter findings to match selected contracts
         2. Separate static analyzer findings
-        3. Mitigate non-static findings edge cases(adjust severity, remove false positives)
+        3. Mitigate non-static findings edge cases (adjust severity, remove false positives)
         4. Validate non-static findings (filter out low-quality findings)
-        5. Enrich findings (improve descriptions and severity based on critical analysis)
+        5. Enrich non-static findings (add additional insights and adjust severity)
         6. Merge static analyzer findings back with processed findings
         7. Deduplicate all findings (remove redundant findings)
 
@@ -83,13 +83,13 @@ class BaseResultsProcessor:
             )
         await ScanRepository.update_scan_progress(self.scan_id, 85)
 
-        # 4. Perform validation with non-static findings and contract contents
+        # 4. Perform validation on non-static findings and contract contents
         processed_findings = await CriticService.run_validation(
             findings=non_static_findings, contract_contents=self.contract_contents
         )
         await ScanRepository.update_scan_progress(self.scan_id, 92)
 
-        # 5. Enrich findings' descriptions and recommendations based on critic analysis
+        # 5. Enrich non-static findings with additional insights and adjust severity
         processed_findings = await CriticService.enrich_findings(
             findings=processed_findings, contract_contents=self.contract_contents
         )

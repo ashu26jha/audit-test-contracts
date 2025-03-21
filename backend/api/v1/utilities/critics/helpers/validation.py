@@ -10,7 +10,7 @@ from api.v1.utilities.critics.helpers.batch_processor import (
 from api.v1.utilities.critics.helpers.contract_grouping import process_findings_by_contract_groups
 from api.v1.utilities.critics.schema import (
     CounterArgument,
-    CounterArgumentsList,
+    CounterArgumentList,
     IndexedFinding,
     ValidationJudgementList,
 )
@@ -199,12 +199,9 @@ async def _execute_two_step_validation(
                 logger.info(f"[VALIDATION] Discard justification: {judgement.justification}")
                 continue
             elif confidence >= LOW_CONFIDENCE_THRESHOLD and confidence <= HIGH_CONFIDENCE_THRESHOLD:
-                # For findings with medium confidence, add counter-arguments and justification to finding
+                # For findings with medium confidence, add counter-argument and justification to finding
                 if index in counter_arg_map:
-                    finding.CounterArguments = [
-                        counter_arg_map[index].argument_1,
-                        counter_arg_map[index].argument_2,
-                    ]
+                    finding.CounterArgument = counter_arg_map[index].argument
                     finding.Justification = judgement.justification
 
             validated_findings.append(indexed_finding)
@@ -218,7 +215,7 @@ async def _execute_two_step_validation(
 
 async def _generate_counter_arguments(
     indexed_findings: List[IndexedFinding], contract_code: str
-) -> CounterArgumentsList:
+) -> CounterArgumentList:
     """
     Generate counter-arguments for each finding using LLM.
 
@@ -242,7 +239,7 @@ async def _generate_counter_arguments(
     return await send_prompt_to_llm_async(
         model_type=LLM_UTILITY,
         messages=prompt,
-        response_model=CounterArgumentsList,
+        response_model=CounterArgumentList,
     )
 
 
@@ -265,8 +262,7 @@ async def _judge_findings_with_counter_arguments(
     # Convert indexed findings to dictionaries for the LLM
     findings_dicts = [finding.to_dict() for finding in indexed_findings]
     counter_args_dicts = [
-        {"index": arg.index, "argument_1": arg.argument_1, "argument_2": arg.argument_2}
-        for arg in counter_arguments
+        {"index": arg.index, "argument": arg.argument} for arg in counter_arguments
     ]
 
     # Format for LLM

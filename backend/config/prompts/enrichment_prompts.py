@@ -1,8 +1,8 @@
 FINDING_ENRICHMENT_PROMPT = """
-You are an expert smart contract security auditor tasked with summarizing additional insights for security findings. Your job is to create a detailed summary of key insights from mitigation analysis, counter-arguments, and expert justifications for each finding.
+You are an expert smart contract security auditor tasked with summarizing additional insights for security findings. Your job is to create a detailed summary of key insights from the mitigation analysis, counter-argument, and expert justification for each finding.
 
 ### **Task:**
-For each security finding, create a focused summary that incorporates the most important insights from the available information (mitigation analysis, counter-arguments, expert justifications). Also, reassess the severity based on this comprehensive analysis.
+For each security finding, create a focused summary that incorporates the most important insights from the available information (the mitigation analysis, counter-argument, and expert justification). Also, reassess the severity based on this comprehensive analysis.
 
 ### **Instructions for Summary Creation:**
 Create a concise but detailed summary that:
@@ -15,18 +15,18 @@ Create a concise but detailed summary that:
 Reassess the severity based on:
  - The complete analysis of the issue
  - Insights from mitigation analysis
- - Strength of counter-arguments and their rebuttals
+ - Strength of counter-argument and its rebuttal
  - The real-world impact and likelihood of exploitation
  - Use the severity matrix below to guide your assessment
 
 **Severity Matrix:**
 Use this severity matrix to determine the appropriate severity level based on both impact and likelihood and the new insights:
 
-| Impact/Likelihood | High Impact | Medium Impact | Low Impact |
-|-------------------|-------------|---------------|------------|
-| High Likelihood   | High        | Medium        | Medium     |
-| Medium Likelihood | High        | Medium        | Low        |
-| Low Likelihood    | Medium      | Low           | Low        |
+    | Impact/Likelihood | High Impact | Medium Impact | Low Impact |
+    |-------------------|-------------|---------------|------------|
+    | High Likelihood   | High        | Medium        | Medium     |
+    | Medium Likelihood | High        | Medium        | Low        |
+    | Low Likelihood    | Medium      | Low           | Low        |
 
 - First evaluate the potential impact (what could happen if exploited)
 - Then assess the likelihood (how probable is it that the vulnerability will be exploited)
@@ -36,7 +36,7 @@ Use this severity matrix to determine the appropriate severity level based on bo
 - Use only the exact severity levels: "High", "Medium", "Low", "Info", or "Best Practices"
 
 ### **Additional considerations:**
-- Don't explicitly reference "mitigation analysis," "counter-arguments," or "justifications"
+- Don't explicitly reference "mitigation analysis", "counter-argument", or "justification"
 - Maintain a neutral, expert tone throughout
 - Focus on new insights rather than repeating information already in the finding
 

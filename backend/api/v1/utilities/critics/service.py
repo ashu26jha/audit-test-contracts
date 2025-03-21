@@ -82,15 +82,16 @@ class CriticService:
         findings: List[Finding], contract_contents: Dict[str, str]
     ) -> List[Finding]:
         """
-        Enhance findings by improving their descriptions and recommendations based on
-        information from mitigation and validation phases.
+        Enrich findings with additional insights derived from mitigation analysis,
+        counter-arguments, and justifications. This process also reassesses and
+        potentially updates severity ratings based on those insights.
 
         Args:
             findings: List of findings to enhance
             contract_contents: Dictionary mapping filenames to contract source code
 
         Returns:
-            List of findings with enhanced descriptions and recommendations
+            List of findings with additional insights and updated severity
         """
         return await enrich_findings_batched(findings, contract_contents)
 

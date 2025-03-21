@@ -101,31 +101,14 @@ class MitigationUpdateList(BaseModel):
 # ------------------------------------------
 
 
-class ValidationScore(BaseModel):
-    """Validation score for a finding."""
-
-    index: int
-    exploitability: int
-    impact: int
-    detection_confidence: int
-    justification: str
-
-
-class ValidationScoreList(BaseModel):
-    """List of validation scores for findings."""
-
-    scores: List[ValidationScore]
-
-
 class CounterArgument(BaseModel):
     """Counter-argument against a security finding"""
 
     index: int
-    argument_1: str
-    argument_2: str
+    argument: str
 
 
-class CounterArgumentsList(BaseModel):
+class CounterArgumentList(BaseModel):
     """List of counter-arguments for findings"""
 
     counter_arguments: List[CounterArgument]

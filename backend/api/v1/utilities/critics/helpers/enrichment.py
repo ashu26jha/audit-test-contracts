@@ -151,37 +151,20 @@ async def _execute_enrichment(
     Returns:
         List of indexed findings with appended insight summaries
     """
-    # Convert indexed findings to dictionaries for the LLM
-    findings_dicts = []
+    # Check if any finding has data in CounterArgument, Justification, or Mitigation fields
+    has_enrichment_data = any(
+        finding.finding.CounterArgument
+        or finding.finding.Justification
+        or finding.finding.Mitigation
+        for finding in indexed_findings
+    )
 
-    for indexed_finding in indexed_findings:
-        finding_dict = indexed_finding.to_dict()
-
-        # Add critic information to the dictionary
-        if hasattr(indexed_finding.finding, "Mitigation") and indexed_finding.finding.Mitigation:
-            finding_dict["mitigation"] = indexed_finding.finding.Mitigation
-
-        if (
-            hasattr(indexed_finding.finding, "CounterArguments")
-            and indexed_finding.finding.CounterArguments
-        ):
-            finding_dict["counter_arguments"] = indexed_finding.finding.CounterArguments
-
-        if (
-            hasattr(indexed_finding.finding, "Justification")
-            and indexed_finding.finding.Justification
-        ):
-            finding_dict["justification"] = indexed_finding.finding.Justification
-
-        findings_dicts.append(finding_dict)
-
-    # Skip LLM call if no findings have critic information
-    if not any(
-        "mitigation" in f or "counter_arguments" in f or "justification" in f
-        for f in findings_dicts
-    ):
-        logger.info("[ENRICHMENT] No critic information found in findings, skipping enrichment")
+    if not has_enrichment_data:
+        logger.info("[ENRICHMENT] Skipping batch - no findings have enrichment data")
         return indexed_findings
+
+    # Convert indexed findings to dictionaries for the LLM
+    findings_dicts = [finding.to_dict() for finding in indexed_findings]
 
     # Format findings for LLM
     formatted_findings = json.dumps(findings_dicts)
