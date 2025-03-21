@@ -37,25 +37,29 @@ const Finding = forwardRef<HTMLDivElement, FindingProps>(
         ref={ref}
         className={`bg-[#222222] mb-6 border-2 border-[#18181B] ${isBlurred ? "blur-sm select-none cursor-default" : ""}`}
       >
-        <CardHeader className="flex flex-row justify-between bg-[#18181B] border-1 border-[#18181B] font-inter font-normal text-sm text-[#B8B8B8]">
-          <div className="flex items-center space-x-2">
-            <Image src="/svg/vulnerability-icon.svg" alt="Error" width={15} height={14} className="mr-1" />
-            <span className="text-sm">
-              {index + 1} of {totalFindings} Vulnerability
-            </span>
+        <CardHeader className="flex flex-row justify-center sm:justify-between bg-[#18181B] border-1 border-[#18181B] font-inter font-normal text-sm text-[#B8B8B8]">
+          <div className="flex flex-col sm:flex-row items-center space-x-2">
+            <div className="flex items-center space-x-2">
+              <Image src="/svg/vulnerability-icon.svg" alt="Error" width={15} height={14} className="mr-1" />
+              <span className="text-sm">
+                {index + 1} of {totalFindings} Vulnerability
+              </span>
+            </div>
             <Dot size={25} />
-            <Image src="/svg/file-icon.svg" alt="Error" width={14} height={14} className="mr-1" />
-            <div className="text-sm">{finding.Contracts.join(", ")}</div>
+            <div className="flex items-center space-x-2">
+              <Image src="/svg/file-icon.svg" alt="Error" width={14} height={14} className="mr-1" />
+              <div className="text-sm">{finding.Contracts.join(", ")}</div>
+            </div>
           </div>
         </CardHeader>
 
         <CardBody className={`px-0 bg-black ${isBlurred ? "select-none cursor-default" : ""}`}>
           <div className="flex justify-between items-center mb-2">
-            <div className="h-full flex justify-between items-center border-b-2 border-[#18181B] pb-2 w-full px-3">
-              <div className="pt-4">
+            <div className="h-full flex flex-col sm:flex-row justify-between items-center border-b-2 border-[#18181B] pb-2 w-full px-3">
+              <div className="pt-4 order-2 sm:order-1">
                 <MarkdownWithCode content={finding.Issue} />
               </div>
-              {getSeverityChip(finding.Severity)}
+              <div className="order-1 sm:order-2">{getSeverityChip(finding.Severity)}</div>
             </div>
           </div>
           <div className="pt-3 px-3 overflow-hidden">

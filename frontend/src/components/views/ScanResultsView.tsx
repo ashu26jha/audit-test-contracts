@@ -102,12 +102,13 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
         <div className="w-full h-full flex flex-col lg:flex-row lg:justify-center">
           {/* Findings Menu */}
           <div
-            className={`h-full transition-all duration-300 ${isCollapsed ? "w-[50px] flex-none" : "w-full lg:w-1/5"}`}
+            className={`hidden lg:block h-full transition-all duration-300 ${isCollapsed ? "w-[50px] flex-none" : "lg:w-1/5"}`}
           >
             <div
-              className={`fixed h-[70vh] transform ${hasScrolled ? "-translate-y-20" : "translate-y-0"} transition-all duration-300 ease-in-out overflow-y-auto flex justify-center pt-4 ${isCollapsed ? "w-[50px]" : "w-full lg:w-1/5"}`}
+              className={`fixed h-[70vh] transform ${hasScrolled ? "-translate-y-20" : "translate-y-0"} transition-all duration-300 ease-in-out overflow-y-auto flex justify-center pt-4 ${isCollapsed ? "w-[50px]" : "lg:w-1/5"}`}
             >
-              <div className={`w-full ${isCollapsed ? "flex justify-center" : ""}`}>
+              <div className={`w-[90%] sm:w-full ${isCollapsed ? "flex justify-center" : ""}`}>
+                {/* For desktop view */}
                 <FindingsMenu
                   findings={scanData.findings}
                   onSelectFinding={(finding) => {
@@ -142,6 +143,19 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
                 ))}
               </div>
 
+              {/* For mobile view */}
+              <div className="lg:hidden">
+                <FindingsMenu
+                  findings={scanData.findings}
+                  onSelectFinding={(finding) => {
+                    setSelectedFinding(finding);
+                    scrollToFinding(finding);
+                  }}
+                  isCollapsed={isCollapsed}
+                  setIsCollapsed={setIsCollapsed}
+                  selectedFinding={selectedFinding}
+                />
+              </div>
               <CodeSummary summary={scanData.summary} />
 
               {scanData.findings.map((finding: Finding, index: number) => (

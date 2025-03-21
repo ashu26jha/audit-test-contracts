@@ -22,10 +22,10 @@ export const StepperVisualization: FC<StepperVisualizationProps> = ({ currentSte
   }, [user?.subscription.type]);
 
   return (
-    <div className="flex justify-center">
+    <div className="flex justify-center flex-col sm:flex-row">
       {stepsData.map((step, index) => (
         <div key={step.label} className="flex items-center gap-x-3">
-          <div className="flex items-center justify-center gap-x-1">
+          <div className="flex items-center p-1 sm:p-0 justify-center gap-x-1">
             <div
               className={`size-5 rounded-full flex items-center justify-center ${
                 index + indexIncrement === currentStep ? "text-red-500" : "text-gray-400"
@@ -46,7 +46,7 @@ export const StepperVisualization: FC<StepperVisualizationProps> = ({ currentSte
             )}
           </div>
           {index + indexIncrement < stepsData.length - 1 + indexIncrement && (
-            <div className="w-16 h-px bg-gray-700 mx-2" />
+            <div className="hidden sm:flex w-16 h-px bg-gray-700 mx-2" />
           )}
         </div>
       ))}

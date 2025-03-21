@@ -26,7 +26,7 @@ const SendFeedback: FC<SendFeedbackProps> = ({ scanData }) => {
 
   return (
     <Card className="flex justify-between items-center p-2 bg-[#222222]">
-      <CardBody className="flex flex-row justify-between items-center space-x-2">
+      <CardBody className="flex flex-col gap-4 sm:flex-row justify-between items-center space-x-2">
         <div className="flex flex-col pl-5">
           <p>Click on the Send Feedback button if you have any suggestions.</p>
         </div>

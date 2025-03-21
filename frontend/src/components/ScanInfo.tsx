@@ -28,7 +28,7 @@ const ScanInfo: FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
       backdrop="blur"
       isOpen={isOpen}
       onClose={onClose}
-      className="bg-[#0F0F0F] text-white"
+      className="bg-[#0F0F0F] text-white w-[90%]"
       motionProps={{
         variants: {
           enter: {
@@ -74,7 +74,7 @@ const ScanInfo: FC<ScanInfoProps> = ({ isOpen, onClose, scanData }) => {
           />
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter className="flex justify-center items-center">
           <Button color="danger" variant="light" onPress={onClose}>
             Close
           </Button>
@@ -89,23 +89,23 @@ export default ScanInfo;
 const InfoSection: FC<InfoSectionProps> = ({ icon, items }) => (
   <div className="flex flex-row gap-1 bg-[#18181B] m-4 rounded-lg">
     <div className="flex flex-col gap-1 border-r-1 border-[#27272A] p-4">
-      <Image src={icon} width={50} height={50} alt="icon" />
+      <Image src={icon} width={50} height={50} alt="icon" className="w-auto h-auto min-w-[40px] min-h-[40px]" />
     </div>
-    <div className="flex flex-col gap-1 ml-4 mt-2 mb-2">
+    <div className="flex flex-col gap-1 p-4 w-full overflow-auto">
       {items.map(({ label, value }, index) => (
         <Fragment key={label}>
-          {index > 0 && <p className="text-sm text-gray-400 mt-4">{label}</p>}
-          {index === 0 && <p className="text-sm text-gray-400">{label}</p>}
+          {index > 0 && <p className="text-sm text-gray-400 mt-4 break-words">{label}</p>}
+          {index === 0 && <p className="text-sm text-gray-400 break-words">{label}</p>}
           {Array.isArray(value) ? (
             <>
               {value.map((item) => (
-                <p className="mt-1" key={item}>
+                <p className="mt-1 break-words text-xs sm:text-sm md:text-base" key={item}>
                   {item}
                 </p>
               ))}
             </>
           ) : (
-            <p>{value}</p>
+            <p className="break-words text-xs sm:text-sm md:text-base">{value}</p>
           )}
         </Fragment>
       ))}

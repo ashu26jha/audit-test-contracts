@@ -88,10 +88,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
     <div className={`${level === 0 && "h-[20rem] overflow-auto"}`}>
       {items.map((item) => (
         <div key={item.path}>
-          <div
-            className="flex items-center gap-2 py-1 rounded px-2 cursor-pointer"
-            style={{ marginLeft: `${level * 20}px` }}
-          >
+          <div className="flex items-center gap-2 p-2 rounded cursor-pointer" style={{ marginLeft: `${level * 20}px` }}>
             {item.type === "folder" ? (
               <button className="flex items-center gap-2 w-full" onClick={() => toggleFolder(item.path)}>
                 <span className="select-none">
@@ -115,10 +112,10 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
                     label: "w-full flex justify-between",
                   }}
                 >
-                  <span>{item.name}</span>
+                  <span className="text-xs sm:text-sm md:text-base">{item.name}</span>
                   <span className="ml-auto flex gap-2 items-center">
                     <Text size={16} />
-                    <div className="w-12 text-end">
+                    <div className="w-12 text-end text-xs sm:text-sm md:text-base">
                       {item.fileInfo && variant === "contract"
                         ? formatNumberWithCommas(item.fileInfo?.lineCount || 0)
                         : formatNumberWithCommas(item.fileInfo?.character_count || 0)}

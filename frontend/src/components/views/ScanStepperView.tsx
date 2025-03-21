@@ -208,7 +208,7 @@ const ScanStepperView: FC = () => {
         ]}
         disableTopPadding={true}
         buttons={
-          <div>
+          <div className="flex flex-row gap-2">
             <Button
               className="mr-2 rounded-lg bg-content-1 border border-default-flat"
               onPress={handleBack}
@@ -230,11 +230,11 @@ const ScanStepperView: FC = () => {
           </div>
         }
       >
-        <div className="h-16 flex justify-center items-center border-b-2 border-default-100">
+        <div className="sm:h-16 p-2 flex justify-center items-center border-b-2 border-default-100">
           <StepperVisualization currentStep={currentStep} />
         </div>
 
-        <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto pt-8">
+        <div className="flex-1 min-h-0 w-full flex flex-col items-center gap-4 overflow-auto py-8">
           {currentStep === 0 && <SubscriptionSelection />}
           {currentStep === 1 && <RepositorySelection />}
           {currentStep === 2 && <BranchSelection />}

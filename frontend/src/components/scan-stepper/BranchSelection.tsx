@@ -28,7 +28,7 @@ export const BranchSelection: FC = () => {
   }, [branches, selectedBranch, setSelectedBranch]);
 
   return (
-    <div className="mb-6 w-2/5 min-w-[300px]">
+    <div className="mb-6 w-2/5 min-w-[250px]">
       <Autocomplete
         label="Select Branch"
         labelPlacement="outside"

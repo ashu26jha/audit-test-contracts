@@ -3,7 +3,7 @@
 import { useEffect, type FC } from "react";
 
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
-import { Navbar as NextUINavbar, NavbarContent, NavbarBrand } from "@nextui-org/navbar";
+import { Navbar as NextUINavbar, NavbarContent, NavbarBrand, NavbarItem } from "@nextui-org/navbar";
 import { Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Button } from "@nextui-org/react";
 import Image from "next/image";
 import NextLink from "next/link";
@@ -37,67 +37,76 @@ const Navbar: FC = () => {
     <NextUINavbar
       maxWidth="full"
       position="sticky"
-      className="h-20 px-4 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
+      className="h-20 py-6 bg-zinc-900 shadow border-b border-zinc-800 flex flex-row"
     >
-      <NavbarBrand as="li" className="max-w-fit min-w-[130px]">
-        <NextLink className="flex justify-start items-center" href="/dashboard?tab=home">
-          <Image src="/svg/logo.svg" alt="logo" width={175} height={150} priority />
-        </NextLink>
-      </NavbarBrand>
+      <NavbarContent>
+        <NavbarBrand as="li" className="max-w-fit min-w-[40vw]">
+          <NextLink className="flex justify-start items-center" href="/dashboard?tab=home">
+            <Image src="/svg/logo.svg" alt="logo" width={175} height={150} priority />
+          </NextLink>
+        </NavbarBrand>
+      </NavbarContent>
 
       <NavbarContent justify="end">
-        <Button
-          as="a"
-          href={PAGES.MANUAL_AUDIT}
-          target="_blank"
-          className="h-10 bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg"
-          startContent={<Image src="/svg/book-security-review.svg" width={18} height={18} alt="book-security-review" />}
-        >
-          Book a Security Review
-        </Button>
-
-        <div className="justify-start items-center gap-1.5 flex">
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <div className="justify-center items-center gap-3 flex cursor-pointer">
-                {user?.avatarUrl ? (
-                  <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
-                ) : (
-                  <></>
-                )}
-                <div>
-                  <p className="text-neutral-50 text-sm leading-normal">{user?.username ?? "Guest"}</p>
-                  {user?.subscription.type === "free" && (
-                    <p className="text-xs">{`${freeScanAllowed ? "1" : "0"} Free Scan Left`}</p>
+        <NavbarItem>
+          <Button
+            as="a"
+            href={PAGES.MANUAL_AUDIT}
+            target="_blank"
+            className="h-10 hidden sm:flex bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg"
+            startContent={
+              <Image src="/svg/book-security-review.svg" width={18} height={18} alt="book-security-review" />
+            }
+          >
+            <p className="text-sm">Book a Security Review</p>
+          </Button>
+        </NavbarItem>
+        <NavbarItem>
+          <div className="flex justify-start items-center gap-1.5 ">
+            <Dropdown placement="bottom-end">
+              <DropdownTrigger>
+                <div className="flex justify-center items-center gap-3 cursor-pointer">
+                  {user?.avatarUrl ? (
+                    <Avatar src={user.avatarUrl} size="sm" className="bg-zinc-700 text-zinc-300 rounded-[10px]" />
+                  ) : (
+                    <></>
                   )}
-                  {user?.subscription.type !== "free" && (
-                    <p className="text-xs">{`${user.subscription.credits} ${user.subscription.credits === 1 ? "Scan" : "Scans"} Left`}</p>
-                  )}
+                  <div className="order-2 sm:order-1">
+                    <p className="text-neutral-50 text-sm leading-normal hidden md:block">
+                      {user?.username ?? "Guest"}
+                    </p>
+                    {user?.subscription.type === "free" && (
+                      <p className="text-xs hidden md:block">{`${freeScanAllowed ? "1" : "0"} Free Scan Left`}</p>
+                    )}
+                    {user?.subscription.type !== "free" && (
+                      <p className="text-xs hidden md:block">{`${user.subscription.credits} ${user.subscription.credits === 1 ? "Scan" : "Scans"} Left`}</p>
+                    )}
+                  </div>
+                  <ChevronDownIcon className="w-4 h-4 text-neutral-50 order-1 sm:order-2" />
                 </div>
-                <ChevronDownIcon className="w-4 h-4 text-neutral-50" />
-              </div>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Profile Actions" variant="flat" className="rounded-lg">
-              <DropdownItem
-                key="profile"
-                startContent={<Image src="/svg/profile.svg" alt="profile" width={20} height={20} />}
-                onPress={() => {
-                  router.push("/profile");
-                }}
-              >
-                Profile
-              </DropdownItem>
-              <DropdownItem
-                key="logout"
-                startContent={<Image src="/svg/logout.svg" alt="logout" width={20} height={20} />}
-                color="danger"
-                onPress={() => logout()}
-              >
-                Log out
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        </div>
+              </DropdownTrigger>
+              <DropdownMenu aria-label="Profile Actions" variant="flat" className="rounded-lg">
+                <DropdownItem
+                  key="profile"
+                  startContent={<Image src="/svg/profile.svg" alt="profile" width={20} height={20} />}
+                  onPress={() => {
+                    router.push("/profile");
+                  }}
+                >
+                  Profile
+                </DropdownItem>
+                <DropdownItem
+                  key="logout"
+                  startContent={<Image src="/svg/logout.svg" alt="logout" width={20} height={20} />}
+                  color="danger"
+                  onPress={() => logout()}
+                >
+                  Log out
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          </div>
+        </NavbarItem>
       </NavbarContent>
     </NextUINavbar>
   );

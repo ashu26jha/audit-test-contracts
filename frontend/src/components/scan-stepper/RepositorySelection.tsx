@@ -43,7 +43,7 @@ export const RepositorySelection: FC = () => {
   };
 
   return (
-    <div className="w-2/5 min-w-[300px]">
+    <div className="w-2/5 min-w-[250px]">
       {hasGithubApp && (
         <>
           <Select
@@ -162,7 +162,7 @@ export const RepositorySelection: FC = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-center mt-6">
+      <div className="flex items-center justify-center py-6">
         <div className="w-full h-[2px] bg-gray-700"></div>
         <span className="mx-5 text-gray-300">Or</span>
         <div className="w-full h-[2px] bg-gray-700"></div>

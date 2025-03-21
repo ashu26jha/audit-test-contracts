@@ -55,7 +55,7 @@ const DashboardView: FC = () => {
       }
     >
       {scanHistory.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-0">
           {repositories.map((repository: RepositoriesData) => (
             <ScanCard
               key={repository.repositoryName}
@@ -75,10 +75,16 @@ export default DashboardView;
 
 const EmptyScans = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-[60vh]">
-      <Image src="/svg/empty-dashboard.svg" alt="No Code Scanned" width={100} height={100} />
-      <h3 className="text-xl my-4">No Code Scanned</h3>
-      <p className="text-gray-400 text-center">
+    <div className="flex flex-col items-center justify-center h-[60vh] p-4">
+      <Image
+        src="/svg/empty-dashboard.svg"
+        alt="No Code Scanned"
+        width={100}
+        height={100}
+        className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24"
+      />
+      <h3 className="text-lg sm:text-xl md:text-2xl font-semibold my-2 sm:my-3 md:my-4 text-center">No Code Scanned</h3>
+      <p className="text-gray-400 text-sm sm:text-base text-center max-w-xs sm:max-w-sm">
         You haven&apos;t scanned any code yet.
         <br />
         Click on the Scan Code button to get started.

@@ -86,12 +86,12 @@ export const DocsSelection: FC = () => {
   return (
     <div className="h-full w-full flex flex-col overflow-y-hidden">
       <section className="flex-1 min-h-0 flex justify-center">
-        <div className="w-3/4">
-          <div className="flex gap-8">
-            <div className="flex-1 max-w-[70%]">
+        <div className="w-full sm:w-3/4">
+          <div className="flex flex-col items-center text-center sm:flex-row gap-8">
+            <div className="flex-1 flex flex-col items-center sm:items-start w-full sm:max-w-[70%]">
               <h3 className="text-sm font-normal mb-2 text-default-600 font-inter leading-6"> Readme files </h3>
 
-              <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[23.85rem] overflow-auto">
+              <div className="border-2 bg-content-1 border-default-100 rounded-xl max-h-[23.85rem] overflow-auto w-[90%] sm:w-full">
                 <div className="flex">
                   <Checkbox isSelected={isAllSelected} onValueChange={onAllSelect} color="secondary" className="ml-2" />
                   <Input
@@ -119,7 +119,7 @@ export const DocsSelection: FC = () => {
                 />
               </div>
             </div>
-            <div className="w-[30%]">
+            <div className="w-full sm:w-[30%]">
               <HelpGuide
                 selectedLines={totalSelectedChars + repoDocs.additionalDocs.length}
                 totalLines={ENTERPRISE_PLAN_DETAILS.MAX_DOCS_CHARS}
@@ -130,7 +130,7 @@ export const DocsSelection: FC = () => {
               />
             </div>
           </div>
-          <div>
+          <div className="flex flex-col items-center sm:items-start">
             <h4 className="text-sm text-default-600 mb-2 mt-4">Any additional documentation?</h4>
 
             <Textarea
@@ -141,6 +141,7 @@ export const DocsSelection: FC = () => {
                   "border-2 border-default-100 bg-content-1 hover:border-gray-600 group-data-[focus=true]:bg-content-1 data-[hover=true]:bg-content-1",
               }}
               placeholder="Enter additional documentation..."
+              className="flex flex-col items-center w-[90%] sm:w-full"
             />
           </div>
         </div>

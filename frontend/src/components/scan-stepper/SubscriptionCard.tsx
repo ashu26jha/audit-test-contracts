@@ -36,7 +36,7 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
   const { setSelectedPlan } = useScanStepperStore();
 
   const card = tv({
-    base: "bg-content-1 w-[28rem] rounded-xl p-3 border-2 border-default-100 cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-lg group hover:border-secondary px-0",
+    base: "bg-content-1 w-full sm:w-[28rem] rounded-xl p-3 border-2 border-default-100 cursor-pointer transition-all duration-200 hover:scale-[1.01] hover:shadow-lg group hover:border-secondary px-0",
     variants: {
       isSelected: {
         true: "border-secondary",

@@ -1,7 +1,7 @@
-import { type FC } from "react";
+import { useState, type FC } from "react";
 
 import { Accordion, AccordionItem, Card, CardHeader, Divider, Button, Skeleton } from "@nextui-org/react";
-import { Dot } from "lucide-react";
+import { ChevronUp, ChevronDown, Dot } from "lucide-react";
 import Image from "next/image";
 
 import { MarkdownWithCode } from "../layout";
@@ -51,6 +51,18 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
     {} as Record<Finding["Severity"], Finding[]>,
   );
 
+  const [isExpanded, setIsExpanded] = useState(isCollapsed);
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      toggleExpand();
+    }
+  };
+
   const severityKeys = Object.keys(groupedFindings);
 
   let globalIndex = 1; // Initialize a global index
@@ -58,7 +70,7 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
   return (
     <Card
       className={`border-2 border-content-2 bg-content-1 transition-all duration-300 mb-4 lg:mb-0 
-        ${isCollapsed ? "w-[50px] h-fit" : "w-full lg:h-full"}`}
+        ${isCollapsed ? "sm:w-[50px] h-fit" : "w-full lg:h-full"}`}
     >
       {!isCollapsed && isLoading && (
         <div className="flex flex-col h-full">
@@ -88,7 +100,8 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
 
       {!isCollapsed && !isLoading && (
         <div className="flex flex-col h-full">
-          <CardHeader className=" mb-0 flex items-center justify-between">
+          {/* Desktop */}
+          <CardHeader className="hidden lg:flex mb-0 items-center justify-between">
             <p className="text-sm font-inter font-medium">Findings</p>
 
             <Button
@@ -98,9 +111,27 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
               size="sm"
               onPress={() => setIsCollapsed(!isCollapsed)}
             >
-              <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
+              <div className="hidden lg:block">
+                <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
+              </div>
+              <div className="block lg:hidden">
+                <ChevronUp size={16} />
+              </div>
             </Button>
           </CardHeader>
+          {/* Mobile */}
+          <div className="lg:hidden bg-[#18181B] text-white rounded-lg border-2 border-[#18181B] shadow-[0_1px_2px_0px_rgba(0,0,0,0.1),0_1px_3px_0px_rgba(0,0,0,0.1)]">
+            <div
+              role="button"
+              tabIndex={0}
+              className="flex justify-between items-center cursor-pointer border-1 border-[#18181B] p-4"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              onKeyDown={handleKeyDown}
+            >
+              <h2 className="text-sm font-normal text-[#B8B8B8]">Findings</h2>
+              <ChevronUp size={16} />
+            </div>
+          </div>
           <Divider className="my-2" />
           <div className="overflow-y-auto flex-1 custom-scrollbar">
             <Accordion className="px-0" isCompact={false} defaultExpandedKeys={severityKeys} selectionMode="multiple">
@@ -151,17 +182,33 @@ const FindingsMenu: FC<FindingsMenuProps> = ({
         </div>
       )}
       {isCollapsed && (
-        <div className="flex flex-col items-center py-2 px-2">
-          <Button
-            isDisabled={isButtonDisabled}
-            isIconOnly
-            className="bg-[#18181B] hover:bg-[#27272A]"
-            size="sm"
-            onPress={() => setIsCollapsed(!isCollapsed)}
-          >
-            <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
-          </Button>
-        </div>
+        <>
+          {/* Desktop */}
+          <div className="hidden lg:flex lg:flex-col lg:items-center lg:py-2 lg:px-2">
+            <Button
+              isDisabled={isButtonDisabled}
+              isIconOnly
+              className="bg-[#18181B] hover:bg-[#27272A]"
+              size="sm"
+              onPress={() => setIsCollapsed(!isCollapsed)}
+            >
+              <Image src="/svg/findings-icon.svg" width={14} height={14} alt="Findings Icon" />
+            </Button>
+          </div>
+          {/* Mobile */}
+          <div className="lg:hidden bg-[#18181B] text-white rounded-lg border-2 border-[#18181B] shadow-[0_1px_2px_0px_rgba(0,0,0,0.1),0_1px_3px_0px_rgba(0,0,0,0.1)]">
+            <div
+              role="button"
+              tabIndex={0}
+              className="flex justify-between items-center cursor-pointer border-1 border-[#18181B] p-4"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              onKeyDown={handleKeyDown}
+            >
+              <h2 className="text-sm font-normal text-[#B8B8B8]">Findings</h2>
+              <ChevronDown size={16} />
+            </div>
+          </div>
+        </>
       )}
     </Card>
   );

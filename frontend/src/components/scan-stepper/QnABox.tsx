@@ -19,7 +19,7 @@ export const QnABox: FC = () => {
 
   return (
     <div>
-      <div className="bg-content-1 rounded-xl p-6 border border-default-100 flex flex-col gap-6">
+      <div className="bg-content-1 rounded-xl p-4 border border-default-100 flex flex-col gap-6">
         {QUESTIONS.map((q, index) => (
           <QnATextarea
             key={index}
@@ -44,7 +44,7 @@ interface QnATextareaProps {
 const QnATextarea = ({ value, maxLength, onChange, question }: QnATextareaProps) => {
   return (
     <div>
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-col sm:flex-row gap-2 justify-between items-center mb-2">
         <h4 className="text-sm text-default-600">{question}</h4>
         <p className="text-sm text-default-500">
           {value.length}/{maxLength}

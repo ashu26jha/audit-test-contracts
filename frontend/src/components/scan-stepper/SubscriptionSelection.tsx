@@ -14,7 +14,7 @@ export const SubscriptionSelection: FC = () => {
 
   if (!user) return null;
   return (
-    <div className="w-full flex justify-center gap-x-4 mb-10 px-4">
+    <div className="w-full flex flex-col sm:flex-row items-center sm:items-start justify-center gap-x-4 mb-10 px-4 gap-y-4">
       <SubscriptionCard
         auditType={FREE_PLAN_DETAILS.AUDIT_TYPE}
         planName={FREE_PLAN_DETAILS.PLAN_NAME}
