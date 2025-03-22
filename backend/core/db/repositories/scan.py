@@ -4,9 +4,9 @@ from uuid import UUID
 
 from beanie.operators import Set
 
-from core.models.scan import CodeAnalysisResult, Scan, ScanResult
+from core.models.scan import CodeAnalysisResult, Invariant, Scan, ScanResult
 from core.models.user import User
-from core.utils.errors import DatabaseError, QueryError
+from core.utils.errors import DatabaseError, QueryError, ScanError
 from core.utils.logger import logger
 
 
@@ -226,4 +226,41 @@ class ScanRepository:
             raise DatabaseError(
                 message="Failed to update scan failure state",
                 details={"scan_id": str(scan_id), "error_message": error_message, "error": str(e)},
+            ) from e
+
+    @staticmethod
+    async def get_invariants(repository_url: str, user_id: str) -> List[Invariant] | None:
+        """Get all generated invariants for a given repository URL."""
+        try:
+            # Get the latest completed scan for the repository
+            latest_scan = await Scan.find_one(
+                {"repositoryURL": repository_url, "status": "completed", "user_id": user_id},
+                sort=[("createdAt", -1)],
+            )
+            if not latest_scan:
+                logger.error("Scan for repository url %s not found", repository_url)
+                raise ScanError(
+                    message=f"Scan for repository url {repository_url} not found",
+                    details={"repository_url": repository_url},
+                )
+            # Get the latest scan result
+            latest_scan_result = await ScanResult.find_one(
+                {"scan_id": latest_scan.scan_id}, sort=[("completedAt", -1)]
+            )
+
+            if not latest_scan_result:
+                logger.error("Scan result for scan id %s not found", latest_scan.scan_id)
+                raise ScanError(
+                    message=f"Scan result with ID {latest_scan.scan_id} not found",
+                    details={"scan_id": str(latest_scan.scan_id)},
+                )
+
+            return latest_scan_result.invariants
+        except ScanError:
+            raise
+        except Exception as e:
+            logger.error("Failed to get invariants: %s", str(e))
+            raise QueryError(
+                message="Failed to get invariants",
+                details={"repository_url": repository_url, "error": str(e)},
             ) from e

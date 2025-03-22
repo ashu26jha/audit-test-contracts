@@ -33,3 +33,9 @@ export const PLAN_STEP = {
   selectedIcon: <Image src="/svg/subscription_selected.svg" alt="Plans Selected" width={45} height={45} />,
   label: "Plans",
 };
+
+export const INVARIANTS_STEP = {
+  notSelectedIcon: <Image src="/svg/docs.svg" alt="Invariants" width={45} height={45} />,
+  selectedIcon: <Image src="/svg/docs_selected.svg" alt="Invariants Selected" width={45} height={45} />,
+  label: "Invariants",
+};

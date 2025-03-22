@@ -9,7 +9,7 @@ from api.v1.common.get_contracts_per_github_url import get_contracts_per_github_
 from api.v1.common.setup_environment import cleanup_environment, setup_environment
 from core.db.connection import close_database, init_database
 from core.db.repositories.scan import ScanRepository
-from core.models.scan import Finding
+from core.models.scan import Finding, Invariant
 from core.models.user import User
 from core.scanners.base_scan_initializer import BaseScanInitializer
 from core.scanners.base_task_manager import BaseTaskManager
@@ -365,6 +365,43 @@ class BaseScanService(ABC):
             self.task_manager = self.create_task_manager(context)
             results = await self.task_manager.execute_scan()
 
+            try:
+                saved_invariants = await ScanRepository.get_invariants(
+                    self.context.repository_url, self.context.user_id
+                )
+            except Exception as e:
+                logger.error(
+                    f"[{context.scan_type.value}] Fetching saved invariants failed: {str(e)}"
+                )
+                saved_invariants = []
+
+            if saved_invariants is None:
+                saved_invariants = []
+
+            # Filter out the saved invariants that have a path
+            filtered_saved_invariants = [inv for inv in saved_invariants if inv.path is not None]
+
+            # Create a set of (path, function) tuples from results["invariants"]
+            result_paths_funcs = {(inv.path, inv.function) for inv in results["invariants"]}
+
+            # Filter saved_invariants to keep only those matching paths and functions from results
+            filtered_saved_invariants = [
+                inv
+                for inv in filtered_saved_invariants
+                if (inv.path, inv.function) in result_paths_funcs
+                or not any(other_inv.path == inv.path for other_inv in results["invariants"])
+            ]
+
+            # Create a set to track seen invariants and a list for unique invariants
+            seen = set()
+            combined_invariants: List[Invariant] = []
+            for inv in [*filtered_saved_invariants, *results["invariants"]]:
+                # Create a tuple of the properties we want to compare
+                inv_key = (inv.path, inv.description, inv.condition, inv.function)
+                if inv_key not in seen:
+                    seen.add(inv_key)
+                    combined_invariants.append(inv)
+
             # BaseResultsProcessor: Aggregate, deduplicate, and mitigate results
             result_processor = BaseResultsProcessor(
                 scan_id=context.scan_id,
@@ -374,9 +411,10 @@ class BaseScanService(ABC):
                 combined_findings=results["combined_findings"],
                 summary_result=results["summary_result"],
                 detected_type=results["detected_type"],
-                invariants=results["invariants"],
+                invariants=combined_invariants,
                 contract_contents=context.contract_contents,
             )
+
             total_findings_after_dedup = await result_processor.process_results()
 
             langfuse_context.update_current_trace(session_id=str(context.scan_id))

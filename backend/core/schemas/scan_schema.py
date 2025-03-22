@@ -41,6 +41,12 @@ class TypeOfScan(str, Enum):
     MODEL = "MODEL"
 
 
+class Invariant(BaseModel):
+    description: str
+    function: str
+    condition: str
+
+
 @dataclass(kw_only=True)
 class BaseScanContext:
     """Base context with common fields required by all scan types."""
@@ -52,7 +58,9 @@ class BaseScanContext:
     contract_files: List[str]
     is_subscription_scan: bool = False
     flattened_contracts: Optional[str] = None
+    invariants: Optional[List[Invariant]] = None
     contract_contents: Optional[Dict[str, str]] = None
+    repository_url: Optional[str] = None
 
     # Analysis related (common to all)
     detected_type: Optional[Profiles] = None

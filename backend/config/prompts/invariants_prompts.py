@@ -26,7 +26,8 @@ Your response should be in the following JSON format, without any additional tex
     {{
       "description": "Brief description of the invariant",
       "function": "Name of the function where the invariant applies",
-      "condition": "Formal or pseudo-code representation of the invariant condition in markdown format with proper spacing, line breaks, and code blocks"
+      "condition": "Formal or pseudo-code representation of the invariant condition in markdown format with proper spacing, line breaks, and code blocks",
+      "path": "Path to the file where the invariant applies"
     }}
   ]
 }}

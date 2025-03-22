@@ -23,6 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { usePaymentStore } from "@/store/paymentStore";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 
+import InvariantsSelection from "../scan-stepper/InvariantsSelection";
 import QnASelection from "../scan-stepper/QnASelection";
 
 const ScanStepperView: FC = () => {
@@ -93,8 +94,9 @@ const ScanStepperView: FC = () => {
     const isStep3Valid = currentStep === 3 && selectedContracts.length > 0;
     const isSetp4Valid = currentStep === 4;
     const isSetp5Valid = currentStep === 5;
+    const isSetp6Valid = currentStep === 6;
 
-    return isStep0Valid || isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid || isSetp5Valid;
+    return isStep0Valid || isStep1Valid || isStep2Valid || isStep3Valid || isSetp4Valid || isSetp5Valid || isSetp6Valid;
   }, [
     freeScanAllowed,
     currentStep,
@@ -241,6 +243,7 @@ const ScanStepperView: FC = () => {
           {currentStep === 3 && <ContractSelection />}
           {currentStep === 4 && <DocsSelection />}
           {currentStep === 5 && <QnASelection />}
+          {currentStep === 6 && <InvariantsSelection />}
         </div>
       </Container>
     </>

@@ -1,5 +1,5 @@
 "use client";
-import { type FC, useCallback, useMemo, useState } from "react";
+import { type FC, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Input, Divider, Checkbox } from "@nextui-org/react";
 import { Search } from "lucide-react";
@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import { FREE_PLAN_DETAILS, ENTERPRISE_PLAN_DETAILS, PRO_PLAN_DETAILS } from "@/config/constants";
 import { HELP_DESCRIPTION } from "@/config/helpDescription";
 import { useAuth } from "@/contexts/AuthContext";
+import { useScanStepper } from "@/hooks";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 import { organizeFilesByFolder } from "@/utils/helpers";
 
@@ -17,6 +18,9 @@ export const ContractSelection: FC = () => {
   const {
     solidityFiles,
     contractSearch,
+    selectedOwner,
+    selectedRepo,
+    invariants,
     setContractSearch,
     setSelectedContracts,
     selectedContracts,
@@ -24,6 +28,8 @@ export const ContractSelection: FC = () => {
     isFileLimitExceeded,
   } = useScanStepperStore();
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const [invariantPaths, setinvariantPaths] = useState<string[]>([]);
+  const { fetchInvariants } = useScanStepper();
 
   const { user } = useAuth();
 
@@ -74,6 +80,19 @@ export const ContractSelection: FC = () => {
     setIsAllSelected(true);
   };
 
+  useEffect(() => {
+    if (selectedOwner && selectedRepo) {
+      fetchInvariants(selectedOwner, selectedRepo);
+    }
+  }, [fetchInvariants, selectedOwner, selectedRepo]);
+
+  useEffect(() => {
+    if (invariants && invariants.length > 0) {
+      const invariantPaths = invariants.map((inv) => inv.path);
+      setinvariantPaths(invariantPaths);
+    }
+  }, [invariants]);
+
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-8 sm:w-3/4 min-w-[250px]">
       <div className="flex-1 flex flex-col items-center sm:items-start sm:max-w-[70%]">
@@ -101,6 +120,7 @@ export const ContractSelection: FC = () => {
             selectedPaths={selectedContracts}
             isDisabled={isFileLimitExceeded}
             isLoading={isLoading}
+            invariantPaths={invariantPaths}
             variant="contract"
             emptyText="No contracts found under this branch"
           />

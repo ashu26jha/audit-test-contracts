@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from core.models.docs import QAResponse
+from core.models.scan import Invariant
 from core.schemas.context_protocols import CompilationContext, GitHubContext, UserContext
 from core.schemas.scan_schema import BaseScanContext, ScanType, SetupResult
 
@@ -24,6 +25,9 @@ class AuditAgentRequest(BaseModel):
     )
     docs: Optional[QAResponse] = Field(
         None, description="Optional QA response associated with the request"
+    )
+    invariants: Optional[List[Invariant]] = Field(
+        None, description="Array of invariants names to include in the scan"
     )
 
     @field_validator("repositoryURL")

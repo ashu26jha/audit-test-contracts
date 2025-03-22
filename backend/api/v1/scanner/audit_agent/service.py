@@ -45,6 +45,7 @@ class AuditAgentService(BaseScanService):
             branch_name=request.branchName,
             contract_files=request.contractFiles,
             formatted_docs=formatted_docs,
+            invariants=request.invariants,
         )
 
     def create_initializer(

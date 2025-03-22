@@ -90,6 +90,11 @@ export const getRepositoryDocs = async (owner: string, repo: string): Promise<Do
   return response.data.data;
 };
 
+export const getInvariants = async (owner: string, repo: string): Promise<InvariantsResponse> => {
+  const response = await api.get(`/api/v1/github/invariants/${owner}/${repo}`);
+  return response.data.data;
+};
+
 export const getScanHistory = async () => {
   const response = await api.get("/api/v1/scans/history");
   return response.data.data;

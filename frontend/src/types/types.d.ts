@@ -47,6 +47,7 @@ interface Invariant {
   condition: string;
   description: string;
   function: string;
+  path: string;
 }
 
 type ScanType = "default" | "defi" | "nft" | "dao" | "utility" | "identity";
@@ -98,6 +99,10 @@ interface DocsResponse {
   docs: RepoDocs;
 }
 
+interface InvariantsResponse {
+  invariants: Invariant[] | null;
+}
+
 interface InitiateScanRequest {
   repositoryURL: string;
   contractFiles: string[];
@@ -106,6 +111,7 @@ interface InitiateScanRequest {
     readme: string[];
     qa: Record<string, string>;
   };
+  invariants: Invariant[];
   file_type: ScanLanguage;
 }
 

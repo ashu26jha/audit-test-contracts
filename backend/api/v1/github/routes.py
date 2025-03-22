@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.v1.auth.helpers.dependencies import get_current_user
 from api.v1.common.docs_helpers import get_json_docs
+from api.v1.common.invariants_helpers import get_saved_invariants
 from api.v1.github.schema import (
     FileType,
     GitHubBranch,
@@ -12,6 +13,7 @@ from api.v1.github.schema import (
     GitHubRepoInfo,
     GitHubRepository,
     GitHubRepositoryDocs,
+    GithubRepositoryInvariantsResponse,
     GitHubRepositoryValidation,
     QAResponse,
 )
@@ -361,3 +363,30 @@ async def validate_repository(
         raise HTTPException(status_code=422, detail=e.message)
     except HTTPClientError as e:
         raise HTTPException(status_code=503, detail=e.message)
+
+
+@router.get(
+    "/invariants/{owner}/{repo}",
+    response_model=Union[SuccessResponse[GithubRepositoryInvariantsResponse], ErrorResponse],
+    description="Get invariants for a specific repository",
+)
+async def get_invariants(
+    owner: str,
+    repo: str,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get invariants for a specific repository.
+
+    Args:
+        owner: Repository owner
+        repo: Repository name
+
+    Returns:
+        Invariants for a specific repository
+    """
+    # Construct the repository URL in the same format as stored
+    repository_url = f"https://github.com/{owner}/{repo}"
+    invariants = await get_saved_invariants(repository_url, current_user.githubId)
+
+    return SuccessResponse(data=GithubRepositoryInvariantsResponse(invariants=invariants))

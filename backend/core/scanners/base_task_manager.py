@@ -112,6 +112,8 @@ class BaseTaskManager(ABC):
                     contracts_in_scope=self.context.contract_files,
                     flattened_contracts=self.context.flattened_contracts,
                     docs=getattr(self.context, "formatted_docs", None),
+                    selected_invariants=self.context.invariants,
+                    contract_contents=self.context.contract_contents,
                 )
             )
 

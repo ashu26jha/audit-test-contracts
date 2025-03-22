@@ -4,6 +4,7 @@ from typing import Generic, List, Optional, TypeVar
 from pydantic import BaseModel, Field, field_validator
 
 from core.models.docs import QAResponse
+from core.models.scan import Invariant
 
 T = TypeVar("T")
 
@@ -133,3 +134,7 @@ class GitHubRepositoryListResponse(BaseModel):
 
 class GitHubRepositoryResponse(BaseModel):
     repository: GitHubRepository
+
+
+class GithubRepositoryInvariantsResponse(BaseModel):
+    invariants: List[Invariant] | None

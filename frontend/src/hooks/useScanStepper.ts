@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 
 import DOMPurify from "dompurify";
 
-import { PLAN_STEP, STEPS } from "@/config/steps";
+import { INVARIANTS_STEP, PLAN_STEP, STEPS } from "@/config/steps";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getRepositories,
@@ -11,6 +11,7 @@ import {
   initiateScan,
   getReadmeFiles,
   getRepositoryDocs,
+  getInvariants,
 } from "@/services/api";
 import { useScanStepperStore } from "@/store/scanStepperStore";
 import { useUserDataStore } from "@/store/userDataStore";
@@ -25,6 +26,7 @@ export const useScanStepper = () => {
     selectedContracts,
     selectedLanguage,
     repoDocs,
+    selectedInvariants,
     setSelectedOwner,
     setSelectedRepo,
     setBranches,
@@ -33,6 +35,7 @@ export const useScanStepper = () => {
     setRepositoryURL,
     setIsLoading,
     setRepoDocs,
+    setInvariants,
   } = useScanStepperStore();
   const { user } = useAuth();
 
@@ -110,6 +113,21 @@ export const useScanStepper = () => {
     [setReadmeFiles, setIsLoading],
   );
 
+  const fetchInvariants = useCallback(
+    async (owner: Owner, repo: Repository) => {
+      try {
+        setIsLoading(true);
+        const invariants = await getInvariants(owner.login, repo.name);
+        setInvariants(invariants.invariants);
+      } catch (error) {
+        console.error("Error fetching invariants files:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [setInvariants, setIsLoading],
+  );
+
   const initiateScanProcess = useCallback(async () => {
     try {
       if (!selectedOwner || !selectedRepo) {
@@ -136,6 +154,7 @@ export const useScanStepper = () => {
           readme: repoDocs.readme,
           qa,
         },
+        invariants: selectedInvariants,
         file_type: selectedLanguage,
       });
       return response;
@@ -143,7 +162,7 @@ export const useScanStepper = () => {
       console.error("Error initiating scan:", error);
       throw error;
     }
-  }, [repoDocs, selectedOwner, selectedRepo, selectedBranch, selectedContracts, selectedLanguage]);
+  }, [repoDocs, selectedOwner, selectedRepo, selectedBranch, selectedContracts, selectedLanguage, selectedInvariants]);
 
   const extractOwnerAndRepo = useCallback(
     (url: string) => {
@@ -175,7 +194,7 @@ export const useScanStepper = () => {
     if (user?.subscription.type === "free") {
       return [PLAN_STEP, ...STEPS];
     }
-    return STEPS;
+    return [...STEPS, INVARIANTS_STEP];
   }, [user?.subscription.type]);
 
   return {
@@ -186,6 +205,7 @@ export const useScanStepper = () => {
     fetchPreviousDocs,
     initiateScanProcess,
     extractOwnerAndRepo,
+    fetchInvariants,
     stepsData,
   };
 };

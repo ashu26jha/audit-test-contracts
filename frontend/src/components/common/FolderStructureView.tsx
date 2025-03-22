@@ -2,10 +2,11 @@
 
 import { type FC, useState, useEffect } from "react";
 
-import { Checkbox, cn, Spinner } from "@nextui-org/react";
-import { ChevronDown, ChevronRight, Text } from "lucide-react";
+import { Checkbox, cn, Spinner, Tooltip } from "@nextui-org/react";
+import { ChevronDown, ChevronRight, CircleCheck, Text } from "lucide-react";
 import Image from "next/image";
 
+import { useAuth } from "@/contexts/AuthContext";
 import { formatNumberWithCommas } from "@/utils/formatters";
 
 export interface FolderStructureViewProps {
@@ -17,6 +18,7 @@ export interface FolderStructureViewProps {
   isLoading: boolean;
   variant: "contract" | "readme";
   emptyText: string;
+  invariantPaths?: string[];
 }
 
 export const FolderStructureView: FC<FolderStructureViewProps> = ({
@@ -28,9 +30,11 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
   isLoading,
   variant,
   emptyText,
+  invariantPaths,
 }) => {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [initialized, setInitialized] = useState(false);
+  const { user } = useAuth();
 
   const getAllFolderPaths = (items: FolderStructure[]) => {
     const allFolderPaths = new Set<string>();
@@ -98,30 +102,41 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
               </button>
             ) : (
               <div className="w-[97%]">
-                <Checkbox
-                  color="secondary"
-                  isSelected={selectedPaths.includes(item.path)}
-                  onValueChange={() => onSelect?.(item.path)}
-                  isDisabled={isDisabled && !selectedPaths.includes(item.path)}
+                <Tooltip
+                  content="Invariants are available for this contract"
+                  isDisabled={user?.subscription.type === "free" || !invariantPaths?.includes(item.path)}
                   classNames={{
-                    base: cn(
-                      "ml-4 inline-flex w-full max-w-full",
-                      "hover:bg-content2 items-center justify-start",
-                      "cursor-pointer rounded-lg",
-                    ),
-                    label: "w-full flex justify-between",
+                    content: "mb-2 border border-default-100 text-xs rounded-md",
                   }}
                 >
-                  <span className="text-xs sm:text-sm md:text-base">{item.name}</span>
-                  <span className="ml-auto flex gap-2 items-center">
-                    <Text size={16} />
-                    <div className="w-12 text-end text-xs sm:text-sm md:text-base">
-                      {item.fileInfo && variant === "contract"
-                        ? formatNumberWithCommas(item.fileInfo?.lineCount || 0)
-                        : formatNumberWithCommas(item.fileInfo?.character_count || 0)}
-                    </div>
-                  </span>
-                </Checkbox>
+                  <Checkbox
+                    color="secondary"
+                    isSelected={selectedPaths.includes(item.path)}
+                    onValueChange={() => onSelect?.(item.path)}
+                    isDisabled={isDisabled && !selectedPaths.includes(item.path)}
+                    classNames={{
+                      base: cn(
+                        "ml-4 inline-flex w-full max-w-full",
+                        "hover:bg-content2 items-center justify-start",
+                        "cursor-pointer rounded-lg",
+                      ),
+                      label: "w-full flex justify-between",
+                    }}
+                  >
+                    <span className="text-xs sm:text-sm md:text-base">{item.name}</span>
+                    <span className="ml-auto flex gap-2 items-center">
+                      {user?.subscription.type !== "free" && invariantPaths?.includes(item.path) && (
+                        <CircleCheck size={16} className="text-secondary mr-2 hover:text-black" />
+                      )}
+                      <Text size={16} />
+                      <div className="w-12 text-end text-xs sm:text-sm md:text-base">
+                        {item.fileInfo && variant === "contract"
+                          ? formatNumberWithCommas(item.fileInfo?.lineCount || 0)
+                          : formatNumberWithCommas(item.fileInfo?.character_count || 0)}
+                      </div>
+                    </span>
+                  </Checkbox>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -135,6 +150,7 @@ export const FolderStructureView: FC<FolderStructureViewProps> = ({
               isLoading={false}
               variant={variant}
               emptyText={emptyText}
+              invariantPaths={invariantPaths}
             />
           )}
         </div>

@@ -7,6 +7,9 @@ class Invariant(BaseModel):
     description: Annotated[str, Field(description="The description of the invariants")]
     function: Annotated[str, Field(description="The function name of the invariant")]
     condition: Annotated[str, Field(description="The condition of the invariant")]
+    path: Annotated[
+        Optional[str], Field(description="The path to the file where the invariant applies")
+    ]
 
 
 class InvariantsRequest(BaseModel):

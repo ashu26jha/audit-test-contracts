@@ -9,9 +9,11 @@ interface ScanStepperState {
   selectedBranch: string | undefined;
   selectedLanguage: ScanLanguage;
   selectedContracts: string[];
+  selectedInvariants: Invariant[];
   contractSearch: string;
   solidityFiles: SolidityFile[];
   readmeFiles: ReadmeFile[];
+  invariants: Invariant[] | null;
   repoDocs: RepoDocs;
   isLoading: boolean;
   isScanning: boolean;
@@ -29,9 +31,11 @@ interface ScanStepperState {
   setSelectedBranch: (branch: string) => void;
   setSelectedLanguage: (language: ScanLanguage) => void;
   setSelectedContracts: (contracts: string[]) => void;
+  setSelectedInvariants: (invariants: Invariant[]) => void;
   setContractSearch: (search: string) => void;
   setSolidityFiles: (files: SolidityFile[]) => void;
   setReadmeFiles: (files: ReadmeFile[]) => void;
+  setInvariants: (invariants: Invariant[] | null) => void;
   setRepoDocs: (docs: Partial<RepoDocs>) => void;
   setIsLoading: (isLoading: boolean) => void;
   setIsScanning: (isScanning: boolean) => void;
@@ -56,6 +60,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   contractSearch: "",
   solidityFiles: [],
   readmeFiles: [],
+  invariants: null,
   repoDocs: {
     readme: [],
     qa: {},
@@ -69,6 +74,8 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   isLineExceeded: false,
   isFileLimitExceeded: false,
   selectedPlan: null,
+  selectedInvariants: [],
+  setSelectedInvariants: (invariants) => set({ selectedInvariants: invariants }),
   setSelectedPlan: (plan) => set({ selectedPlan: plan }),
   setShowStepper: (show) => set({ showStepper: show }),
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -79,6 +86,7 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
   setSelectedLanguage: (language) => set({ selectedLanguage: language }),
   setSelectedContracts: (contracts) => set({ selectedContracts: contracts }),
   setContractSearch: (search) => set({ contractSearch: search }),
+  setInvariants: (invariants) => set({ invariants }),
   setSolidityFiles: (files) => set({ solidityFiles: files }),
   setReadmeFiles: (files) => set({ readmeFiles: files }),
   setIsLoading: (isLoading) => set({ isLoading }),
@@ -109,6 +117,8 @@ export const useScanStepperStore = create<ScanStepperState>((set) => ({
       isLineExceeded: false,
       isFileLimitExceeded: false,
       selectedPlan: null,
+      selectedInvariants: [],
+      invariants: null,
       repoDocs: {
         readme: [],
         qa: {},

@@ -81,6 +81,7 @@ class Invariant(BaseModel):
     description: str = Field(description="The description of the invariants")
     function: str = Field(description="The function name of the invariant")
     condition: str = Field(description="The condition of the invariant")
+    path: Optional[str] = Field(None, description="The path of the contract file")
 
 
 class Scan(Document):
