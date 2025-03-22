@@ -47,7 +47,7 @@ export const FREE_PLAN_DETAILS = {
 
 export const PRO_PLAN_DETAILS = {
   AUDIT_TYPE: "STANDARD AUDIT",
-  PLAN_NAME: "Professional Plan",
+  PLAN_NAME: "Pro Plan",
   DESCRIPTION: "Ideal for growing teams and active development.",
   MAX_FILES: 10,
   MAX_LINES: 2000,
@@ -58,6 +58,7 @@ export const PRO_PLAN_DETAILS = {
   SUBSCRIPTION_TYPE: "pro",
   get features() {
     return [
+      "Everything in FREE",
       `${this.SCAN_CREDITS} scan credits (Refreshes every month)`,
       `Up to ${this.MAX_LINES} lines of code per scan`,
       `Up to ${this.MAX_FILES} contracts per scan`,

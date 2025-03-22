@@ -50,7 +50,7 @@ export const ScanProgress: FC<ScanProgressProps> = ({ progress }) => {
 
       <p className="font-medium">Analyzing Your Code...</p>
       <p className="text-foreground-500 text-center text-sm">
-        Please wait, this may take several minutes. You&apos;ll receive an email once the scan is complete.
+        Please wait, this may take up to one hour. You&apos;ll receive an email once the scan is complete.
       </p>
     </div>
   );

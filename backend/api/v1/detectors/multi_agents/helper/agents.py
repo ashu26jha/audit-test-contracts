@@ -43,6 +43,8 @@ class AnalyzerAgent(Agent[Analysis]):
 class WhiteHatAgent(Agent[Exploit]):
     """Agent responsible for finding potential exploits"""
 
+    NON_GIVEN: str = "Non-Given"
+
     def __init__(
         self,
         flattened_contracts: str,
@@ -50,22 +52,21 @@ class WhiteHatAgent(Agent[Exploit]):
         analysis: Analysis,
         invariants: list[Invariant],
         history: str,
-        previous_findings: Optional[List[Finding]] = None,
-        docs: Optional[str] = None,
-        duckduckgo_analysis: Optional[str] = None,
+        previous_findings: Optional[List[Finding]] = NON_GIVEN,
+        docs: Optional[str] = NON_GIVEN,
+        duckduckgo_analysis: Optional[str] = NON_GIVEN,
     ):
         # Create the prompt first
         prompt = WHITE_HAT_PROMPT.format(
             function_name=entry_point.function_name,
             contract_name=entry_point.contract_name,
-            line_number=entry_point.line_number,
-            analysis=analysis,
-            invariants=invariants,
             docs=docs,
+            analysis=analysis,
+            duckduckgo_results=duckduckgo_analysis,
+            invariants=invariants,
             previous_findings=previous_findings,
             history=history,
             flattened_contracts=flattened_contracts,
-            duckduckgo_results=duckduckgo_analysis,
         )
 
         # Initialize Agent
@@ -86,7 +87,7 @@ class ValidatorAgent(Agent[ValidationResult]):
         flattened_contracts: str,
         entry_point: EntryPoint,
         exploit: Exploit,
-        duckduckgo_analysis: Optional[str] = None,
+        duckduckgo_analysis: Optional[str] = "Non-Given",
     ):
         # Create the prompt first
         prompt = VALIDATOR_PROMPT.format(

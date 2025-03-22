@@ -92,19 +92,6 @@ WHITE_HAT_PROMPT = """You are an expert smart contract security researcher. Your
 - **Integration & Composability**: Identifying risks in contract interactions.
 - **Economic Attack Vectors**: Assessing potential financial exploits.
 
-### **Function to analyse:**
-- **Function:** `{function_name}`
-- **Contract:** `{contract_name}`
-
-### **Additional context from web to assist with the audit (if any):**
-{duckduckgo_results}
-
-### **Function Analyzer's Input:**
-{analysis}
-
-### **Invariants:**
-{invariants}
-
 ### **Instructions:**
 Based on the analysis, review the complex function {function_name} and its associated other functions and program logic. Does this logic contains an high-risk security flaws? Reason about how the logic is *supposed* to work and about possible deviations from the intended specs. We are especially looking for bugs that lead to theft or loss of funds. In addition, review the following carefully:
 1. **Identify Potential Attack Vectors**: Highlight security risks.
@@ -127,8 +114,21 @@ Provide a **strictly formatted** JSON response with no explanations, comments, a
 
 Focus on **high-impact, actionable security findings**.
 
+### **Function to analyse:**
+- **Function:** `{function_name}`
+- **Contract:** `{contract_name}`
+
 ### ** Projects documentation (if any):**
 {docs}
+
+### **Function Analyzer's Input:**
+{analysis}
+
+### **Invariants:**
+{invariants}
+
+### **Additional context from web to assist with the audit (if any):**
+{duckduckgo_results}
 
 ### **Previous Findings & Previous Validations (if any):**
 {previous_findings}

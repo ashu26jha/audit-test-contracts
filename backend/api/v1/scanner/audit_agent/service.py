@@ -54,9 +54,11 @@ class AuditAgentService(BaseScanService):
         """Create audit agent scan initializer."""
         return AuditAgentScanInitializer(context, user)
 
-    def create_task_manager(self, context: AuditAgentScanContext) -> AuditAgentTaskManager:
+    async def create_task_manager(self, context: AuditAgentScanContext) -> AuditAgentTaskManager:
         """Create audit agent task manager."""
-        return AuditAgentTaskManager(context)
+        task_manager = AuditAgentTaskManager(context)
+        await task_manager.initialize()
+        return task_manager
 
     @staticmethod
     @huey.task()

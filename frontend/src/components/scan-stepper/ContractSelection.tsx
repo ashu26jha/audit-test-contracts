@@ -95,8 +95,8 @@ export const ContractSelection: FC = () => {
 
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-8 sm:w-3/4 min-w-[250px]">
-      <div className="flex-1 flex flex-col items-center sm:items-start sm:max-w-[70%]">
-        <h3 className="text-base font-normal mb-2 font-inter leading-6">Select Contracts</h3>
+      <div className="flex-1 flex flex-col  items-center sm:items-start sm:max-w-[70%]">
+        <h3 className="text-sm text-default-600 font-normal mb-2 font-inter leading-6">Select Contracts</h3>
         <div className="border-2 bg-content-1 border-default-100 rounded-xl h-[23.85rem] w-[90%]">
           <div className="flex">
             <Checkbox isSelected={isAllSelected} onValueChange={onAllSelect} color="secondary" className="ml-2" />

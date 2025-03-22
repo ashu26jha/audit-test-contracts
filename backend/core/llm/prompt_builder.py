@@ -9,6 +9,7 @@ from config.prompts.context_scan_prompts import (
 )
 from config.settings import SUPPORTED_MODELS
 from core.schemas.llm_schema import Message
+from core.utils.errors import PromptError
 from core.utils.profiles import Profiles, load_profile
 
 EMPTY_RESPONSE = "None Given"
@@ -52,47 +53,51 @@ class PromptBuilder:
             message_history: Optional message history (overrides profile's history)
             profile: Optional profile to use for system prompt and history
         """
-        # Load profile if specified
-        if profile is not None:
-            self._ensure_profile_loaded(profile)
-            profile_history = self._profiles[profile]
-            # Use profile's system prompt if none provided
-            if system_prompt is None and profile != Profiles.NONE:
-                # Use Cairo system prompt for Cairo profile
-                if profile == Profiles.CAIRO:
-                    system_prompt = self._system_prompts["cairo"]
-                else:
-                    system_prompt = self._system_prompts["default"]
-        else:
-            profile_history = []
+        try:
+            # Load profile if specified
+            if profile is not None:
+                self._ensure_profile_loaded(profile)
+                profile_history = self._profiles[profile]
+                # Use profile's system prompt if none provided
+                if system_prompt is None and profile != Profiles.NONE:
+                    # Use Cairo system prompt for Cairo profile
+                    if profile == Profiles.CAIRO:
+                        system_prompt = self._system_prompts["cairo"]
+                    else:
+                        system_prompt = self._system_prompts["default"]
+            else:
+                profile_history = []
 
-        # Use provided message history or profile's history
-        final_history = message_history if message_history is not None else profile_history
+            # Use provided message history or profile's history
+            final_history = message_history if message_history is not None else profile_history
 
-        # Apply cache control to profile messages if using Anthropic
-        if model_type in SUPPORTED_MODELS["anthropic"] and profile is not None:
-            # Transform profile messages to include cache control
-            final_history = self._add_cache_control_to_messages(final_history)
+            # Apply cache control to profile messages if using Anthropic
+            if model_type in SUPPORTED_MODELS["anthropic"] and profile is not None:
+                # Transform profile messages to include cache control
+                final_history = self._add_cache_control_to_messages(final_history)
 
-        # Handle different model types
-        if model_type in SUPPORTED_MODELS["gemini"]:
-            return self._build_gemini_format(user_input, system_prompt, final_history)
+            # Handle different model types
+            if model_type in SUPPORTED_MODELS["gemini"]:
+                return self._build_gemini_format(user_input, system_prompt, final_history)
 
-        # For OpenAI/Anthropic, build message list
-        messages: List[Message] = []
+            # For OpenAI/Anthropic, build message list
+            messages: List[Message] = []
 
-        # Add system prompt if provided
-        if system_prompt and model_type in SUPPORTED_MODELS["openai"]:
-            role = "developer" if "o1" in model_type else "system"
-            messages.append({"role": role, "content": system_prompt})
+            # Add system prompt if provided
+            if system_prompt and model_type in SUPPORTED_MODELS["openai"]:
+                role = "developer" if "o1" in model_type else "system"
+                messages.append({"role": role, "content": system_prompt})
 
-        # Add message history
-        messages.extend(final_history)
+            # Add message history
+            messages.extend(final_history)
 
-        # Add user message
-        messages.append({"role": "user", "content": user_input})
+            # Add user message
+            messages.append({"role": "user", "content": user_input})
 
-        return messages
+            return messages
+        except Exception as e:
+            error_details = {"model_type": model_type, "profile": str(profile) if profile else None}
+            raise PromptError(f"Error building prompt: {str(e)}", details=error_details) from e
 
     def build_context_scan_prompt(
         self,

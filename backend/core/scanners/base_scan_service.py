@@ -119,7 +119,7 @@ class BaseScanService(ABC):
         pass
 
     @abstractmethod
-    def create_task_manager(self, context: BaseScanContext) -> M:
+    async def create_task_manager(self, context: BaseScanContext) -> M:
         """Create appropriate task manager instance."""
         pass
 
@@ -362,7 +362,7 @@ class BaseScanService(ABC):
                     # Continue with setup_result as None
 
             # TaskManager: execute scan & gather results
-            self.task_manager = self.create_task_manager(context)
+            self.task_manager = await self.create_task_manager(context)
             results = await self.task_manager.execute_scan()
 
             try:

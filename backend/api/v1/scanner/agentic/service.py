@@ -37,7 +37,7 @@ class AgenticService(BaseScanService):
         """Create agentic scan initializer."""
         return AgenticScanInitializer(context)
 
-    def create_task_manager(self, context: AgenticScanContext) -> AgenticTaskManager:
+    async def create_task_manager(self, context: AgenticScanContext) -> AgenticTaskManager:
         """Create agentic task manager."""
         return AgenticTaskManager(context)
 

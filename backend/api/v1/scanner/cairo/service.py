@@ -51,7 +51,7 @@ class CairoService(BaseScanService):
         """Create audit agent scan initializer."""
         return CairoScanInitializer(context, user)
 
-    def create_task_manager(self, context: CairoScanContext) -> CairoTaskManager:
+    async def create_task_manager(self, context: CairoScanContext) -> CairoTaskManager:
         """Create audit agent task manager."""
         return CairoTaskManager(context)
 

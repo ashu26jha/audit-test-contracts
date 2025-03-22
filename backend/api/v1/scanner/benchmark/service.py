@@ -43,7 +43,7 @@ class BenchmarkService(BaseScanService):
         """Create benchmark scan initializer."""
         return BenchmarkScanInitializer(context, user)
 
-    def create_task_manager(self, context: BenchmarkScanContext) -> BenchmarkTaskManager:
+    async def create_task_manager(self, context: BenchmarkScanContext) -> BenchmarkTaskManager:
         """Create benchmark task manager."""
         return BenchmarkTaskManager(context)
 
