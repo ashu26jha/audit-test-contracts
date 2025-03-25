@@ -44,7 +44,7 @@ async def benchmark(request: BenchmarkScanRequest):
     scan_id = uuid4()
     service = BenchmarkService()
     await service.create_scan(scan_id, scan_type=ScanType.BENCHMARK, request=request)
-    return SuccessResponse(data=scan_id)
+    return SuccessResponse(data=BenchmarkInitiateResponse(scan_id=scan_id))
 
 
 @router.get("/result/{scan_id}")
@@ -59,7 +59,11 @@ async def get_result(scan_id: str):
         SuccessResponse: Response containing the scan results
         ErrorResponse: If the scan is not found
     """
-    full_result = await ScanRepository.get_scan_result(UUID(scan_id))
-    if not full_result:
-        return ErrorResponse(message="scan_not_found", code=404)
-    return SuccessResponse(data=full_result)
+    try:
+        uuid_obj = UUID(scan_id)
+        full_result = await ScanRepository.get_scan_result(uuid_obj)
+        if not full_result:
+            return ErrorResponse(message="scan_not_found", code=404)
+        return SuccessResponse(data=full_result)
+    except ValueError:
+        return ErrorResponse(message="invalid_scan_id_format", code=400, status_code=400)
