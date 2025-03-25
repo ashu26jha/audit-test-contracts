@@ -365,6 +365,7 @@ class BaseScanService(ABC):
             self.task_manager = await self.create_task_manager(context)
             results = await self.task_manager.execute_scan()
 
+            saved_invariants = []
             try:
                 saved_invariants = await ScanRepository.get_invariants(
                     self.context.repository_url, self.context.user_id
@@ -381,26 +382,19 @@ class BaseScanService(ABC):
             # Filter out the saved invariants that have a path
             filtered_saved_invariants = [inv for inv in saved_invariants if inv.path is not None]
 
-            # Create a set of (path, function) tuples from results["invariants"]
-            result_paths_funcs = {(inv.path, inv.function) for inv in results["invariants"]}
+            # Get unique array of paths from invariants
+            result_invariants_paths = list(set(inv.path for inv in results["invariants"]))
 
-            # Filter saved_invariants to keep only those matching paths and functions from results
+            # Filter out saved_invariants whose paths exist in result_invariants_paths
             filtered_saved_invariants = [
-                inv
-                for inv in filtered_saved_invariants
-                if (inv.path, inv.function) in result_paths_funcs
-                or not any(other_inv.path == inv.path for other_inv in results["invariants"])
+                inv for inv in saved_invariants if inv.path not in result_invariants_paths
             ]
 
-            # Create a set to track seen invariants and a list for unique invariants
-            seen = set()
-            combined_invariants: List[Invariant] = []
-            for inv in [*filtered_saved_invariants, *results["invariants"]]:
-                # Create a tuple of the properties we want to compare
-                inv_key = (inv.path, inv.description, inv.condition, inv.function)
-                if inv_key not in seen:
-                    seen.add(inv_key)
-                    combined_invariants.append(inv)
+            # Simply combine the two lists of invariants
+            combined_invariants: List[Invariant] = [
+                *filtered_saved_invariants,
+                *results["invariants"],
+            ]
 
             # BaseResultsProcessor: Aggregate, deduplicate, and mitigate results
             result_processor = BaseResultsProcessor(

@@ -77,6 +77,7 @@ export const useScanResult = (scanId: string | null, pollingInterval = 5000) => 
   useEffect(() => {
     if (scanId && shouldPoll && scanData && !toastStarted) {
       toast.custom((t) => <ScanProgressToast t={t} scanId={scanId} />, {
+        id: scanId,
         duration: Infinity,
         position: "bottom-right",
       });
