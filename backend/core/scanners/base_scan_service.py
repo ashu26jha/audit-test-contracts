@@ -386,13 +386,13 @@ class BaseScanService(ABC):
             result_invariants_paths = list(set(inv.path for inv in results["invariants"]))
 
             # Filter out saved_invariants whose paths exist in result_invariants_paths
-            filtered_saved_invariants = [
-                inv for inv in saved_invariants if inv.path not in result_invariants_paths
+            filtered_invariants = [
+                inv for inv in filtered_saved_invariants if inv.path not in result_invariants_paths
             ]
 
             # Simply combine the two lists of invariants
             combined_invariants: List[Invariant] = [
-                *filtered_saved_invariants,
+                *filtered_invariants,
                 *results["invariants"],
             ]
 
