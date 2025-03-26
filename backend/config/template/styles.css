@@ -321,3 +321,11 @@ body {
 .chip6 .severity-text {
   color: #149760;
 }
+
+/* Scan type - Purple */
+.scan-type-chip {
+  background-color: #7a3bb833;
+}
+.scan-type-chip .severity-text {
+  color: #7a3bb8;
+}

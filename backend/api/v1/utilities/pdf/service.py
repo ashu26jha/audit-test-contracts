@@ -48,6 +48,7 @@ async def generate_and_send_pdf_from_scan(user: User, scan_id: UUID) -> bool:
             str(scan_id),
             user.email,
             False,  # agentic flag
+            scan.type.value,
         )
 
         if not success:
@@ -92,6 +93,7 @@ async def generate_and_send_agentic_pdf(scan_id: UUID, email: str) -> bool:
             str(scan_id),
             email,
             True,  # agentic flag
+            scan.type.value,
             scan.contract_address,
             scan.chain_id,
         )
@@ -120,6 +122,7 @@ async def _generate_and_send_pdf(
     scan_id: str,
     email: str,
     agentic: bool,
+    scan_type: str = None,
     contract_address: str = None,
     chain_id: str = None,
 ) -> bool:
@@ -151,6 +154,7 @@ async def _generate_and_send_pdf(
                     "repository_name": repository_name,
                     "branch_name": branch_name,
                     "commit_hash": commit_hash,
+                    "scan_type": scan_type,
                 }
             )
 

@@ -27,6 +27,13 @@ SEVERITY_TEXT_MAP: SeverityTextMap = {
     "chip6": "Best Practices",
 }
 
+ScanTypeTextMap = Dict[str, str]
+SCAN_TYPE_TEXT_MAP: ScanTypeTextMap = {
+    "free": "Free Scan",
+    "pro": "Professional Scan",
+    "enterprise": "Enterprise Scan",
+}
+
 
 def extract_organization_name(url: str) -> Optional[str]:
     """Extract organization name from repository URL."""
@@ -240,6 +247,7 @@ async def create_report_html_unified(report_data: Dict, agentic: bool = False) -
     # If not agentic, we assume normal fields; otherwise we assume agentic fields
     if not agentic:
         template_name = "report_template.html"
+        scan_type = SCAN_TYPE_TEXT_MAP.get(str(report_data.get("scan_type", "")), "Default")
         placeholders = {
             "<!--organization-->": str(report_data.get("organization", "")),
             "<!--scanId-->": str(report_data.get("scan_number", "")),
@@ -250,6 +258,7 @@ async def create_report_html_unified(report_data: Dict, agentic: bool = False) -
             "<!--Contracts_Scanned-->": str(len(report_data.get("contract_files", []))),
             "<!--LoC-->": str(report_data.get("total_lines_of_code", 0)),
             "<!--summary-->": summary_html,
+            "<!--scanType-->": str(scan_type),
         }
     else:
         template_name = "report_template_agentic.html"
