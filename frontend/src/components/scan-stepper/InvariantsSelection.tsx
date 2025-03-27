@@ -82,14 +82,14 @@ const InvariantsSelection = () => {
       <Divider className="my-4" />
       <CardBody>
         {!availableInvariants || availableInvariants.length === 0 ? (
-          <div className="flex flex-col gap-4 justify-center items-center h-60 p-6 bg-default-50 rounded-xl">
-            <div className="text-center">
+          <div className="flex flex-col gap-4 justify-center items-center h-60 sm:p-6 bg-default-50 rounded-xl">
+            <div className="text-center w-full">
               <Info size={24} className="mb-2 mx-auto" />
               <h3 className="text-xl font-semibold mb-2">No Invariants Available</h3>
               <p className="text-default-500 mb-4">
                 Don&apos;t worry! We&apos;ll automatically generate invariants for the selected contracts.
               </p>
-              <Chip color="secondary" variant="flat" className="mx-auto">
+              <Chip color="secondary" variant="flat" className="mx-auto text-[10px] sm:text-sm">
                 Invariants will be generated during scanning
               </Chip>
             </div>

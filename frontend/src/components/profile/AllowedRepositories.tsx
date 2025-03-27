@@ -54,7 +54,13 @@ const AllowedRepositories: FC = () => {
       ) : (
         <Card className="w-full min-h-[400px] border border-[#27272A] bg-[#18181B] flex items-center justify-center">
           <CardBody className="flex flex-col items-center justify-center text-center">
-            <Image src="/svg/empty_repository.svg" alt="No repositories" width={55} height={55} className="mb-4" />
+            <Image
+              src="/svg/empty_repository.svg"
+              alt="No repositories"
+              width={55}
+              height={55}
+              className="mb-4 min-w-[55px] aspect-square"
+            />
             <p className="text-sm text-[#A1A1AA]">
               No allowed repositories.
               <br />

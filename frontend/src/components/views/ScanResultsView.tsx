@@ -8,10 +8,9 @@ import Image from "next/image";
 
 import { Container } from "@/components/layout";
 import { CodeSummary, FindingsMenu, Finding, SendFeedback } from "@/components/scan-results";
+import Invariants from "@/components/scan-results/Invariants";
 import ScanInfo from "@/components/ScanInfo";
 import { useSendReport } from "@/hooks";
-
-import Invariants from "../scan-results/Invariants";
 
 interface ScanResultsViewProps {
   scanData: ScanResult;
@@ -47,7 +46,15 @@ const ScanResultsView: FC<ScanResultsViewProps> = ({ scanData }) => {
 
   const scanStats = [
     {
-      icon: <Image src="/svg/vulnerability-icon.svg" alt="Error" width={16} height={16} />,
+      icon: (
+        <Image
+          src="/svg/vulnerability-icon.svg"
+          alt="Error"
+          width={16}
+          height={14}
+          className="min-w-[16px] aspect-[16/14]"
+        />
+      ),
       label: "Vulnerabilities Found",
       value: scanData.total_findings ?? 0,
     },

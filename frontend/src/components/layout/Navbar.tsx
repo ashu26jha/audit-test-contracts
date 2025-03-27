@@ -42,7 +42,14 @@ const Navbar: FC = () => {
       <NavbarContent>
         <NavbarBrand as="li" className="max-w-fit min-w-[40vw]">
           <NextLink className="flex justify-start items-center" href="/dashboard?tab=home">
-            <Image src="/svg/logo.svg" alt="logo" width={175} height={150} priority />
+            <Image
+              src="/svg/logo.svg"
+              alt="logo"
+              width={175}
+              height={150}
+              priority
+              className="min-w-[175px] aspect-[7/6]"
+            />
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
@@ -55,7 +62,13 @@ const Navbar: FC = () => {
             target="_blank"
             className="h-10 hidden sm:flex bg-secondary-flat border-1.5 border-secondary text-secondary-700 rounded-lg"
             startContent={
-              <Image src="/svg/book-security-review.svg" width={18} height={18} alt="book-security-review" />
+              <Image
+                src="/svg/book-security-review.svg"
+                width={18}
+                height={18}
+                alt="book-security-review"
+                className="min-w-[18px] aspect-square"
+              />
             }
           >
             <p className="text-sm">Book a Security Review</p>
@@ -88,7 +101,15 @@ const Navbar: FC = () => {
               <DropdownMenu aria-label="Profile Actions" variant="flat" className="rounded-lg">
                 <DropdownItem
                   key="profile"
-                  startContent={<Image src="/svg/profile.svg" alt="profile" width={20} height={20} />}
+                  startContent={
+                    <Image
+                      src="/svg/profile.svg"
+                      alt="profile"
+                      width={20}
+                      height={20}
+                      className="min-w-[20px] aspect-square"
+                    />
+                  }
                   onPress={() => {
                     router.push("/profile");
                   }}
@@ -97,7 +118,15 @@ const Navbar: FC = () => {
                 </DropdownItem>
                 <DropdownItem
                   key="logout"
-                  startContent={<Image src="/svg/logout.svg" alt="logout" width={20} height={20} />}
+                  startContent={
+                    <Image
+                      src="/svg/logout.svg"
+                      alt="logout"
+                      width={20}
+                      height={20}
+                      className="min-w-[20px] aspect-square"
+                    />
+                  }
                   color="danger"
                   onPress={() => logout()}
                 >

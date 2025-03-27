@@ -61,50 +61,53 @@ const ScanFilters: FC<ScanFiltersProps> = ({
   return (
     <div className="flex items-center gap-x-4">
       {/* Date Range Button */}
-      <Button
-        className="bg-content-1 border border-default-100"
-        radius="sm"
-        size="md"
-        onPress={() => setisDateFilterOpen(true)}
-        startContent={<Calendar size={16} />}
+      <Popover
+        classNames={{
+          base: "p-0",
+        }}
+        placement="bottom"
+        isOpen={isDateFilterOpen}
+        onOpenChange={setisDateFilterOpen}
       >
-        <DateRangePicker
-          value={selectedDateRange}
-          onChange={handleDateFilter}
-          isOpen={isDateFilterOpen}
-          color="secondary"
-          onOpenChange={setisDateFilterOpen}
-          classNames={{
-            base: "w-0",
-            inputWrapper: "bg-transparent hover:bg-transparent",
-            input: "hidden hover:hidden",
-            separator: "hidden",
-            selectorButton: "hidden",
-            selectorIcon: "text-white hidden",
-            calendar: "bg-content-1",
-          }}
-          aria-label="Select date range filter"
-          CalendarBottomContent={
-            <div className="p-3">
-              <Button
-                fullWidth
-                variant="bordered"
-                radius="sm"
-                onPress={handleClearDateRangeFilter}
-                isDisabled={!selectedDateRange}
-              >
-                Clear Filter
-              </Button>
-            </div>
-          }
-        />
-        {selectedDateRange
-          ? `${formatDate(new Date(selectedDateRange.start.toString()), "dd MMM yy")} - ${formatDate(
-              new Date(selectedDateRange.end.toString()),
-              "dd MMM yy",
-            )}`
-          : "Sort by Date"}
-      </Button>
+        <PopoverTrigger>
+          <Button
+            className="bg-content-1 border border-default-100"
+            radius="sm"
+            size="md"
+            startContent={<Calendar size={16} />}
+          >
+            {selectedDateRange
+              ? `${formatDate(new Date(selectedDateRange.start.toString()), "dd MMM yy")} - ${formatDate(
+                  new Date(selectedDateRange.end.toString()),
+                  "dd MMM yy",
+                )}`
+              : "Sort by Date"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto bg-content-2 p-0">
+          <DateRangePicker
+            value={selectedDateRange}
+            onChange={handleDateFilter}
+            color="secondary"
+            classNames={{
+              base: "min-w-[320px]",
+              calendar: "bg-content-1",
+            }}
+            aria-label="Select date range filter"
+          />
+          <div className="p-3">
+            <Button
+              fullWidth
+              variant="bordered"
+              radius="sm"
+              onPress={handleClearDateRangeFilter}
+              isDisabled={!selectedDateRange}
+            >
+              Clear Filter
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
 
       {/* Filters Button */}
       <Popover

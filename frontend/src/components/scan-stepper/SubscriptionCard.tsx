@@ -64,7 +64,13 @@ const SubscriptionCard: FC<SubscriptionCardProps> = ({
             </div>
             {isSelectable && !isSelected && <Circle className="text-default-400" />}
             {isSelectable && isSelected && (
-              <Image src="/svg/radio_selected.svg" alt="selected" width={23} height={23} />
+              <Image
+                src="/svg/radio_selected.svg"
+                alt="selected"
+                width={23}
+                height={23}
+                className="min-w-[23px] aspect-square"
+              />
             )}
 
             {subscriptionType == "enterprise" && <ArrowUpRight />}

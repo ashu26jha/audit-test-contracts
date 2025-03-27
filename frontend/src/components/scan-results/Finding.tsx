@@ -40,7 +40,13 @@ const Finding = forwardRef<HTMLDivElement, FindingProps>(
         <CardHeader className="flex flex-row justify-center sm:justify-between bg-[#18181B] border-1 border-[#18181B] font-inter font-normal text-sm text-[#B8B8B8]">
           <div className="flex flex-col sm:flex-row items-center space-x-2">
             <div className="flex items-center space-x-2">
-              <Image src="/svg/vulnerability-icon.svg" alt="Error" width={15} height={14} className="mr-1" />
+              <Image
+                src="/svg/vulnerability-icon.svg"
+                alt="Error"
+                width={15}
+                height={14}
+                className="min-w-[15px] aspect-[15/14] mr-1"
+              />
               <span className="text-sm">
                 {index + 1} of {totalFindings} Vulnerability
               </span>

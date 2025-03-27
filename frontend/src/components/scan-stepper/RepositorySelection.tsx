@@ -78,7 +78,7 @@ export const RepositorySelection: FC = () => {
                     alt="Empty Repository"
                     width={55}
                     height={55}
-                    className="m-auto mb-4"
+                    className="m-auto mb-4 min-w-[55px] aspect-square"
                   />
                   Repository would appear here,
                   <br />

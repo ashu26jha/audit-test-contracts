@@ -31,7 +31,7 @@ const ScanCard: FC<ScanCardProps> = ({ repository, onClick }) => {
                 alt="logo"
                 width={22}
                 height={22}
-                className="rounded-sm"
+                className="rounded-sm min-w-[22px] aspect-square"
               />
             </div>
             <span className="font-semibold">{repository.repositoryName ?? "Repo Name"}</span>

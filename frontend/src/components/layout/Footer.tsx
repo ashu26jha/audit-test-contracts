@@ -62,10 +62,17 @@ const Footer: FC = () => {
     <footer className="z-20 px-4 sm:px-2 lg:px-10 lg:py-4 md:py-3 py-2 bg-zinc-900 shadow border-b border-zinc-800 flex flex-col md:flex-row font-inter font-normal text-[#A1A1AA] md:justify-between items-center text-sm gap-2 md:gap-0">
       <div className="flex flex-col md:flex-row items-center md:items-center gap-x-2 lg:gap-x-0">
         <div className="hidden lg:flex items-center gap-2">
-          Powered by <Image src="/svg/nethermind.svg" alt="logo" width={120} height={20} />
+          Powered by{" "}
+          <Image src="/svg/nethermind.svg" alt="logo" width={120} height={20} className="min-w-[120px] aspect-[6/1]" />
         </div>
         <div className="pb-2 md:pb-0 lg:hidden">
-          <Image src="/svg/nethermind.svg" alt="logo" width={100} height={16} />
+          <Image
+            src="/svg/nethermind.svg"
+            alt="logo"
+            width={100}
+            height={16}
+            className="min-w-[100px] aspect-[6.25/1]"
+          />
         </div>
 
         <Elipsis className="hidden lg:block" />

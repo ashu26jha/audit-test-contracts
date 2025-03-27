@@ -42,7 +42,13 @@ export const StepperVisualization: FC<StepperVisualizationProps> = ({ currentSte
             </span>
 
             {index + indexIncrement < currentStep && (
-              <Image src="/svg/check-icon.svg" alt="check" width={18} height={18} />
+              <Image
+                src="/svg/check-icon.svg"
+                alt="check"
+                width={18}
+                height={18}
+                className="min-w-[18px] aspect-square"
+              />
             )}
           </div>
           {index + indexIncrement < stepsData.length - 1 + indexIncrement && (
