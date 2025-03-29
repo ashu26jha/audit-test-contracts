@@ -34,7 +34,7 @@ class AuditAgentTaskManager(BaseTaskManager):
             Detectors.CONTEXT_SCAN.value: True,
             Detectors.STATIC_ANALYZER.value: True,
             Detectors.FUZZER.value: False,
-            Detectors.MULTI_AGENTS.value: self.is_enterprise,
+            Detectors.MULTI_AGENTS.value: False,
         }
 
     @property
